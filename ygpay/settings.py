@@ -37,6 +37,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # YGPay apps
+    'core',
+    'integrations',
+    'reports',
+    'services',
+
+    # 3rd party apps
 ]
 
 MIDDLEWARE = [
