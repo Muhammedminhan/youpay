@@ -18,32 +18,57 @@ PAYMENT_REQUEST_METHOD = [
     ('get', 'GET'),
 ]
 
+
 class PaymentGateway(models.Model):
-    gateway_name = models.CharField(max_length=255)
-    description = models.TextField(null=True, blank=True)
-    is_active = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    domain = models.URLField(max_length=255, blank=True, null=True)
+    gateway_name = models.CharField(max_length=255,
+                                    help_text='Name of the payment gateway')
+    description = models.TextField(null=True, blank=True,
+                                   help_text='Description of the payment '
+                                             'gateway')
+    is_active = models.BooleanField(default=False,
+                                    help_text='Denotes whether the payment '
+                                              'gateway is active or not')
+    created_at = models.DateTimeField(auto_now_add=True,
+                                      help_text='Date and time when the '
+                                                'payment gateway was created')
+    updated_at = models.DateTimeField(auto_now=True,
+                                      help_text='Date and time when the '
+                                                'payment gateway was updated')
+    domain = models.URLField(max_length=255, blank=True, null=True,
+                             help_text='Domain of the payment gateway')
 
     def __str__(self):
         return self.gateway_name
 
 
 class PaymentGatewayAPI(models.Model):
-    api_name = models.CharField(max_length=255)
+    api_name = models.CharField(max_length=255,
+                                help_text='Name of the API as Per the Payment '
+                                          'Gateway Documentation')
     payment_gateway = models.ForeignKey(PaymentGateway,
-                                        on_delete=models.CASCADE)
-    api_path = models.CharField(max_length=255, blank=False, null=False)
-    description = models.TextField(null=True, blank=True)
-    api_key = models.CharField(max_length=255, blank=True, null=True)
-    api_secret = models.CharField(max_length=255, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    request_method = models.CharField(max_length=255,
-                                      choices=PAYMENT_REQUEST_METHOD)
+                                        on_delete=models.CASCADE,
+                                        help_text='Payment Gateway to which '
+                                                  'the API belongs to')
+    api_path = models.CharField(max_length=255, blank=False, null=False,
+                                help_text='API Path')
+    description = models.TextField(null=True, blank=True,
+                                   help_text='Description of the API')
+    api_key = models.CharField(max_length=255, blank=True, null=True,
+                               help_text='API Key String')
+    api_secret = models.CharField(max_length=255, blank=True, null=True,
+                                  help_text='API Secret String')
+    created_at = models.DateTimeField(auto_now_add=True,
+                                      help_text='Date and time when the API '
+                                                'was created')
+    updated_at = models.DateTimeField(auto_now=True,
+                                      help_text='Date and time when the API '
+                                                'was updated')
+    request_method = models.CharField(max_length=255, default='post',
+                                      choices=PAYMENT_REQUEST_METHOD,
+                                      help_text='Request Method')
     api_type = models.CharField(max_length=255,
-                                choices=PAYMENT_GATEWAY_API_TYPE)
+                                choices=PAYMENT_GATEWAY_API_TYPE,
+                                help_text='API Type in General Format')
 
     def __str__(self):
         return self.payment_gateway.gateway_name + self.api_name
