@@ -8,7 +8,6 @@ PAYMENT_GATEWAY_API_TYPE = [
     ('authorize', 'Authorize'),
     ('verify', 'Verify'),
     ('capture', 'Capture'),
-    ('expire', 'Expire'),
     ('cancell', 'Cancell'),
     ('refund', 'Refund'),
     ('callback', 'Callback'),
@@ -19,20 +18,6 @@ PAYMENT_REQUEST_METHOD = [
     ('post', 'POST'),
     ('get', 'GET'),
 ]
-
-API_VERSIONS = [
-    ('v1', 'v1'),
-    ('v2', 'v2'),
-    ('v3', 'v3'),
-    ('v4', 'v4'),
-    ('v5', 'v5'),
-    ('v6', 'v6'),
-    ('v7', 'v7'),
-    ('v8', 'v8'),
-    ('v9', 'v9'),
-    ('v10', 'v10'),
-]
-
 
 class PaymentGateway(models.Model):
     gateway_name = models.CharField(max_length=255)
@@ -60,8 +45,6 @@ class PaymentGatewayAPI(models.Model):
                                       choices=PAYMENT_REQUEST_METHOD)
     api_type = models.CharField(max_length=255,
                                 choices=PAYMENT_GATEWAY_API_TYPE)
-    api_version = models.CharField(max_length=255, blank=True, null=True,
-                                   choices=API_VERSIONS)
 
     def __str__(self):
         return self.payment_gateway.gateway_name + self.api_name
