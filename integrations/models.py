@@ -1,6 +1,6 @@
 from django.db import models
 
-from core.models import AbstractDateTime
+from core.models import AbstractDateTime, AbstractUserBase
 
 # Create your models here.
 
@@ -21,7 +21,7 @@ PAYMENT_REQUEST_METHOD = [
 ]
 
 
-class PaymentGateway(AbstractDateTime):
+class PaymentGateway(AbstractDateTime, AbstractUserBase):
     gateway_name = models.CharField(max_length=255,
                                     help_text='Name of the payment gateway')
     description = models.TextField(null=True, blank=True,
@@ -42,7 +42,7 @@ class PaymentGateway(AbstractDateTime):
         return self.gateway_name
  
 
-class PaymentGatewayAPI(AbstractDateTime):
+class PaymentGatewayAPI(AbstractDateTime, AbstractUserBase):
     api_name = models.CharField(max_length=255,
                                 help_text='Name of the API as Per the Payment '
                                           'Gateway Documentation')
