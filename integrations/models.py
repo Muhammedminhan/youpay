@@ -1,5 +1,7 @@
 from django.db import models
 
+from core.models import AbstractDateTime
+
 # Create your models here.
 
 PAYMENT_GATEWAY_API_TYPE = [
@@ -19,7 +21,7 @@ PAYMENT_REQUEST_METHOD = [
 ]
 
 
-class PaymentGateway(models.Model):
+class PaymentGateway(AbstractDateTime):
     gateway_name = models.CharField(max_length=255,
                                     help_text='Name of the payment gateway')
     description = models.TextField(null=True, blank=True,
@@ -28,12 +30,7 @@ class PaymentGateway(models.Model):
     is_active = models.BooleanField(default=False,
                                     help_text='Denotes whether the payment '
                                               'gateway is active or not')
-    created_at = models.DateTimeField(auto_now_add=True,
-                                      help_text='Date and time when the '
-                                                'payment gateway was created')
-    updated_at = models.DateTimeField(auto_now=True,
-                                      help_text='Date and time when the '
-                                                'payment gateway was updated')
+
     domain = models.URLField(max_length=255, blank=True, null=True,
                              help_text='Domain of the payment gateway')
     api_key = models.CharField(max_length=255, blank=True, null=True,
@@ -43,13 +40,13 @@ class PaymentGateway(models.Model):
 
     def __str__(self):
         return self.gateway_name
+ 
 
-
-class PaymentGatewayAPI(models.Model):
+class PaymentGatewayAPI(AbstractDateTime):
     api_name = models.CharField(max_length=255,
                                 help_text='Name of the API as Per the Payment '
                                           'Gateway Documentation')
-    payment_gateway = models.ForeignKey(PaymentGateway,
+    payment_gateway = models.ForeignKey('integrations.PaymentGateway',
                                         on_delete=models.CASCADE,
                                         help_text='Payment Gateway to which '
                                                   'the API belongs to')
@@ -57,12 +54,6 @@ class PaymentGatewayAPI(models.Model):
                                 help_text='API Path')
     description = models.TextField(null=True, blank=True,
                                    help_text='Description of the API')
-    created_at = models.DateTimeField(auto_now_add=True,
-                                      help_text='Date and time when the API '
-                                                'was created')
-    updated_at = models.DateTimeField(auto_now=True,
-                                      help_text='Date and time when the API '
-                                                'was updated')
     request_method = models.CharField(max_length=255, default='post',
                                       choices=PAYMENT_REQUEST_METHOD,
                                       help_text='Request Method')
