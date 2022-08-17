@@ -36,6 +36,10 @@ class PaymentGateway(models.Model):
                                                 'payment gateway was updated')
     domain = models.URLField(max_length=255, blank=True, null=True,
                              help_text='Domain of the payment gateway')
+    api_key = models.CharField(max_length=255, blank=True, null=True,
+                               help_text='API Key String')
+    api_secret = models.CharField(max_length=255, blank=True, null=True,
+                                  help_text='API Secret String')
 
     def __str__(self):
         return self.gateway_name
@@ -53,10 +57,6 @@ class PaymentGatewayAPI(models.Model):
                                 help_text='API Path')
     description = models.TextField(null=True, blank=True,
                                    help_text='Description of the API')
-    api_key = models.CharField(max_length=255, blank=True, null=True,
-                               help_text='API Key String')
-    api_secret = models.CharField(max_length=255, blank=True, null=True,
-                                  help_text='API Secret String')
     created_at = models.DateTimeField(auto_now_add=True,
                                       help_text='Date and time when the API '
                                                 'was created')
