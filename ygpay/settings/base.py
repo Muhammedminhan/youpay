@@ -10,8 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
-
 from pathlib import Path
+
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,6 +23,9 @@ STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'app_static'),
 )
 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = config('MEDIA_URL', '/media/')
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
@@ -32,7 +35,6 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', False)
 ALLOWED_HOSTS = ['*']
-
 
 # Application definition
 
@@ -84,7 +86,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ygpay.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
@@ -106,7 +107,6 @@ DATABASES = {
     }
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
@@ -125,7 +125,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -136,7 +135,6 @@ TIME_ZONE = 'Asia/Dubai'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
@@ -176,4 +174,3 @@ BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 REDIS_HOST = config('REDIS_HOST', 'localhost')
 REDIS_PORT = 6379
 REDIS_LOCKS_DB = config('REDIS_LOCKS_DB', 11)
-
