@@ -28,6 +28,8 @@ class APIClient(AbstractDateTime, AbstractUserBase):
                                   help_text='Color code for the client')
     client_code = models.CharField(max_length=100, blank=True, null=True,
                                    help_text='Client Code')
+    payment_gateway = models.ManyToManyField('integrations.PaymentGateway',
+                                             null=True, blank=True)
 
     def __str__(self):
         return self.name
