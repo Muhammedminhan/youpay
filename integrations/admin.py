@@ -21,7 +21,7 @@ class PaymentGatewayAPIAdmin(AdminAbstract):
     list_filter = ('request_method', 'api_type', 'created_at')
 
     def api(self, obj):
-        return "    ({}) ".format(
+        return " ({}) ".format(
             obj.api_type) + obj.payment_gateway.domain + obj.api_path
 
 
