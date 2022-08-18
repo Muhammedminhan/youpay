@@ -3,7 +3,6 @@ from decouple import config
 # Set True if using aws s3 for static/media file storage
 STORAGE_AWS = config('STORAGE_AWS', True)
 
-print("AWS STORAGE ", STORAGE_AWS)
 if STORAGE_AWS:
     AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', '')
     AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY', '')
