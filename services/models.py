@@ -6,7 +6,7 @@ from core.validators import MinLengthValidator, URLValidator
 
 # Create your models here.
 class APIClient(AbstractDateTime, AbstractUserBase):
-    name = models.CharField(null=True, blank=True, max_length=100,
+    name = models.CharField(null=False, blank=True, max_length=100,
                             help_text='Name of the API Client')
     api_key = models.CharField(max_length=100, blank=True,
                                help_text='API Key',
