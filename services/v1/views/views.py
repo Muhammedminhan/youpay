@@ -35,12 +35,26 @@ class APIClientRegistrationView(ListAPIView):
                 return Response({"status": status.HTTP_201_CREATED,
                                  "data": serializer.data, "message": "created"
                                  }, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors,
-                            status=status.HTTP_400_BAD_REQUEST)
+            else:
+                errors = serializer.errors.keys()
+                missing_fields = ', '.join(
+                    ["".join(missing) for missing in errors])
+                message = "The following fields are missing or incorrect " \
+                          "value provided : {}".format(missing_fields)
+                error_response = {
+                    'message': "One of the required fields is missing "
+                               "or request is not formatted correctly",
+                    'error': message,
+                }
+                return Response(error_response,
+                                status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response({"message": str(e),
-                             "status": status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'message': "One of the required fields is missing "
+                            "or request is not formatted correctly",
+                 "error": str(e),
+                 "status": status.HTTP_400_BAD_REQUEST},
+                status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
         try:
