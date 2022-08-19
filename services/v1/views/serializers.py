@@ -10,8 +10,8 @@ class APIClientRegistrationSerializer(serializers.ModelSerializer):
                                     validators=[MinLengthValidator(20)])
     endpoint_url = serializers.CharField(max_length=255, required=True,
                                          validators=[URLValidator()])
-    client_domain = serializers.CharField(max_length=255, required=True)
-
+    client_domain = serializers.CharField(max_length=255, required=True,
+                                         validators=[URLValidator()])
     class Meta:
         model = APIClient
         fields = '__all__'
