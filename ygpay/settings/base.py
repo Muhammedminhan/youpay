@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'services',
 
     # 3rd party apps
+    'rest_framework', 
 ]
 
 MIDDLEWARE = [
