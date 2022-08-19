@@ -1,5 +1,4 @@
-import json
-
+from django.http.response import Http404
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -12,11 +11,35 @@ class APIClientRegistrationView(ListAPIView):
     """
     API endpoint that allows clients to view, create, update and delete.
     """
+
     queryset = APIClient.objects.all()
     serializer_class = APIClientRegistrationSerializer
 
-    def get_queryset(self):
-        return super().get_queryset()
+    def get(self, request, pk=None):
+        try:
+            if pk:
+                data = self.get_object(pk)
+                serializer = APIClientRegistrationSerializer(data)
+
+            else:
+                data = APIClient.objects.all()
+                serializer = APIClientRegistrationSerializer(data, many=True)
+
+            return Response(serializer.data)
+        except Http404:
+            return Response({"message": "Data not found",
+                             "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"message": str(e),
+                             "status": status.HTTP_400_BAD_REQUEST},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def get_object(self, pk=None):
+        try:
+            return self.queryset.get(id=pk)
+        except APIClient.DoesNotExist:
+            raise Http404
 
     def post(self, request):
         try:
@@ -50,24 +73,18 @@ class APIClientRegistrationView(ListAPIView):
                                 status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(
-                {'message': "One of the required fields is missing "
-                            "or request is not formatted correctly",
-                 "error": str(e),
-                 "status": status.HTTP_400_BAD_REQUEST},
+                {
+                    'message': "One of the required fields is missing or "
+                               "request is not formatted correctly",
+                    "error": str(e), "status": status.HTTP_400_BAD_REQUEST},
                 status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request):
+    def delete(self, request, pk):
         try:
-            obj_id = self.request.GET.get('obj_id', "[]")
-            if id == "all":
-                self.queryset.delete()
-                return Response({'message': "deleted all data"},
-                                status=status.HTTP_200_OK)
-            else:
-                obj_id = json.loads(obj_id)
-                self.queryset.filter(id__in=obj_id).delete()
-                return Response({'message': "deleted data with id {}".format(
-                    str(obj_id))}, status=status.HTTP_200_OK)
+            self.queryset.filter(id=pk).delete()
+            return Response({'message': "deleted data with id {}".format(
+                str(pk)), "status": status.HTTP_200_OK},
+                status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"message": str(e),
                              "status": status.HTTP_400_BAD_REQUEST},
