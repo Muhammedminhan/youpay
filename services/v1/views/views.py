@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 
-from core.constant import ERROR_MESSAGE, ERROR_MISSING_FIELDS
+from core.messages import ERROR_MESSAGE, ERROR_MISSING_FIELDS
 from services.models import APIClient
 from services.v1.views.serializers import APIClientRegistrationSerializer
 
