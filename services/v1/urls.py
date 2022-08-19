@@ -1,3 +1,7 @@
-from django.urls import path, include
+from django.urls import path
 
-urlpatterns = []
+from services.v1.views.views import APIClientRegistrationView
+
+urlpatterns = [
+    path('registration/client/', APIClientRegistrationView.as_view()),
+]
