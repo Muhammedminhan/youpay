@@ -1,6 +1,7 @@
 from django.db import models
 
-from core.models import AbstractDateTime, AbstractUserBase
+from core.models import AbstractDateTime, AbstractUserBase, \
+    AbstractUserOfInterestBase
 from core.validators import MinLengthValidator, URLValidator
 
 
@@ -29,7 +30,31 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     client_code = models.CharField(max_length=100, blank=True, null=True,
                                    help_text='Client Code')
     payment_gateway = models.ManyToManyField('integrations.PaymentGateway',
-                                             null=True, blank=True)
+                                             blank=True)
 
     def __str__(self):
         return self.name
+
+
+class PaymentRequestData(AbstractDateTime, AbstractUserOfInterestBase):
+    payment = models.JSONField(null=False, blank=False,
+                               help_text="used to store payment data from "
+                                         "request")
+    order = models.JSONField(null=False, blank=False,
+                             help_text="used to store order data from "
+                                       "request")
+    customer = models.JSONField(null=False, blank=False,
+                                help_text="used to store customer data from "
+                                          "request")
+    order_history = models.JSONField(null=False, blank=False,
+                                     help_text="used to store order_history "
+                                               "data from request")
+    order_items = models.JSONField(null=False, blank=False,
+                                   help_text="used to order items data from "
+                                             "request")
+    api_client = models.ForeignKey('services.APIClient', null=False,
+                                   blank=False,
+                                   on_delete=models.DO_NOTHING, )
+
+    def __str__(self):
+        return self.api_client.name
