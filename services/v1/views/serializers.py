@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from core.validators import MinLengthValidator, URLValidator
-from services.models import APIClient
+from services.models import APIClient, PaymentRequestData
 
 
 class APIClientRegistrationSerializer(serializers.ModelSerializer):
@@ -11,7 +11,17 @@ class APIClientRegistrationSerializer(serializers.ModelSerializer):
     endpoint_url = serializers.CharField(max_length=255, required=True,
                                          validators=[URLValidator()])
     client_domain = serializers.CharField(max_length=255, required=True,
-                                         validators=[URLValidator()])
+                                          validators=[URLValidator()])
+
     class Meta:
         model = APIClient
+        fields = '__all__'
+
+
+class PaymentRequestDataSerializer(serializers.ModelSerializer):
+    # order = OrderSerializer()
+    api_client = serializers.CharField(required=True)
+
+    class Meta:
+        model = PaymentRequestData
         fields = '__all__'
