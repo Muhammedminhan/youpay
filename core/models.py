@@ -1,9 +1,10 @@
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 # Create your models here.
 
 User = get_user_model()
+
 
 class AbstractDateTime(models.Model):
     created_at = models.DateTimeField(auto_now_add=True,
@@ -12,8 +13,10 @@ class AbstractDateTime(models.Model):
     updated_at = models.DateTimeField(auto_now=True,
                                       help_text='Date and time when the '
                                                 'payment gateway was updated')
+
     class Meta:
         abstract = True
+
 
 class AbstractUserBase(models.Model):
     created_by = models.ForeignKey(User,
@@ -28,3 +31,14 @@ class AbstractUserBase(models.Model):
     class Meta:
         abstract = True
 
+
+class CustomerProfile(models.Model):
+    customer_email = models.EmailField(max_length=255, null=True, blank=True,
+                                       help_text="To store user email from "
+                                                 "outside")
+    customer_phone = models.CharField(max_length=20, null=True, blank=True,
+                                      help_text="To store user phone from "
+                                                "outside")
+
+    class Meta:
+        abstract = True
