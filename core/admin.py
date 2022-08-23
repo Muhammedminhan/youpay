@@ -23,6 +23,10 @@ class PaymentRequestDataAbstract(admin.ModelAdmin):
         if not obj.pk:
             # TODO need to update at the time of API creation
             obj.created_by = "created_by"
+            obj.phone="123123"
+            obj.email="test@test.com"
         if form.changed_data:
             obj.modified_by = "modified_by"
+            obj.phone="123123"
+            obj.email="test@test.com"
         super().save_model(request, obj, form, change)

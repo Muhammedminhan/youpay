@@ -2,7 +2,7 @@ from django.db import models
 
 from core.models import AbstractDateTime, AbstractUserBase, \
     AbstractUserOfInterestBase
-from core.validators import MinLengthValidator, URLValidator
+from core.validators import DecimalValidator, MinLengthValidator, URLValidator
 
 
 # Create your models here.
@@ -37,21 +37,15 @@ class APIClient(AbstractDateTime, AbstractUserBase):
 
 
 class PaymentRequestData(AbstractDateTime, AbstractUserOfInterestBase):
-    payment = models.JSONField(null=False, blank=False,
-                               help_text="used to store payment data from "
-                                         "request")
-    order = models.JSONField(null=False, blank=False,
-                             help_text="used to store order data from "
-                                       "request")
-    customer = models.JSONField(null=False, blank=False,
-                                help_text="used to store customer data from "
-                                          "request")
-    order_history = models.JSONField(null=False, blank=False,
-                                     help_text="used to store order_history "
-                                               "data from request")
-    order_items = models.JSONField(null=False, blank=False,
-                                   help_text="used to order items data from "
-                                             "request")
+    request_data = models.JSONField(null=False, blank=False,
+                                    help_text="used to request data")
+    response_data = models.JSONField(null=False, blank=False,
+                                     help_text="used to response data")
+    amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                 validators=[DecimalValidator(12, 4)],
+                                 help_text="used to store total order amount")
+    currency = models.CharField(null=False, blank=False, max_length=15,
+                                help_text="used to store currency details")
     api_client = models.ForeignKey('services.APIClient', null=False,
                                    blank=False,
                                    on_delete=models.DO_NOTHING, )
