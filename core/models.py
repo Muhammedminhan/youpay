@@ -33,17 +33,12 @@ class AbstractUserBase(models.Model):
 
 
 class CustomerProfile(models.Model):
-    created_by = models.CharField(max_length=255, null=True, blank=True,
-                                  help_text="user name details from outside")
     customer_email = models.EmailField(max_length=255, null=True, blank=True,
                                        help_text="To store user email from "
                                                  "outside")
     customer_phone = models.CharField(max_length=20, null=True, blank=True,
                                       help_text="To store user phone from "
                                                 "outside")
-    modified_by = models.CharField(max_length=255, null=True, blank=True,
-                                   help_text="To store user who modified the "
-                                             "data")
 
     class Meta:
         abstract = True
