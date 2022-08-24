@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from core.admin import AdminAbstract, PaymentRequestDataAbstract
+from core.admin import AdminAbstract
 from services.models import APIClient, PaymentRequestData
 
 
@@ -13,10 +13,11 @@ class APICLientAdmin(AdminAbstract):
     list_filter = ('created_at', 'is_active')
 
 
-class PaymentRequestDataAdmin(PaymentRequestDataAbstract):
-    list_display = ('api_client', 'amount', 'created_by', 'email', 'phone',
-                    'created_at', 'updated_at',)
-    search_fields = ('api_client__name', 'created_by', 'email', 'phone')
+class PaymentRequestDataAdmin(admin.ModelAdmin):
+    list_display = ('api_client', 'amount', 'customer_email', 'created_at',
+                    'updated_at',)
+    readonly_fields = ('created_at', 'updated_at', 'customer_email',)
+    search_fields = ('api_client__name', 'customer_email')
     list_filter = ('created_at',)
 
 
