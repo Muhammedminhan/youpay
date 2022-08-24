@@ -66,6 +66,7 @@ class APIClientRegistrationView(ListAPIView):
                     ["".join(missing) for missing in errors])
                 message = "{}{}".format(ERROR_MISSING_FIELDS, missing_fields)
                 error_response = {
+                    "status": status.HTTP_400_BAD_REQUEST,
                     'message': ERROR_MESSAGE,
                     'error': message,
                 }
@@ -105,88 +106,23 @@ class PaymentRequestView(ListAPIView):
 
     def post(self, request):
         try:
-            """
-            {
-              "payment": {
-                "product_code": "",
-                "payment_platform": "Web/Mweb/Android/IOS",
-                "ip": "192.168.1.1",
-                "language": "en",
-                "invoice_id": "1234",
-                "order_reference": "Gift-1234-ecom"
-              },
-              "order": {
-                "amount": 123,
-                "currency": "AED",
-                "service_fee": 123,
-                "base_amount": 2344,
-                "VAT": 2343
-              },
-              "customer": {
-                "email": "jomon@yougotagift.com",
-                "phone": 12324234,
-                "name": "jomon",
-                "registered_since": "26-03-1994"
-              },
-              "order_history": {
-                "total_items": 2,
-                "items": [
-                  {
-                    "tittle": "item 1",
-                    "category": "electronic-gift",
-                    "ref_id": "item-123"
-                  },
-                  {
-                    "tittle": "item 2",
-                    "category": "electronic-gift",
-                    "ref_id": "item-124"
-                  },
-                  {
-                    "tittle": "item 3",
-                    "category": "electronic-gift",
-                    "ref_id": "item-125"
-                  }
-                ]
-              },
-              "order_items": {
-                "items": [
-                  {
-                    "tittle": "item 1",
-                    "category": "electronic-gift",
-                    "ref_id": "item-123"
-                  },
-                  {
-                    "tittle": "item 2",
-                    "category": "electronic-gift",
-                    "ref_id": "item-124"
-                  },
-                  {
-                    "tittle": "item 3",
-                    "category": "electronic-gift",
-                    "ref_id": "item-125"
-                  }
-                ]
-              },
-              "api_client": 1
-            }
-                        """
             data = {
                 "request_data": self.request.data,
                 "response_data": None,
                 "amount": self.request.data['amount'],
                 "currency": self.request.data['currency'],
-                "api_client": self.request.data['api_client']
+                "api_client": self.request.data['api_client'],
+                "invoice": self.request.data['invoice'],
+                "order_reference": self.request.data['order_reference'],
+                "payment_reference": self.request.data['payment_reference'],
+                "platform": self.request.data['platform'],
+                "customer_email": self.request.data['customer_email'],
+                "customer_phone": self.request.data['customer_phone'],
+                "language": self.request.data['language'],
             }
-            api_client_id = request.data.get('id', None)
-            if api_client_id:
-                # Update API Client
-                api_client_obj = APIClient.objects.get(id=api_client_id)
-                serializer = APIClientRegistrationSerializer(
-                    api_client_obj, data=request.data)
-            else:
-                # Create API Client
-                serializer = APIClientRegistrationSerializer(
-                    data=request.data)
+
+            # Create Payment Request
+            serializer = PaymentRequestDataSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
                 return Response({"status": status.HTTP_201_CREATED,
@@ -198,6 +134,7 @@ class PaymentRequestView(ListAPIView):
                     ["".join(missing) for missing in errors])
                 message = "{}{}".format(ERROR_MISSING_FIELDS, missing_fields)
                 error_response = {
+                    "status": status.HTTP_400_BAD_REQUEST,
                     'message': ERROR_MESSAGE,
                     'error': message,
                 }
@@ -208,6 +145,3 @@ class PaymentRequestView(ListAPIView):
                 {'message': ERROR_MESSAGE, "error": str(e),
                  "status": status.HTTP_400_BAD_REQUEST},
                 status=status.HTTP_400_BAD_REQUEST)
-
-    def create_or_update():
-        return 1

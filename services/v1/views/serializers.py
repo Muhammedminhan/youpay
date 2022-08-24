@@ -18,9 +18,15 @@ class APIClientRegistrationSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+def amount_validator(amount):
+    if amount < 0:
+        raise serializers.ValidationError("Amount must be positive")
+    return amount
+
+
 class PaymentRequestDataSerializer(serializers.ModelSerializer):
-    # order = OrderSerializer()
-    api_client = serializers.CharField(required=True)
+    amount = serializers.DecimalField(max_digits=12, decimal_places=4,
+                                      validators=[amount_validator])
 
     class Meta:
         model = PaymentRequestData

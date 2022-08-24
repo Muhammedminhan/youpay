@@ -1,6 +1,8 @@
 from django.db import models
 
-from core.constants import PURCHASE_PLATFORM_CHOICES
+from core.constants import (
+    PURCHASE_PLATFORM_CHOICES,
+    PAYMENT_REQUEST_LANGUAGE_CHOICES)
 from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
 from core.validators import DecimalValidator, MinLengthValidator, URLValidator
 
@@ -55,6 +57,8 @@ class PaymentRequestData(AbstractDateTime, CustomerProfile):
                                          blank=True)
     platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
                                 max_length=200, null=True, blank=True)
+    language = models.CharField(choices=PAYMENT_REQUEST_LANGUAGE_CHOICES,
+                                max_length=15, null=True, blank=True)
 
     def __str__(self):
         return self.api_client.name
