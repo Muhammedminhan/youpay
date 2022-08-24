@@ -1,8 +1,11 @@
+import uuid
+
 from django.db import models
 
 from core.constants import (
     PURCHASE_PLATFORM_CHOICES,
-    PAYMENT_REQUEST_LANGUAGE_CHOICES)
+    PAYMENT_REQUEST_LANGUAGE_CHOICES,
+    YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES)
 from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
 from core.validators import DecimalValidator, MinLengthValidator, URLValidator
 
@@ -62,3 +65,41 @@ class PaymentRequestData(AbstractDateTime, CustomerProfile):
 
     def __str__(self):
         return self.api_client.name
+
+
+class YGPayTransactionData(AbstractDateTime, CustomerProfile):
+    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                 validators=[DecimalValidator(12, 4)],
+                                 help_text="used to store total order amount")
+    currency = models.CharField(null=False, blank=False, max_length=15,
+                                help_text="used to store currency details")
+    ip = models.CharField(max_length=20, null=True, blank=True)
+    invoice = models.CharField(max_length=120, null=True, blank=True)
+    order_reference = models.CharField(max_length=120, null=True, blank=True)
+    payment_reference = models.CharField(max_length=120, null=True,
+                                         blank=True)
+    api_client = models.ForeignKey('services.APIClient', null=True,
+                                   blank=True, on_delete=models.PROTECT)
+    service_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                      null=True, blank=True,
+                                      validators=[DecimalValidator(12, 4)],
+                                      help_text="used to store service fee")
+    base_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                      null=True, blank=True,
+                                      validators=[DecimalValidator(12, 4)],
+                                      help_text="used to store base amount")
+    # TODO : doubt clear
+    VAT_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                     null=True, blank=True,
+                                     validators=[DecimalValidator(12, 4)],
+                                     help_text="used to store VAT amount")
+    # TODO : doubt clear
+    order_history = models.JSONField(null=True, blank=True,
+                                     help_text="used to store order history")
+    payment_gateway = models.ForeignKey('integrations.PaymentGateway',
+                                        on_delete=models.PROTECT,
+                                        null=True, blank=True)
+    payment_status = models.CharField(
+        max_length=20, null=True, blank=True,
+        choices=YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES)
