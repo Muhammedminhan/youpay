@@ -5,8 +5,8 @@ from rest_framework.response import Response
 
 from core.messages import ERROR_MESSAGE, ERROR_MISSING_FIELDS
 from services.models import APIClient, PaymentRequestData
-from services.v1.views.serializers import APIClientRegistrationSerializer, \
-    PaymentRequestDataSerializer
+from services.v1.views.serializers import (APIClientRegistrationSerializer,
+                                           PaymentRequestDataSerializer)
 
 
 class APIClientRegistrationView(ListAPIView):
