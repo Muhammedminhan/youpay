@@ -1,7 +1,8 @@
 from django.db import models
 
-from core.models import AbstractDateTime, AbstractUserBase
-from core.validators import MinLengthValidator, URLValidator
+from core.constants import PURCHASE_PLATFORM_CHOICES
+from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
+from core.validators import DecimalValidator, MinLengthValidator, URLValidator
 
 
 # Create your models here.
@@ -29,7 +30,31 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     client_code = models.CharField(max_length=100, blank=True, null=True,
                                    help_text='Client Code')
     payment_gateway = models.ManyToManyField('integrations.PaymentGateway',
-                                             null=True, blank=True)
+                                             blank=True)
 
     def __str__(self):
         return self.name
+
+
+class PaymentRequestData(AbstractDateTime, CustomerProfile):
+    request_data = models.JSONField(null=False, blank=False,
+                                    help_text="used to request data")
+    response_data = models.JSONField(null=True, blank=True,
+                                     help_text="used to response data")
+    amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                 validators=[DecimalValidator(12, 4)],
+                                 help_text="used to store total order amount")
+    currency = models.CharField(null=False, blank=False, max_length=15,
+                                help_text="used to store currency details")
+    api_client = models.ForeignKey('services.APIClient', null=True,
+                                   blank=True,
+                                   on_delete=models.PROTECT)
+    invoice = models.CharField(max_length=120, null=True, blank=True)
+    order_reference = models.CharField(max_length=120, null=True, blank=True)
+    payment_reference = models.CharField(max_length=120, null=True,
+                                         blank=True)
+    platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
+                                max_length=200, null=True, blank=True)
+
+    def __str__(self):
+        return self.api_client.name
