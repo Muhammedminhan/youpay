@@ -4,11 +4,11 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 
 from core.messages import ERROR_MESSAGE, ERROR_MISSING_FIELDS
-from services.constants import PaymentRequestData_Fields_List
+from services.constants import PAYMENT_REQUEST_DATA_FIELDS_LIST
 from services.models import APIClient, PaymentRequestData
 from services.v1.views.serializers import (APIClientRegistrationSerializer,
                                            PaymentRequestDataSerializer)
-from services.v1.views.utils import get_data_from_reqeust_data
+from services.v1.views.utils import get_data_from_dictionary
 
 
 class APIClientRegistrationView(ListAPIView):
@@ -108,8 +108,8 @@ class PaymentRequestView(ListAPIView):
 
     def post(self, request):
         try:
-            data = get_data_from_reqeust_data(PaymentRequestData_Fields_List,
-                                              request.data)
+            data = get_data_from_dictionary(PAYMENT_REQUEST_DATA_FIELDS_LIST,
+                                            request.data)
             # Create Payment Request
             serializer = PaymentRequestDataSerializer(data=data)
             if serializer.is_valid():

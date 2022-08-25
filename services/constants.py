@@ -1,4 +1,4 @@
-PaymentRequestData_Fields_List = [
+PAYMENT_REQUEST_DATA_FIELDS_LIST = [
     "request_data",
     "response_data",
     "amount",
