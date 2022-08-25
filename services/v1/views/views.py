@@ -98,7 +98,7 @@ class APIClientRegistrationView(ListAPIView):
 
 class PaymentRequestView(ListAPIView):
     """
-    API endpoint that allows clients to view, create, update and delete.
+    API endpoint that allows clients create payment request for products.
     """
 
     queryset = PaymentRequestData.objects.all()
