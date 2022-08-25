@@ -6,7 +6,7 @@ from services.models import APIClient, PaymentRequestData
 
 # Register your models here.
 
-class APICLientAdmin(AdminAbstract):
+class APIClientAdmin(AdminAbstract):
     list_display = ('name', 'client_domain', 'api_key', 'is_active',
                     'endpoint_url', 'client_code', 'created_at', 'updated_at')
     search_fields = ('name', 'api_key', 'endpoint_url', 'client_domain')
@@ -21,5 +21,5 @@ class PaymentRequestDataAdmin(admin.ModelAdmin):
     list_filter = ('created_at',)
 
 
-admin.site.register(APIClient, APICLientAdmin)
+admin.site.register(APIClient, APIClientAdmin)
 admin.site.register(PaymentRequestData, PaymentRequestDataAdmin)
