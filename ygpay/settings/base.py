@@ -51,10 +51,9 @@ INSTALLED_APPS = [
     'integrations',
     'reports',
     'services',
-    'payments',
 
     # 3rd party apps
-    'rest_framework',
+    'rest_framework', 
 ]
 
 MIDDLEWARE = [

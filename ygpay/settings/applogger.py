@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from django.conf import settings
+
 # LOGGING
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -51,11 +53,10 @@ LOGGING = {
         },
         'django.db': {
         },
-        # TODO : Due to difficulty commenting this in developement stage
-        # 'django.db.backends': {
-        #     'level': 'DEBUG',
-        #     'handlers': ['console'],
-        # },
+        'django.db.backends': {
+            'level': 'DEBUG',
+            'handlers': ['console'],
+        },
         'django.request': {
             'handlers': ['mail_admins', 'console'],
             'level': 'ERROR',
