@@ -1,6 +1,10 @@
 from django.db import models
 
-from core.constants import PURCHASE_PLATFORM_CHOICES
+from django.db import models
+
+from core.constants import (
+    PURCHASE_PLATFORM_CHOICES,
+    PAYMENT_REQUEST_LANGUAGE_CHOICES)
 from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
 from core.validators import DecimalValidator, MinLengthValidator, URLValidator
 
@@ -38,9 +42,9 @@ class APIClient(AbstractDateTime, AbstractUserBase):
 
 class PaymentRequestData(AbstractDateTime, CustomerProfile):
     request_data = models.JSONField(null=False, blank=False,
-                                    help_text="used to request data")
+                                    help_text="used to store request data")
     response_data = models.JSONField(null=True, blank=True,
-                                     help_text="used to response data")
+                                     help_text="used to store response data")
     amount = models.DecimalField(decimal_places=4, max_digits=12,
                                  validators=[DecimalValidator(12, 4)],
                                  help_text="used to store total order amount")
@@ -49,12 +53,20 @@ class PaymentRequestData(AbstractDateTime, CustomerProfile):
     api_client = models.ForeignKey('services.APIClient', null=True,
                                    blank=True,
                                    on_delete=models.PROTECT)
-    invoice = models.CharField(max_length=120, null=True, blank=True)
-    order_reference = models.CharField(max_length=120, null=True, blank=True)
-    payment_reference = models.CharField(max_length=120, null=True,
-                                         blank=True)
+    invoice_id = models.CharField(max_length=120, null=True, blank=True,
+                                  help_text="used to store invoice_id")
+    order_reference = models.CharField(
+        max_length=120, null=True, blank=True,
+        help_text="used to store order_reference")
+    payment_reference = models.CharField(
+        max_length=120, null=True, blank=True,
+        help_text="used to store order_reference")
     platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
-                                max_length=200, null=True, blank=True)
+                                max_length=200, null=True, blank=True,
+                                help_text="to identify the platform")
+    language = models.CharField(choices=PAYMENT_REQUEST_LANGUAGE_CHOICES,
+                                max_length=15, null=True, blank=True,
+                                help_text="to identify the language")
 
     def __str__(self):
         return self.api_client.name
