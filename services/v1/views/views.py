@@ -4,9 +4,11 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 
 from core.messages import ERROR_MESSAGE, ERROR_MISSING_FIELDS
+from services.constants import PAYMENT_REQUEST_DATA_FIELDS_LIST
 from services.models import APIClient, PaymentRequestData
-from services.v1.views.serializers import APIClientRegistrationSerializer, \
-    PaymentRequestDataSerializer
+from services.v1.views.serializers import (APIClientRegistrationSerializer,
+                                           PaymentRequestDataSerializer)
+from services.v1.views.utils import get_data_from_dictionary
 
 
 class APIClientRegistrationView(ListAPIView):
@@ -98,7 +100,7 @@ class APIClientRegistrationView(ListAPIView):
 
 class PaymentRequestView(ListAPIView):
     """
-    API endpoint that allows clients to view, create, update and delete.
+    API endpoint that allows clients create payment request for products.
     """
 
     queryset = PaymentRequestData.objects.all()
@@ -106,21 +108,8 @@ class PaymentRequestView(ListAPIView):
 
     def post(self, request):
         try:
-            data = {
-                "request_data": self.request.data,
-                "response_data": None,
-                "amount": self.request.data['amount'],
-                "currency": self.request.data['currency'],
-                "api_client": self.request.data['api_client'],
-                "invoice": self.request.data['invoice'],
-                "order_reference": self.request.data['order_reference'],
-                "payment_reference": self.request.data['payment_reference'],
-                "platform": self.request.data['platform'],
-                "customer_email": self.request.data['customer_email'],
-                "customer_phone": self.request.data['customer_phone'],
-                "language": self.request.data['language'],
-            }
-
+            data = get_data_from_dictionary(PAYMENT_REQUEST_DATA_FIELDS_LIST,
+                                            request.data)
             # Create Payment Request
             serializer = PaymentRequestDataSerializer(data=data)
             if serializer.is_valid():
