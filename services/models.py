@@ -67,8 +67,10 @@ class PaymentRequestData(AbstractDateTime, CustomerProfile):
         return self.api_client.name
 
 
+#  TODO move to payments create if not exists
 class YGPayTransactionData(AbstractDateTime, CustomerProfile):
-    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False)
+    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False,
+                                      unique=True)
     amount = models.DecimalField(decimal_places=4, max_digits=12,
                                  validators=[DecimalValidator(12, 4)],
                                  help_text="used to store total order amount")
@@ -89,14 +91,14 @@ class YGPayTransactionData(AbstractDateTime, CustomerProfile):
                                       null=True, blank=True,
                                       validators=[DecimalValidator(12, 4)],
                                       help_text="used to store base amount")
-    # TODO : doubt clear
+
     VAT_amount = models.DecimalField(decimal_places=4, max_digits=12,
                                      null=True, blank=True,
                                      validators=[DecimalValidator(12, 4)],
                                      help_text="used to store VAT amount")
-    # TODO : doubt clear
     order_history = models.JSONField(null=True, blank=True,
                                      help_text="used to store order history")
+    # TODO choice filed as static gateway value
     payment_gateway = models.ForeignKey('integrations.PaymentGateway',
                                         on_delete=models.PROTECT,
                                         null=True, blank=True)
