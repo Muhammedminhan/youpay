@@ -4,6 +4,7 @@ from .views.client_registration import APIClientRegistrationView
 from .views.payment import PaymentRequestView
 
 urlpatterns = [
+    # TODO - restructure the api paths
     path('registration/client/', APIClientRegistrationView.as_view()),
     path('registration/client/<str:pk>', APIClientRegistrationView.as_view()),
     path('create/transaction/', PaymentRequestView.as_view()),

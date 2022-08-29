@@ -10,6 +10,7 @@ from services.v1.serializers.payment_request import (
 
 
 class PaymentRequestView(ListAPIView):
+    # TODO -  use APIView instead of ListAPIView
     """
     API endpoint that allows clients create payment request for products.
     """
