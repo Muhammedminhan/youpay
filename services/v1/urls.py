@@ -1,7 +1,7 @@
 from django.urls import path
 
-from services.v1.views.views import (APIClientRegistrationView,
-                                     PaymentRequestView)
+from .views.client_registration import APIClientRegistrationView
+from .views.payment import PaymentRequestView
 
 urlpatterns = [
     path('registration/client/', APIClientRegistrationView.as_view()),
