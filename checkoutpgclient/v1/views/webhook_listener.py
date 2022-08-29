@@ -60,7 +60,8 @@ class WebhookListener(APIView):
                         request_data.get('auth_code'))
                     transaction_obj.response_summary = str(
                         request_data.get('response_summary'))
-                    transaction_obj.api_response_data = request_data.get('api_response_data')
+                    transaction_obj.api_response_data = request_data.get(
+                        'api_response_data')
                     transaction_obj.payment_reference = str(
                         request_data.get('payment_reference'))
                     transaction_obj.is_fraud = request_data.get('is_fraud',
@@ -90,17 +91,17 @@ class WebhookListener(APIView):
                             str(request_data.get('amount', None))),
                         currency=request_data.get('currency', None),
                         customer_name=
-                            request_data.get('customer_name', None),
+                        request_data.get('customer_name', None),
                         customer_email=
-                            request_data.get('customer_email', None),
+                        request_data.get('customer_email', None),
                         payment_reference=request_data.get(
                             'payment_reference', None),
                         request_source=request_data.get('request_source',
                                                         None),
                         api_request_data=
-                            request_data.get('api_request_data', None),
+                        request_data.get('api_request_data', None),
                         api_response_data=
-                            request_data.get('api_response_data', None),
+                        request_data.get('api_response_data', None),
                         is_notification=request_data.get('is_notification',
                                                          None),
                         approved=request_data.get('approved', None),

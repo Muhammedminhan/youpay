@@ -4,10 +4,9 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 
 from core.messages import ERROR_MESSAGE, ERROR_MISSING_FIELDS
-from services.models import APIClient
-from services.v1.views.serializers import (APIClientRegistrationSerializer,
-                                           PaymentRequestDataSerializer)
 from services.v1.views.utils import get_data_from_request
+from services.v1.serializers.payment_request import (
+    PaymentRequestDataSerializer)
 
 
 class PaymentRequestView(ListAPIView):
