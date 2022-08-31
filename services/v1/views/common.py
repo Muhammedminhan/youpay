@@ -5,6 +5,9 @@ from payments.serializers.serializers import YGPayTransactionDataSerializer
 
 
 class YGPayTransactionCRUD(object):
+    """
+    YGPay Transaction Data CRUD Operations will be here
+    """
 
     def store_ygpay_transaction_data(self, request):
         data = {
