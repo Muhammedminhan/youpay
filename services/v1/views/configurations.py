@@ -15,6 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class ConfigViewSet(ViewSet):
+    """
+    Config viewset for getting payment gateways with transaction id
+    """
+    
     response_obj = YGPayResponse()
 
     def list(self, request):
