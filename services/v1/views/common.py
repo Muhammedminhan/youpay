@@ -2,7 +2,7 @@ from rest_framework import status
 
 from core.constants import PAYMENT_STATUS_CREATED
 from core.messages import ERROR_MISSING_FIELDS
-from payments.serializers.serializers import YGPayTransactionDataSerializer
+from payments.serializers.ygpay_payments import YGPayTransactionDataSerializer
 
 
 class YGPayTransactionCRUD(object):
