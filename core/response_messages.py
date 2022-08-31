@@ -45,6 +45,7 @@ class YGPayResponse(object):
             return {'errors': error_dict}
 
     def get_success_dict(self, code, success_dict=None):
+        print("success_dict", success_dict)
         if success_dict is None:
             success_dict = {}
         success_dict['message'] = self.MESSAGE.get(code)
