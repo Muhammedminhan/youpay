@@ -7,7 +7,7 @@ from .views.payment import PaymentRequestView
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
-router.register('conf', ConfigViewSet, basename='conf')
+router.register('ygpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
     path("", include(router.urls)),
