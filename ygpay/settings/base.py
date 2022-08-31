@@ -176,5 +176,3 @@ BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 REDIS_HOST = config('REDIS_HOST', 'localhost')
 REDIS_PORT = 6379
 REDIS_LOCKS_DB = config('REDIS_LOCKS_DB', 11)
-
-REDIRECT_URL = config('REDIRECT_URL', 'http://localhost:3000')

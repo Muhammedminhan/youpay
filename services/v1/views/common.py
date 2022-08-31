@@ -1,6 +1,7 @@
 from rest_framework import status
 
 from core.constants import PAYMENT_STATUS_CREATED
+from core.messages import ERROR_MISSING_FIELDS
 from payments.serializers.serializers import YGPayTransactionDataSerializer
 
 
@@ -33,5 +34,9 @@ class YGPayTransactionCRUD(object):
             return {"status": status.HTTP_201_CREATED,
                     "data": serializer.data, "message": "created"}
         else:
+            errors = serializer.errors.keys()
+            missing_fields = ', '.join(
+                ["".join(missing) for missing in errors])
+            message = "{}{}".format(ERROR_MISSING_FIELDS, missing_fields)
             return {"status": status.HTTP_400_BAD_REQUEST,
-                    "data": serializer.errors, "message": "not created"}
+                    "data": serializer.errors, "message": message}
