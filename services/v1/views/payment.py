@@ -23,7 +23,7 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
             "amount",
             "currency",
             "api_client",
-            "invoice",
+            "invoice_id",
             "order_reference",
             "payment_reference",
             "platform",
