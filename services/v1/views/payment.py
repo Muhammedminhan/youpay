@@ -40,7 +40,7 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
             if serializer.is_valid():
                 serializer.save()
 
-                transaction_response = self.store_ygpay_transaction_data(
+                transaction_response = self.create_ygpay_transaction_data(
                     request)
                 if transaction_response['status'] == status.HTTP_201_CREATED:
                     redirect_url = config(

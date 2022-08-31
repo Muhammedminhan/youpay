@@ -10,7 +10,7 @@ class YGPayTransactionCRUD(object):
     YGPay Transaction Data CRUD Operations will be here
     """
 
-    def store_ygpay_transaction_data(self, request):
+    def create_ygpay_transaction_data(self, request):
         data = {
             "transaction_id": request.data.get("transaction_id"),
             "amount": request.data.get("amount"),

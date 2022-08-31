@@ -8,8 +8,9 @@ from core.response_messages import YGPayResponse
 from integrations.models import PaymentGateway
 from payments.models import YGPayTransactionData
 from services.models import APIClient
-from services.v1.serializers.client_registrattion import \
+from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ class ConfigViewSet(ViewSet):
     """
     Config viewset for getting payment gateways with transaction id
     """
-    
+
     response_obj = YGPayResponse()
 
     def list(self, request):

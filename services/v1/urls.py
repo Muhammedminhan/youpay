@@ -11,7 +11,7 @@ router.register('ygpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
     path("", include(router.urls)),
-    path('transaction/', PaymentRequestView.as_view()),
+    path('payment/', PaymentRequestView.as_view()),
 
     # TODO
     #  - create delete stored card api
