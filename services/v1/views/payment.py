@@ -76,7 +76,9 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
                     return Response(data.get('errors'),
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
-                #  PaymentRequestDataSerializer validation failed
+                """
+                PaymentRequestDataSerializer validation failed
+                """
                 data = self.response_obj.get_error_dict(
                     error_code=self.response_obj.UNKNOWN_ERR,
                     serializer_error=serializer.errors,
