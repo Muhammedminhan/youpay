@@ -1,48 +1,32 @@
-from django.http.response import Http404
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
+from rest_framework.viewsets import ViewSet
 
 from core.messages import ERROR_MESSAGE, ERROR_MISSING_FIELDS
 from services.models import APIClient
-
 from services.v1.serializers.client_registrattion import (
     APIClientRegistrationSerializer)
 
 
-class APIClientRegistrationView(ListAPIView):
+class APIClientRegistrationViewSet(ViewSet):
     """
     API endpoint that allows clients to view, create, update and delete.
     """
 
-    queryset = APIClient.objects.all()
     serializer_class = APIClientRegistrationSerializer
 
-    def get(self, request, pk=None):
-        try:
-            if pk:
-                data = self.get_object(pk)
-                serializer = APIClientRegistrationSerializer(data)
+    def list(self, request):
+        queryset = APIClient.objects.all()
+        serializer = APIClientRegistrationSerializer(queryset, many=True)
+        return Response(serializer.data)
 
-            else:
-                data = APIClient.objects.all()
-                serializer = APIClientRegistrationSerializer(data, many=True)
+    def retrieve(self, request, pk=None):
+        queryset = APIClient.objects.all()
 
-            return Response(serializer.data)
-        except Http404:
-            return Response({"message": "Data not found",
-                             "status": status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"message": str(e),
-                             "status": status.HTTP_400_BAD_REQUEST},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-    def get_object(self, pk=None):
-        try:
-            return self.queryset.get(id=pk)
-        except APIClient.DoesNotExist:
-            raise Http404
+        api_client_qs = get_object_or_404(queryset, pk=pk)
+        serializer = APIClientRegistrationSerializer(api_client_qs)
+        return Response(serializer.data)
 
     def post(self, request):
         try:

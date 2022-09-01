@@ -1,16 +1,17 @@
-from django.http.response import Http404
+from decouple import config
 from rest_framework import status
-from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from core.messages import ERROR_MESSAGE, ERROR_MISSING_FIELDS
-from services.v1.views.utils import get_data_from_request
+from core.response_messages import YGPayResponse
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer)
+from services.v1.views.common import YGPayTransactionCRUD
+from services.v1.views.utils import get_data_from_request
 
 
-class PaymentRequestView(ListAPIView):
-    # TODO -  use APIView instead of ListAPIView
+class PaymentRequestView(YGPayTransactionCRUD, APIView):
+    response_obj = YGPayResponse()
     """
     API endpoint that allows clients create payment request for products.
     """
@@ -22,7 +23,7 @@ class PaymentRequestView(ListAPIView):
             "amount",
             "currency",
             "api_client",
-            "invoice",
+            "invoice_id",
             "order_reference",
             "payment_reference",
             "platform",
@@ -38,23 +39,47 @@ class PaymentRequestView(ListAPIView):
             serializer = PaymentRequestDataSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
-                return Response({"status": status.HTTP_201_CREATED,
-                                 "data": serializer.data, "message": "created"
-                                 }, status=status.HTTP_201_CREATED)
+
+                transaction_response = self.create_ygpay_transaction_data(
+                    request)
+                if transaction_response['status'] == status.HTTP_201_CREATED:
+                    redirect_url = config(
+                        "REDIRECT_URL",
+                        "http://localhost:3000") + "/{}{}".format(
+                        "?transaction_id=",
+                        transaction_response['data']['transaction_id'])
+
+                    response_data = {
+                        "status": status.HTTP_201_CREATED,
+                        "message": "created",
+                        "url": redirect_url
+                    }
+
+                    data = self.response_obj.get_success_dict(
+                        code=self.response_obj.SUCCESS,
+                        success_dict=response_data
+                    )
+                    return Response(data, status=status.HTTP_201_CREATED)
+
+                else:
+                    data = self.response_obj.get_400_message(
+                        message=transaction_response["message"],
+                    )
+
+                    return Response(data.get('errors'),
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
-                errors = serializer.errors.keys()
-                missing_fields = ', '.join(
-                    ["".join(missing) for missing in errors])
-                message = "{}{}".format(ERROR_MISSING_FIELDS, missing_fields)
-                error_response = {
-                    "status": status.HTTP_400_BAD_REQUEST,
-                    'message': ERROR_MESSAGE,
-                    'error': message,
-                }
-                return Response(error_response,
+
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.UNKNOWN_ERR,
+                    serializer_error=serializer.errors,
+                )
+
+                return Response(data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response(
-                {'message': ERROR_MESSAGE, "error": str(e),
-                 "status": status.HTTP_400_BAD_REQUEST},
-                status=status.HTTP_400_BAD_REQUEST)
+            data = self.response_obj.get_400_message(
+                message={"error": str(e)},
+            )
+
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
