@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'reports',
     'services',
     'payments',
+    'ygpayclient',
 
     # 3rd party apps
     'rest_framework',
@@ -176,3 +177,11 @@ BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 REDIS_HOST = config('REDIS_HOST', 'localhost')
 REDIS_PORT = 6379
 REDIS_LOCKS_DB = config('REDIS_LOCKS_DB', 11)
+
+# WAIT LOCK
+#
+WAIT_LOCK_DEFAULT_TIMEOUT = 60  # in seconds
+
+WAIT_LOCK_DEFAULT_WAIT_DURATION = 2  # in seconds
+
+WAIT_LOCK_DEFAULT_MAX_RETRIES = 10
