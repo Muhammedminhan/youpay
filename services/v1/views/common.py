@@ -26,6 +26,7 @@ class YGPayTransactionCRUD(object):
             "order_history": request.data.get("order_history"),
             "payment_gateway": request.data.get("payment_gateway"),
             "payment_status": PAYMENT_STATUS_CREATED,
+            "session_id": request.data.get("session_id"),
         }
 
         serializer = YGPayTransactionDataSerializer(data=data)

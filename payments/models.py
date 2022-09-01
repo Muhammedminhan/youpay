@@ -45,3 +45,4 @@ class YGPayTransactionData(AbstractDateTime, CustomerProfile):
     payment_status = models.CharField(
         max_length=20, null=True, blank=True,
         choices=YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES)
+    session_id = models.CharField(max_length=120, null=True, blank=True)

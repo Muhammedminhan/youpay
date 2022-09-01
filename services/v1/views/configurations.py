@@ -11,6 +11,7 @@ from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
+from services.v1.views.utils import get_session_id_and_transaction_id
 
 logger = logging.getLogger(__name__)
 
@@ -28,27 +29,37 @@ class ConfigViewSet(ViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
+        session_id, transaction_id = get_session_id_and_transaction_id(pk)
 
         try:
             transaction = YGPayTransactionData.objects.get(
-                transaction_id=pk)
+                transaction_id=transaction_id)
             if transaction:
-                client = APIClient.objects.get(id=transaction.api_client_id)
-                if client:
-                    serializer = PaymentGatewaySerializer(
-                        client.payment_gateway.filter(is_active=True),
-                        many=True
-                    )
-                    response_data = {"data": serializer.data, }
-                    data = self.response_obj.get_success_dict(
-                        code=self.response_obj.SUCCESS,
-                        success_dict=response_data
-                    )
+                if transaction.session_id == session_id:
+                    client = APIClient.objects.get(
+                        id=transaction.api_client_id)
+                    if client:
+                        serializer = PaymentGatewaySerializer(
+                            client.payment_gateway.filter(is_active=True),
+                            many=True
+                        )
+                        response_data = {"data": serializer.data, }
+                        data = self.response_obj.get_success_dict(
+                            code=self.response_obj.SUCCESS,
+                            success_dict=response_data
+                        )
 
-                    return Response(data,
-                                    status=status.HTTP_200_OK)
+                        return Response(data,
+                                        status=status.HTTP_200_OK)
+                    else:
+                        message = "Client doesn't exists"
+                        data = self.response_obj.get_404_message(
+                            message=message)
+
+                        return Response(data,
+                                        status=status.HTTP_404_NOT_FOUND)
                 else:
-                    message = "Client doesn't exists"
+                    message = "Session expired or doesn't match"
                     data = self.response_obj.get_404_message(message=message)
 
                     return Response(data,

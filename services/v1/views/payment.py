@@ -52,6 +52,10 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
                     response_data = {
                         "status": status.HTTP_201_CREATED,
                         "message": "created",
+                        "session_id": transaction_response['data'][
+                            'session_id'],
+                        "transaction_id": transaction_response['data'][
+                            'transaction_id'],
                         "url": redirect_url
                     }
 
@@ -62,6 +66,9 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
                     return Response(data, status=status.HTTP_201_CREATED)
 
                 else:
+                    """
+                    Transaction not created 
+                    """
                     data = self.response_obj.get_400_message(
                         message=transaction_response["message"],
                     )
@@ -69,7 +76,7 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
                     return Response(data.get('errors'),
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
-
+                #  PaymentRequestDataSerializer validation failed
                 data = self.response_obj.get_error_dict(
                     error_code=self.response_obj.UNKNOWN_ERR,
                     serializer_error=serializer.errors,
