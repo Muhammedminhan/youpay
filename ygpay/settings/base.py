@@ -167,8 +167,8 @@ try:
 except ImportError:
     pass
 
-TABBY_SECRET_KEY = config('TABBY_SECRET_KEY', '')
-TABBY_PUBLIC_KEY = config('TABBY_PUBLIC_KEY', '')
+YGPAY_SECRET_KEY = config('YGPAY_SECRET_KEY', '')
+YGPAY_PUBLIC_KEY = config('YGPAY_PUBLIC_KEY', '')
 
 BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 

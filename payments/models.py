@@ -1,13 +1,15 @@
 import uuid
-from django.db import transaction
 
 from django.db import models
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
 from core.constants import (
     YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_GATEWAY_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile
 from core.validators import DecimalValidator
+from services.v1.views.client_webhook import ClientService
 
 
 # Create your models here.
@@ -50,13 +52,30 @@ class YGPayTransactionData(AbstractDateTime, CustomerProfile):
     session_id = models.CharField(max_length=120, null=True, blank=True)
 
 
-@receiver(post_save, sender=YGPayTransactionData, dispatch_uid="update_client")
-def update_client(sender, instance, **kwargs):
-    print("SIGNAL WORKED FOR CREATE WEBHOOK CLIENT")
-    print("sender ",sender)
-    print("instance ",instance)
-    # from integrations.v1.views.client_service import ClientService
-    # service = ClientService()
-    # payment_transaction = YGPayTransactionData.objects.get(pk=instance.pk)
-    # transaction.on_commit(
-    #     lambda: service.webhook_service(payment_transaction))
+@receiver(post_save, sender=YGPayTransactionData)
+def create_client(sender, instance, **kwargs):
+    service = ClientService()
+    api_client_url = instance.api_client.endpoint_url
+
+    transaction.on_commit(
+        lambda: service.webhook_service(
+            {
+                "transaction_id": str(instance.transaction_id),
+                "amount": str(instance.amount),
+                "currency": instance.currency,
+                "ip": instance.ip,
+                "invoice_id": instance.invoice_id,
+                "order_reference": instance.order_reference,
+                "payment_reference": instance.payment_reference,
+                "service_fee": str(instance.service_fee),
+                "base_amount": str(instance.base_amount),
+                "VAT_amount": str(instance.VAT_amount),
+                "order_history": instance.order_history,
+                "payment_gateway": instance.payment_gateway,
+                "payment_status": instance.payment_status,
+                "session_id": instance.session_id,
+                "customer_email": instance.customer_email,
+                "customer_phone": instance.customer_phone,
+                "api_client_url": api_client_url,
+            }
+        ))
