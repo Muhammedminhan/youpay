@@ -44,7 +44,7 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
                     request)
                 if transaction_response['status'] == status.HTTP_201_CREATED:
                     redirect_url = config(
-                        "REDIRECT_URL",
+                        "PAYMENT_REDIRECT_URL",
                         "http://localhost:3000") + "/{}{}".format(
                         "?transaction_id=",
                         transaction_response['data']['transaction_id'])

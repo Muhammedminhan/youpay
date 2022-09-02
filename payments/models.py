@@ -1,7 +1,9 @@
 import uuid
+from django.db import transaction
 
 from django.db import models
-
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from core.constants import (
     YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_GATEWAY_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile
@@ -46,3 +48,15 @@ class YGPayTransactionData(AbstractDateTime, CustomerProfile):
         max_length=20, null=True, blank=True,
         choices=YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES)
     session_id = models.CharField(max_length=120, null=True, blank=True)
+
+
+@receiver(post_save, sender=YGPayTransactionData, dispatch_uid="update_client")
+def update_client(sender, instance, **kwargs):
+    print("SIGNAL WORKED FOR CREATE WEBHOOK CLIENT")
+    print("sender ",sender)
+    print("instance ",instance)
+    # from integrations.v1.views.client_service import ClientService
+    # service = ClientService()
+    # payment_transaction = YGPayTransactionData.objects.get(pk=instance.pk)
+    # transaction.on_commit(
+    #     lambda: service.webhook_service(payment_transaction))
