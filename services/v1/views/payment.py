@@ -1,4 +1,3 @@
-from decouple import config
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -43,12 +42,14 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
                 transaction_response = self.create_ygpay_transaction_data(
                     request)
                 if transaction_response['status'] == status.HTTP_201_CREATED:
-                    redirect_url = config(
-                        "PAYMENT_REDIRECT_URL",
-                        "http://localhost:3000") + "/{}{}".format(
+                    # redirect_url = config(
+                    #     "PAYMENT_REDIRECT_URL",
+                    #     "http://localhost:3000") + "/{}{}".format(
+                    #     "?transaction_id=",
+                    #     transaction_response['data']['transaction_id'])
+                    redirect_url = "http://localhost:3000/{}{}".format(
                         "?transaction_id=",
                         transaction_response['data']['transaction_id'])
-
                     response_data = {
                         "status": status.HTTP_201_CREATED,
                         "message": "created",
