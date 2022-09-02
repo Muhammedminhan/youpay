@@ -56,7 +56,7 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
                             'session_id'],
                         "transaction_id": transaction_response['data'][
                             'transaction_id'],
-                        "url": "redirect_url"
+                        "url": redirect_url
                     }
 
                     data = self.response_obj.get_success_dict(
