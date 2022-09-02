@@ -33,7 +33,7 @@ def retry(exception_to_ocheck, tries=4, delay=3, backoff=2, logger=None):
                     if logger:
                         logger.warning(msg)
                     else:
-                        print(msg)
+                        logger.info(msg)
                     mtries -= 1
                     mdelay *= backoff
             return f(*args, **kwargs)
