@@ -1,0 +1,2 @@
+# TODO
+#  - get checkoutpg configurations
