@@ -10,9 +10,11 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
-from pathlib import Path
+import sentry_sdk
 
+from pathlib import Path
 from decouple import config
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -176,3 +178,14 @@ BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 REDIS_HOST = config('REDIS_HOST', 'localhost')
 REDIS_PORT = 6379
 REDIS_LOCKS_DB = config('REDIS_LOCKS_DB', 11)
+
+sentry_sdk.init(
+    dsn=config('SENTRY_SDK_DSN', ''),
+    integrations=[DjangoIntegration()],
+
+    # If you wish to associate users to errors (assuming you are using
+    # django.contrib.auth) you may enable sending PII data.
+    send_default_pii=True
+)
+
+CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN','')
