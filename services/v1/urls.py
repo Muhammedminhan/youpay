@@ -1,15 +1,19 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 
-from .views.client_registration import APIClientRegistrationView
+from services.v1.views.configurations import ConfigViewSet
+from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import PaymentRequestView
 
+router = DefaultRouter()
+router.register('client', APIClientRegistrationViewSet, basename='client')
+router.register('ygpay_configuration', ConfigViewSet, basename='conf')
+
 urlpatterns = [
-    # TODO - restructure the api paths
-    path('registration/client/', APIClientRegistrationView.as_view()),
-    path('registration/client/<str:pk>', APIClientRegistrationView.as_view()),
-    path('create/transaction/', PaymentRequestView.as_view()),
+    path("", include(router.urls)),
+    path('payment/', PaymentRequestView.as_view()),
+
     # TODO
-    #  - Create config api - merge with checkoutpg config api
     #  - create delete stored card api
     #  - get stored card api - card payment api
     #  - get ADCB point balance API

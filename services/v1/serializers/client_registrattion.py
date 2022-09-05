@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from core.validators import MinLengthValidator, URLValidator
+from integrations.models import PaymentGateway
 from services.models import APIClient
 
 
@@ -16,3 +17,15 @@ class APIClientRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = APIClient
         fields = '__all__'
+
+
+class APIClientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = APIClient
+        fields = '__all__'
+
+
+class PaymentGatewaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentGateway
+        fields = ['gateway_name']
