@@ -8,6 +8,7 @@ urlpatterns = [
     path('registration/client/', APIClientRegistrationView.as_view()),
     path('registration/client/<str:pk>', APIClientRegistrationView.as_view()),
     path('create/transaction/', PaymentRequestView.as_view()),
+
     # TODO
     #  - Create config api - merge with checkoutpg config api
     #  - create delete stored card api
