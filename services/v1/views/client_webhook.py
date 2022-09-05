@@ -17,8 +17,6 @@ class ClientService(object):
             YGPayTransactionDataSerializer
         )
 
-        response_status = False
-
         if ygpay_transaction:
             try:
                 serializer = YGPayTransactionDataSerializer(ygpay_transaction)
@@ -33,7 +31,7 @@ class ClientService(object):
                     url,
                     request_data_json,
                     headers)
-                
+
                 if response_status is True:
                     logger.info(
                         "successfully post webhook to client status is"
@@ -60,12 +58,18 @@ class ClientService(object):
                 if response_data:
                     response_status = response_data.get('data').get('status')
                     if response_status is False:
+                        logger.error(
+                            "webhook failed : {}".format(
+                                response_data))
                         raise ClientWebhookException("webhook Fail")
                     else:
+                        logger.info("webhook sent successfully")
                         return True
                 else:
+                    logger.error("webhook failed : {}"
+                                 .format(response_data))
                     raise ClientWebhookException(
-                        "webhook Failed to send : No response is received")
+                        "webhook failed : No response is received")
             else:
                 error_message = "Webhook failed {} for {}".format(
                     url, request_data_json
