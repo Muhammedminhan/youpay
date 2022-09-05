@@ -70,7 +70,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'ygpay.urls'
+ROOT_URLCONF = 'youpay.urls'
 
 TEMPLATES = [
     {
@@ -88,7 +88,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'ygpay.wsgi.application'
+WSGI_APPLICATION = 'youpay.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
@@ -150,22 +150,22 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 try:
-    from ygpay.settings.applogger import *
+    from youpay.settings.applogger import *
 except ImportError:
     pass
 
 try:
-    from ygpay.settings.aws import *
+    from youpay.settings.aws import *
 except ImportError:
     pass
 
 try:
-    from ygpay.settings.email import *
+    from youpay.settings.email import *
 except ImportError:
     pass
 
 try:
-    from ygpay.settings.security import *
+    from youpay.settings.security import *
 except ImportError:
     pass
 
