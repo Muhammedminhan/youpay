@@ -52,7 +52,6 @@ INSTALLED_APPS = [
     'reports',
     'services',
     'payments',
-    'ygpayclient',
 
     # 3rd party apps
     'rest_framework',

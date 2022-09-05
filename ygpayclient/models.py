@@ -1,5 +1,4 @@
 from django.db import models
-from django.utils.translation import gettext_lazy as _
 
 
 class AbstractDateTime(models.Model):
@@ -29,8 +28,6 @@ class YGPayClientTransactionData(AbstractDateTime):
     customer_ip_address = models.CharField(
         max_length=100, null=True, blank=True)
     customer_email = models.CharField(max_length=200, null=True, blank=True)
-    order_history = models.JSONField(
-        null=True, blank=True, help_text=_('Order history items'))
 
     payment_gateway = models.CharField(max_length=100, null=True, blank=True)
     payment_status = models.CharField(max_length=100, null=True, blank=True)

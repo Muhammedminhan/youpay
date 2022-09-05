@@ -22,7 +22,6 @@ from django.conf.urls import include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('services/', include('services.urls')),
-    path('ygpayclient/', include('ygpayclient.urls')),
 ]
 
 if settings.DEBUG:
