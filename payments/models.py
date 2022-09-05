@@ -9,7 +9,6 @@ from core.constants import (
     YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_GATEWAY_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile
 from core.validators import DecimalValidator
-from services.v1.views.client_webhook import ClientService
 
 
 # Create your models here.
@@ -54,28 +53,12 @@ class YGPayTransactionData(AbstractDateTime, CustomerProfile):
 
 @receiver(post_save, sender=YGPayTransactionData)
 def create_client(sender, instance, **kwargs):
+    from services.v1.views.client_webhook import ClientService
+
     service = ClientService()
-    api_client_url = instance.api_client.endpoint_url
+
+    payment_transaction = YGPayTransactionData.objects.get(
+        id=instance.id)
 
     transaction.on_commit(
-        lambda: service.webhook_service(
-            {
-                "transaction_id": str(instance.transaction_id),
-                "amount": str(instance.amount),
-                "currency": instance.currency,
-                "ip": instance.ip,
-                "invoice_id": instance.invoice_id,
-                "order_reference": instance.order_reference,
-                "payment_reference": instance.payment_reference,
-                "service_fee": str(instance.service_fee),
-                "base_amount": str(instance.base_amount),
-                "VAT_amount": str(instance.VAT_amount),
-                "order_history": instance.order_history,
-                "payment_gateway": instance.payment_gateway,
-                "payment_status": instance.payment_status,
-                "session_id": instance.session_id,
-                "customer_email": instance.customer_email,
-                "customer_phone": instance.customer_phone,
-                "api_client_url": api_client_url,
-            }
-        ))
+        lambda: service.webhook_service(payment_transaction))
