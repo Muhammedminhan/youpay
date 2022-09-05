@@ -15,6 +15,9 @@ class YGPayResponse(object):
             self.SUCCESS: "API request completed successfully",
         })
 
+    def get_400_message(self, message):
+        return {'errors': {'code': 400, 'message': message}}
+
     def get_404_message(self, message):
         return {'errors': {'code': 404, 'message': message}}
 
