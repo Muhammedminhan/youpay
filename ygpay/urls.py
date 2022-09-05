@@ -21,7 +21,7 @@ from django.conf.urls import include
 from core.views import HealthCheck
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('lloyds/admin/control-panel/', admin.site.urls),
     path('services/', include('services.urls')),
     path('health/', HealthCheck.as_view(), name='health'),
 ]
