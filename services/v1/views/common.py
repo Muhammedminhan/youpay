@@ -2,12 +2,14 @@ from rest_framework import status
 
 from core.constants import PAYMENT_STATUS_CREATED
 from core.messages import ERROR_MISSING_FIELDS
-from payments.serializers.ygpay_payments import YGPayTransactionDataSerializer
+from payments.serializers.youpay_payments import (
+    YouPayTransactionDataSerializer
+)
 
 
-class YGPayTransactionCRUD(object):
+class YouPayTransactionCRUD(object):
     """
-    YGPay Transaction Data CRUD Operations will be here
+    YouPay Transaction Data CRUD Operations will be here
     """
 
     def create_ygpay_transaction_data(self, request):
@@ -26,9 +28,10 @@ class YGPayTransactionCRUD(object):
             "order_history": request.data.get("order_history"),
             "payment_gateway": request.data.get("payment_gateway"),
             "payment_status": PAYMENT_STATUS_CREATED,
+            "session_id": request.data.get("session_id"),
         }
 
-        serializer = YGPayTransactionDataSerializer(data=data)
+        serializer = YouPayTransactionDataSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return {"status": status.HTTP_201_CREATED,

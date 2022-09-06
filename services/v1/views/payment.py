@@ -1,17 +1,21 @@
+import logging
+
 from decouple import config
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.response_messages import YGPayResponse
+from core.response_messages import YouPayResponse
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer)
-from services.v1.views.common import YGPayTransactionCRUD
+from services.v1.views.common import YouPayTransactionCRUD
 from services.v1.views.utils import get_data_from_request
 
+logger = logging.getLogger(__name__)
 
-class PaymentRequestView(YGPayTransactionCRUD, APIView):
-    response_obj = YGPayResponse()
+
+class PaymentRequestView(YouPayTransactionCRUD, APIView):
+    response_obj = YouPayResponse()
     """
     API endpoint that allows clients create payment request for products.
     """
@@ -37,21 +41,35 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
             data = get_data_from_request(
                 self.PAYMENT_REQUEST_DATA_FIELDS_LIST, request.data)
             serializer = PaymentRequestDataSerializer(data=data)
+
+            PAYMENT_REDIRECT_URL = config("PAYMENT_REDIRECT_URL", "")
+            if PAYMENT_REDIRECT_URL is None or PAYMENT_REDIRECT_URL == "":
+                """
+                Transaction not created, payment url not configured
+                """
+                data = self.response_obj.get_400_message(
+                    message="Please configure payment redirect url")
+
+                return Response(data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
+
             if serializer.is_valid():
                 serializer.save()
 
                 transaction_response = self.create_ygpay_transaction_data(
                     request)
                 if transaction_response['status'] == status.HTTP_201_CREATED:
-                    redirect_url = config(
-                        "REDIRECT_URL",
-                        "http://localhost:3000") + "/{}{}".format(
+                    redirect_url = PAYMENT_REDIRECT_URL + "/{}{}".format(
                         "?transaction_id=",
                         transaction_response['data']['transaction_id'])
 
                     response_data = {
                         "status": status.HTTP_201_CREATED,
                         "message": "created",
+                        "session_id": transaction_response['data'][
+                            'session_id'],
+                        "transaction_id": transaction_response['data'][
+                            'transaction_id'],
                         "url": redirect_url
                     }
 
@@ -62,18 +80,29 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
                     return Response(data, status=status.HTTP_201_CREATED)
 
                 else:
+                    """
+                    Transaction not created 
+                    """
                     data = self.response_obj.get_400_message(
                         message=transaction_response["message"],
                     )
+                    logger.error(
+                        "Error in creating transaction : {}".format(
+                            transaction_response["message"]))
 
                     return Response(data.get('errors'),
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
-
+                """
+                PaymentRequestDataSerializer validation failed
+                """
                 data = self.response_obj.get_error_dict(
                     error_code=self.response_obj.UNKNOWN_ERR,
                     serializer_error=serializer.errors,
                 )
+                logger.error(
+                    "Validation failed for PaymentRequestDataSerializer : {}"
+                    .format(serializer.errors))
 
                 return Response(data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -81,5 +110,6 @@ class PaymentRequestView(YGPayTransactionCRUD, APIView):
             data = self.response_obj.get_400_message(
                 message={"error": str(e)},
             )
+            logger.error("Error in creating payment request : {}".format(e))
 
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
