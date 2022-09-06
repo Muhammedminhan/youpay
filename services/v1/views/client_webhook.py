@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 
 
 class ClientService(object):
+    """
+    This is used to send webhook to client
+    """
 
     def webhook_service(self, ygpay_transaction):
         from payments.serializers.ygpay_payments import (
