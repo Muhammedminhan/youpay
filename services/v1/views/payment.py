@@ -5,17 +5,17 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.response_messages import YOUPayResponse
+from core.response_messages import YouPayResponse
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer)
-from services.v1.views.common import YGPayTransactionCRUD
+from services.v1.views.common import YouPayTransactionCRUD
 from services.v1.views.utils import get_data_from_request
 
 logger = logging.getLogger(__name__)
 
 
-class PaymentRequestView(YGPayTransactionCRUD, APIView):
-    response_obj = YOUPayResponse()
+class PaymentRequestView(YouPayTransactionCRUD, APIView):
+    response_obj = YouPayResponse()
     """
     API endpoint that allows clients create payment request for products.
     """

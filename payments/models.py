@@ -13,7 +13,7 @@ from core.validators import DecimalValidator
 
 # Create your models here.
 
-class YOUPayTransactionData(AbstractDateTime, CustomerProfile):
+class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     transaction_id = models.UUIDField(default=uuid.uuid4, editable=False,
                                       unique=True)
     amount = models.DecimalField(decimal_places=4, max_digits=12,
@@ -51,7 +51,7 @@ class YOUPayTransactionData(AbstractDateTime, CustomerProfile):
     session_id = models.CharField(max_length=120, null=True, blank=True)
 
 
-@receiver(post_save, sender=YOUPayTransactionData)
+@receiver(post_save, sender=YouPayTransactionData)
 def create_client(sender, instance, **kwargs):
     """
     Signal to send webhook for client on each transaction
@@ -60,7 +60,7 @@ def create_client(sender, instance, **kwargs):
 
     service = ClientService()
 
-    payment_transaction = YOUPayTransactionData.objects.get(
+    payment_transaction = YouPayTransactionData.objects.get(
         id=instance.id)
 
     transaction.on_commit(

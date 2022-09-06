@@ -1,9 +1,9 @@
-class YOUPayResponse(object):
+class YouPayResponse(object):
     SUCCESS = 1000
     UNKNOWN_ERR = 1002
 
     def __init__(self):
-        super(YOUPayResponse, self).__init__()
+        super(YouPayResponse, self).__init__()
         self.MESSAGE = {}
 
         service_unavailable = (

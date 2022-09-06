@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
-import sentry_sdk
-
 from pathlib import Path
+
+import sentry_sdk
 from decouple import config
 from sentry_sdk.integrations.django import DjangoIntegration
 
@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # YGPay apps
+    # YouPay apps
     'core',
     'integrations',
     'reports',
@@ -170,8 +170,8 @@ try:
 except ImportError:
     pass
 
-YGPAY_SECRET_KEY = config('YGPAY_SECRET_KEY', '')
-YGPAY_PUBLIC_KEY = config('YGPAY_PUBLIC_KEY', '')
+YOUPAY_SECRET_KEY = config('YOUPAY_SECRET_KEY', '')
+YOUPAY_PUBLIC_KEY = config('YOUPAY_PUBLIC_KEY', '')
 
 BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 
@@ -191,4 +191,3 @@ sentry_sdk.init(
 
 CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN', '')
 CHECKOUTPG_API_KEY = config('CHECKOUTPG_API_KEY', '')
-

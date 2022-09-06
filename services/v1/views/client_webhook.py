@@ -19,12 +19,12 @@ class ClientService(object):
         self.transaction_id = None
 
     def webhook_service(self, youpay_transaction):
-        from payments.serializers.ygpay_payments import (
-            YOUPayTransactionDataSerializer
+        from payments.serializers.youpay_payments import (
+            YouPayTransactionDataSerializer
         )
         try:
             if youpay_transaction:
-                serializer = YOUPayTransactionDataSerializer(
+                serializer = YouPayTransactionDataSerializer(
                     youpay_transaction)
                 request_data_json = serializer.data
                 self.transaction_id = youpay_transaction.transaction_id
