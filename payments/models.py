@@ -53,6 +53,9 @@ class YGPayTransactionData(AbstractDateTime, CustomerProfile):
 
 @receiver(post_save, sender=YGPayTransactionData)
 def create_client(sender, instance, **kwargs):
+    """
+    Signal to send webhook for client on each transaction
+    """
     from services.v1.views.client_webhook import ClientService
 
     service = ClientService()
