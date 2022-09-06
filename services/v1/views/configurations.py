@@ -4,9 +4,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from core.response_messages import YGPayResponse
+from core.response_messages import YOUPayResponse
 from integrations.models import PaymentGateway
-from payments.models import YGPayTransactionData
+from payments.models import YOUPayTransactionData
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -21,7 +21,7 @@ class ConfigViewSet(ViewSet):
     Config viewset for getting payment gateways with transaction id
     """
 
-    response_obj = YGPayResponse()
+    response_obj = YOUPayResponse()
 
     def list(self, request):
         queryset = PaymentGateway.objects.all()
@@ -32,7 +32,7 @@ class ConfigViewSet(ViewSet):
         session_id, transaction_id = get_session_id_and_transaction_id(pk)
 
         try:
-            transaction = YGPayTransactionData.objects.get(
+            transaction = YOUPayTransactionData.objects.get(
                 transaction_id=transaction_id)
             if transaction:
                 if transaction.session_id == session_id:

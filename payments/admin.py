@@ -1,9 +1,9 @@
 from django.contrib import admin
 
-from payments.models import YGPayTransactionData
+from payments.models import YOUPayTransactionData
 
 
-class YGPayTransactionDataAdmin(admin.ModelAdmin):
+class YOUPayTransactionDataAdmin(admin.ModelAdmin):
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'created_at',
                     'api_client', 'payment_gateway', 'updated_at',)
@@ -15,4 +15,4 @@ class YGPayTransactionDataAdmin(admin.ModelAdmin):
                    'payment_gateway', 'currency')
 
 
-admin.site.register(YGPayTransactionData, YGPayTransactionDataAdmin)
+admin.site.register(YOUPayTransactionData, YOUPayTransactionDataAdmin)

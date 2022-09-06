@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
-from payments.models import YGPayTransactionData
+from payments.models import YOUPayTransactionData
 
 
-class YGPayTransactionDataSerializer(serializers.ModelSerializer):
+class YOUPayTransactionDataSerializer(serializers.ModelSerializer):
     session_id = serializers.CharField(max_length=255, required=True)
 
     class Meta:
-        model = YGPayTransactionData
+        model = YOUPayTransactionData
         fields = '__all__'
