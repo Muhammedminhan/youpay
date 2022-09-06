@@ -6,7 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from core.constants import (
-    YOUPay_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_GATEWAY_CHOICES)
+    YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_GATEWAY_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile
 from core.validators import DecimalValidator
 
@@ -47,7 +47,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                        choices=PAYMENT_GATEWAY_CHOICES)
     payment_status = models.CharField(
         max_length=20, null=True, blank=True,
-        choices=YOUPay_TRANSACTION_PAYMENT_STATUS_CHOICES)
+        choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
     session_id = models.CharField(max_length=120, null=True, blank=True)
 
 
