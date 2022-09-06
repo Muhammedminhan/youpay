@@ -57,6 +57,7 @@ INSTALLED_APPS = [
 
     # 3rd party apps
     'rest_framework',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -188,4 +189,6 @@ sentry_sdk.init(
     send_default_pii=True
 )
 
-CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN','')
+CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN', '')
+CHECKOUTPG_API_KEY = config('CHECKOUTPG_API_KEY', '')
+
