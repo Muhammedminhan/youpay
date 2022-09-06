@@ -1,33 +1,52 @@
-# TODO
-#  - get checkoutpg configurations
+import requests
+import json
+import logging
 
-from integrations.constants import CHECKOUTPG_PAYMENT_CONFIGURATIONS
+from django.conf import settings
+
+from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
+                                    CHECKOUTPG_CONFIG_ENDPOINT_V2)
+
+logger = logging.getLogger(__name__)
 
 
 class CheckoutpgManager(object):
 
+    def __int__(self):
+        pass
+
     def get_configuratoins(self, currency):
         """
-        Method for getting canfigurations
+        Method for getting configurations
+        params: currency
+        response: json response from the checkoutpg
         """
+        channel_codes = []
         channel_code = CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
             currency.upper())
+        channel_codes.append(channel_code)
 
-        # TODO - get checkoutpg from table
+        params = {'channel_code': ','.join(channel_codes)}
+        headers = {'Api-key': settings.CHECKOUTPG_API_KEY}
 
-        # PARAMS = {'key': settings.CHECKOUTPG_API_KEY,
-        #           'channel_code': channel_code}
-        # URL = settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_CONFIG_ENDPOINT
-        #
-        # response = requests.get(url=URL, params=PARAMS)
+        URL = settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_CONFIG_ENDPOINT_V2
 
-
-        #https: // checkoutpg - sandbox.yougotagift.com / gateway / checkout / api / v1 / configuration /?key = Xl72ODoOHJ0cVUmzY3ghB - u3rqxleSY1h47eDa527tc & channel_code = YGAGAE
-        pass
+        configurations = requests.get(url=URL, params=params, headers=headers)
+        if configurations:
+            response = json.loads(configurations.text)
+            return response
+        else:
+            logger.error(
+                "Unable to fetch config response from checkoutpg for channel:"
+                " ".format(channel_code))
+            return None
 
     def get_saved_cards(self):
         """
         Method for getting saved cards
         """
-        # https: // checkoutpg - sandbox.yougotagift.com / gateway / checkout / api / v1 / paymenttoken /?key = Cd0ZOH9uzeoeiysbsKWpluzvj3dwP0C_TmC_CZvbfIM & email = christi @ yougotagift.com
+        # https: // checkoutpg - sandbox.yougotagift.com / gateway / checkout
+        # / api / v1 / paymenttoken /?
+        # key = Cd0ZOH9uzeoeiysbsKWpluzvj3dwP0C_TmC_CZvbfIM &
+        # email = christi @ yougotagift.com
         pass
