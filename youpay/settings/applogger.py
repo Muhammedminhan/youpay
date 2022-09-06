@@ -39,7 +39,7 @@ LOGGING = {
         'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': os.path.join(LOGS_DIR, LOGS_PREFIX + 'ygpay.log'),
+            'filename': os.path.join(LOGS_DIR, LOGS_PREFIX + 'youpay.log'),
             'formatter': 'standard',
         },
     },
