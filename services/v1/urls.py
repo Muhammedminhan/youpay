@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from services.v1.views.configurations import ConfigViewSet
+from .api_clients.checkoutpg import CheckoutpgCommunicationView
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import PaymentRequestView
 
@@ -12,6 +13,8 @@ router.register('ygpay_configuration', ConfigViewSet, basename='conf')
 urlpatterns = [
     path("", include(router.urls)),
     path('payment/', PaymentRequestView.as_view()),
+    path('checkoutpg/v1/cards/<str:keyword>/',
+         CheckoutpgCommunicationView.as_view()),
 
     # TODO
     #  - create delete stored card api
