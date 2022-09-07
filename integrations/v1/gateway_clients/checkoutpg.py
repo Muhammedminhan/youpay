@@ -9,6 +9,7 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT)
+from .utils import get_transaction_object
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,10 @@ class CheckoutpgManager(object):
     def __int__(self):
         pass
 
-    def get_checkout_payment_data(self):
+    def get_checkout_payment_data(self, data):
         # TODO - params: uuid(payment)
+        transaction_object = get_transaction_object(data.get("id"))
+
         # {
         #     "currency": "AED",
         #     "token_type": "card",
@@ -105,9 +108,8 @@ class CheckoutpgManager(object):
     def delete_saved_card(self, card_id):
         try:
             header = self.get_payment_header()
-            URL = (
-                    settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
-                    card_id + '/')
+            URL = (settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
+                   card_id + '/')
             response = requests.delete(url=URL, headers=header)
             return json.loads(response.text)
         except Exception as e:
@@ -118,7 +120,8 @@ class CheckoutpgManager(object):
     def saved_card_payment(self, data):
         # TODO
         #  - data: uuid, request data, token
-        pass
+        payment_data = self.get_checkout_payment_data(data)
+
 
     def card_payemnt(self, payment_id):
         pass
