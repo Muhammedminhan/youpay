@@ -56,7 +56,7 @@ class ProcessPaymentData(object):
             cipher = AES.new(self.key.encode("utf8"), AES.MODE_GCM,
                              nonce=jv['nonce'])
             plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
-            return plaintext.decode("utf8")
+            return json.loads(plaintext.decode("utf8"))
         except (ValueError, KeyError):
             logger.error("request data decryption failed.")
 
