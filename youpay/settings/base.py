@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 import os
-import sentry_sdk
-
 from pathlib import Path
+
+import sentry_sdk
 from decouple import config
 from sentry_sdk.integrations.django import DjangoIntegration
 
@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # YGPay apps
+    # YouPay apps
     'core',
     'integrations',
     'reports',
@@ -57,6 +57,7 @@ INSTALLED_APPS = [
 
     # 3rd party apps
     'rest_framework',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -70,7 +71,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'ygpay.urls'
+ROOT_URLCONF = 'youpay.urls'
 
 TEMPLATES = [
     {
@@ -88,7 +89,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'ygpay.wsgi.application'
+WSGI_APPLICATION = 'youpay.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
@@ -150,27 +151,27 @@ USE_TZ = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 try:
-    from ygpay.settings.applogger import *
+    from youpay.settings.applogger import *
 except ImportError:
     pass
 
 try:
-    from ygpay.settings.aws import *
+    from youpay.settings.aws import *
 except ImportError:
     pass
 
 try:
-    from ygpay.settings.email import *
+    from youpay.settings.email import *
 except ImportError:
     pass
 
 try:
-    from ygpay.settings.security import *
+    from youpay.settings.security import *
 except ImportError:
     pass
 
-TABBY_SECRET_KEY = config('TABBY_SECRET_KEY', '')
-TABBY_PUBLIC_KEY = config('TABBY_PUBLIC_KEY', '')
+YOUPAY_SECRET_KEY = config('YOUPAY_SECRET_KEY', '')
+YOUPAY_PUBLIC_KEY = config('YOUPAY_PUBLIC_KEY', '')
 
 BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 
@@ -197,4 +198,5 @@ sentry_sdk.init(
     send_default_pii=True
 )
 
-CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN','')
+CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN', '')
+CHECKOUTPG_API_KEY = config('CHECKOUTPG_API_KEY', '')
