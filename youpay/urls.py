@@ -16,9 +16,11 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, re_path
 from django.conf.urls import include
 from core.views import HealthCheck
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+from django.contrib.staticfiles.views import serve
 
 
 def trigger_error(request):
@@ -32,8 +34,10 @@ urlpatterns = [
     path('sentry-debug/', trigger_error),
 ]
 
+urlpatterns += staticfiles_urlpatterns()
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL,
-                          document_root=settings.STATIC_URL)
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
+    # static files (images, css, javascript, etc.)
+    urlpatterns += [re_path(r'^media/(?P<path>.*)$', serve)]
+    urlpatterns += [re_path(r'^static/(?P<path>.*)$', serve)]
