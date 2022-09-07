@@ -26,11 +26,11 @@ class ProcessPaymentData(object):
         This method is to encrypt the request data.
 
         Parameters:
-            raw : the payment request json data
+            raw : the payment request dictionary data
         Returns:
             json with the encrypted data, nonce and tag
         """
-        raw_text = json.dumps(raw)
+        raw_text = json.dumps(raw)  # convert input dict to string
         iv = urandom(12)
         cipher = AES.new(self.key.encode("utf8"), AES.MODE_GCM, iv)
         ciphertext, tag = cipher.encrypt_and_digest(raw_text.encode("utf8"))
@@ -38,7 +38,7 @@ class ProcessPaymentData(object):
         json_v = [b64encode(x).decode('utf-8') for x in
                   [cipher.nonce, ciphertext, tag]]
         encrypted_data = json.dumps(dict(zip(json_k, json_v)))
-        return encrypted_data
+        return json.loads(encrypted_data)
 
     def decrypt_payment_data(self, encrypted_data):
         """
@@ -47,10 +47,10 @@ class ProcessPaymentData(object):
         Parameters:
             encrypted_data : the encrypted json data with nonce and tag
         Returns:
-            Decrypted json data
+            Decrypted data as dictionary
         """
         try:
-            b64 = json.loads(encrypted_data)
+            b64 = encrypted_data
             json_k = ['nonce', 'ciphertext', 'tag']
             jv = {k: b64decode(b64[k]) for k in json_k}
             cipher = AES.new(self.key.encode("utf8"), AES.MODE_GCM,
