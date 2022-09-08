@@ -108,8 +108,9 @@ class CheckoutpgManager(object):
     def delete_saved_card(self, card_id):
         try:
             header = self.get_payment_header()
-            URL = (settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
-                   card_id + '/')
+            URL = (
+                        settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
+                        card_id + '/')
             response = requests.delete(url=URL, headers=header)
             return json.loads(response.text)
         except Exception as e:
@@ -121,7 +122,6 @@ class CheckoutpgManager(object):
         # TODO
         #  - data: uuid, request data, token
         payment_data = self.get_checkout_payment_data(data)
-
 
     def card_payemnt(self, payment_id):
         pass
