@@ -5,7 +5,7 @@ from payments.models import YouPayTransactionData
 logger = logging.getLogger(__name__)
 
 
-def get_saved_fields(self, saved_fields, data_dict, payment_transaction):
+def get_saved_fields(saved_fields, data_dict, payment_transaction):
     for key, value in data_dict.items():
         if value:
             payment_transaction.__dict__[key] = value
@@ -14,7 +14,7 @@ def get_saved_fields(self, saved_fields, data_dict, payment_transaction):
     return saved_fields
 
 
-def get_transaction_object(self, transaction_id):
+def get_transaction_object(transaction_id):
     """
     Method for retrieve transaction object
     """
@@ -23,7 +23,7 @@ def get_transaction_object(self, transaction_id):
     return transaction_object
 
 
-def update_transaction_object(self, data):
+def update_transaction_object(data):
     data_dict = {}
     transaction_id = data.get('id', None)
     data_dict['approved'] = data.get('approved', None)
