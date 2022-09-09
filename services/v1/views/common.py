@@ -1,10 +1,14 @@
+import logging
+
 from rest_framework import status
 
-from core.constants import PAYMENT_STATUS_CREATED
 from core.messages import ERROR_MISSING_FIELDS
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
+from services.models import APIClient
+
+logger = logging.getLogger(__name__)
 
 
 class YouPayTransactionCRUD(object):
@@ -12,26 +16,8 @@ class YouPayTransactionCRUD(object):
     YouPay Transaction Data CRUD Operations will be here
     """
 
-    def create_ygpay_transaction_data(self, request):
-        data = {
-            "transaction_id": request.data.get("transaction_id"),
-            "amount": request.data.get("amount"),
-            "currency": request.data.get("currency"),
-            "ip": request.data["payment"].get("ip"),
-            "invoice_id": request.data.get("invoice_id"),
-            "order_reference": request.data.get("order_reference"),
-            "payment_reference": request.data.get("payment_reference"),
-            "api_client": request.data.get("api_client"),
-            "service_fee": request.data['order'].get("service_fee"),
-            "base_amount": request.data['order'].get("base_amount"),
-            "VAT_amount": request.data['order'].get("VAT"),
-            "order_history": request.data.get("order_history"),
-            "payment_gateway": request.data.get("payment_gateway"),
-            "payment_status": PAYMENT_STATUS_CREATED,
-            "session_id": request.data.get("session_id"),
-        }
-
-        serializer = YouPayTransactionDataSerializer(data=data)
+    def create_youpay_transaction_data(self, request):
+        serializer = YouPayTransactionDataSerializer(data=request)
         if serializer.is_valid():
             serializer.save()
             return {"status": status.HTTP_201_CREATED,
@@ -43,3 +29,38 @@ class YouPayTransactionCRUD(object):
             message = "{}{}".format(ERROR_MISSING_FIELDS, missing_fields)
             return {"status": status.HTTP_400_BAD_REQUEST,
                     "data": serializer.errors, "message": message}
+
+
+class ClientValidator(object):
+    """
+    Client Validation will be here
+    """
+
+    def validate_client(self, request):
+        client_id = ''
+        api_key = request.META.get('HTTP_X_API_KEY', None)
+        if api_key:
+            try:
+                client = APIClient.objects.get(api_key=api_key)
+                if client:
+                    client_id = client.pk
+                    return True, client_id
+                return False, client_id
+            except Exception as e:
+                logger.info("Exception occurred when validating the client {}"
+                            .format(str(e)))
+                return False, client_id
+        return False, client_id
+
+
+class PaymentRequestDataValidator(object):
+    """
+    Payment Request Data Validation will be here
+    """
+
+    def validate_payment_request_data(self, request):
+        if request.data.get("payment"):
+            if request.data["payment"].get("ip"):
+                return True
+            return False
+        return False

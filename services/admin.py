@@ -19,6 +19,7 @@ class PaymentRequestDataAdmin(admin.ModelAdmin):
         'created_at', 'updated_at', 'customer_email', 'customer_phone')
     search_fields = ('api_client__name', 'customer_email')
     list_filter = ('created_at',)
+    raw_id_fields = ('api_client',)
 
 
 admin.site.register(APIClient, APIClientAdmin)

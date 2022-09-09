@@ -13,6 +13,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                      'payment_reference', 'order_reference')
     list_filter = ('created_at', 'payment_status', 'api_client',
                    'payment_gateway', 'currency')
+    raw_id_fields = ('api_client',)
 
 
 admin.site.register(YouPayTransactionData, YouPayTransactionDataAdmin)
