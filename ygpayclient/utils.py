@@ -28,7 +28,7 @@ class ProcessPaymentData(object):
         Parameters:
             raw : the payment request dictionary data
         Returns:
-            json with the encrypted data, nonce and tag
+            encrypted data, nonce and tag - str
         """
         raw_text = json.dumps(raw)  # convert input dict to string
         iv = urandom(12)
@@ -38,7 +38,7 @@ class ProcessPaymentData(object):
         json_v = [b64encode(x).decode('utf-8') for x in
                   [cipher.nonce, ciphertext, tag]]
         encrypted_data = json.dumps(dict(zip(json_k, json_v)))
-        return json.loads(encrypted_data)
+        return encrypted_data
 
     def decrypt_payment_data(self, encrypted_data):
         """
@@ -47,7 +47,7 @@ class ProcessPaymentData(object):
         Parameters:
             encrypted_data : the encrypted json data with nonce and tag
         Returns:
-            Decrypted data as dictionary
+            Decrypted data
         """
         try:
             b64 = encrypted_data
@@ -56,9 +56,11 @@ class ProcessPaymentData(object):
             cipher = AES.new(self.key.encode("utf8"), AES.MODE_GCM,
                              nonce=jv['nonce'])
             plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
-            return json.loads(plaintext.decode("utf8"))
+            decrypted_data = json.loads(plaintext.decode("utf8"))
+            return decrypted_data
         except (ValueError, KeyError):
             logger.error("request data decryption failed.")
+            return None
 
 
 @contextmanager
