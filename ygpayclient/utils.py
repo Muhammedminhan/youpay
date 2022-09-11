@@ -50,7 +50,7 @@ class ProcessPaymentData(object):
             Decrypted data
         """
         try:
-            b64 = encrypted_data
+            b64 = json.loads(encrypted_data)
             json_k = ['nonce', 'ciphertext', 'tag']
             jv = {k: b64decode(b64[k]) for k in json_k}
             cipher = AES.new(self.key.encode("utf8"), AES.MODE_GCM,
