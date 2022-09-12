@@ -21,25 +21,25 @@ class CheckoutpgManager(object):
 
     def get_checkout_payment_data(self, data):
         # TODO - params: uuid(payment)
-        transaction_object = get_transaction_object(data.get("id"))
+        #  - from api should get token type,
 
-        # {
-        #     "currency": "AED",
-        #     "token_type": "card",
-        #     "customer_email": "jomon@yougotagift.com",
-        #     "is_save_user_token": "false",
-        #     "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
-        #     "cvv": "",
-        #     "amount": "100.0000",
-        #     "card_type": "",
-        #     "order_reference": "Invoice-31551|ygag|VZMyp-R16CVLqntTjd9YI",
-        #     "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",
-        #     "channel_code": "YGAGAE",
-        #     "invoice_pk": "31551",
-        #     "customer_ip_address": "84.226.122.71",
-        #     "customer_name": "jomon_loc"
-        # }
-        pass
+        payment_data = {
+            "currency": "AED", # TODO get it from transaction_object
+            "token_type": data.get("token_type"),
+            "customer_email": "jomon@yougotagift.com",# TODO get it from transaction_object
+            "is_save_user_token": "false",# todo based on the token type
+            "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/", #TODO prepare url
+            "cvv": "",# TODO get it from transaction_object
+            "amount": "100.0000",# TODO get it from transaction_object
+            "card_type": "",# TODO get it from transaction_object
+            "order_reference": "Invoice-31551|ygag|VZMyp-R16CVLqntTjd9YI",# TODO get it from transaction_object
+            "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",# TODO get it from transaction_object
+            "channel_code": "YGAGAE",# TODO get it from transaction_object
+            "invoice_pk": "31551",# TODO get it from transaction_object
+            "customer_ip_address": "84.226.122.71",# TODO get it from transaction_object
+            "customer_name": "jomon_loc"# TODO get it from transaction_object
+        }
+        return payment_data
 
     def get_payment_header(self):
         headers = {
@@ -121,7 +121,10 @@ class CheckoutpgManager(object):
     def saved_card_payment(self, data):
         # TODO
         #  - data: uuid, request data, token
+        success_dict = {}
         payment_data = self.get_checkout_payment_data(data)
+
+        return success_dict
 
     def card_payemnt(self, payment_id):
         pass

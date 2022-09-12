@@ -35,8 +35,15 @@ MEDIA_URL = config('MEDIA_URL', '/media/')
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', False)
+DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = ['*']
+
+# Site Default id
+SITE_ID = 1
+
+# Whether or not to construct URLs as https or http
+SITE_SECURE = config('SITE_SECURE', default=True)
+
 
 # Application definition
 
@@ -130,6 +137,15 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Rest framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'COERCE_DECIMAL_TO_STRING': False,
+}
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -188,6 +204,20 @@ sentry_sdk.init(
     # django.contrib.auth) you may enable sending PII data.
     send_default_pii=True
 )
+
+# super admin user details
+DJANGO_SUPERUSER_USERNAME = config('DJANGO_SUPERUSER_USERNAME')
+DJANGO_SUPERUSER_EMAIL = config('DJANGO_SUPERUSER_EMAIL')
+DJANGO_SUPERUSER_PASSWORD = config('DJANGO_SUPERUSER_PASSWORD')
+
+# CORS origin allow
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    '^(https?://)?(\w+\.)?yougotagift\.com$',
+    '^(https?://)?(\w+\.)?yougotagift\.co$',
+    '^(https?://)?(\w+-\w+\.)?yougotagift\.com$',
+    '^(https?://)?(\w+-\w+\.)?yougotagift\.co$',
+]
 
 CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN', '')
 CHECKOUTPG_API_KEY = config('CHECKOUTPG_API_KEY', '')

@@ -1,0 +1,2 @@
+TOKEN_TYPE_SAVED_CARD = 'savedcard'
+TOKEN_TYPE_CARD = 'card'
