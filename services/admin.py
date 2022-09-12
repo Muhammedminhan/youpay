@@ -17,7 +17,8 @@ class PaymentRequestDataAdmin(admin.ModelAdmin):
                     'updated_at',)
     readonly_fields = (
         'created_at', 'updated_at', 'customer_email', 'customer_phone')
-    search_fields = ('api_client__name', 'customer_email')
+    search_fields = (
+        'api_client__name', 'customer_email', "invoice_id", "order_reference")
     list_filter = ('created_at',)
     raw_id_fields = ('api_client',)
 

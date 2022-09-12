@@ -1,6 +1,5 @@
 import logging
 
-import requests
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -25,85 +24,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
     API endpoint that allows clients create payment request for products.
     """
-
-    def get(self, request):
-
-        data = {
-            "payment": {
-                "product_code": "",
-                "payment_platform": "IOS",
-                "ip": "192.168.1.1",
-                "language": "en",
-                "invoice_id": "1234",
-                "order_reference": "Gift-1234-ecom"
-            },
-            "order": {
-                "amount": 1000,
-                "currency": "AED",
-                "service_fee": 123,
-                "base_amount": 2344,
-                "VAT_amount": 13
-            },
-            "customer": {
-                "email": "jomon@yougotagift.com",
-                "phone": 12324234,
-                "name": "jomon",
-                "registered_since": "26-03-1994"
-            },
-            "order_history": {
-                "total_items": 2,
-                "items": [
-                    {
-                        "tittle": "item 1",
-                        "category": "electronic-gift",
-                        "ref_id": "item-123"
-                    },
-                    {
-                        "tittle": "item 2",
-                        "category": "electronic-gift",
-                        "ref_id": "item-124"
-                    },
-                    {
-                        "tittle": "item 3",
-                        "category": "electronic-gift",
-                        "ref_id": "item-125"
-                    }
-                ]
-            },
-            "order_items": {
-                "items": [
-                    {
-                        "tittle": "item 1",
-                        "category": "electronic-gift",
-                        "ref_id": "item-123"
-                    },
-                    {
-                        "tittle": "item 2",
-                        "category": "electronic-gift",
-                        "ref_id": "item-124"
-                    },
-                    {
-                        "tittle": "item 3",
-                        "category": "electronic-gift",
-                        "ref_id": "item-125"
-                    }
-                ]
-            },
-            "session_id": "sessionid"
-        }
-
-        enc_data = encrypt_payment_data(data)
-        print(enc_data)
-
-        # send post request to payment
-        url = "http://localhost:8000/services/api/v1/payment/"
-        headers = {'x-api-key': 'eMck6LwBxlaYu6g0nNeNxBksRlEf0tAkHtD4NElA3pY',
-                   'Content-Type': 'application/json'}
-        response = requests.post(url, data=enc_data,
-                                 headers=headers)
-        return Response({
-            "response": response.json()
-        })
 
     def __init__(self):
         self.PAYMENT_REQUEST_DATA_FIELDS_LIST = [
@@ -246,3 +166,17 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
                 id=payment_request_obj.id).update(response_data=response_data)
         except Exception as e:
             logger.error("Error in saving response data for : {}".format(e))
+
+
+class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
+    response_obj = YouPayResponse()
+    """
+    Test API endpoint for encrypting request data
+    """
+
+    def post(self, request):
+        data = self.request.data
+        enc_data = eval(encrypt_payment_data(data))
+        return Response({
+            "response": enc_data,
+        })

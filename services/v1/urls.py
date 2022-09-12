@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from services.v1.views.configurations import ConfigViewSet
 from .views.client_registration import APIClientRegistrationViewSet
-from .views.payment import PaymentRequestView
+from .views.payment import PaymentRequestView, TestPaymentRequestView
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -12,6 +12,7 @@ router.register('youpay_configuration', ConfigViewSet, basename='conf')
 urlpatterns = [
     path("", include(router.urls)),
     path('payment/', PaymentRequestView.as_view()),
+    path('test-payment/', TestPaymentRequestView.as_view()),
 
     # TODO
     #  - create delete stored card api
