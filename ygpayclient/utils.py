@@ -26,7 +26,7 @@ class ProcessPaymentData(object):
         This method is to encrypt the request data.
 
         Parameters:
-            raw : the payment request dictionary data
+            raw : the payment request dictionary data - dict
         Returns:
             encrypted data, nonce and tag - str
         """
@@ -45,12 +45,12 @@ class ProcessPaymentData(object):
         This method is to decrypt the request data.
 
         Parameters:
-            encrypted_data : the encrypted json data with nonce and tag
+            encrypted_data : the encrypted json data with nonce and tag - dict
         Returns:
-            Decrypted data
+            Decrypted data - dict
         """
         try:
-            b64 = json.loads(encrypted_data)
+            b64 = encrypted_data
             json_k = ['nonce', 'ciphertext', 'tag']
             jv = {k: b64decode(b64[k]) for k in json_k}
             cipher = AES.new(self.key.encode("utf8"), AES.MODE_GCM,
