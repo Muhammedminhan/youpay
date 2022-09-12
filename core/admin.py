@@ -1,7 +1,8 @@
 from django.contrib import admin
 
+admin.site.site_header = 'YouPay Administration'
 
-# Register your models here.
+
 class AdminAbstract(admin.ModelAdmin):
     readonly_fields = (
         'created_at', 'updated_at', 'created_by', 'modified_by')
