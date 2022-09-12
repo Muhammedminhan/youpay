@@ -17,7 +17,6 @@ class YGPayClientTransactionData(AbstractDateTime):
         max_length=200, null=True, blank=True)
     invoice_id = models.CharField(
         max_length=100, null=True, blank=True)
-    api_client = models.CharField(max_length=100, null=True, blank=True)
 
     amount = models.DecimalField(decimal_places=4, max_digits=12)
     currency = models.CharField(max_length=5, null=True, blank=True)

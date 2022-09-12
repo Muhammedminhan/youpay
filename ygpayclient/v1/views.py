@@ -36,8 +36,6 @@ class WebhookListener(APIView):
                         'order_reference')
                     transaction_obj.invoice_id = request_data.get(
                         'invoice_id')
-                    transaction_obj.api_client = request_data.get(
-                        'api_client')
                     transaction_obj.amount = request_data.get(
                         'amount')
                     transaction_obj.currency = request_data.get(
@@ -52,8 +50,6 @@ class WebhookListener(APIView):
                         'ip')
                     transaction_obj.customer_email = request_data.get(
                         'customer_email')
-                    transaction_obj.order_history = request_data.get(
-                        'order_history')
                     transaction_obj.payment_gateway = request_data.get(
                         'payment_gateway')
                     transaction_obj.payment_status = request_data.get(
@@ -71,8 +67,6 @@ class WebhookListener(APIView):
                                 'order_reference'),
                             invoice_id=request_data.get(
                                 'invoice_id'),
-                            api_client=request_data.get(
-                                'api_client'),
                             amount=request_data.get(
                                 'amount'),
                             currency=request_data.get(
@@ -87,8 +81,6 @@ class WebhookListener(APIView):
                                 'ip'),
                             customer_email=request_data.get(
                                 'customer_email'),
-                            order_history=request_data.get(
-                                'order_history'),
                             payment_gateway=request_data.get(
                                 'payment_gateway'),
                             payment_status=request_data.get(
