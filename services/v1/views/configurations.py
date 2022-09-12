@@ -51,7 +51,6 @@ class ConfigViewSet(ViewSet):
                             "data": {
                                 "payment_gateways": serializer.data,
                                 "checkoutpg_config": checkout_config,
-                                "transaction_id": transaction_id,
                                 "amount": transaction.amount,
                                 "currency": transaction.currency,
                                 "service_fee": transaction.service_fee,

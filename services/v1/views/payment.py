@@ -93,10 +93,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
                     response_data = {
                         "status": status.HTTP_201_CREATED,
                         "message": "created",
-                        "session_id": transaction_response['data'][
-                            'session_id'],
-                        "transaction_id": transaction_response['data'][
-                            'transaction_id'],
                         "url": redirect_url
                     }
 

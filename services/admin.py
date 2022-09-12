@@ -13,13 +13,13 @@ class APIClientAdmin(AdminAbstract):
 
 
 class PaymentRequestDataAdmin(admin.ModelAdmin):
-    list_display = ('api_client', 'amount', 'customer_email', 'created_at',
-                    'updated_at',)
+    list_display = ('order_reference', 'api_client', 'amount',
+                    'customer_email', 'created_at', 'updated_at',)
     readonly_fields = (
         'created_at', 'updated_at', 'customer_email', 'customer_phone')
     search_fields = (
         'api_client__name', 'customer_email', "invoice_id", "order_reference")
-    list_filter = ('created_at',)
+    list_filter = ('created_at', 'api_client', 'currency')
     raw_id_fields = ('api_client',)
 
 
