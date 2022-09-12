@@ -1,4 +1,4 @@
-from core.constants import PAYMENT_STATUS_INITIATED
+from payments.constants import PAYMENT_STATUS_INITIATED
 
 
 def reformat_payment_request_data(data):

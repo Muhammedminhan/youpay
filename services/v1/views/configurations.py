@@ -17,12 +17,11 @@ from services.v1.views.utils import get_session_id_and_transaction_id
 logger = logging.getLogger(__name__)
 
 
-class ConfigViewSet(ViewSet):
+class ConfigViewSet(ViewSet, CheckoutpgManager):
     """
     Config viewset for getting payment gateways with transaction id
     """
     response_obj = YouPayResponse()
-    checkoutpg_obj = CheckoutpgManager()
 
     def list(self, request):
         queryset = PaymentGateway.objects.all()
@@ -37,7 +36,7 @@ class ConfigViewSet(ViewSet):
                 transaction_id=transaction_id)
             if transaction:
                 checkout_config, status_code = \
-                    self.checkoutpg_obj.get_configuratoins(
+                    self.get_configuratoins(
                         transaction.currency)
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(

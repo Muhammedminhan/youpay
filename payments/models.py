@@ -5,13 +5,14 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from core.constants import (
-    YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_GATEWAY_CHOICES)
+from core.constants import (PAYMENT_GATEWAY_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile
 from core.validators import DecimalValidator
+from payments.constants import YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES
 
 
 # Create your models here.
+
 
 class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     transaction_id = models.UUIDField(default=uuid.uuid4, editable=False,

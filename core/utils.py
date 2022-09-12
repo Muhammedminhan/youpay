@@ -4,10 +4,11 @@ from base64 import b64decode, b64encode
 from functools import wraps
 from os import urandom
 
-logger = logging.getLogger(__name__)
 from Crypto.Cipher import AES
 
 from core.constants import COMMON_ENCRYPTION_KEY
+
+logger = logging.getLogger(__name__)
 
 
 def retry(exception_to_ocheck, tries=4, delay=3, backoff=2, logger=None):
