@@ -8,7 +8,11 @@ from rest_framework import status
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
-                                    CHECKOUTPG_SAVED_CARD_ENDPOINT)
+                                    CHECKOUTPG_SAVED_CARD_ENDPOINT,
+                                    CHECKOUTPG_PAYMENT_ENDPOINT)
+
+from .utils import get_transaction_object
+
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +48,8 @@ class CheckoutpgManager(object):
             "customer_name": "jomon_loc"
             # TODO get it from transaction_object
         }
+        return json.dumps(payment_data)
 
-        return payment_data
 
     def get_payment_header(self):
         headers = {
@@ -130,7 +134,14 @@ class CheckoutpgManager(object):
         success_dict = {}
         payment_data = self.get_checkout_payment_data(data)
 
+        url = settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_PAYMENT_ENDPOINT
+        headers = self.get_payment_header()
+        response = requests.post(url, data=payment_data,
+                                 headers=headers)
+        print(response)
+
         return success_dict
 
-    def card_payemnt(self, payment_id):
+    def card_payemnt(self, data):
+        payment_data = self.get_checkout_payment_data(data)
         pass
