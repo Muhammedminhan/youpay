@@ -53,6 +53,15 @@ class SavedCardPayment(APIView):
         #  - add data into the payment_data
         try:
             transaction_id = request.data.get('transaction_id')
+            is_save_user_token = request.data.get('is_save_user_token')
+            response_url = request.data.get('response_url')
+            cvv = request.data.get('cvv')
+            card_type = request.data.get('card_type')
+            token = request.data.get('token')
+            channel_code = request.data.get('channel_code')
+            invoice_pk = request.data.get('invoice_pk')
+            customer_ip_address = request.data.get('customer_ip_address')
+            customer_name = request.data.get('customer_name')
             transaction_obj = YouPayTransactionData.objects.get(
                 transaction_id=transaction_id)
 
@@ -60,7 +69,8 @@ class SavedCardPayment(APIView):
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
                 payment_data = {'token_type': TOKEN_TYPE_SAVED_CARD,
-                                'request_data': transaction_data}
+                                'transaction_data': transaction_data,
+                                'request_data': request.data}
                 checkout = CheckoutpgManager()
                 response_data = checkout.saved_card_payment(payment_data)
                 data = self.response_obj.get_success_dict(
