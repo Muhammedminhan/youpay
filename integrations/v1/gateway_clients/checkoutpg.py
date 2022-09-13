@@ -1,7 +1,7 @@
-import requests
 import json
 import logging
 
+import requests
 from django.conf import settings
 from rest_framework import status
 
@@ -9,7 +9,6 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT)
-from .utils import get_transaction_object
 
 logger = logging.getLogger(__name__)
 
@@ -24,21 +23,28 @@ class CheckoutpgManager(object):
         #  - from api should get token type,
 
         payment_data = {
-            "currency": "AED", # TODO get it from transaction_object
+            "currency": "AED",  # TODO get it from transaction_object
             "token_type": data.get("token_type"),
-            "customer_email": "jomon@yougotagift.com",# TODO get it from transaction_object
-            "is_save_user_token": "false",# todo based on the token type
-            "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/", #TODO prepare url
-            "cvv": "",# TODO get it from transaction_object
-            "amount": "100.0000",# TODO get it from transaction_object
-            "card_type": "",# TODO get it from transaction_object
-            "order_reference": "Invoice-31551|ygag|VZMyp-R16CVLqntTjd9YI",# TODO get it from transaction_object
-            "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",# TODO get it from transaction_object
-            "channel_code": "YGAGAE",# TODO get it from transaction_object
-            "invoice_pk": "31551",# TODO get it from transaction_object
-            "customer_ip_address": "84.226.122.71",# TODO get it from transaction_object
-            "customer_name": "jomon_loc"# TODO get it from transaction_object
+            "customer_email": "jomon@yougotagift.com",
+            # TODO get it from transaction_object
+            "is_save_user_token": "false",  # todo based on the token type
+            "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
+            # TODO prepare url
+            "cvv": "",  # TODO get it from transaction_object
+            "amount": "100.0000",  # TODO get it from transaction_object
+            "card_type": "",  # TODO get it from transaction_object
+            "order_reference": "Invoice-31551|ygag|VZMyp-R16CVLqntTjd9YI",
+            # TODO get it from transaction_object
+            "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",
+            # TODO get it from transaction_object
+            "channel_code": "YGAGAE",  # TODO get it from transaction_object
+            "invoice_pk": "31551",  # TODO get it from transaction_object
+            "customer_ip_address": "84.226.122.71",
+            # TODO get it from transaction_object
+            "customer_name": "jomon_loc"
+            # TODO get it from transaction_object
         }
+
         return payment_data
 
     def get_payment_header(self):
@@ -108,15 +114,15 @@ class CheckoutpgManager(object):
     def delete_saved_card(self, card_id):
         try:
             header = self.get_payment_header()
-            URL = (
-                        settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
-                        card_id + '/')
+            URL = (settings.CHECKOUTPG_DOMAIN +
+                   CHECKOUTPG_SAVED_CARD_ENDPOINT + card_id + '/')
             response = requests.delete(url=URL, headers=header)
             return json.loads(response.text)
         except Exception as e:
-            logger.error(
-                "Unable to delete saved card {0} details because, {1}"
-                .format(card_id, str(e)))
+            msg = "Unable to delete saved card {0} because, {1}".format(
+                card_id, str(e))
+            logger.error(msg)
+            return msg
 
     def saved_card_payment(self, data):
         # TODO

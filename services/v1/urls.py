@@ -1,9 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from services.v1.api_clients.checkoutpg import SavedCardPayment, CardPayment
+from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
+                                                CheckoutVerification)
 from services.v1.views.configurations import ConfigViewSet
-from .api_clients.checkoutpg import CheckoutpgCommunicationView
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import PaymentRequestView, TestPaymentRequestView
 
@@ -21,9 +21,7 @@ urlpatterns = [
 
     path('checkout/saved-card/', SavedCardPayment.as_view()),
     path('checkout/card/', CardPayment.as_view()),
-
-    path('checkoutpg/v1/cards/<str:keyword>/',
-         CheckoutpgCommunicationView.as_view()),
+    path('checkout/verify/', CheckoutVerification.as_view()),
 
     # TODO
     #  - create delete stored card api
