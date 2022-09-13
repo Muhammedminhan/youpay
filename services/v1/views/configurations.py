@@ -4,9 +4,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
-from core.response_messages import YGPayResponse
+from core.response_messages import YouPayResponse
 from integrations.models import PaymentGateway
-from payments.models import YGPayTransactionData
+from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from payments.models import YouPayTransactionData
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -16,12 +17,11 @@ from services.v1.views.utils import get_session_id_and_transaction_id
 logger = logging.getLogger(__name__)
 
 
-class ConfigViewSet(ViewSet):
+class ConfigViewSet(ViewSet, CheckoutpgManager):
     """
     Config viewset for getting payment gateways with transaction id
     """
-
-    response_obj = YGPayResponse()
+    response_obj = YouPayResponse()
 
     def list(self, request):
         queryset = PaymentGateway.objects.all()
@@ -32,9 +32,12 @@ class ConfigViewSet(ViewSet):
         session_id, transaction_id = get_session_id_and_transaction_id(pk)
 
         try:
-            transaction = YGPayTransactionData.objects.get(
+            transaction = YouPayTransactionData.objects.get(
                 transaction_id=transaction_id)
             if transaction:
+                checkout_config, status_code = \
+                    self.get_configuratoins(
+                        transaction.currency)
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)
@@ -43,7 +46,17 @@ class ConfigViewSet(ViewSet):
                             client.payment_gateway.filter(is_active=True),
                             many=True
                         )
-                        response_data = {"data": serializer.data, }
+                        response_data = {
+                            "data": {
+                                "payment_gateways": serializer.data,
+                                "checkoutpg_config": checkout_config,
+                                "amount": transaction.amount,
+                                "currency": transaction.currency,
+                                "service_fee": transaction.service_fee,
+                                "vat_amount": transaction.VAT_amount,
+                                "base_amount": transaction.base_amount,
+                            },
+                        }
                         data = self.response_obj.get_success_dict(
                             code=self.response_obj.SUCCESS,
                             success_dict=response_data

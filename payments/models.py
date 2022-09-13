@@ -5,15 +5,16 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from core.constants import (
-    YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_GATEWAY_CHOICES)
+from core.constants import (PAYMENT_GATEWAY_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile
 from core.validators import DecimalValidator
+from payments.constants import YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES
 
 
 # Create your models here.
 
-class YGPayTransactionData(AbstractDateTime, CustomerProfile):
+
+class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     transaction_id = models.UUIDField(default=uuid.uuid4, editable=False,
                                       unique=True)
     amount = models.DecimalField(decimal_places=4, max_digits=12,
@@ -47,21 +48,18 @@ class YGPayTransactionData(AbstractDateTime, CustomerProfile):
                                        choices=PAYMENT_GATEWAY_CHOICES)
     payment_status = models.CharField(
         max_length=20, null=True, blank=True,
-        choices=YGPay_TRANSACTION_PAYMENT_STATUS_CHOICES)
+        choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
     session_id = models.CharField(max_length=120, null=True, blank=True)
 
 
-@receiver(post_save, sender=YGPayTransactionData)
+@receiver(post_save, sender=YouPayTransactionData)
 def create_client(sender, instance, **kwargs):
     """
     Signal to send webhook for client on each transaction
     """
     from services.v1.views.client_webhook import ClientService
-
     service = ClientService()
-
-    payment_transaction = YGPayTransactionData.objects.get(
+    payment_transaction = YouPayTransactionData.objects.get(
         id=instance.id)
-
     transaction.on_commit(
         lambda: service.webhook_service(payment_transaction))

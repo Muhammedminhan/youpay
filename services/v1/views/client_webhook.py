@@ -15,16 +15,21 @@ class ClientService(object):
     This is used to send webhook to client
     """
 
-    def webhook_service(self, ygpay_transaction):
-        from payments.serializers.ygpay_payments import (
-            YGPayTransactionDataSerializer
-        )
+    def __init__(self):
+        self.transaction_id = None
 
-        if ygpay_transaction:
-            try:
-                serializer = YGPayTransactionDataSerializer(ygpay_transaction)
+    def webhook_service(self, youpay_transaction):
+        from payments.serializers.youpay_payments import (
+            YouPayTransactionDataSerializer
+        )
+        try:
+            if youpay_transaction:
+                serializer = YouPayTransactionDataSerializer(
+                    youpay_transaction)
                 request_data_json = serializer.data
-                url = ygpay_transaction.api_client.endpoint_url
+                self.transaction_id = youpay_transaction.transaction_id
+
+                url = youpay_transaction.api_client.endpoint_url
                 headers = {
                     'Accept': 'application/json',
                     'date': str(datetime.datetime.utcnow()),
@@ -38,16 +43,20 @@ class ClientService(object):
                 if response_status is True:
                     logger.info(
                         "successfully post webhook to client status is"
-                        " {}".format(response_status))
+                        " {} of {}".format(response_status,
+                                           self.transaction_id))
                 else:
-                    logger.error("post webhook to client status is {}".format(
-                        response_status))
-            except Exception as e:
-                logger.error("Error sending webhook to client {}".format(
-                    str(e)))
+                    logger.error(
+                        "Webhook failed for {}, status is {}".format(
+                            self.transaction_id, response_status))
+            else:
+                logger.error("Unable to find the transaction, {}".format(
+                    youpay_transaction))
 
-        else:
-            logger.error("Unable to find the transaction")
+        except Exception as e:
+            logger.error(
+                "Error sending webhook for {} to client {}".format(
+                    self.transaction_id, str(e)))
 
     @retry(ClientWebhookException, tries=3, logger=logger)
     def sent_webhook_to_client(self, url, request_data_json, headers):

@@ -11,7 +11,8 @@ from services.v1.serializers.client_registrattion import (
 
 class APIClientRegistrationViewSet(ViewSet):
     """
-    API endpoint that allows clients to view, create, update and delete.
+    API endpoint that allows clients to view, create, update and delete
+    and store response
     """
 
     serializer_class = APIClientRegistrationSerializer
