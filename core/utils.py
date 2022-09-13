@@ -1,4 +1,14 @@
+import json
+import logging
+from base64 import b64decode, b64encode
 from functools import wraps
+from os import urandom
+
+from Crypto.Cipher import AES
+
+from core.constants import COMMON_ENCRYPTION_KEY
+
+logger = logging.getLogger(__name__)
 
 
 def retry(exception_to_ocheck, tries=4, delay=3, backoff=2, logger=None):
@@ -41,3 +51,45 @@ def retry(exception_to_ocheck, tries=4, delay=3, backoff=2, logger=None):
         return f_retry
 
     return deco_retry
+
+
+def decrypt_payment_data(encrypted_data):
+    """
+    This method is for decrypt payment data
+
+    input : encrypted_data - dict
+    output : decrypted_data - dict
+    """
+    try:
+        b64 = encrypted_data
+        json_k = ['nonce', 'ciphertext', 'tag']
+        jv = {k: b64decode(b64[k]) for k in json_k}
+        cipher = AES.new(COMMON_ENCRYPTION_KEY.encode("utf8"),
+                         AES.MODE_GCM,
+                         nonce=jv['nonce'])
+        plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
+        decrypted_data = json.loads(plaintext.decode("utf8"))
+        return decrypted_data
+    except (ValueError, KeyError):
+        logger.error("request data decryption failed.")
+        return None
+
+
+def encrypt_payment_data(raw):
+    """
+    This method is to encrypt the request data.
+
+    input data : raw - dict
+    output data : encrypted_data - str
+
+    """
+
+    raw_text = json.dumps(raw)
+    iv = urandom(12)
+    cipher = AES.new(COMMON_ENCRYPTION_KEY.encode("utf8"), AES.MODE_GCM, iv)
+    ciphertext, tag = cipher.encrypt_and_digest(raw_text.encode("utf8"))
+    json_k = ['nonce', 'ciphertext', 'tag']
+    json_v = [b64encode(x).decode('utf-8') for x in
+              [cipher.nonce, ciphertext, tag]]
+    encrypted_data = json.dumps(dict(zip(json_k, json_v)))
+    return encrypted_data

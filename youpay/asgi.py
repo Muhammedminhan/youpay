@@ -1,5 +1,5 @@
 """
-ASGI config for ygpay project.
+ASGI config for youpay project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 

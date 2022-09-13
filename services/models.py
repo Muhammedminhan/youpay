@@ -1,3 +1,6 @@
+import hashlib
+import secrets
+
 from django.db import models
 
 from core.constants import (
@@ -36,6 +39,13 @@ class APIClient(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.api_key:
+            self.api_key = secrets.token_urlsafe()
+            result = hashlib.sha256(self.api_key.encode())
+            self.api_secret = result.hexdigest()
+        super(APIClient, self).save(*args, **kwargs)
 
 
 class PaymentRequestData(AbstractDateTime, CustomerProfile):
