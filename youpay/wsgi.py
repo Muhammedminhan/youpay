@@ -1,5 +1,5 @@
 """
-WSGI config for ygpay project.
+WSGI config for youpay project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
