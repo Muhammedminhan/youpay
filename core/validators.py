@@ -267,6 +267,7 @@ def validate_ipv4_address(value):
             _(ERROR_MESSAGE_INVALID_IPV4), code="invalid",
             params={"value": value}
         )
+    
     else:
         # Leading zeros are forbidden to avoid ambiguity with the octal
         # notation. This restriction is included in Python 3.9.5+.
