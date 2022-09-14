@@ -49,19 +49,9 @@ class SavedCardPayment(APIView):
         """
         method for handling saved card payment
         """
-        # TODO - fetch transaction data from the YouPayTransactionData
-        #  - add data into the payment_data
         try:
             transaction_id = request.data.get('transaction_id')
-            is_save_user_token = request.data.get('is_save_user_token')
-            response_url = request.data.get('response_url')
-            cvv = request.data.get('cvv')
-            card_type = request.data.get('card_type')
-            token = request.data.get('token')
-            channel_code = request.data.get('channel_code')
-            invoice_pk = request.data.get('invoice_pk')
-            customer_ip_address = request.data.get('customer_ip_address')
-            customer_name = request.data.get('customer_name')
+
             transaction_obj = YouPayTransactionData.objects.get(
                 transaction_id=transaction_id)
 

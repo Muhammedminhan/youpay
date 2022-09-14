@@ -11,9 +11,6 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT)
 
-from .utils import get_transaction_object
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -24,29 +21,29 @@ class CheckoutpgManager(object):
         #  - from api should get token type,
 
         payment_data = {
-            "currency": "AED",  # TODO get it from transaction_object
+            "currency": data['transaction_data'].get("currency"),
+            "customer_email": data['transaction_data'].get("customer_email"),
+            "amount": data['transaction_data'].get("amount"),
+            "order_reference": data['transaction_data'].get(
+                "order_reference"),
+            "invoice_pk": data['transaction_data'].get("invoice_id"),
+
+            "cvv": data['request_data'].get("cvv"),
+            "customer_name": data['request_data'].get("customer_name"),
+            "customer_ip_address": data['request_data'].get(
+                "customer_ip_address"),
+
             "token_type": data.get("token_type"),
-            "customer_email": "jomon@yougotagift.com",
-            # TODO get it from transaction_object
+
             "is_save_user_token": "false",  # todo based on the token type
             "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
             # TODO prepare url
-            "cvv": "",  # TODO get it from transaction_object
-            "amount": "100.0000",  # TODO get it from transaction_object
             "card_type": "",  # TODO get it from transaction_object
-            "order_reference": "Invoice-31551|ygag|VZMyp-R16CVLqntTjd9YI",
-            # TODO get it from transaction_object
             "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",
             # TODO get it from transaction_object
             "channel_code": "YGAGAE",  # TODO get it from transaction_object
-            "invoice_pk": "31551",  # TODO get it from transaction_object
-            "customer_ip_address": "84.226.122.71",
-            # TODO get it from transaction_object
-            "customer_name": "jomon_loc"
-            # TODO get it from transaction_object
         }
-        return json.dumps(payment_data)
-
+        return payment_data
 
     def get_payment_header(self):
         headers = {
