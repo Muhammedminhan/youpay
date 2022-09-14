@@ -14,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy
 
 # These values, if given to validate(), will trigger the self.required check.
-from core.messages import ERROR_MESSAGE_INVALID_IPV4
+from core.messages import ERROR_INVALID_IP
 
 EMPTY_VALUES = (None, "", [], (), {})
 
@@ -264,10 +264,9 @@ def validate_ipv4_address(value):
         ipaddress.IPv4Address(value)
     except ValueError:
         raise ValidationError(
-            _(ERROR_MESSAGE_INVALID_IPV4), code="invalid",
+            _(ERROR_INVALID_IP), code="invalid",
             params={"value": value}
         )
-    
     else:
         # Leading zeros are forbidden to avoid ambiguity with the octal
         # notation. This restriction is included in Python 3.9.5+.
@@ -275,7 +274,7 @@ def validate_ipv4_address(value):
         if any(octet != "0" and octet[0] == "0" for octet in
                value.split(".")):
             raise ValidationError(
-                _(ERROR_MESSAGE_INVALID_IPV4),
+                _(ERROR_INVALID_IP),
                 code="invalid",
                 params={"value": value},
             )
@@ -306,7 +305,7 @@ def validate_ipv46_address(value):
 ip_address_validator_map = {
     "both": (
         [validate_ipv46_address], _("Enter a valid IPv4 or IPv6 address.")),
-    "ipv4": ([validate_ipv4_address], _(ERROR_MESSAGE_INVALID_IPV4)),
+    "ipv4": ([validate_ipv4_address], _(ERROR_INVALID_IP)),
     "ipv6": ([validate_ipv6_address], _("Enter a valid IPv6 address.")),
 }
 

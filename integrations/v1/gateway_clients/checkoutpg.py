@@ -19,9 +19,6 @@ logger = logging.getLogger(__name__)
 
 class CheckoutpgManager(object):
 
-    def __int__(self):
-        pass
-
     def get_checkout_payment_data(self, data):
         # TODO - params: uuid(payment)
         #  - from api should get token type,
@@ -144,4 +141,4 @@ class CheckoutpgManager(object):
 
     def card_payemnt(self, data):
         payment_data = self.get_checkout_payment_data(data)
-        pass
+        return payment_data

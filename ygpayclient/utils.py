@@ -9,6 +9,7 @@ from Crypto.Cipher import AES
 from base64 import b64encode, b64decode
 from os import urandom
 from .constants import COMMON_ENCRYPTION_KEY
+from .exceptions import WaitLockException
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ def wait_redis_lock(
             sleep(wait_duration)
             retries += 1
         else:
-            raise Exception('Unable to acquire lock.')
+            raise WaitLockException('Unable to acquire lock.')
     try:
         yield
     finally:
