@@ -11,6 +11,9 @@ from core.validators import DecimalValidator
 from payments.constants import YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES
 
 
+# Create your models here.
+
+
 class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     transaction_id = models.UUIDField(default=uuid.uuid4, editable=False,
                                       unique=True)
@@ -47,7 +50,6 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         max_length=20, null=True, blank=True,
         choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
     session_id = models.CharField(max_length=120, null=True, blank=True)
-    test_field = models.CharField(max_length=120, null=True, blank=True)
 
 
 @receiver(post_save, sender=YouPayTransactionData)
