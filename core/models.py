@@ -42,3 +42,9 @@ class CustomerProfile(models.Model):
 
     class Meta:
         abstract = True
+
+
+class AppConfig(AbstractDateTime, AbstractUserBase):
+    front_end_domain = models.CharField(max_length=500, null=True, blank=True,
+                                        help_text="front-end domain for the"
+                                                  " redirection")

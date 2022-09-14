@@ -219,16 +219,17 @@ DJANGO_SUPERUSER_USERNAME = config('DJANGO_SUPERUSER_USERNAME')
 DJANGO_SUPERUSER_EMAIL = config('DJANGO_SUPERUSER_EMAIL')
 DJANGO_SUPERUSER_PASSWORD = config('DJANGO_SUPERUSER_PASSWORD')
 
-# CORS origin allow
-CORS_ORIGIN_ALLOW_ALL = True
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    '^(https?://)?(\w+\.)?yougotagift\.com$',
-    '^(https?://)?(\w+\.)?yougotagift\.co$',
-    '^(https?://)?(\w+-\w+\.)?yougotagift\.com$',
-    '^(https?://)?(\w+-\w+\.)?yougotagift\.co$',
-]
 
 CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN', '')
 CHECKOUTPG_API_KEY = config('CHECKOUTPG_API_KEY', '')
 
-PAYMENT_REDIRECT_URL = config("PAYMENT_REDIRECT_URL", "")
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': config('REDIS_DJANGO_CACHE_URL', 'redis://localhost:6379/3'),
+        'OPTIONS': {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
+    },
+}
+
