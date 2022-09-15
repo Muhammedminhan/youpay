@@ -51,7 +51,6 @@ class SavedCardPayment(APIView):
         """
         try:
             transaction_id = request.data.get('transaction_id')
-
             transaction_obj = YouPayTransactionData.objects.get(
                 transaction_id=transaction_id)
 
