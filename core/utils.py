@@ -7,6 +7,9 @@ from os import urandom
 from Crypto.Cipher import AES
 
 from core.constants import COMMON_ENCRYPTION_KEY
+from django.core.cache import cache
+
+from core.models import AppConfig
 
 logger = logging.getLogger(__name__)
 
@@ -93,3 +96,17 @@ def encrypt_payment_data(raw):
               [cipher.nonce, ciphertext, tag]]
     encrypted_data = json.dumps(dict(zip(json_k, json_v)))
     return encrypted_data
+
+
+def get_app_config():
+    """using low level caching for cache site config"""
+    cache_key = 'app_config'
+    app_config = cache.get(cache_key, None)
+    if app_config is None:
+        try:
+            app_config = AppConfig.objects.latest('id')
+            cache.set(cache_key, app_config)
+        except(AppConfig.DoesNotExist, Exception):
+            logging.error('No site configuration instance found.')
+            return None
+    return app_config

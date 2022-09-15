@@ -1,7 +1,7 @@
 from decouple import config
 
 # Set True if using aws s3 for static/media file storage
-STORAGE_AWS = config('STORAGE_AWS', True)
+STORAGE_AWS = config('STORAGE_AWS', default=False, cast=bool)
 
 if STORAGE_AWS:
     AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID', '')

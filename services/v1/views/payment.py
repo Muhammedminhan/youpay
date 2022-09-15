@@ -14,7 +14,7 @@ from services.v1.views.utils import (
     get_data_from_request,
     reformat_payment_request_data
 )
-from youpay.settings.base import PAYMENT_REDIRECT_URL
+from services.utils import get_payment_redirect_url
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
             data['api_client'] = client_pk
             serializer = PaymentRequestDataSerializer(data=data)
 
+            PAYMENT_REDIRECT_URL = get_payment_redirect_url()
             if PAYMENT_REDIRECT_URL is None or PAYMENT_REDIRECT_URL == "":
                 """
                 Transaction not created, payment url not configured
