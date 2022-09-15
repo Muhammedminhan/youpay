@@ -53,7 +53,6 @@ class SavedCardPayment(APIView):
             transaction_id = request.data.get('transaction_id')
             transaction_obj = YouPayTransactionData.objects.get(
                 transaction_id=transaction_id)
-
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
