@@ -3,6 +3,7 @@ import logging
 
 import requests
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 
 from core.response_messages import YouPayResponse
@@ -25,21 +26,30 @@ class CheckoutpgManager(object):
         # TODO - params: uuid(payment)
         #  - from api should get token type,
 
-        payment_data = {
-            "currency": data.get('transaction_data').get("currency"),
-            "customer_email": data.get('transaction_data').get(
-                "customer_email"),
-            "amount": data.get('transaction_data').get("amount"),
-            "order_reference": data.get('transaction_data').get(
-                "order_reference"),
-            "invoice_pk": data.get('transaction_data').get("invoice_id"),
+        transaction_data = data.get('transaction_data')
+        request_data = data.get('request_data')
+        token_type = data.get('token_type')
 
-            "cvv": data.get('request_data').get("cvv"),
-            "customer_name": data.get('request_data').get("customer_name"),
-            "customer_ip_address": data.get('request_data').get(
+        if transaction_data is None or request_data is None or token_type is None:
+            raise ObjectDoesNotExist(
+                "transaction_data or request_data or token_type data is not "
+                "available")
+
+        payment_data = {
+            "currency": transaction_data.get("currency"),
+            "customer_email": transaction_data.get(
+                "customer_email"),
+            "amount": transaction_data.get("amount"),
+            "order_reference": transaction_data.get(
+                "order_reference"),
+            "invoice_pk": transaction_data.get("invoice_id"),
+
+            "cvv": request_data.get("cvv"),
+            "customer_name": request_data.get("customer_name"),
+            "customer_ip_address": request_data.get(
                 "customer_ip_address"),
 
-            "token_type": data.get("token_type"),
+            "token_type": token_type,
 
             "is_save_user_token": "false",  # todo based on the token type
             "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
@@ -49,7 +59,7 @@ class CheckoutpgManager(object):
             # TODO get it from transaction_object
             "channel_code": "YGAGAE",  # TODO get it from transaction_object
         }
-        return json.dumps(payment_data)
+        return payment_data
 
     def get_payment_header(self):
         headers = {
