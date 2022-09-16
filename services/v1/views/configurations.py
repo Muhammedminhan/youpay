@@ -38,6 +38,8 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
                 checkout_config, status_code = \
                     self.get_configuratoins(
                         transaction.currency)
+                #TODO - check checkout_config, if not get the status code
+
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)

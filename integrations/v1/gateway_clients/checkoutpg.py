@@ -2,6 +2,7 @@ import requests
 import json
 import logging
 
+import requests
 from django.conf import settings
 from rest_framework import status
 
@@ -12,34 +13,41 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_PAYMENT_ENDPOINT)
 from .utils import get_transaction_object
 from core.utils import get_checkoutpg_config
+from core.response_messages import YouPayResponse
+from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 
 logger = logging.getLogger(__name__)
 
 
 class CheckoutpgManager(object):
-
-    def __int__(self, *args, **kwargs):
-        self.checkoutpg_config = None
+    checkoutpg_config = get_checkoutpg_config()
+    response_obj = YouPayResponse()
 
     def get_checkout_payment_data(self, data):
         # TODO - params: uuid(payment)
         #  - from api should get token type,
 
         payment_data = {
-            "currency": "AED", # TODO get it from transaction_object
+            "currency": "AED",  # TODO get it from transaction_object
             "token_type": data.get("token_type"),
-            "customer_email": "jomon@yougotagift.com",# TODO get it from transaction_object
-            "is_save_user_token": "false",# todo based on the token type
-            "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/", #TODO prepare url
-            "cvv": "",# TODO get it from transaction_object
-            "amount": "100.0000",# TODO get it from transaction_object
-            "card_type": "",# TODO get it from transaction_object
-            "order_reference": "Invoice-31551|ygag|VZMyp-R16CVLqntTjd9YI",# TODO get it from transaction_object
-            "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",# TODO get it from transaction_object
-            "channel_code": "YGAGAE",# TODO get it from transaction_object
-            "invoice_pk": "31551",# TODO get it from transaction_object
-            "customer_ip_address": "84.226.122.71",# TODO get it from transaction_object
-            "customer_name": "jomon_loc"# TODO get it from transaction_object
+            "customer_email": "jomon@yougotagift.com",
+            # TODO get it from transaction_object
+            "is_save_user_token": "false",  # todo based on the token type
+            "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
+            # TODO prepare url
+            "cvv": "",  # TODO get it from transaction_object
+            "amount": "100.0000",  # TODO get it from transaction_object
+            "card_type": "",  # TODO get it from transaction_object
+            "order_reference": "Invoice-31551|ygag|VZMyp-R16CVLqntTjd9YI",
+            # TODO get it from transaction_object
+            "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",
+            # TODO get it from transaction_object
+            "channel_code": "YGAGAE",  # TODO get it from transaction_object
+            "invoice_pk": "31551",  # TODO get it from transaction_object
+            "customer_ip_address": "84.226.122.71",
+            # TODO get it from transaction_object
+            "customer_name": "jomon_loc"
+            # TODO get it from transaction_object
         }
         return json.dumps(payment_data)
 
@@ -57,7 +65,6 @@ class CheckoutpgManager(object):
         params: currency
         response: json response from the checkoutpg
         """
-        self.checkoutpg_config = get_checkoutpg_config()
         if self.checkoutpg_config:
             channel_codes = []
             channel_code = CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
@@ -82,24 +89,24 @@ class CheckoutpgManager(object):
                             'card_bins', None) else []
                         data = {'public_keys': public_keys,
                                 'checkout_mada_bins': checkout_mada_bins}
-                        return data, resp_status
+                        return data, self.response_obj.SUCCESS
+
                     return message, resp_status
                 logger.error("Unable to fetch Checkoutpg configurations.")
-                return None, None
+                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
             except Exception as e:
-                logger.error("Failed to fetch the checkoutpg v2 configuration "
-                             "data {}".format(e))
-                return None, None
+                logger.error(
+                    "Failed to fetch the checkoutpg v2 configuration "
+                    "data {}".format(e))
+                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
         else:
-            logger.error("Unable to fetch Checkoutpg configurations."
-                         " Checkoutpg configurations not set")
-            return None, None
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
 
     def get_saved_cards(self, email, currency):
         """
         Method for getting saved cards
         """
-        self.checkoutpg_config = get_checkoutpg_config()
         if self.checkoutpg_config:
             saved_cards = []
             try:
@@ -111,22 +118,22 @@ class CheckoutpgManager(object):
                 if saved_cards:
                     saved_cards = json.loads(saved_cards.text).get('cards')
             except Exception as e:
-                logger.error("Unable to fetch saved card details for user {0} "
-                             "because, {1}".format(email, str(e)))
+                logger.error(
+                    "Unable to fetch saved card details for user {0} "
+                    "because, {1}".format(email, str(e)))
             return saved_cards
         else:
-            logger.error("Unable to fetch Checkoutpg configurations."
-                         " Checkoutpg configurations not set")
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
 
     def delete_saved_card(self, card_id):
-        self.checkoutpg_config = get_checkoutpg_config()
-        if self.checkoutpg_config:
+        checkoutpg_config = get_checkoutpg_config()
+        if checkoutpg_config:
             try:
                 header = self.get_payment_header()
                 URL = (
-                            settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
-                            card_id + '/')
+                        settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
+                        card_id + '/')
                 response = requests.delete(url=URL, headers=header)
                 return json.loads(response.text)
             except Exception as e:
@@ -134,15 +141,14 @@ class CheckoutpgManager(object):
                     "Unable to delete saved card {0} details because, {1}"
                     .format(card_id, str(e)))
         else:
-            logger.error("Unable to fetch Checkoutpg configurations."
-                         " Checkoutpg configurations not set")
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
 
     def saved_card_payment(self, data):
         # TODO
         #  - data: uuid, request data, token
-        self.checkoutpg_config = get_checkoutpg_config()
-        if self.checkoutpg_config:
+        checkoutpg_config = get_checkoutpg_config()
+        if checkoutpg_config:
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
 
@@ -153,8 +159,7 @@ class CheckoutpgManager(object):
 
             return success_dict
         else:
-            logger.error("Unable to fetch Checkoutpg configurations."
-                         " Checkoutpg configurations not set")
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
 
     def card_payemnt(self, data):
