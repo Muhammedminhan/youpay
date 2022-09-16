@@ -74,7 +74,7 @@ class SavedCardPayment(APIView):
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except ObjectDoesNotExist as e:
             data = self.response_obj.get_404_message(message=str(e))
-            return Response(data, status=status.HTTP_404_NOT_FOUND)
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
