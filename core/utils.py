@@ -10,6 +10,8 @@ from core.constants import COMMON_ENCRYPTION_KEY
 from django.core.cache import cache
 
 from core.models import AppConfig
+from integrations.models import PaymentGateway
+from integrations.constants import CHECKOUTPG_HUB_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -110,3 +112,17 @@ def get_app_config():
             logging.error('No site configuration instance found.')
             return None
     return app_config
+
+
+def get_checkoutpg_config():
+    """using low level caching for cache checkoutpg config"""
+    cache_key = 'checkoutpg_config'
+    checkoutpg_config = cache.get(cache_key, None)
+    if checkoutpg_config is None:
+        try:
+            checkoutpg_config = PaymentGateway.objects.get(code=CHECKOUTPG_HUB_CODE)
+            cache.set(cache_key, checkoutpg_config)
+        except(PaymentGateway.DoesNotExist, Exception):
+            logging.error('No checkoutpg configuration instance found.')
+            return None
+    return checkoutpg_config
