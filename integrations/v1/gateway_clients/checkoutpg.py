@@ -5,14 +5,13 @@ import requests
 from django.conf import settings
 from rest_framework import status
 
+from core.response_messages import YouPayResponse
+from core.utils import get_checkoutpg_config
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT)
-from .utils import get_transaction_object
-from core.utils import get_checkoutpg_config
-from core.response_messages import YouPayResponse
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 
 logger = logging.getLogger(__name__)
@@ -50,7 +49,7 @@ class CheckoutpgManager(object):
             # TODO get it from transaction_object
             "channel_code": "YGAGAE",  # TODO get it from transaction_object
         }
-        return json.dumps(payment_data)
+        return payment_data
 
     def get_payment_header(self):
         headers = {
