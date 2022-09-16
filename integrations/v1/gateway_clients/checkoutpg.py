@@ -1,4 +1,3 @@
-import requests
 import json
 import logging
 
@@ -6,14 +5,13 @@ import requests
 from django.conf import settings
 from rest_framework import status
 
+from core.response_messages import YouPayResponse
+from core.utils import get_checkoutpg_config
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT)
-from .utils import get_transaction_object
-from core.utils import get_checkoutpg_config
-from core.response_messages import YouPayResponse
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 
 logger = logging.getLogger(__name__)
@@ -27,29 +25,44 @@ class CheckoutpgManager(object):
         # TODO - params: uuid(payment)
         #  - from api should get token type,
 
-        payment_data = {
-            "currency": "AED",  # TODO get it from transaction_object
-            "token_type": data.get("token_type"),
-            "customer_email": "jomon@yougotagift.com",
-            # TODO get it from transaction_object
-            "is_save_user_token": "false",  # todo based on the token type
-            "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
-            # TODO prepare url
-            "cvv": "",  # TODO get it from transaction_object
-            "amount": "100.0000",  # TODO get it from transaction_object
-            "card_type": "",  # TODO get it from transaction_object
-            "order_reference": "Invoice-31551|ygag|VZMyp-R16CVLqntTjd9YI",
-            # TODO get it from transaction_object
-            "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",
-            # TODO get it from transaction_object
-            "channel_code": "YGAGAE",  # TODO get it from transaction_object
-            "invoice_pk": "31551",  # TODO get it from transaction_object
-            "customer_ip_address": "84.226.122.71",
-            # TODO get it from transaction_object
-            "customer_name": "jomon_loc"
-            # TODO get it from transaction_object
-        }
-        return json.dumps(payment_data)
+        transaction_data = data.get('transaction_data')
+        request_data = data.get('request_data')
+        token_type = data.get('token_type')
+
+        payment_data = {}
+
+        if transaction_data and request_data and token_type:
+            payment_data = {
+                "currency": transaction_data.get("currency"),
+                "customer_email": transaction_data.get(
+                    "customer_email"),
+                "amount": transaction_data.get("amount"),
+                "order_reference": transaction_data.get(
+                    "order_reference"),
+                "invoice_pk": transaction_data.get("invoice_id"),
+
+                "cvv": request_data.get("cvv"),
+                "customer_name": request_data.get("customer_name"),
+                "customer_ip_address": request_data.get(
+                    "customer_ip_address"),
+
+                "token_type": token_type,
+
+                "is_save_user_token": "false",  # todo based on the token type
+                "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
+                # TODO prepare url
+                "card_type": "",  # TODO get it from transaction_object
+                "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",
+                # TODO get it from transaction_object
+                "channel_code": "YGAGAE",
+                # TODO get it from transaction_object
+            }
+            return payment_data
+        else:
+            logger.error(
+                "transaction_data or request_data or token_type data "
+                "is not available")
+            return payment_data
 
     def get_payment_header(self):
         headers = {
@@ -156,7 +169,6 @@ class CheckoutpgManager(object):
             headers = self.get_payment_header()
             response = requests.post(url, data=payment_data,
                                      headers=headers)
-
             return success_dict
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
