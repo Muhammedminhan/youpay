@@ -49,7 +49,7 @@ class CheckoutpgManager(object):
             # TODO get it from transaction_object
             "channel_code": "YGAGAE",  # TODO get it from transaction_object
         }
-        return payment_data
+        return json.dumps(payment_data)
 
     def get_payment_header(self):
         headers = {
@@ -156,7 +156,6 @@ class CheckoutpgManager(object):
             headers = self.get_payment_header()
             response = requests.post(url, data=payment_data,
                                      headers=headers)
-
             return success_dict
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
