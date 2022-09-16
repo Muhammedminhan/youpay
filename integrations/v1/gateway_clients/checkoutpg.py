@@ -21,16 +21,17 @@ class CheckoutpgManager(object):
         #  - from api should get token type,
 
         payment_data = {
-            "currency": data['transaction_data'].get("currency"),
-            "customer_email": data['transaction_data'].get("customer_email"),
-            "amount": data['transaction_data'].get("amount"),
-            "order_reference": data['transaction_data'].get(
+            "currency": data.get('transaction_data').get("currency"),
+            "customer_email": data.get('transaction_data').get(
+                "customer_email"),
+            "amount": data.get('transaction_data').get("amount"),
+            "order_reference": data.get('transaction_data').get(
                 "order_reference"),
-            "invoice_pk": data['transaction_data'].get("invoice_id"),
+            "invoice_pk": data.get('transaction_data').get("invoice_id"),
 
-            "cvv": data['request_data'].get("cvv"),
-            "customer_name": data['request_data'].get("customer_name"),
-            "customer_ip_address": data['request_data'].get(
+            "cvv": data.get('request_data').get("cvv"),
+            "customer_name": data.get('request_data').get("customer_name"),
+            "customer_ip_address": data.get('request_data').get(
                 "customer_ip_address"),
 
             "token_type": data.get("token_type"),
@@ -43,6 +44,7 @@ class CheckoutpgManager(object):
             # TODO get it from transaction_object
             "channel_code": "YGAGAE",  # TODO get it from transaction_object
         }
+        
         return payment_data
 
     def get_payment_header(self):
@@ -134,6 +136,7 @@ class CheckoutpgManager(object):
                                  headers=headers)
         print(response)
 
+        return payment_data
         return success_dict
 
     def card_payemnt(self, data):
