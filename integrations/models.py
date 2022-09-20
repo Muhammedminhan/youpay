@@ -22,7 +22,7 @@ PAYMENT_REQUEST_METHOD = [
 
 
 class PaymentGateway(AbstractDateTime, AbstractUserBase):
-    code = models.CharField(max_length=10, blank=True, null=True,
+    code = models.CharField(max_length=20, blank=True, null=True,
                             help_text='Gateway identification code')
     gateway_name = models.CharField(max_length=255,
                                     help_text='Name of the payment gateway')

@@ -26,4 +26,4 @@ class APIClientSerializer(serializers.ModelSerializer):
 class PaymentGatewaySerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentGateway
-        fields = ['gateway_name']
+        fields = '__all__'

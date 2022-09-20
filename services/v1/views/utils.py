@@ -1,4 +1,5 @@
 from payments.constants import PAYMENT_STATUS_INITIATED
+from services.v1.constants import PAYMENT_GATEWAYS
 
 
 def reformat_payment_request_data(data):
@@ -44,3 +45,26 @@ def get_session_id_and_transaction_id(id):
     transaction_id = id.split('-')[1:]
     delimiter = '-'
     return session_id, delimiter.join(transaction_id)
+
+
+def get_gateways(payment_gateway_serializer):
+    """
+    used to get gateways from payment gateway serializer
+    """
+    response_payment_gateways = {}
+
+    payment_gateways = payment_gateway_serializer.data
+
+    for available_payment_gateway in PAYMENT_GATEWAYS:
+        gateway_name = available_payment_gateway.get('gateway_name')
+        response_payment_gateways[gateway_name] = False
+
+    for payment_gateway in payment_gateways:
+        code = payment_gateway.get('code')
+        for available_payment_gateway in PAYMENT_GATEWAYS:
+            available_gateway_code = available_payment_gateway.get('code')
+            gateway_name = available_payment_gateway.get('gateway_name')
+            if available_gateway_code == code:
+                response_payment_gateways[
+                    gateway_name] = True
+    return response_payment_gateways
