@@ -1,6 +1,7 @@
 class YouPayResponse(object):
     SUCCESS = 1000
     UNKNOWN_ERR = 1002
+    CHECKOUTPG_CONNECTION_ERROR = 1003
 
     def __init__(self):
         super(YouPayResponse, self).__init__()
@@ -13,6 +14,7 @@ class YouPayResponse(object):
         self.MESSAGE.update({
             self.UNKNOWN_ERR: "Something went wrong",
             self.SUCCESS: "API request completed successfully",
+            self.CHECKOUTPG_CONNECTION_ERROR: "Checkoutpg connection error"
         })
 
     def get_400_message(self, message):
