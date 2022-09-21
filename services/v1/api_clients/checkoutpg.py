@@ -52,6 +52,8 @@ class SavedCardPayment(APIView):
         """
         try:
             transaction_id = request.data.get('transaction_id')
+            # TODO - move this into a common method
+
             transaction_obj = YouPayTransactionData.objects.get(
                 transaction_id=transaction_id)
             if transaction_obj:
@@ -62,6 +64,7 @@ class SavedCardPayment(APIView):
                                 'request_data': request.data}
                 checkout = CheckoutpgManager()
                 response_data = checkout.saved_card_payment(payment_data)
+                response_data = {"response": response_data}
                 data = self.response_obj.get_success_dict(
                     code=self.response_obj.SUCCESS,
                     success_dict=response_data

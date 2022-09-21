@@ -36,15 +36,15 @@ class CheckoutpgManager(object):
                 "currency": transaction_data.get("currency"),
                 "customer_email": transaction_data.get(
                     "customer_email"),
-                "amount": transaction_data.get("amount"),
+                "amount": str(transaction_data.get("amount")),
                 "order_reference": transaction_data.get(
                     "order_reference"),
                 "invoice_pk": transaction_data.get("invoice_id"),
 
                 "cvv": request_data.get("cvv"),
-                "customer_name": request_data.get("customer_name"),
-                "customer_ip_address": request_data.get(
-                    "customer_ip_address"),
+                "customer_name": transaction_data.get("customer_name"),
+                "customer_ip_address": transaction_data.get(
+                    "ip"),
 
                 "token_type": token_type,
 
@@ -52,23 +52,23 @@ class CheckoutpgManager(object):
                 "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
                 # TODO prepare url
                 "card_type": "",  # TODO get it from transaction_object
-                "token": "tok_2fljwtdb3ipe7digcwmkmsd56u",
+                "token": request_data.get("token"),
                 # TODO get it from transaction_object
                 "channel_code": "YGAGAE",
                 # TODO get it from transaction_object
             }
-            return payment_data
+            return json.dumps(payment_data)
         else:
             logger.error(
                 "transaction_data or request_data or token_type data "
                 "is not available")
-            return payment_data
+            return None
 
     def get_payment_header(self):
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': settings.CHECKOUTPG_API_KEY,
-            'Api-key': settings.CHECKOUTPG_API_KEY
+            'Authorization': self.checkoutpg_config.api_key,
+            'Api-key': self.checkoutpg_config.api_key
         }
         return headers
 
@@ -165,11 +165,11 @@ class CheckoutpgManager(object):
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
 
-            url = settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_PAYMENT_ENDPOINT
+            url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
             headers = self.get_payment_header()
             response = requests.post(url, data=payment_data,
                                      headers=headers)
-            return success_dict
+            return response.text
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None

@@ -37,6 +37,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
             "platform",
             "customer_email",
             "customer_phone",
+            "customer_name",
             "language",
             "session_id",
             "payment_status",
@@ -54,6 +55,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
         try:
             decrypted_data = decrypt_payment_data(request.data)
             data_formatted = reformat_payment_request_data(decrypted_data)
+            # TODO - can use a serializer here
+
             data = get_data_from_request(
                 self.PAYMENT_REQUEST_DATA_FIELDS_LIST, data_formatted)
 
