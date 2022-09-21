@@ -1,17 +1,22 @@
+from integrations.constants import (
+    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE
+)
 from payments.constants import PAYMENT_STATUS_INITIATED
+from services.v1.constants import PAYMENT_OPTIONS
 
 
 def reformat_payment_request_data(data):
     """
     used to reformat payment request data
     """
-
+    # TODO - refactor this code
     data['amount'] = data['order']['amount']
     data['invoice_id'] = data['payment']['invoice_id']
     data['currency'] = data['order']['currency']
     data['order_reference'] = data['payment']['order_reference']
     data['customer_email'] = data['customer']['email']
     data['customer_phone'] = data['customer']['phone']
+    data['customer_name'] = data['customer']['name']
     data['language'] = data['payment']['language']
     data['platform'] = data['payment']['payment_platform']
     data['ip'] = data['payment']['ip']
@@ -44,3 +49,27 @@ def get_session_id_and_transaction_id(id):
     transaction_id = id.split('-')[1:]
     delimiter = '-'
     return session_id, delimiter.join(transaction_id)
+
+
+def get_payment_options(payment_gateway_serializer):
+    """
+    used to get gateways from payment gateway serializer
+    """
+    response_payment_options = PAYMENT_OPTIONS
+
+    payment_gateways = payment_gateway_serializer.data
+
+    for payment_gateway in payment_gateways:
+        code = payment_gateway.get('code')
+        if code == CHECKOUTPG_HUB_CODE:
+            response_payment_options['checkoutpg'] = True
+            response_payment_options['saved_card'] = True
+            response_payment_options['applepay'] = True
+
+        if code == B2CPAYBACK_HUB_CODE:
+            response_payment_options['adcb'] = True
+
+        if code == TABBYPG_HUB_CODE:
+            response_payment_options['tabbypg'] = True
+
+    return response_payment_options

@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'reports',
     'services',
     'payments',
+    'checkoutpgclient',
 
     # 3rd party apps
     'rest_framework',
@@ -219,9 +220,6 @@ DJANGO_SUPERUSER_USERNAME = config('DJANGO_SUPERUSER_USERNAME')
 DJANGO_SUPERUSER_EMAIL = config('DJANGO_SUPERUSER_EMAIL')
 DJANGO_SUPERUSER_PASSWORD = config('DJANGO_SUPERUSER_PASSWORD')
 
-
-CHECKOUTPG_DOMAIN = config('CHECKOUTPG_DOMAIN', '')
-CHECKOUTPG_API_KEY = config('CHECKOUTPG_API_KEY', '')
 
 CACHES = {
     'default': {

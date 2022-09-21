@@ -12,7 +12,9 @@ from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
-from services.v1.views.utils import get_session_id_and_transaction_id
+from services.v1.views.utils import (
+    get_session_id_and_transaction_id, get_payment_options
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,8 +38,9 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
                 transaction_id=transaction_id)
             if transaction:
                 checkout_config, status_code = \
-                    self.get_configuratoins(
-                        transaction.currency)
+                    self.get_configuratoins(transaction.currency)
+                # TODO - check checkout_config, if not get the status code
+
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)
@@ -46,9 +49,12 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
                             client.payment_gateway.filter(is_active=True),
                             many=True
                         )
+
+                        payment_options = get_payment_options(serializer)
+
                         response_data = {
                             "data": {
-                                "payment_gateways": serializer.data,
+                                "payment_options": payment_options,
                                 "checkoutpg_config": checkout_config,
                                 "amount": transaction.amount,
                                 "currency": transaction.currency,

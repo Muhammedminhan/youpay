@@ -1,15 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
-from services.v1.api_clients.checkoutpg import SavedCardPayment, CardPayment
-from services.v1.views.configurations import ConfigViewSet
-from .views.client_registration import APIClientRegistrationViewSet
-
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification)
-
+from services.v1.views.configurations import ConfigViewSet
+from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import PaymentRequestView, TestPaymentRequestView
-
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -17,7 +13,6 @@ router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
     path("", include(router.urls)),
-
     path('payment/', PaymentRequestView.as_view()),
     # For testing purpose
     # input will be the request data, output will be encrypted data and this
