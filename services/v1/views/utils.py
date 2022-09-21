@@ -50,7 +50,7 @@ def get_session_id_and_transaction_id(id):
     return session_id, delimiter.join(transaction_id)
 
 
-def get_gateways(payment_gateway_serializer):
+def get_payment_options(payment_gateway_serializer):
     """
     used to get gateways from payment gateway serializer
     """

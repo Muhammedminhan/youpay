@@ -13,8 +13,7 @@ from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
 from services.v1.views.utils import (
-    get_session_id_and_transaction_id,
-    get_gateways
+    get_session_id_and_transaction_id, get_payment_options
 )
 
 logger = logging.getLogger(__name__)
@@ -51,11 +50,11 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
                             many=True
                         )
 
-                        payment_gateways = get_gateways(serializer)
+                        payment_options = get_payment_options(serializer)
 
                         response_data = {
                             "data": {
-                                "payment_gateways": payment_gateways,
+                                "payment_options": payment_options,
                                 "checkoutpg_config": checkout_config,
                                 "amount": transaction.amount,
                                 "currency": transaction.currency,
