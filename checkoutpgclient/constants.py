@@ -1,4 +1,3 @@
-from django.utils.translation import ugettext as _
 
 PAYMENT_STATUS_AUTHORIZED = 'Authorized'
 PAYMENT_STATUS_CAPUTRED = 'Captured'
@@ -16,20 +15,20 @@ PAYMENT_STATUS_ERROR = 'Error'
 PAYMENT_STATUS_REJECTED = 'Rejected'
 
 PAYMENT_STATUS_CHOICES = (
-    (PAYMENT_STATUS_NONE, _('None')),
-    (PAYMENT_STATUS_AUTHORIZED, _('Authorized')),
-    (PAYMENT_STATUS_CAPUTRED, _('Captured')),
-    (PAYMENT_STATUS_CARD_VERIFIED, _('Card Verified')),
-    (PAYMENT_STATUS_DECLINED, _('Declined')),
-    (PAYMENT_STATUS_PENDING, _('Pending')),
-    (PAYMENT_STATUS_VOIDED, _('Voided')),
-    (PAYMENT_STATUS_PARTIALLY_CAPTURED, _('Partially Captured')),
-    (PAYMENT_STATUS_PARTIALLY_REFUNDED, _('Partially Refunded')),
-    (PAYMENT_STATUS_REFUNDED, _('Refunded')),
-    (PAYMENT_STATUS_CANCELLED, _('Cancelled')),
-    (PAYMENT_STATUS_PAID, _('Paid')),
-    (PAYMENT_STATUS_ERROR, _('Error')),
-    (PAYMENT_STATUS_REJECTED, _('Rejected')),
+    (PAYMENT_STATUS_NONE, 'None'),
+    (PAYMENT_STATUS_AUTHORIZED, 'Authorized'),
+    (PAYMENT_STATUS_CAPUTRED, 'Captured'),
+    (PAYMENT_STATUS_CARD_VERIFIED, 'Card Verified'),
+    (PAYMENT_STATUS_DECLINED, 'Declined'),
+    (PAYMENT_STATUS_PENDING, 'Pending'),
+    (PAYMENT_STATUS_VOIDED, 'Voided'),
+    (PAYMENT_STATUS_PARTIALLY_CAPTURED, 'Partially Captured'),
+    (PAYMENT_STATUS_PARTIALLY_REFUNDED, 'Partially Refunded'),
+    (PAYMENT_STATUS_REFUNDED, 'Refunded'),
+    (PAYMENT_STATUS_CANCELLED, 'Cancelled'),
+    (PAYMENT_STATUS_PAID, 'Paid'),
+    (PAYMENT_STATUS_ERROR, 'Error'),
+    (PAYMENT_STATUS_REJECTED, 'Rejected'),
 )
 
 PAYMENT_METHOD_CARD = 'card'
@@ -38,10 +37,10 @@ PAYMENT_METHOD_PAYPAL = 'paypal'
 PAYMENT_METHOD_APPLEPAY = 'applepay'
 
 PAYMENT_METHOD_CHOICES = (
-    (PAYMENT_METHOD_CARD, _('Card')),
-    (PAYMENT_METHOD_SAVED_CARD, _('Saved Card')),
-    (PAYMENT_METHOD_PAYPAL, _('Paypal')),
-    (PAYMENT_METHOD_APPLEPAY, _('Apple Pay')),
+    (PAYMENT_METHOD_CARD, 'Card'),
+    (PAYMENT_METHOD_SAVED_CARD, 'Saved Card'),
+    (PAYMENT_METHOD_PAYPAL, 'Paypal'),
+    (PAYMENT_METHOD_APPLEPAY, 'Apple Pay'),
 )
 
 PAYMENT_SCHEME_VISA = 'Visa'
@@ -55,13 +54,13 @@ PAYMENT_SCHEME_DISCOVER = 'Discover'
 PAYMENT_SCHEME_NONE = 'None'
 
 PAYMENT_SCHEME_CHOICES = (
-    (PAYMENT_SCHEME_VISA, _('Visa')),
-    (PAYMENT_SCHEME_MASTERCARD, _('Mastercard')),
-    (PAYMENT_SCHEME_PAYPAL, _('paypal')),
-    (PAYMENT_SCHEME_MADA, _('mada')),
-    (PAYMENT_SCHEME_AMERICAN_EXPRESS, _('Amex')),
-    (PAYMENT_SCHEME_DINERSCLUB, _('DinersClub')),
-    (PAYMENT_SCHEME_JCB, _('Jcb')),
-    (PAYMENT_SCHEME_DISCOVER, _('Discover')),
-    (PAYMENT_SCHEME_NONE, _('None')),
+    (PAYMENT_SCHEME_VISA, 'Visa'),
+    (PAYMENT_SCHEME_MASTERCARD, 'Mastercard'),
+    (PAYMENT_SCHEME_PAYPAL, 'paypal'),
+    (PAYMENT_SCHEME_MADA, 'mada'),
+    (PAYMENT_SCHEME_AMERICAN_EXPRESS, 'Amex'),
+    (PAYMENT_SCHEME_DINERSCLUB, 'DinersClub'),
+    (PAYMENT_SCHEME_JCB, 'Jcb'),
+    (PAYMENT_SCHEME_DISCOVER, 'Discover'),
+    (PAYMENT_SCHEME_NONE, 'None'),
 )

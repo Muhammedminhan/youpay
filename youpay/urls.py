@@ -32,6 +32,7 @@ urlpatterns = [
     path('services/', include('services.urls')),
     path('health/', HealthCheck.as_view(), name='health'),
     path('sentry-debug/', trigger_error),
+    path('checkoutpg/', include('checkoutpgclient.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

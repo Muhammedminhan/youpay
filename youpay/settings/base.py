@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'reports',
     'services',
     'payments',
+    'checkoutpgclient',
 
     # 3rd party apps
     'rest_framework',
