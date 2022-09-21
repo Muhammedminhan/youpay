@@ -1,3 +1,6 @@
+from integrations.constants import (
+    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE
+)
 from payments.constants import PAYMENT_STATUS_INITIATED
 from services.v1.constants import PAYMENT_GATEWAYS
 
@@ -51,20 +54,21 @@ def get_gateways(payment_gateway_serializer):
     """
     used to get gateways from payment gateway serializer
     """
-    response_payment_gateways = {}
+    response_payment_gateways = PAYMENT_GATEWAYS
 
     payment_gateways = payment_gateway_serializer.data
 
-    for available_payment_gateway in PAYMENT_GATEWAYS:
-        gateway_name = available_payment_gateway.get('gateway_name')
-        response_payment_gateways[gateway_name] = False
-
     for payment_gateway in payment_gateways:
         code = payment_gateway.get('code')
-        for available_payment_gateway in PAYMENT_GATEWAYS:
-            available_gateway_code = available_payment_gateway.get('code')
-            gateway_name = available_payment_gateway.get('gateway_name')
-            if available_gateway_code == code:
-                response_payment_gateways[
-                    gateway_name] = True
+        if code == CHECKOUTPG_HUB_CODE:
+            response_payment_gateways['checkoutpg'] = True
+            response_payment_gateways['saved_card'] = True
+            response_payment_gateways['applepay'] = True
+
+        if code == B2CPAYBACK_HUB_CODE:
+            response_payment_gateways['adcb'] = True
+
+        if code == TABBYPG_HUB_CODE:
+            response_payment_gateways['tabbypg'] = True
+
     return response_payment_gateways
