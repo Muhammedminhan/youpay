@@ -1,7 +1,9 @@
 import datetime
+import json
 import logging
 
 import requests
+from django.core.serializers.json import DjangoJSONEncoder
 
 from core.constants import EXTERNAL_API_REQUEST_TIMEOUT
 from core.exceptions import ClientWebhookException
@@ -26,7 +28,8 @@ class ClientService(object):
             if youpay_transaction:
                 serializer = YouPayTransactionDataSerializer(
                     youpay_transaction)
-                request_data_json = serializer.data
+                request_data_json = json.dumps(serializer.data,
+                                               cls=DjangoJSONEncoder)
                 self.transaction_id = youpay_transaction.transaction_id
 
                 url = youpay_transaction.api_client.endpoint_url
