@@ -1,4 +1,4 @@
-PAYMENT_GATEWAYS = {
+PAYMENT_OPTIONS = {
     "saved_card": False,
     "checkoutpg": False,
     "adcb": False,
