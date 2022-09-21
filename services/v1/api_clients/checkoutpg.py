@@ -63,14 +63,19 @@ class SavedCardPayment(APIView):
                                 'transaction_data': transaction_data,
                                 'request_data': request.data}
                 checkout = CheckoutpgManager()
-                response_data = checkout.saved_card_payment(payment_data)
-                response_data = {"response": response_data}
-                data = self.response_obj.get_success_dict(
-                    code=self.response_obj.SUCCESS,
-                    success_dict=response_data
-                )
-                return Response(data,
-                                status=status.HTTP_200_OK)
+                response_data, code = checkout.saved_card_payment(
+                    payment_data)
+                if response_data:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(code=code)
+                    return Response(data,
+                                    status=status.HTTP_404_NOT_FOUND)
             else:
                 data = self.response_obj.get_404_message(
                     message="Transaction doesn't exists")

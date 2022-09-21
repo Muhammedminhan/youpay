@@ -169,7 +169,10 @@ class CheckoutpgManager(object):
             headers = self.get_payment_header()
             response = requests.post(url, data=payment_data,
                                      headers=headers)
-            return response.text
+            if response:
+                return response.json(), self.response_obj.SUCCESS
+
+            return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
