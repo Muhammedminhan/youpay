@@ -5,13 +5,14 @@ def reformat_payment_request_data(data):
     """
     used to reformat payment request data
     """
-
+    # TODO - refactor this code
     data['amount'] = data['order']['amount']
     data['invoice_id'] = data['payment']['invoice_id']
     data['currency'] = data['order']['currency']
     data['order_reference'] = data['payment']['order_reference']
     data['customer_email'] = data['customer']['email']
     data['customer_phone'] = data['customer']['phone']
+    data['customer_name'] = data['customer']['name']
     data['language'] = data['payment']['language']
     data['platform'] = data['payment']['payment_platform']
     data['ip'] = data['payment']['ip']
