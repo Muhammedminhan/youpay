@@ -16,8 +16,21 @@ class PaymentGatewayAdmin(AdminAbstract):
     search_fields = ('gateway_name', 'domain', 'api_key', 'api_secret')
     list_filter = ('is_active', 'created_at')
 
+    def save_model(self, request, obj, form, change):
+        if not obj.pk:
+            obj.created_by = request.user
+        if form.changed_data:
+            try:
+                cache.delete('checkoutpg_config')
+            except (TypeError, AttributeError):
 
-class PaymentGatewayAPIAdmin(admin.ModelAdmin):
+                logging.error(
+                    'Error while clearing bulk gateway config cache')
+            obj.modified_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+class PaymentGatewayAPIAdmin(AdminAbstract):
     list_display = (
         'api_name', 'api', 'payment_gateway', 'api_path', 'created_at',
         'updated_at')
@@ -27,18 +40,6 @@ class PaymentGatewayAPIAdmin(admin.ModelAdmin):
     def api(self, obj):
         return " ({}) ".format(
             obj.api_type) + obj.payment_gateway.domain + obj.api_path
-
-    def save_model(self, request, obj, form, change):
-        if not obj.pk:
-            obj.created_by = request.user
-        if form.changed_data:
-            try:
-                cache.delete('checkoutpg_config')
-            except (TypeError, AttributeError):
-                logging.error(
-                    'Error while clearing bulk gateway config cache')
-            obj.modified_by = request.user
-        super().save_model(request, obj, form, change)
 
 
 admin.site.register(PaymentGateway, PaymentGatewayAdmin)

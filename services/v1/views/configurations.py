@@ -19,7 +19,7 @@ from services.v1.views.utils import (
 logger = logging.getLogger(__name__)
 
 
-class ConfigViewSet(ViewSet, CheckoutpgManager):
+class ConfigViewSet(ViewSet):
     """
     Config viewset for getting payment gateways with transaction id
     """
@@ -33,14 +33,17 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
     def retrieve(self, request, pk=None):
         session_id, transaction_id = get_session_id_and_transaction_id(pk)
 
+        checkout_obj = CheckoutpgManager()
         try:
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=transaction_id)
             if transaction:
                 checkout_config, status_code = \
-                    self.get_configuratoins(transaction.currency)
+                    checkout_obj.get_configuratoins(transaction.currency)
                 # TODO - check checkout_config, if not get the status code
-
+                logger.info(
+                    "checkoutpg response : {}, {}".format(checkout_config,
+                                                          status_code))
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)
