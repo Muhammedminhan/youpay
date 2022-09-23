@@ -14,6 +14,10 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_PAYMENT_ENDPOINT)
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 
+from integrations.v1.serializers.checkoutpg_payment_request import (
+    CheckoutPaymentRequestSerializer)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,42 +26,11 @@ class CheckoutpgManager(object):
     response_obj = YouPayResponse()
 
     def get_checkout_payment_data(self, data):
-        # TODO - params: uuid(payment)
-        #  - from api should get token type,
 
-        transaction_data = data.get('transaction_data')
-        request_data = data.get('request_data')
-        token_type = data.get('token_type')
-
-        payment_data = {}
-
-        if transaction_data and request_data and token_type:
-            payment_data = {
-                "currency": transaction_data.get("currency"),
-                "customer_email": transaction_data.get(
-                    "customer_email"),
-                "amount": str(transaction_data.get("amount")),
-                "order_reference": transaction_data.get(
-                    "order_reference"),
-                "invoice_pk": transaction_data.get("invoice_id"),
-
-                "cvv": request_data.get("cvv"),
-                "customer_name": transaction_data.get("customer_name"),
-                "customer_ip_address": transaction_data.get(
-                    "ip"),
-
-                "token_type": token_type,
-
-                "is_save_user_token": "false",  # todo based on the token type
-                "response_url": "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/",
-                # TODO prepare url
-                "card_type": "",  # TODO get it from transaction_object
-                "token": request_data.get("token"),
-                # TODO get it from transaction_object
-                "channel_code": "YGAGAE",
-                # TODO get it from transaction_object
-            }
-            return json.dumps(payment_data)
+        if (data.get('transaction_data') and data.get('request_data')
+                and data.get('token_type')):
+            payment_data = CheckoutPaymentRequestSerializer(data)
+            return json.dumps(payment_data.data)
         else:
             logger.error(
                 "transaction_data or request_data or token_type data "
