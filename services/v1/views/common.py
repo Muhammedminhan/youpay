@@ -3,6 +3,7 @@ import logging
 from rest_framework import status
 
 from core.messages import ERROR_MISSING_FIELDS
+from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -64,3 +65,9 @@ class PaymentRequestDataValidator(object):
                 return True
             return False
         return False
+
+
+def get_youpay_transaction_data(transaction_id):
+    transaction_obj = YouPayTransactionData.objects.get(
+        transaction_id=transaction_id)
+    return transaction_obj

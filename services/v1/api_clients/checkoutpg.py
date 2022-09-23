@@ -5,12 +5,12 @@ from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
-from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.constants import TOKEN_TYPE_CARD
 from services.constants import TOKEN_TYPE_SAVED_CARD
+from services.v1.views.common import get_youpay_transaction_data
 
 
 class SavedCardPayment(APIView):
@@ -23,8 +23,8 @@ class SavedCardPayment(APIView):
         try:
             transaction_id = request.GET['transaction_id']
 
-            transaction_obj = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
+            transaction_obj = get_youpay_transaction_data(transaction_id)
+
             if transaction_obj:
                 email = transaction_obj.customer_email
                 currency = transaction_obj.currency
@@ -52,10 +52,9 @@ class SavedCardPayment(APIView):
         """
         try:
             transaction_id = request.data.get('transaction_id')
-            # TODO - move this into a common method
 
-            transaction_obj = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
+            transaction_obj = get_youpay_transaction_data(transaction_id)
+
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
