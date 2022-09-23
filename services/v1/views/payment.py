@@ -7,14 +7,13 @@ from rest_framework.views import APIView
 from core.response_messages import YouPayResponse
 from core.utils import encrypt_payment_data, decrypt_payment_data
 from services.models import PaymentRequestData
+from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer)
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from services.v1.views.utils import (
-    get_data_from_request,
     reformat_payment_request_data
 )
-from services.utils import get_payment_redirect_url
 
 logger = logging.getLogger(__name__)
 
@@ -52,27 +51,42 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
         self.return_data = None
 
     def post(self, request):
+        """
+        decrypted_data : stores the decrypted data from request
+
+        data_formatted : stores the formatted data from decrypted_data, ie
+        data with keys as fields in PaymentRequestData table
+
+        """
         try:
             decrypted_data = decrypt_payment_data(request.data)
             data_formatted = reformat_payment_request_data(decrypted_data)
-            # TODO - can use a serializer here
 
-            data = get_data_from_request(
-                self.PAYMENT_REQUEST_DATA_FIELDS_LIST, data_formatted)
+            if not data_formatted:
+                """
+                Decrypted data is empty
+                """
+                message = (
+                    "payment request data is not in proper format, one of the"
+                    " data is missing ie order or payment or customer")
+                self.return_data = self.response_obj.get_400_message(
+                    message=message)
+                return Response(self.return_data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
 
             validate, client_pk = self.validate_client(request)
 
             if validate is False:
-                logger.info("payment request client validation failed for {0}"
-                            .format("order_reference"))
+                logger.info(
+                    "payment request client validation failed for {0}"
+                    .format("order_reference"))
                 self.return_data = self.response_obj.get_400_message(
                     message="Client Does Not Exist")
-
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            data['api_client'] = client_pk
-            serializer = PaymentRequestDataSerializer(data=data)
+            data_formatted['api_client'] = client_pk
+            serializer = PaymentRequestDataSerializer(data=data_formatted)
 
             PAYMENT_REDIRECT_URL = get_payment_redirect_url()
             if PAYMENT_REDIRECT_URL is None or PAYMENT_REDIRECT_URL == "":
@@ -88,8 +102,9 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
             if serializer.is_valid():
                 self.payment_request_obj = serializer.save()
                 transaction_response = self.create_youpay_transaction_data(
-                    data)
-                if transaction_response['status'] == status.HTTP_201_CREATED:
+                    data_formatted)
+                if transaction_response[
+                    'status'] == status.HTTP_201_CREATED:
                     redirect_url = PAYMENT_REDIRECT_URL + "/{}{}".format(
                         "?transaction_id=",
                         transaction_response['data']['transaction_id'])
@@ -140,7 +155,13 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
+            import sys, os
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            logger.error("Exception in payment request : {} {} {}"
+                         .format(exc_type, fname, exc_tb.tb_lineno))
             self.return_data = self.response_obj.get_400_message(
                 message={"error": str(e)},
             )
