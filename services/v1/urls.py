@@ -21,7 +21,8 @@ urlpatterns = [
 
     path('checkout/saved-card/', SavedCardPayment.as_view()),
     path('checkout/card/', CardPayment.as_view()),
-    path('checkout/verify/', CheckoutVerification.as_view()),
+    path('checkout/verify/', CheckoutVerification.as_view(),
+         name='checkout_verify'),
 
     # TODO
     #  - create delete stored card api

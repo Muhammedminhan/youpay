@@ -68,6 +68,8 @@ class PaymentRequestDataValidator(object):
 
 
 def get_youpay_transaction_data(transaction_id):
+    # TODO - try except, in exceptoin return None
+
     transaction_obj = YouPayTransactionData.objects.get(
         transaction_id=transaction_id)
     return transaction_obj

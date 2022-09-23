@@ -1,5 +1,6 @@
 # TODO create serializer for checkoutpg request
 from rest_framework import serializers
+from django.urls import reverse
 
 
 class CheckoutPaymentRequestSerializer(serializers.Serializer):
@@ -49,7 +50,8 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('request_data').get("is_save_user_token")
 
     def get_response_url(self, data):
-        return "http://192.168.225.227:12000/checkout/invoices/31551/orders/22879/webloading/"
+        url = reverse('checkout_verify')
+        return data.get('site_domain')+url+'?id='+data.get('transaction_data').get('transaction_id')
 
     def get_card_type(self, data):
         return ""
