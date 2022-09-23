@@ -182,10 +182,6 @@ try:
 except ImportError:
     pass
 
-try:
-    from youpay.settings.security import *
-except ImportError:
-    pass
 
 YOUPAY_SECRET_KEY = config('YOUPAY_SECRET_KEY', '')
 YOUPAY_PUBLIC_KEY = config('YOUPAY_PUBLIC_KEY', '')
