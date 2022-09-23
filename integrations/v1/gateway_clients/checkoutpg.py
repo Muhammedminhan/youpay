@@ -11,11 +11,13 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
-                                    CHECKOUTPG_PAYMENT_ENDPOINT)
+                                    CHECKOUTPG_PAYMENT_ENDPOINT,
+                                    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT)
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
+from services.v1.views.common import get_youpay_transaction_data
 
 
 logger = logging.getLogger(__name__)
@@ -139,7 +141,6 @@ class CheckoutpgManager(object):
         if checkoutpg_config:
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
-
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
             headers = self.get_payment_header()
             response = requests.post(url, data=payment_data,
@@ -155,3 +156,18 @@ class CheckoutpgManager(object):
     def card_payemnt(self, data):
         payment_data = self.get_checkout_payment_data(data)
         return payment_data
+
+    def verify_payment(self, data):
+        url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT
+
+        youpay_transaction = get_youpay_transaction_data(data.get('transaction_id'))
+
+        params = {
+            'cko-session-id': data.get('cko_session_id'),
+            'channel_code': "YGAGAE",
+            'invoice_id': youpay_transaction.invoice_id}
+        response = requests.get(url, params=params)
+        if response:
+            return response.json(), self.response_obj.SUCCESS
+        else:
+            return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR

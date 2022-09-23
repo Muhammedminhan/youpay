@@ -126,3 +126,10 @@ def get_checkoutpg_config():
             logging.error('No checkoutpg configuration instance found.')
             return None
     return checkoutpg_config
+
+def get_site_domain(request):
+    if request.is_secure():
+        protocol = 'https://'
+    else:
+        protocol = 'http://'
+    return protocol+request.get_host()

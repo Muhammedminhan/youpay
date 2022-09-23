@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
+from core.utils import get_site_domain
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -22,7 +23,6 @@ class SavedCardPayment(APIView):
         """
         try:
             transaction_id = request.GET['transaction_id']
-
             transaction_obj = get_youpay_transaction_data(transaction_id)
 
             if transaction_obj:
@@ -51,6 +51,7 @@ class SavedCardPayment(APIView):
         method for handling saved card payment
         """
         try:
+            site_domain = get_site_domain(request)
             transaction_id = request.data.get('transaction_id')
 
             transaction_obj = get_youpay_transaction_data(transaction_id)
@@ -60,7 +61,8 @@ class SavedCardPayment(APIView):
                 transaction_data = serializer.data
                 payment_data = {'token_type': TOKEN_TYPE_SAVED_CARD,
                                 'transaction_data': transaction_data,
-                                'request_data': request.data}
+                                'request_data': request.data,
+                                'site_domain': site_domain}
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.saved_card_payment(
                     payment_data)
@@ -122,8 +124,25 @@ class CardPayment(APIView):
 
 
 class CheckoutVerification(APIView):
+    response_obj = YouPayResponse()
+
     def get(self, request, *args, **kwargs):
         """method for redirection from the checkout and verify
          the payment from the checkoutpg"""
-        return Response({},
-                        status=status.HTTP_200_OK)
+
+        payment_data = {'transaction_id': request.query_params.get('id'),
+                        'cko_session_id': request.query_params.get('cko-session-id')}
+        checkout = CheckoutpgManager()
+        response_data, code = checkout.verify_payment(payment_data)
+        if response_data:
+            data = self.response_obj.get_success_dict(
+                code=code,
+                success_dict=response_data
+            )
+            return Response(data,
+                            status=status.HTTP_200_OK)
+        else:
+            data = self.response_obj.get_error_dict(code=code)
+            return Response(data,
+                            status=status.HTTP_404_NOT_FOUND)
+
