@@ -23,7 +23,6 @@ class PaymentGatewayAdmin(AdminAbstract):
             try:
                 cache.delete('checkoutpg_config')
             except (TypeError, AttributeError):
-
                 logging.error(
                     'Error while clearing bulk gateway config cache')
             obj.modified_by = request.user
