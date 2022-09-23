@@ -1,31 +1,50 @@
+import json
+import logging
+
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from services.v1.constants import PAYMENT_OPTIONS
 
+logger = logging.getLogger(__name__)
+
 
 def reformat_payment_request_data(data):
     """
-    used to reformat payment request data
+    used to reformat payment request data, so that we can create payment with
+    serializer easily, ie data in object format to individual key value pairs
     """
-    # TODO - refactor this code
-    data['amount'] = data['order']['amount']
-    data['invoice_id'] = data['payment']['invoice_id']
-    data['currency'] = data['order']['currency']
-    data['order_reference'] = data['payment']['order_reference']
-    data['customer_email'] = data['customer']['email']
-    data['customer_phone'] = data['customer']['phone']
-    data['customer_name'] = data['customer']['name']
-    data['language'] = data['payment']['language']
-    data['platform'] = data['payment']['payment_platform']
-    data['ip'] = data['payment']['ip']
-    data['service_fee'] = data['order']['service_fee']
-    data['base_amount'] = data['order']['base_amount']
-    data['VAT_amount'] = data['order']['VAT_amount']
-    data['payment_status'] = PAYMENT_STATUS_INITIATED
+    data['request_data'] = json.loads(json.dumps(data))
 
-    return data
+    order = data.get('order')
+    payment = data.get('payment')
+    customer = data.get('customer')
+
+    if order and payment and customer:
+        data['amount'] = order.get('amount')
+        data['service_fee'] = order.get('service_fee')
+        data['base_amount'] = order.get('base_amount')
+        data['VAT_amount'] = order.get('VAT_amount')
+        data['currency'] = order.get('currency')
+
+        data['invoice_id'] = payment.get('invoice_id')
+        data['order_reference'] = payment.get('order_reference')
+        data['language'] = payment.get('language')
+        data['platform'] = payment.get('payment_platform')
+        data['ip'] = payment.get('ip')
+
+        data['customer_email'] = customer.get('email')
+        data['customer_phone'] = customer.get('phone')
+        data['customer_name'] = customer.get('name')
+
+        data['payment_status'] = PAYMENT_STATUS_INITIATED
+        return data
+    else:
+        logger.error(
+            "payment request data is not in proper format, one of the data is"
+            "missing ie order or payment or customer")
+        return None
 
 
 def get_data_from_request(fields, request_data):
