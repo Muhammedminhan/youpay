@@ -9,7 +9,7 @@ from integrations.models import PaymentGateway, PaymentGatewayAPI
 logger = logging.getLogger(__name__)
 
 
-class PaymentGatewayAdmin(admin.ModelAdmin):
+class PaymentGatewayAdmin(AdminAbstract):
     list_display = (
         'gateway_name', 'is_active', 'domain', 'api_key', 'api_secret',
         'created_at', 'updated_at')

@@ -22,8 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 class CheckoutpgManager(object):
-    checkoutpg_config = get_checkoutpg_config()
-    response_obj = YouPayResponse()
+
+    def __init__(self):
+        self.checkoutpg_config = get_checkoutpg_config()
+        self.response_obj = YouPayResponse()
 
     def get_checkout_payment_data(self, data):
 
