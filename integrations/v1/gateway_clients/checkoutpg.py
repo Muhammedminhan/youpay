@@ -145,6 +145,7 @@ class CheckoutpgManager(object):
             headers = self.get_payment_header()
             response = requests.post(url, data=payment_data,
                                      headers=headers)
+            # TODO - update the payment status with the response data
             if response:
                 return response.json(), self.response_obj.SUCCESS
 
@@ -164,9 +165,11 @@ class CheckoutpgManager(object):
 
         params = {
             'cko-session-id': data.get('cko_session_id'),
-            'channel_code': "YGAGAE",
+            'channel_code': "YGAGAE", # TODO - get channel code from the transaction object
             'invoice_id': youpay_transaction.invoice_id}
         response = requests.get(url, params=params)
+        # TODO - update the payment status with the response data
+
         if response:
             return response.json(), self.response_obj.SUCCESS
         else:
