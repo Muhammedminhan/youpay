@@ -1,4 +1,5 @@
 import logging
+import json
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,9 +20,9 @@ class WebhookListener(APIView):
         """
         Post method to receive the data from YGPay
         """
-        request_data = request.data
+        request_data = json.loads(request.data)
         try:
-            logger.info("Received YGPay webhook for invoice {}".format(
+            logger.info("Received YouPay webhook for invoice {}".format(
                 request_data.get("invoice_id")))
             lock_name = 'lock:WebhookListener:invoice_%d' % (
                 int(request_data.get("invoice_id")),)
@@ -45,7 +46,7 @@ class WebhookListener(APIView):
                     transaction_obj.base_amount = request_data.get(
                         'base_amount')
                     transaction_obj.vat_amount = request_data.get(
-                        'vat_amount')
+                        'VAT_amount')
                     transaction_obj.customer_ip_address = request_data.get(
                         'ip')
                     transaction_obj.customer_email = request_data.get(
@@ -76,7 +77,7 @@ class WebhookListener(APIView):
                             base_amount=request_data.get(
                                 'base_amount'),
                             vat_amount=request_data.get(
-                                'vat_amount'),
+                                'VAT_amount'),
                             customer_ip_address=request_data.get(
                                 'ip'),
                             customer_email=request_data.get(
