@@ -1,4 +1,5 @@
 import logging
+import json
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,9 +20,9 @@ class WebhookListener(APIView):
         """
         Post method to receive the data from YGPay
         """
-        request_data = request.data
+        request_data = json.loads(request.data)
         try:
-            logger.info("Received YGPay webhook for invoice {}".format(
+            logger.info("Received YouPay webhook for invoice {}".format(
                 request_data.get("invoice_id")))
             lock_name = 'lock:WebhookListener:invoice_%d' % (
                 int(request_data.get("invoice_id")),)
@@ -36,8 +37,6 @@ class WebhookListener(APIView):
                         'order_reference')
                     transaction_obj.invoice_id = request_data.get(
                         'invoice_id')
-                    transaction_obj.api_client = request_data.get(
-                        'api_client')
                     transaction_obj.amount = request_data.get(
                         'amount')
                     transaction_obj.currency = request_data.get(
@@ -47,13 +46,11 @@ class WebhookListener(APIView):
                     transaction_obj.base_amount = request_data.get(
                         'base_amount')
                     transaction_obj.vat_amount = request_data.get(
-                        'vat_amount')
+                        'VAT_amount')
                     transaction_obj.customer_ip_address = request_data.get(
                         'ip')
                     transaction_obj.customer_email = request_data.get(
                         'customer_email')
-                    transaction_obj.order_history = request_data.get(
-                        'order_history')
                     transaction_obj.payment_gateway = request_data.get(
                         'payment_gateway')
                     transaction_obj.payment_status = request_data.get(
@@ -71,8 +68,6 @@ class WebhookListener(APIView):
                                 'order_reference'),
                             invoice_id=request_data.get(
                                 'invoice_id'),
-                            api_client=request_data.get(
-                                'api_client'),
                             amount=request_data.get(
                                 'amount'),
                             currency=request_data.get(
@@ -82,13 +77,11 @@ class WebhookListener(APIView):
                             base_amount=request_data.get(
                                 'base_amount'),
                             vat_amount=request_data.get(
-                                'vat_amount'),
+                                'VAT_amount'),
                             customer_ip_address=request_data.get(
                                 'ip'),
                             customer_email=request_data.get(
                                 'customer_email'),
-                            order_history=request_data.get(
-                                'order_history'),
                             payment_gateway=request_data.get(
                                 'payment_gateway'),
                             payment_status=request_data.get(
