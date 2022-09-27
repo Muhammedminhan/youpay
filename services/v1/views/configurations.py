@@ -40,7 +40,6 @@ class ConfigViewSet(ViewSet):
             if transaction:
                 checkout_config, status_code = \
                     checkout_obj.get_configuratoins(transaction.currency)
-                # TODO - check checkout_config, if not get the status code
                 logger.info(
                     "checkoutpg response : {}, {}".format(checkout_config,
                                                           status_code))
@@ -65,9 +64,15 @@ class ConfigViewSet(ViewSet):
                                 "vat_amount": transaction.VAT_amount,
                                 "base_amount": transaction.base_amount,
                             },
+                            "integration_response": {
+                                "checkoutpg": {
+                                    "config": checkout_config,
+                                    "status_code": status_code
+                                }
+                            }
                         }
                         data = self.response_obj.get_success_dict(
-                            code=self.response_obj.SUCCESS,
+                            code=status_code,
                             success_dict=response_data
                         )
 
@@ -97,3 +102,7 @@ class ConfigViewSet(ViewSet):
             return Response(
                 data,
                 status=status.HTTP_404_NOT_FOUND)
+        finally:
+            logger.info(
+                "ConfigViewSet retrieve method called, Response data :"
+                " {}".format(data))
