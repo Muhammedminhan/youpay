@@ -71,7 +71,7 @@ class PaymentRequestDataValidator(object):
 def get_youpay_transaction_data(transaction_id):
     try:
         transaction_obj = YouPayTransactionData.objects.get(
-            transaction_id="transaction_id")
+            transaction_id=transaction_id)
         return transaction_obj
 
     except ObjectDoesNotExist as e:
