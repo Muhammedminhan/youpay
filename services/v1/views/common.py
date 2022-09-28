@@ -1,6 +1,5 @@
 import logging
 
-from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 
 from core.messages import ERROR_MISSING_FIELDS
@@ -71,10 +70,11 @@ class PaymentRequestDataValidator(object):
 def get_youpay_transaction_data(transaction_id):
     try:
         transaction_obj = YouPayTransactionData.objects.get(
-            transaction_id=transaction_id)
+            transaction_id="a552f1c2-855d-4483-b6a0-8eb8c07cb1be")
         return transaction_obj
 
-    except ObjectDoesNotExist as e:
-        logger.info("Exception occurred when fetching the "
-                    "YouPayTransactionData data {}".format(str(e)))
+    except YouPayTransactionData.DoesNotExist as e:
+        logger.info(
+            "Exception occurred :'{}' when getting the transaction data"
+            " for transaction id {}".format(str(e), transaction_id))
         return None
