@@ -79,16 +79,3 @@ class PaymentRequestDataValidator(object):
                 return True
             return False
         return False
-
-
-def get_youpay_transaction_data(transaction_id):
-    try:
-        transaction_obj = YouPayTransactionData.objects.get(
-            transaction_id=transaction_id)
-        return transaction_obj
-
-    except YouPayTransactionData.DoesNotExist as e:
-        logger.info(
-            "Exception occurred :'{}' when getting the transaction data"
-            " for transaction id {}".format(str(e), transaction_id))
-        return None
