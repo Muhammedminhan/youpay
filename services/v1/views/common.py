@@ -31,6 +31,20 @@ class YouPayTransactionCRUD(object):
             return {"status": status.HTTP_400_BAD_REQUEST,
                     "data": serializer.errors, "message": message}
 
+    def get_youpay_transaction_data(self, transaction_id):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                transaction_id=transaction_id)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            logger.error("Unable to find youpay transaction object for {}"
+                         "".format(transaction_id))
+            return None
+
+    def update_youpay_transaction_data(self, data):
+        """Method """
+        pass
+
 
 class ClientValidator(object):
     """
@@ -67,9 +81,3 @@ class PaymentRequestDataValidator(object):
         return False
 
 
-def get_youpay_transaction_data(transaction_id):
-    # TODO - try except, in exceptoin return None
-
-    transaction_obj = YouPayTransactionData.objects.get(
-        transaction_id=transaction_id)
-    return transaction_obj

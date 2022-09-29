@@ -11,11 +11,11 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import TOKEN_TYPE_CARD
 from services.constants import TOKEN_TYPE_SAVED_CARD
-from services.v1.views.common import get_youpay_transaction_data
+from services.v1.views.common import YouPayTransactionCRUD
 from django.http import HttpResponseRedirect
 
 
-class SavedCardPayment(APIView):
+class SavedCardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
     def get(self, request):
@@ -24,7 +24,7 @@ class SavedCardPayment(APIView):
         """
         try:
             transaction_id = request.GET['transaction_id']
-            transaction_obj = get_youpay_transaction_data(transaction_id)
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
 
             if transaction_obj:
                 email = transaction_obj.customer_email
@@ -55,7 +55,7 @@ class SavedCardPayment(APIView):
             site_domain = get_site_domain(request)
             transaction_id = request.data.get('transaction_id')
 
-            transaction_obj = get_youpay_transaction_data(transaction_id)
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
 
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
