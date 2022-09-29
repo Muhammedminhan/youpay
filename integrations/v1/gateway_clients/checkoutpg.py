@@ -17,13 +17,14 @@ from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
-from services.v1.views.common import get_youpay_transaction_data
+# from services.v1.views.common import get_youpay_transaction_data
+from services.v1.views.common import YouPayTransactionCRUD
 
 
 logger = logging.getLogger(__name__)
 
 
-class CheckoutpgManager(object):
+class CheckoutpgManager(YouPayTransactionCRUD):
 
     def __init__(self):
         self.checkoutpg_config = get_checkoutpg_config()
@@ -161,7 +162,7 @@ class CheckoutpgManager(object):
     def verify_payment(self, data):
         url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT
 
-        youpay_transaction = get_youpay_transaction_data(data.get('transaction_id'))
+        youpay_transaction = self.get_youpay_transaction_data(data.get('transaction_id'))
 
         params = {
             'cko-session-id': data.get('cko_session_id'),
