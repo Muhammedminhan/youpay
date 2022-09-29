@@ -79,5 +79,3 @@ class PaymentRequestDataValidator(object):
                 return True
             return False
         return False
-
-

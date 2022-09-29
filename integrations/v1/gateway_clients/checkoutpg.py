@@ -162,7 +162,8 @@ class CheckoutpgManager(YouPayTransactionCRUD):
     def verify_payment(self, data):
         url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT
 
-        youpay_transaction = self.get_youpay_transaction_data(data.get('transaction_id'))
+        youpay_transaction = self.get_youpay_transaction_data(
+            data.get('transaction_id'))
 
         params = {
             'cko-session-id': data.get('cko_session_id'),

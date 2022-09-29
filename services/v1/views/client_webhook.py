@@ -32,7 +32,7 @@ class ClientService(object):
                                                cls=DjangoJSONEncoder)
                 self.transaction_id = youpay_transaction.transaction_id
 
-                url = youpay_transaction.api_client.endpoint_url
+                url = youpay_transaction.api_client.webhook_url
                 headers = {
                     'Accept': 'application/json',
                     'date': str(datetime.datetime.utcnow()),

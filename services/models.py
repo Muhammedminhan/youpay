@@ -21,9 +21,22 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     is_active = models.BooleanField(default=False,
                                     help_text='Denotes whether the API '
                                               'Client is active or not')
-    endpoint_url = models.CharField(max_length=200, blank=True,
-                                    help_text='Endpoint URL',
-                                    validators=[URLValidator()])
+    webhook_url = models.CharField(max_length=500, blank=True,
+                                   help_text='Webhook URL',
+                                   validators=[URLValidator()])
+
+    success_url = models.CharField(max_length=500, blank=True,
+                                   help_text='Webhook URL',
+                                   validators=[URLValidator()])
+    failure_url = models.CharField(max_length=500, blank=True,
+                                   help_text='Failure URL',
+                                   validators=[URLValidator()])
+    cancel_url = models.CharField(max_length=500, blank=True,
+                                  help_text='Cancel URL',
+                                  validators=[URLValidator()])
+    verify_url = models.CharField(max_length=500, blank=True,
+                                  help_text='Verify URL',
+                                  validators=[URLValidator()])
     client_domain = models.CharField(null=True, blank=True, max_length=100,
                                      help_text='Client Domain, example : '
                                                'https://google.com/')
