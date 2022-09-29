@@ -12,6 +12,7 @@ from payments.serializers.youpay_payments import (
 from services.constants import TOKEN_TYPE_CARD
 from services.constants import TOKEN_TYPE_SAVED_CARD
 from services.v1.views.common import get_youpay_transaction_data
+from django.http import HttpResponseRedirect
 
 
 class SavedCardPayment(APIView):
@@ -134,6 +135,12 @@ class CheckoutVerification(APIView):
                         'cko_session_id': request.query_params.get('cko-session-id')}
         checkout = CheckoutpgManager()
         response_data, code = checkout.verify_payment(payment_data)
+        # TODO
+        #  - validate the response data
+        #  - check the payment status in the youpaytransaction data table
+        #  - if success then redirect to the success urls
+        #  - else redirects to the failure url
+
         if response_data:
             data = self.response_obj.get_success_dict(
                 code=code,

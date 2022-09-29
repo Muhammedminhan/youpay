@@ -50,10 +50,14 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         max_length=20, null=True, blank=True,
         choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
     session_id = models.CharField(max_length=120, null=True, blank=True)
+    channel_code = models.CharField(
+        max_length=120, null=True, blank=True,
+        help_text="Channel code used for the transaction, if transaction is"
+                  " through checkout")
 
 
 @receiver(post_save, sender=YouPayTransactionData)
-def create_client(sender, instance, **kwargs):
+def create_client(sender, instance, **kwargs): # TODO - rename the method
     """
     Signal to send webhook for client on each transaction
     """
