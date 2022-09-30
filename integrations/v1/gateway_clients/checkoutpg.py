@@ -136,38 +136,32 @@ class CheckoutpgManager(YouPayTransactionCRUD):
     def saved_card_payment(self, data):
         # TODO
         #  - data: uuid, request data, token
-        try:
-            checkoutpg_config = get_checkoutpg_config()
-            if checkoutpg_config:
-                success_dict = {}
-                payment_data = self.get_checkout_payment_data(data)
-                url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
-                headers = self.get_payment_header()
-                response = requests.post(url, data=payment_data,
-                                         headers=headers)
-                if response:
-                    '''
-                    If response is success, then update the payment status to 
-                    paid
-                    '''
-                    self.update_youpay_transaction_data(
-                        {
-                            'transaction_id': data.get(
-                                'transaction_data').get(
-                                'transaction_id'),
-                            "payment_status": PAYMENT_STATUS_PAID
-                        }
-                    )
-                    return response.json(), self.response_obj.SUCCESS
+        checkoutpg_config = get_checkoutpg_config()
+        if checkoutpg_config:
+            success_dict = {}
+            payment_data = self.get_checkout_payment_data(data)
+            url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
+            headers = self.get_payment_header()
+            response = requests.post(url, data=payment_data,
+                                     headers=headers)
+            if response:
+                '''
+                If response is success, then update the payment status to 
+                paid
+                '''
+                self.update_youpay_transaction_data(
+                    {
+                        'transaction_id': data.get(
+                            'transaction_data').get(
+                            'transaction_id'),
+                        "payment_status": PAYMENT_STATUS_PAID
+                    }
+                )
+                return response.json(), self.response_obj.SUCCESS
 
-                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
-            else:
-                logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
-                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
-        except Exception as e:
-            logger.error(
-                "Unable to make saved card payment because, {0}".format(
-                    str(e)))
+            return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
 
     def card_payemnt(self, data):
