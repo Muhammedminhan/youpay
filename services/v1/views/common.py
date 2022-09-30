@@ -7,6 +7,7 @@ from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
+from payments.constants import PAYMENT_STATUS_PAID
 from services.models import APIClient
 
 logger = logging.getLogger(__name__)
@@ -58,6 +59,7 @@ class YouPayTransactionCRUD(object):
         data_dict['payment_status'] = data.get('payment_status', None)
         data_dict['payment_gateway'] = data.get('payment_gateway', None)
         data_dict['channel_code'] = data.get('channel_code', None)
+        data_dict['payment_status'] = data.get('payment_status', None)
 
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
@@ -107,3 +109,19 @@ class PaymentRequestDataValidator(object):
                 return True
             return False
         return False
+
+
+def is_redirect(transaction_id):
+    response_data = None
+    youpay = YouPayTransactionCRUD()
+    transaction_object=youpay.get_youpay_transaction_data(transaction_id)
+    if transaction_object.payment_status == PAYMENT_STATUS_PAID:
+        response_data = {
+            "redirect_url": transaction_object.api_client.success_url
+        }
+        return True, response_data
+    else:
+        response_data = {
+            "redirect_url": transaction_object.api_client.failure_url
+        }
+        return False, response_data
