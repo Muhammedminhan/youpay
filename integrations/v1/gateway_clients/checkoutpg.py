@@ -150,8 +150,7 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                     If response is success, then update the payment status to 
                     paid
                     '''
-                    youpay_transaction_obj = YouPayTransactionCRUD()
-                    youpay_transaction_obj.update_youpay_transaction_data(
+                    self.update_youpay_transaction_data(
                         {
                             'transaction_id': data.get(
                                 'transaction_data').get(
