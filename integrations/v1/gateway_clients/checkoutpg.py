@@ -14,12 +14,10 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_PAYMENT_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT)
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
-
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
-# from services.v1.views.common import get_youpay_transaction_data
+from payments.constants import PAYMENT_STATUS_PAID
 from services.v1.views.common import YouPayTransactionCRUD
-
 
 logger = logging.getLogger(__name__)
 
@@ -146,14 +144,30 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             headers = self.get_payment_header()
             response = requests.post(url, data=payment_data,
                                      headers=headers)
-            # TODO - update the payment status with the response data
             if response:
+                '''
+                If response is success, then update the payment status to 
+                paid
+                '''
+                response_data = response.json()
+                logger.info(
+                    "Checkoutpg payment response: {}".format(response_data))
+                if response_data.get('status') == 200:
+                    self.update_youpay_transaction_data(
+                        {
+                            'transaction_id': data.get(
+                                'transaction_data').get(
+                                'transaction_id'),
+                            "payment_status": PAYMENT_STATUS_PAID
+                        }
+                    )
+
                 return response.json(), self.response_obj.SUCCESS
 
             return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
-            return None, None
+            return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
 
     def card_payemnt(self, data):
         payment_data = self.get_checkout_payment_data(data)
@@ -167,7 +181,8 @@ class CheckoutpgManager(YouPayTransactionCRUD):
 
         params = {
             'cko-session-id': data.get('cko_session_id'),
-            'channel_code': "YGAGAE", # TODO - get channel code from the transaction object
+            'channel_code': "YGAGAE",
+            # TODO - get channel code from the transaction object
             'invoice_id': youpay_transaction.invoice_id}
         response = requests.get(url, params=params)
         # TODO - update the payment status with the response data
