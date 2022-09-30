@@ -115,7 +115,6 @@ class CardPayment(APIView):
         """
         method for card payment
         """
-        print("card payment")
         payment_data = {'token_type': TOKEN_TYPE_CARD,
                         'request_data': request.data}
         checkout = CheckoutpgManager()

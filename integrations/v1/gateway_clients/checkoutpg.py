@@ -159,7 +159,6 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                             "payment_status": PAYMENT_STATUS_PAID
                         }
                     )
-                    print("Transaction updated successfully \n\n\n")
                     return response.json(), self.response_obj.SUCCESS
 
                 return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
