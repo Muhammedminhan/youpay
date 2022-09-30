@@ -49,7 +49,7 @@ class YouPayTransactionCRUD(object):
                 transaction_id=transaction_id).update(**data)
             logger.info(
                 "YouPay transaction data updated successfully for transaction"
-                "id{}".format(transaction_id))
+                "id : {}, Data is : {}".format(transaction_id, data))
         except YouPayTransactionData.DoesNotExist:
             logger.error("Unable to find youpay transaction object for {}"
                          "".format(transaction_id))

@@ -149,14 +149,19 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                 If response is success, then update the payment status to 
                 paid
                 '''
-                self.update_youpay_transaction_data(
-                    {
-                        'transaction_id': data.get(
-                            'transaction_data').get(
-                            'transaction_id'),
-                        "payment_status": PAYMENT_STATUS_PAID
-                    }
-                )
+                response_data = response.json()
+                logger.info(
+                    "Checkoutpg payment response: {}".format(response_data))
+                if response_data.get('status') == 200:
+                    self.update_youpay_transaction_data(
+                        {
+                            'transaction_id': data.get(
+                                'transaction_data').get(
+                                'transaction_id'),
+                            "payment_status": PAYMENT_STATUS_PAID
+                        }
+                    )
+
                 return response.json(), self.response_obj.SUCCESS
 
             return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
