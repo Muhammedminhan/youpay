@@ -18,7 +18,7 @@ from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
 from payments.constants import (PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING)
-from services.v1.views.common import YouPayTransactionCRUD
+from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
 
@@ -176,18 +176,27 @@ class CheckoutpgManager(YouPayTransactionCRUD):
 
     def verify_payment(self, data):
         url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT
-
-        youpay_transaction = self.get_youpay_transaction_data(
-            data.get('transaction_id'))
+        transaction_id = data.get('transaction_id')
+        youpay_transaction = self.get_youpay_transaction_data(transaction_id)
 
         params = {
             'cko-session-id': data.get('cko_session_id'),
             'channel_code': youpay_transaction.channel_code,
             'invoice_id': youpay_transaction.invoice_id}
         response = requests.get(url, params=params)
-        # TODO - update the payment status with the response data
 
         if response:
-            return response.json(), self.response_obj.SUCCESS
+            response_data = response.json()
+            self.update_youpay_transaction_data(
+                {
+                    'transaction_id': transaction_id,
+                    "payment_status": response_data.get("status").lower(),
+                }
+            )
+            redirect, response_data = is_redirect(transaction_id)
+            if redirect:
+                return response_data, self.response_obj.SUCCESS
+            else:
+                return response_data, self.response_obj.PAYMENT_FAILED
         else:
             return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR

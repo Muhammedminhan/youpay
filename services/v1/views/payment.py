@@ -14,6 +14,7 @@ from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from services.v1.views.utils import (
     reformat_payment_request_data
 )
+from payments.constants import PAYMENT_STATUS_CANCELLED
 
 logger = logging.getLogger(__name__)
 
@@ -197,4 +198,17 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
         enc_data = eval(encrypt_payment_data(data))
         return Response({
             "response": enc_data,
+        })
+
+
+class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
+    def post(self, request):
+        data = self.request.data
+        transactoin_object = self.get_youpay_transaction_data(data.get('transaction_id'))
+        self.update_youpay_transaction_data({
+            'transaction_id': data.get('transaction_id'),
+            'payment_status': PAYMENT_STATUS_CANCELLED
+        })
+        return Response({
+            "redirect_url": transactoin_object.api_client.cancel_url,
         })
