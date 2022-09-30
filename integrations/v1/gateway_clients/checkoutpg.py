@@ -7,6 +7,7 @@ from rest_framework import status
 
 from core.response_messages import YouPayResponse
 from core.utils import get_checkoutpg_config
+from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
@@ -16,7 +17,7 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
-from payments.constants import PAYMENT_STATUS_PAID
+from payments.constants import (PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING)
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,7 @@ class CheckoutpgManager(YouPayTransactionCRUD):
         if (data.get('transaction_data') and data.get('request_data')
                 and data.get('token_type')):
             payment_data = CheckoutPaymentRequestSerializer(data)
-            return json.dumps(payment_data.data)
+            return payment_data.data
         else:
             logger.error(
                 "transaction_data or request_data or token_type data "
@@ -140,25 +141,25 @@ class CheckoutpgManager(YouPayTransactionCRUD):
         if checkoutpg_config:
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
+            payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
             headers = self.get_payment_header()
-            response = requests.post(url, data=payment_data,
+            response = requests.post(url, data=payment_data_to_send,
                                      headers=headers)
             if response:
-                '''
-                If response is success, then update the payment status to 
-                paid
-                '''
                 response_data = response.json()
                 logger.info(
                     "Checkoutpg payment response: {}".format(response_data))
-                if response_data.get('status') == 200:
+                if response_data.get('status') == 200 and response_data.get('is_redirect') is True:
                     self.update_youpay_transaction_data(
                         {
                             'transaction_id': data.get(
                                 'transaction_data').get(
                                 'transaction_id'),
-                            "payment_status": PAYMENT_STATUS_PAID
+                            "payment_status": PAYMENT_STATUS_PENDING,
+                            "payment_reference": response_data.get("reference_id"),
+                            "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
+                            "channel_code": payment_data.get("channel_code")
                         }
                     )
 
@@ -181,8 +182,7 @@ class CheckoutpgManager(YouPayTransactionCRUD):
 
         params = {
             'cko-session-id': data.get('cko_session_id'),
-            'channel_code': "YGAGAE",
-            # TODO - get channel code from the transaction object
+            'channel_code': youpay_transaction.channel_code,
             'invoice_id': youpay_transaction.invoice_id}
         response = requests.get(url, params=params)
         # TODO - update the payment status with the response data
