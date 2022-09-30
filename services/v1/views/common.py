@@ -12,6 +12,15 @@ from services.models import APIClient
 logger = logging.getLogger(__name__)
 
 
+def get_saved_fields(saved_fields, data_dict, transaction_obj):
+    for key, value in data_dict.items():
+        if value:
+            transaction_obj.__dict__[key] = value
+            saved_fields.append(key)
+
+    return saved_fields
+
+
 class YouPayTransactionCRUD(object):
     """
     YouPay Transaction Data CRUD Operations will be here
@@ -43,16 +52,26 @@ class YouPayTransactionCRUD(object):
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
+        data_dict = {}
         transaction_id = data.get('transaction_id')
+        data_dict['payment_reference'] = data.get('payment_reference', None)
+        data_dict['payment_status'] = data.get('payment_status', None)
+        data_dict['payment_gateway'] = data.get('payment_gateway', None)
+        data_dict['channel_code'] = data.get('channel_code', None)
+
         try:
-            YouPayTransactionData.objects.filter(
-                transaction_id=transaction_id).update(**data)
-            logger.info(
-                "YouPay transaction data updated successfully for transaction"
-                "id : {}, Data is : {}".format(transaction_id, data))
-        except YouPayTransactionData.DoesNotExist:
-            logger.error("Unable to find youpay transaction object for {}"
-                         "".format(transaction_id))
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+            if transaction_obj:
+                saved_fields = ['updated_at']
+                saved_fields = get_saved_fields(saved_fields, data_dict,
+                                                transaction_obj)
+                transaction_obj.save(update_fields=saved_fields)
+            else:
+                logger.error("unable to find the transaction object for {}"
+                             "".format(transaction_id))
+        except Exception as e:
+            logger.error("Unable to update the transaction object, {0}"
+                         "".format(str(e)))
 
 
 class ClientValidator(object):
