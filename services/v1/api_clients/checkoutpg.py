@@ -12,7 +12,6 @@ from payments.serializers.youpay_payments import (
 from services.constants import TOKEN_TYPE_CARD
 from services.constants import TOKEN_TYPE_SAVED_CARD
 from services.v1.views.common import YouPayTransactionCRUD
-from django.http import HttpResponseRedirect
 
 
 class SavedCardPayment(APIView, YouPayTransactionCRUD):
@@ -75,7 +74,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                     return Response(data,
                                     status=status.HTTP_200_OK)
                 else:
-                    data = self.response_obj.get_error_dict(code=code)
+                    data = self.response_obj.get_error_dict(error_code=code)
                     return Response(data,
                                     status=status.HTTP_404_NOT_FOUND)
             else:
@@ -116,6 +115,7 @@ class CardPayment(APIView):
         """
         method for card payment
         """
+        print("card payment")
         payment_data = {'token_type': TOKEN_TYPE_CARD,
                         'request_data': request.data}
         checkout = CheckoutpgManager()
@@ -132,7 +132,8 @@ class CheckoutVerification(APIView):
          the payment from the checkoutpg"""
 
         payment_data = {'transaction_id': request.query_params.get('id'),
-                        'cko_session_id': request.query_params.get('cko-session-id')}
+                        'cko_session_id': request.query_params.get(
+                            'cko-session-id')}
         checkout = CheckoutpgManager()
         response_data, code = checkout.verify_payment(payment_data)
         # TODO
@@ -149,7 +150,6 @@ class CheckoutVerification(APIView):
             return Response(data,
                             status=status.HTTP_200_OK)
         else:
-            data = self.response_obj.get_error_dict(code=code)
+            data = self.response_obj.get_error_dict(error_code=code)
             return Response(data,
                             status=status.HTTP_404_NOT_FOUND)
-

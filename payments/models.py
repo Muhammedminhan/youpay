@@ -57,7 +57,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
 
 
 @receiver(post_save, sender=YouPayTransactionData)
-def create_client(sender, instance, **kwargs): # TODO - rename the method
+def update_client(sender, instance, **kwargs):
     """
     Signal to send webhook for client on each transaction
     """

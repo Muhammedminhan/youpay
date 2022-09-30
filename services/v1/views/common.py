@@ -42,8 +42,17 @@ class YouPayTransactionCRUD(object):
             return None
 
     def update_youpay_transaction_data(self, data):
-        """Method """
-        pass
+        """Method to update youpay transaction data"""
+        transaction_id = data.get('transaction_id')
+        try:
+            YouPayTransactionData.objects.filter(
+                transaction_id=transaction_id).update(**data)
+            logger.info(
+                "YouPay transaction data updated successfully for transaction"
+                "id{}".format(transaction_id))
+        except YouPayTransactionData.DoesNotExist:
+            logger.error("Unable to find youpay transaction object for {}"
+                         "".format(transaction_id))
 
 
 class ClientValidator(object):
