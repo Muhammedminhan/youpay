@@ -8,7 +8,9 @@ from django.dispatch import receiver
 from core.constants import (PAYMENT_GATEWAY_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile
 from core.validators import DecimalValidator
-from payments.constants import YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES
+from payments.constants import (
+    YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
+    PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE)
 
 
 # Create your models here.
@@ -54,6 +56,38 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         max_length=120, null=True, blank=True,
         help_text="Channel code used for the transaction, if transaction is"
                   " through checkout")
+
+    is_fraud = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the payment is fraud or not.')
+    is_flagged = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the payment is marked as flagged or not.')
+    card_bin = models.CharField(
+        max_length=6, null=True, blank=True,
+        help_text='Denotes the bin number of the card used for the payment')
+    card_last4 = models.CharField(max_length=4, null=True, blank=True,
+
+                                  help_text='Denotes the last 4 digits of the'
+                                            ' card used for the payment')
+    payment_method = models.CharField(max_length=200,
+                                      choices=PAYMENT_METHOD_CHOICES,
+                                      default=PAYMENT_METHOD_CARD,
+                                      help_text='Payment Method')
+    payment_scheme = models.CharField(
+        max_length=200,
+        choices=PAYMENT_SCHEME_CHOICES,
+        default=PAYMENT_SCHEME_NONE,
+        help_text='Denotes the payment scheme used for the payment')
+
+    is_gcc_card = models.BooleanField(
+        default=False,
+        help_text='Determine whether the transaction is carried out using '
+                  'card belongs to GCC country.')
+
+    card_issuer_country = models.CharField(
+        max_length=4, null=True, blank=True, db_index=True,
+        help_text='Denotes two letter code card issued country.')
 
 
 @receiver(post_save, sender=YouPayTransactionData)
