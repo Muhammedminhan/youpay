@@ -141,9 +141,7 @@ class CheckoutpgManager(YouPayTransactionCRUD):
         if checkoutpg_config:
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
-
             request_data = data.get('request_data')
-
             payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
             headers = self.get_payment_header()
@@ -165,13 +163,8 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                                 "reference_id"),
                             "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
                             "channel_code": payment_data.get("channel_code"),
-
-                            "payment_method": request_data.get(
-                                "payment_method"),
-                            "card_bin": request_data.get(
-                                "card_bin"),
-                            "card_last4": request_data.get(
-                                "card_last4"),
+                            "card_bin": request_data.get("card_bin"),
+                            "card_last4": request_data.get("card_last4"),
                             "payment_scheme": request_data.get(
                                 "payment_scheme"),
                             "is_gcc_card": request_data.get("is_gcc_card"),
