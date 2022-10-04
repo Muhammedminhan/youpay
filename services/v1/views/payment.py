@@ -6,6 +6,8 @@ from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
 from core.utils import encrypt_payment_data, decrypt_payment_data
+from payments.constants import PAYMENT_STATUS_CANCELLED, \
+    PAYMENT_METHOD_SAVED_CARD
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -14,7 +16,6 @@ from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from services.v1.views.utils import (
     reformat_payment_request_data
 )
-from payments.constants import PAYMENT_STATUS_CANCELLED
 
 logger = logging.getLogger(__name__)
 
@@ -26,28 +27,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
 
     def __init__(self):
-        self.PAYMENT_REQUEST_DATA_FIELDS_LIST = [
-            "request_data",
-            "response_data",
-            "amount",
-            "currency",
-            "invoice_id",
-            "order_reference",
-            "payment_reference",
-            "platform",
-            "customer_email",
-            "customer_phone",
-            "customer_name",
-            "language",
-            "session_id",
-            "payment_status",
-            "service_fee",
-            "base_amount",
-            "VAT_amount",
-            "order_history",
-            "ip",
-        ]
-
         self.payment_request_obj = None
         self.return_data = None
 
@@ -102,10 +81,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 
             if serializer.is_valid():
                 self.payment_request_obj = serializer.save()
+                data_formatted['payment_method'] = PAYMENT_METHOD_SAVED_CARD
                 transaction_response = self.create_youpay_transaction_data(
                     data_formatted)
-                if transaction_response[
-                    'status'] == status.HTTP_201_CREATED:
+                if transaction_response['status'] == status.HTTP_201_CREATED:
                     redirect_url = PAYMENT_REDIRECT_URL + "/{}{}".format(
                         "?transaction_id=",
                         transaction_response['data']['transaction_id'])
@@ -204,7 +183,8 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
     def post(self, request):
         data = self.request.data
-        transactoin_object = self.get_youpay_transaction_data(data.get('transaction_id'))
+        transactoin_object = self.get_youpay_transaction_data(
+            data.get('transaction_id'))
         self.update_youpay_transaction_data({
             'transaction_id': data.get('transaction_id'),
             'payment_status': PAYMENT_STATUS_CANCELLED

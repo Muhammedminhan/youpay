@@ -5,9 +5,9 @@ import requests
 from django.conf import settings
 from rest_framework import status
 
+from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from core.response_messages import YouPayResponse
 from core.utils import get_checkoutpg_config
-from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
@@ -17,7 +17,7 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
-from payments.constants import (PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING)
+from payments.constants import (PAYMENT_STATUS_PENDING)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -141,28 +141,37 @@ class CheckoutpgManager(YouPayTransactionCRUD):
         if checkoutpg_config:
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
+            request_data = data.get('request_data')
             payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
             headers = self.get_payment_header()
             response = requests.post(url, data=payment_data_to_send,
                                      headers=headers)
+
             if response:
                 response_data = response.json()
-                logger.info(
-                    "Checkoutpg payment response: {}".format(response_data))
-                if response_data.get('status') == 200 and response_data.get('is_redirect') is True:
+                logger.info("Checkoutpg payment response: {}"
+                            .format(response_data))
+                if response_data.get('status') == 200 and response_data.get(
+                        'is_redirect') is True:
                     self.update_youpay_transaction_data(
                         {
                             'transaction_id': data.get(
-                                'transaction_data').get(
-                                'transaction_id'),
+                                'transaction_data').get('transaction_id'),
                             "payment_status": PAYMENT_STATUS_PENDING,
-                            "payment_reference": response_data.get("reference_id"),
+                            "payment_reference": response_data.get(
+                                "reference_id"),
                             "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                            "channel_code": payment_data.get("channel_code")
+                            "channel_code": payment_data.get("channel_code"),
+                            "card_bin": request_data.get("card_bin"),
+                            "card_last4": request_data.get("card_last4"),
+                            "payment_scheme": request_data.get(
+                                "payment_scheme"),
+                            "is_gcc_card": request_data.get("is_gcc_card"),
+                            "card_issuer_country": request_data.get(
+                                "card_issuer_country"),
                         }
                     )
-
                 return response.json(), self.response_obj.SUCCESS
 
             return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
