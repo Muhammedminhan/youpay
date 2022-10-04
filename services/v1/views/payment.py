@@ -6,8 +6,7 @@ from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
 from core.utils import encrypt_payment_data, decrypt_payment_data
-from payments.constants import PAYMENT_STATUS_CANCELLED, \
-    PAYMENT_METHOD_SAVED_CARD
+from payments.constants import PAYMENT_STATUS_CANCELLED
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -81,7 +80,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 
             if serializer.is_valid():
                 self.payment_request_obj = serializer.save()
-                data_formatted['payment_method'] = PAYMENT_METHOD_SAVED_CARD
                 transaction_response = self.create_youpay_transaction_data(
                     data_formatted)
                 if transaction_response['status'] == status.HTTP_201_CREATED:

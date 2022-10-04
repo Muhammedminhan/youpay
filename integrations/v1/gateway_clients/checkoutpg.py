@@ -17,7 +17,8 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
-from payments.constants import (PAYMENT_STATUS_PENDING)
+from payments.constants import (PAYMENT_STATUS_PENDING,
+                                PAYMENT_METHOD_SAVED_CARD)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -163,6 +164,7 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                                 "reference_id"),
                             "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
                             "channel_code": payment_data.get("channel_code"),
+                            "payment_method": PAYMENT_METHOD_SAVED_CARD,
                             "card_bin": request_data.get("card_bin"),
                             "card_last4": request_data.get("card_last4"),
                             "payment_scheme": request_data.get(

@@ -5,7 +5,8 @@ from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from core.constants import (PAYMENT_GATEWAY_CHOICES)
+from core.constants import (PAYMENT_GATEWAY_CHOICES,
+                            PURCHASE_PLATFORM_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile
 from core.validators import DecimalValidator
 from payments.constants import (
@@ -88,6 +89,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     card_issuer_country = models.CharField(
         max_length=4, null=True, blank=True, db_index=True,
         help_text='Denotes two letter code card issued country.')
+    platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
+                                max_length=200, null=True, blank=True,
+                                help_text="to identify the platform")
 
 
 @receiver(post_save, sender=YouPayTransactionData)
