@@ -52,7 +52,7 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('request_data').get("is_save_user_token")
 
     def get_response_url(self, data):
-        url = get_app_config().front_end_domain
+        url = get_app_config().front_end_redirect_url
         return url + '?id=' + data.get('transaction_data').get(
             'transaction_id')
 
