@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from django.urls import reverse
 from core.utils import get_app_config
+from integrations.constants import CHECKOUTPG_CHANNEL_CONFIGURATIONS
 
 
 class CheckoutPaymentRequestSerializer(serializers.Serializer):
@@ -52,7 +53,8 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 
     def get_response_url(self, data):
         url = get_app_config().front_end_domain
-        return url+'?id='+data.get('transaction_data').get('transaction_id')
+        return url + '?id=' + data.get('transaction_data').get(
+            'transaction_id')
 
     def get_card_type(self, data):
         return ""
@@ -61,5 +63,8 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('request_data').get("token")
 
     def get_channel_code(self, data):
-        # TODO - get channel code based on the currency
-        return "YGAGAE"
+
+        channel_code = CHECKOUTPG_CHANNEL_CONFIGURATIONS.get(
+            data.get('transaction_data').get("currency")).get(
+            data.get('transaction_data').get("platform").upper())
+        return channel_code
