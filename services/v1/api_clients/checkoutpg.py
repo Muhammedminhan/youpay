@@ -148,22 +148,9 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                     message="Transaction doesn't exists")
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except ObjectDoesNotExist as e:
-            print("ObjectDoesNotExist: {}".format(str(e)))
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print("Exception in payment request : {} {} {}"
-                  .format(exc_type, fname, exc_tb.tb_lineno))
             data = self.response_obj.get_404_message(message=str(e))
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            print("Exception: {}".format(str(e)))
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print("Exception in payment request : {} {} {}"
-                  .format(exc_type, fname, exc_tb.tb_lineno))
-            data = self.response_obj.get_404_message(message=str(e))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
