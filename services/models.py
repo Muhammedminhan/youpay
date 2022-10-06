@@ -26,7 +26,7 @@ class APIClient(AbstractDateTime, AbstractUserBase):
                                    validators=[URLValidator()])
 
     success_url = models.CharField(max_length=500, blank=True,
-                                   help_text='Webhook URL',
+                                   help_text='Success URL',
                                    validators=[URLValidator()])
     failure_url = models.CharField(max_length=500, blank=True,
                                    help_text='Failure URL',
