@@ -39,7 +39,7 @@ class ConfigViewSet(ViewSet):
                 transaction_id=transaction_id)
             if transaction:
                 checkout_config, status_code = \
-                    checkout_obj.get_configuratoins(transaction.currency)
+                    checkout_obj.get_configurations(transaction.currency)
                 logger.info(
                     "checkoutpg response : {}, {}".format(checkout_config,
                                                           status_code))

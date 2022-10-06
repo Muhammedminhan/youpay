@@ -1,6 +1,6 @@
 # TODO create serializer for checkoutpg request
 from rest_framework import serializers
-from django.urls import reverse
+
 from core.utils import get_app_config
 from integrations.constants import CHECKOUTPG_CHANNEL_CONFIGURATIONS
 
@@ -63,7 +63,6 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('request_data').get("token")
 
     def get_channel_code(self, data):
-
         channel_code = CHECKOUTPG_CHANNEL_CONFIGURATIONS.get(
             data.get('transaction_data').get("currency")).get(
             data.get('transaction_data').get("platform").upper())
