@@ -166,13 +166,6 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                             "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
                             "channel_code": payment_data.get("channel_code"),
                             "payment_method": PAYMENT_METHOD_SAVED_CARD,
-                            "card_bin": request_data.get("card_bin"),
-                            "card_last4": request_data.get("card_last4"),
-                            "payment_scheme": request_data.get(
-                                "payment_scheme"),
-                            "is_gcc_card": request_data.get("is_gcc_card"),
-                            "card_issuer_country": request_data.get(
-                                "card_issuer_country"),
                         }
                     )
                 return response.json(), self.response_obj.SUCCESS
@@ -208,16 +201,8 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                             "payment_reference": response_data.get(
                                 "reference_id"),
                             "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                            "channel_code": payment_data.get(
-                                "channel_code"),
+                            "channel_code": payment_data.get("channel_code"),
                             "payment_method": PAYMENT_METHOD_CARD,
-                            "card_bin": request_data.get("card_bin"),
-                            "card_last4": request_data.get("card_last4"),
-                            "payment_scheme": request_data.get(
-                                "payment_scheme"),
-                            "is_gcc_card": request_data.get("is_gcc_card"),
-                            "card_issuer_country": request_data.get(
-                                "card_issuer_country"),
                         }
                     )
                 return response.json(), self.response_obj.SUCCESS
