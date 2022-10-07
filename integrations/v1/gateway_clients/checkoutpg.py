@@ -137,12 +137,12 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             return None, None
 
     def saved_card_payment(self, data):
-        # TODO
-        #  - data: uuid, request data, token
+
         checkoutpg_config = get_checkoutpg_config()
         if checkoutpg_config:
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
+            logger.info("Youpay sending payment data is {}".format(payment_data))
             request_data = data.get('request_data')
             payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
@@ -180,6 +180,8 @@ class CheckoutpgManager(YouPayTransactionCRUD):
         if checkoutpg_config:
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
+            logger.info(
+                "Youpay sending payment data is {}".format(payment_data))
             request_data = data.get('request_data')
             payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
