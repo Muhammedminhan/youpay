@@ -120,14 +120,23 @@ class PaymentRequestDataValidator(object):
 def is_redirect(transaction_id):
     response_data = None
     youpay = YouPayTransactionCRUD()
-    transaction_object = youpay.get_youpay_transaction_data(transaction_id)
-    if transaction_object.payment_status == PAYMENT_STATUS_PAID:
+    youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
+
+    # TODO - check response codes, if code in the lists
+    #  we need to redirect to payment page itself. otherwise
+    #  redirect to the product page ['20005','20051','20014',]
+    #  - if transaction is fraud, rdr -> product
+    #  - add transaction messages into youpaytransactiondata
+
+    if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
         response_data = {
-            "redirect_url": transaction_object.api_client.success_url
+            "is_redirect": True,
+            "redirect_url": youpay_transaction.api_client.success_url
         }
         return True, response_data
     else:
         response_data = {
-            "redirect_url": transaction_object.api_client.failure_url
+            "is_redirect": True,
+            "redirect_url": youpay_transaction.api_client.failure_url
         }
         return False, response_data
