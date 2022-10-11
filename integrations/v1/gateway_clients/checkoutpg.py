@@ -142,7 +142,8 @@ class CheckoutpgManager(YouPayTransactionCRUD):
         if checkoutpg_config:
             success_dict = {}
             payment_data = self.get_checkout_payment_data(data)
-            logger.info("Youpay sending payment data is {}".format(payment_data))
+            logger.info(
+                "Youpay sending payment data is {}".format(payment_data))
             request_data = data.get('request_data')
             payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
@@ -223,19 +224,32 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             'channel_code': youpay_transaction.channel_code,
             'invoice_id': youpay_transaction.invoice_id}
         response = requests.get(url, params=params)
+        logger.info(
+            "Checkoutpg payment verification response \nURL: {},\nPARAMS:{},"
+            "\nRESPONSE:{}".format(
+                url, params, response))
 
         if response:
             response_data = response.json()
+            logger.info(
+                "Verify payment response data \n{}".format(response_data))
             self.update_youpay_transaction_data(
                 {
                     'transaction_id': transaction_id,
                     "payment_status": response_data.get("status").lower(),
+                    "payment_reference": response_data.get("reference"),
+                    "approved": response_data.get("approved"),
+                    "response_summary": response_data.get("response_summary"),
                 }
             )
-            redirect, response_data = is_redirect(transaction_id)
+            redirect, response_data = is_redirect(transaction_id,
+                                                  response_data)
             if redirect:
                 return response_data, self.response_obj.SUCCESS
             else:
                 return response_data, self.response_obj.PAYMENT_FAILED
         else:
+            logger.error(
+                "Error while verifying_payment status: {}, reason {} \n\n"
+                .format(response.status_code, response.reason))
             return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR

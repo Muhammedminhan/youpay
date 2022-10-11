@@ -3,11 +3,13 @@ import logging
 from rest_framework import status
 
 from core.messages import ERROR_MISSING_FIELDS
+from core.models import AppConfig
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
+from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
 
 logger = logging.getLogger(__name__)
@@ -117,7 +119,7 @@ class PaymentRequestDataValidator(object):
         return False
 
 
-def is_redirect(transaction_id):
+def is_redirect(transaction_id, checkoutpg_verify_response):
     response_data = None
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
@@ -128,15 +130,28 @@ def is_redirect(transaction_id):
     #  - if transaction is fraud, rdr -> product
     #  - add transaction messages into youpaytransactiondata
 
+    response_code = checkoutpg_verify_response.get('response_code', None)
+    if response_code in RESPONSE_CODE_LIST:
+        front_end_redirect_url = AppConfig.objects.first().front_end_redirect_url
+
+        response_data = {
+            "redirect": True,
+            "redirect_url": front_end_redirect_url,
+            "checkoutpg_verify_response": checkoutpg_verify_response
+        }
+        return True, response_data
+
     if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
         response_data = {
             "is_redirect": True,
-            "redirect_url": youpay_transaction.api_client.success_url
+            "redirect_url": youpay_transaction.api_client.success_url,
+            "checkoutpg_verify_response": checkoutpg_verify_response
         }
         return True, response_data
     else:
         response_data = {
             "is_redirect": True,
-            "redirect_url": youpay_transaction.api_client.failure_url
+            "redirect_url": youpay_transaction.api_client.failure_url,
+            "checkoutpg_verify_response": checkoutpg_verify_response
         }
         return False, response_data

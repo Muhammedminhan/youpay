@@ -1,3 +1,5 @@
+import logging
+
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
@@ -12,6 +14,8 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD
 from services.v1.views.common import YouPayTransactionCRUD
+
+logger = logging.getLogger(__name__)
 
 
 class SavedCardPayment(APIView, YouPayTransactionCRUD):
@@ -163,25 +167,31 @@ class CheckoutVerification(APIView):
         """method for redirection from the checkout and verify
          the payment from the checkoutpg"""
 
-        payment_data = {'transaction_id': request.query_params.get('id'),
-                        'cko_session_id': request.query_params.get(
-                            'cko-session-id')}
-        checkout = CheckoutpgManager()
-        response_data, code = checkout.verify_payment(payment_data)
-        # TODO
-        #  - validate the response data
-        #  - check the payment status in the youpaytransaction data table
-        #  - if success then redirect to the success urls
-        #  - else redirects to the failure url
+        try:
+            payment_data = {'transaction_id': request.query_params.get('id'),
+                            'cko_session_id': request.query_params.get(
+                                'cko-session-id')}
+            checkout = CheckoutpgManager()
+            response_data, code = checkout.verify_payment(payment_data)
+            # TODO
+            #  - validate the response data
+            #  - check the payment status in the youpaytransaction data table
+            #  - if success then redirect to the success urls
+            #  - else redirects to the failure url
 
-        if response_data:
-            data = self.response_obj.get_success_dict(
-                code=code,
-                success_dict=response_data
-            )
-            return Response(data,
-                            status=status.HTTP_200_OK)
-        else:
-            data = self.response_obj.get_error_dict(error_code=code)
-            return Response(data,
-                            status=status.HTTP_404_NOT_FOUND)
+            if response_data:
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=response_data
+                )
+                return Response(data,
+                                status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_error_dict(error_code=code)
+                return Response(data,
+                                status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error("Error in CheckoutVerification: {}".format(str(e)))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
