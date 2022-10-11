@@ -120,6 +120,9 @@ class PaymentRequestDataValidator(object):
 
 
 def is_redirect(transaction_id, checkoutpg_verify_response):
+    logger.info(
+        "is_redirect called for transaction_id: {}\nCheckoutpg Response: {}"
+        .format(transaction_id, checkoutpg_verify_response))
     response_data = None
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
@@ -130,10 +133,11 @@ def is_redirect(transaction_id, checkoutpg_verify_response):
     #  - if transaction is fraud, rdr -> product
     #  - add transaction messages into youpaytransactiondata
 
-    response_code = checkoutpg_verify_response.get('response_code', None)
-    if response_code in RESPONSE_CODE_LIST:
-        front_end_redirect_url = AppConfig.objects.first().front_end_redirect_url
+    is_fraud = checkoutpg_verify_response.get('is_fraud', False)
 
+    response_code = checkoutpg_verify_response.get('response_code', None)
+    if response_code in RESPONSE_CODE_LIST or is_fraud:
+        front_end_redirect_url = get_front_end_redirect_url()
         response_data = {
             "redirect": True,
             "redirect_url": front_end_redirect_url,
@@ -155,3 +159,8 @@ def is_redirect(transaction_id, checkoutpg_verify_response):
             "checkoutpg_verify_response": checkoutpg_verify_response
         }
         return False, response_data
+
+
+def get_front_end_redirect_url():
+    front_end_redirect_url = AppConfig.objects.first().front_end_redirect_url
+    return front_end_redirect_url
