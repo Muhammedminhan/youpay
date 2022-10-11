@@ -6,10 +6,11 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import viewsets
 
 from checkoutpgclient.constants import PAYMENT_METHOD_CARD
+from checkoutpgclient.libs.authentication import SignatureAuthentication
 from checkoutpgclient.models import TransactionData
-
 # from core.utils import wait_redis_lock TODO
 
 logger = logging.getLogger(__name__)
@@ -36,13 +37,12 @@ class WebhookListener(APIView):
     def post(self, request):
         request_data = json.loads(request.data)
         try:
-            # TODO: need to handle if no invoice id
             invoice_pk = self.get_invoice_id(
                 str(request_data.get('payment_reference', None)))
             logger.info("Checkoutpg webhook received for invoice {}".format(
                 invoice_pk))
 
-            # Need to fix this. lock_name = 'lock:WebhookListener:invoice_%d' % (int(invoice_pk),) #TODO
+            lock_name = 'lock:WebhookListener:invoice_%d' % (int(invoice_pk),)
             # with wait_redis_lock(lock_name=lock_name): TODO
 
             transaction_obj = get_transaction_object(
@@ -85,7 +85,7 @@ class WebhookListener(APIView):
             else:
                 transaction_obj = TransactionData.objects.create(
                     invoice_id=invoice_pk,
-                    order_reference=request_data.get('order_reference',
+                    order_reference=request_data.get('idempotency_key',
                                                      None),
                     amount=decimal.Decimal(
                         str(request_data.get('amount', None))),
@@ -103,8 +103,8 @@ class WebhookListener(APIView):
                     api_response_data=
                     request_data.get('api_response_data', None),
                     is_notification=request_data.get('is_notification',
-                                                     False),
-                    approved=request_data.get('approved', False),
+                                                     None),
+                    approved=request_data.get('approved', None),
                     status=str(request_data.get('status', None)),
                     auth_code=str(request_data.get('auth_code', None)),
                     response_summary=str(
@@ -137,14 +137,10 @@ class WebhookListener(APIView):
                                     data=response_data)
 
     def get_invoice_id(self, paymentrefernce):
-        try:
-            paymentrefernce = paymentrefernce.split('-')
-            invoice_id = paymentrefernce[2].split('|')
-            invoice_id = invoice_id[0]
-            return invoice_id
-        except Exception as e:
-            logger.error("Error in get_invoice_id from {} ".format(e))
-            return None
+        paymentrefernce = paymentrefernce.split('-')
+        invoice_id = paymentrefernce[2].split('|')
+        invoice_id = invoice_id[0]
+        return invoice_id
 
     def pg_response(self, code='HTTP_200_OK', data=None):
         return Response(

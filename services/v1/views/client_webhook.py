@@ -37,7 +37,10 @@ class ClientService(object):
                     'Accept': 'application/json',
                     'date': str(datetime.datetime.utcnow()),
                 }
-                logger.info("Request data: {}".format(request_data_json))
+                logger.info(
+                    "Sending webhook to client for transaction id: {}\nURL: {}"
+                    "\nHeaders: {}\nData: {}".format(
+                        self.transaction_id, url, headers, request_data_json))
                 response_status = self.sent_webhook_to_client(
                     url,
                     request_data_json,

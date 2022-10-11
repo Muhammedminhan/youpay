@@ -187,6 +187,9 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
             headers = self.get_payment_header()
+            logger.info("Sending payment data to checkoutpg  \nURL: {}, "
+                        "\nData: {}, \nHeaders: {}".format(
+                url, payment_data_to_send, headers))
             response = requests.post(url, data=payment_data_to_send,
                                      headers=headers)
 
