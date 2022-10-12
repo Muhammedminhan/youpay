@@ -210,9 +210,6 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
             headers = self.get_payment_header()
-            logger.info("Sending payment data to checkoutpg  \nURL: {}, "
-                        "\nData: {}, \nHeaders: {}".format(
-                url, payment_data_to_send, headers))
 
             transaction_id = data.get('transaction_data').get(
                 'transaction_id')
@@ -265,10 +262,6 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             'channel_code': youpay_transaction.channel_code,
             'invoice_id': youpay_transaction.invoice_id}
         response = requests.get(url, params=params)
-        logger.info(
-            "Checkoutpg payment verification response \nURL: {},\nPARAMS:{},"
-            "\nRESPONSE:{}".format(
-                url, params, response))
 
         transaction_obj = self.get_youpay_transaction_data(transaction_id)
 
