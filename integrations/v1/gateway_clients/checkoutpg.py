@@ -5,7 +5,11 @@ import requests
 from django.conf import settings
 from rest_framework import status
 
-from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
+from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG,
+                            PAYMENT_REQUEST_TYPE_CARD,
+                            PAYMENT_REQUEST_TYPE_SAVED_CARD,
+                            PAYMENT_REQUEST_VERIFY, REQUEST_METHOD_POST,
+                            REQUEST_METHOD_GET)
 from core.response_messages import YouPayResponse
 from core.utils import get_checkoutpg_config
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
@@ -21,11 +25,13 @@ from payments.constants import (PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
+from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
 
 class CheckoutpgManager(YouPayTransactionCRUD):
+    handler_obj = PaymentHandlers()
 
     def __init__(self):
         self.checkoutpg_config = get_checkoutpg_config()
@@ -148,8 +154,24 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             payment_data_to_send = json.dumps(payment_data)
             url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
             headers = self.get_payment_header()
+
+            transaction_id = data.get('transaction_data').get(
+                'transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+
             response = requests.post(url, data=payment_data_to_send,
                                      headers=headers)
+
+            # storing Youpay to payment gateway request and response data
+            self.handler_obj.create_youpay_to_payment_gateways_data(
+                transaction_obj=transaction_obj,
+                transaction_id=data.get('transaction_data').get(
+                    'transaction_id'),
+                request_data=payment_data_to_send,
+                response_data=response.text,
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_TYPE_SAVED_CARD,
+            )
 
             if response:
                 response_data = response.json()
@@ -190,8 +212,23 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             logger.info("Sending payment data to checkoutpg  \nURL: {}, "
                         "\nData: {}, \nHeaders: {}".format(
                 url, payment_data_to_send, headers))
+
+            transaction_id = data.get('transaction_data').get(
+                'transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+
             response = requests.post(url, data=payment_data_to_send,
                                      headers=headers)
+            # storing Youpay to payment gateway request and response data
+            self.handler_obj.create_youpay_to_payment_gateways_data(
+                transaction_obj=transaction_obj,
+                transaction_id=data.get('transaction_data').get(
+                    'transaction_id'),
+                request_data=payment_data_to_send,
+                response_data=response.text,
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_TYPE_CARD,
+            )
 
             if response:
                 response_data = response.json()
@@ -232,6 +269,18 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             "\nRESPONSE:{}".format(
                 url, params, response))
 
+        transaction_obj = self.get_youpay_transaction_data(transaction_id)
+
+        # storing Youpay to payment gateway request and response data
+        self.handler_obj.create_youpay_to_payment_gateways_data(
+            transaction_obj=transaction_obj,
+            transaction_id=transaction_id,
+            request_data=json.dumps(params),
+            response_data=response.text,
+            request_type=PAYMENT_REQUEST_VERIFY,
+            request_method=REQUEST_METHOD_GET,
+        )
+
         if response:
             response_data = response.json()
             logger.info(
@@ -253,6 +302,6 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                 return response_data, self.response_obj.PAYMENT_FAILED
         else:
             logger.error(
-                "Error while verifying_payment status: {}, reason {} \n\n"
+                "Error while verifying_payment status: {}, reason {} \n"
                 .format(response.status_code, response.reason))
             return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR

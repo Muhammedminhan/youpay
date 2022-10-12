@@ -66,7 +66,8 @@ class ClientService(object):
 
     @retry(ClientWebhookException, tries=3, logger=logger)
     def sent_webhook_to_client(self, url, request_data_json, headers):
-        logger.info("Sending webhooks to {} started".format(url))
+        logger.info("Sending webhooks to {} started \n data : {}"
+                    "".format(url, request_data_json))
         try:
             response = requests.post(url, json=request_data_json,
                                      headers=headers,

@@ -1,6 +1,5 @@
-from django.shortcuts import render
+from django.http import HttpResponse
 from django.views.generic import View
-from django.http import Http404, HttpResponse
 
 
 class HealthCheck(View):
