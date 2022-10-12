@@ -119,23 +119,23 @@ class PaymentRequestDataValidator(object):
         return False
 
 
-def is_redirect(transaction_id, checkoutpg_verify_response):
+def is_redirect(transaction_id, transaction_message):
     logger.info(
         "is_redirect called for transaction_id: {}\nCheckoutpg Response: {}"
-        .format(transaction_id, checkoutpg_verify_response))
+        .format(transaction_id, transaction_message))
     response_data = None
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
 
-    is_fraud = checkoutpg_verify_response.get('is_fraud', False)
+    is_fraud = transaction_message.get('is_fraud', False)
 
-    response_code = checkoutpg_verify_response.get('response_code', None)
+    response_code = transaction_message.get('response_code', None)
     if response_code in RESPONSE_CODE_LIST or is_fraud:
         front_end_redirect_url = get_payment_redirect_url()
         response_data = {
             "redirect": True,
             "redirect_url": front_end_redirect_url,
-            "checkoutpg_verify_response": checkoutpg_verify_response
+            "transaction_message": transaction_message
         }
         return True, response_data
 
@@ -143,13 +143,13 @@ def is_redirect(transaction_id, checkoutpg_verify_response):
         response_data = {
             "is_redirect": True,
             "redirect_url": youpay_transaction.api_client.success_url,
-            "checkoutpg_verify_response": checkoutpg_verify_response
+            "transaction_message": transaction_message
         }
         return True, response_data
     else:
         response_data = {
             "is_redirect": True,
             "redirect_url": youpay_transaction.api_client.failure_url,
-            "checkoutpg_verify_response": checkoutpg_verify_response
+            "transaction_message": transaction_message
         }
         return False, response_data
