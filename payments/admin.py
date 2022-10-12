@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from payments.models import YouPayTransactionData
+from payments.models import YouPayTransactionData, Announcement
 
 
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
@@ -18,4 +18,13 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     raw_id_fields = ('api_client',)
 
 
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ('gateway_id', 'message', 'is_active',
+                    'created_at', 'updated_at')
+    search_fields = ('gateway_id__gateway_name', 'message')
+    list_filter = ('created_at', 'gateway_id__gateway_name', 'message',
+                   'is_active')
+    raw_id_fields = ('gateway_id',)
+
 admin.site.register(YouPayTransactionData, YouPayTransactionDataAdmin)
+admin.site.register(Announcement, AnnouncementAdmin)

@@ -10,7 +10,7 @@ from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
-    PaymentGatewaySerializer
+    PaymentGatewaySerializer, PaymentGatewayAnnouncementSerializer
 )
 from services.v1.views.utils import (
     get_session_id_and_transaction_id, get_payment_options
@@ -51,7 +51,10 @@ class ConfigViewSet(ViewSet):
                             client.payment_gateway.filter(is_active=True),
                             many=True
                         )
-
+                        announcement_serializer = \
+                            PaymentGatewayAnnouncementSerializer(
+                                client.payment_gateway.filter(is_active=True),
+                            many=True)
                         payment_options = get_payment_options(serializer)
 
                         response_data = {
@@ -63,6 +66,8 @@ class ConfigViewSet(ViewSet):
                                 "service_fee": transaction.service_fee,
                                 "vat_amount": transaction.VAT_amount,
                                 "base_amount": transaction.base_amount,
+                                "announcements" :
+                                    dict(announcement_serializer.data)
                             },
                             "integration_response": {
                                 "checkoutpg": {

@@ -105,3 +105,16 @@ def update_client(sender, instance, **kwargs):
         id=instance.id)
     transaction.on_commit(
         lambda: service.webhook_service(payment_transaction))
+
+
+class Announcement(AbstractDateTime):
+    gateway_id = models.ForeignKey('integrations.PaymentGateway', null=True,
+                                   blank=True, on_delete=models.PROTECT,
+                                   related_name="gateway_announcement")
+    message = models.TextField(null=True, blank=True,
+                               help_text='Payment API request data')
+    is_active = models.BooleanField(default=False, help_text='Determines '
+                                'whether the announcement is active or not.')
+
+    def __str__(self):
+        return str(self.gateway_id.gateway_name)
