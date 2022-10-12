@@ -4,7 +4,8 @@ from core.models import YoupayToPaymentGatewaysData
 from payments.models import YouPayTransactionData
 
 
-class YYoupayToPaymentGatewaysDataInline(admin.TabularInline):
+class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
+    readonly_fields = ('created_at', 'updated_at',)
     model = YoupayToPaymentGatewaysData
     extra = 0
     can_delete = False
@@ -25,7 +26,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     raw_id_fields = ('api_client',)
 
     inlines = [
-        YYoupayToPaymentGatewaysDataInline,
+        YoupayToPaymentGatewaysDataInline,
     ]
 
 
