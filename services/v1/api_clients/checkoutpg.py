@@ -173,11 +173,6 @@ class CheckoutVerification(APIView):
                                 'cko-session-id')}
             checkout = CheckoutpgManager()
             response_data, code = checkout.verify_payment(payment_data)
-            # TODO
-            #  - validate the response data
-            #  - check the payment status in the youpaytransaction data table
-            #  - if success then redirect to the success urls
-            #  - else redirects to the failure url
 
             if response_data:
                 data = self.response_obj.get_success_dict(
