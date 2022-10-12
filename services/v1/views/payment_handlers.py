@@ -1,8 +1,8 @@
 import json
 import logging
 
-from core.constants import PAYMENT_REQUEST_TYPE_NONE
-from core.models import YoupayToPaymentGatewaysData
+from integrations.constants import PAYMENT_REQUEST_TYPE_NONE
+from integrations.models import YoupayToPaymentGatewaysData
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from core.models import YoupayToPaymentGatewaysData
+from integrations.models import YoupayToPaymentGatewaysData
 from payments.models import YouPayTransactionData
 
 

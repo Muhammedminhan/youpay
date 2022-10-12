@@ -5,10 +5,7 @@ import requests
 from django.conf import settings
 from rest_framework import status
 
-from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG,
-                            PAYMENT_REQUEST_TYPE_CARD,
-                            PAYMENT_REQUEST_TYPE_SAVED_CARD,
-                            PAYMENT_REQUEST_VERIFY, REQUEST_METHOD_POST,
+from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.response_messages import YouPayResponse
 from core.utils import get_checkoutpg_config
@@ -18,6 +15,10 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT)
+from integrations.constants import (
+    PAYMENT_REQUEST_TYPE_CARD,
+    PAYMENT_REQUEST_TYPE_SAVED_CARD,
+    PAYMENT_REQUEST_VERIFY, )
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
