@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 class PaymentHandlers(object):
-    """To Handle payment requests from client"""
+    """To Handle payment requests To/from client"""
 
     def create_youpay_to_payment_gateways_data(self, **kwargs):
         """method to create the payment request data """
