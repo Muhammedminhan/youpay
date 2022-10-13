@@ -3,6 +3,8 @@ from django.db import models
 
 # Create your models here.
 
+YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
+
 User = get_user_model()
 
 

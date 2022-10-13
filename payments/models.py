@@ -92,6 +92,12 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
                                 max_length=200, null=True, blank=True,
                                 help_text="to identify the platform")
+    response_summary = models.CharField(
+        max_length=500, null=True, blank=True,
+        help_text='Checkout response summary text')
+    approved = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the payment is approved or not')
 
 
 @receiver(post_save, sender=YouPayTransactionData)
