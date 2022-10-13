@@ -1,5 +1,6 @@
 import logging
 
+import requests
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,7 +11,7 @@ from payments.constants import PAYMENT_STATUS_CANCELLED
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
-    PaymentRequestDataSerializer)
+    PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from services.v1.views.utils import (
     reformat_payment_request_data
@@ -190,3 +191,64 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
         return Response({
             "redirect_url": transactoin_object.api_client.cancel_url,
         })
+
+
+class VerifyTransactionView(APIView):
+    """To Verify youpaypayment with related clients"""
+    response_obj = YouPayResponse()
+    youpay_obj = YouPayTransactionCRUD()
+
+    def post(self, request):
+        try:
+            data = self.request.data
+            serializer = PaymentVerifyDataSerializer(data=data)
+            if serializer.is_valid():
+                """Validate transaction data with youpay client"""
+                transaction_id = serializer.validated_data.get(
+                    'transaction_id')
+                transaction_obj = self.youpay_obj.get_youpay_transaction_data(
+                    transaction_id)
+
+                # get client verify url
+                client_verify_url = transaction_obj.api_client.verify_url
+                if client_verify_url is None or client_verify_url == "":
+                    return_data = self.response_obj.get_400_message(
+                        message="Please configure client verify url")
+                    return Response(return_data,
+                                    status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    # call client verify url
+                    response = requests.post(client_verify_url, data=data)
+                    logger.info("Client verify request data : {}\nresponse "
+                                "data{}".format(data, response.text))
+
+                    if response:
+                        return_data = self.response_obj.get_success_dict(
+                            code=self.response_obj.SUCCESS,
+                            success_dict=response.json()
+                        )
+                        return Response(return_data,
+                                        status=status.HTTP_200_OK)
+                    else:
+                        return_data = self.response_obj.get_400_message(
+                            message="Client verify url not working")
+                        return Response(return_data,
+                                        status=status.HTTP_400_BAD_REQUEST)
+
+            else:
+                response_data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.UNKNOWN_ERR,
+                    serializer_error=serializer.errors,
+                )
+                return Response(response_data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+
+            logger.error("Exception in verify transaction : {}".format(e))
+            return_data = self.response_obj.get_400_message(
+                message={"error": str(e)},
+            )
+            return Response(return_data,
+                            status=status.HTTP_400_BAD_REQUEST)

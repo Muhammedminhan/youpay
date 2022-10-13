@@ -16,3 +16,11 @@ class PaymentRequestDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentRequestData
         fields = '__all__'
+
+
+class PaymentVerifyDataSerializer(serializers.Serializer):
+    transaction_id = serializers.CharField()
+    invoice_id = serializers.CharField()
+    amount = serializers.DecimalField(max_digits=12, decimal_places=4,
+                                      validators=[amount_validator])
+    currency = serializers.CharField()

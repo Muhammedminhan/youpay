@@ -6,7 +6,7 @@ from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
 from services.v1.views.configurations import ConfigViewSet
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
-                            PaymentCancelledView)
+                            PaymentCancelledView, VerifyTransactionView)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -25,6 +25,7 @@ urlpatterns = [
     path('checkout/verify/', CheckoutVerification.as_view(),
          name='checkout_verify'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
+    path('verify-transaction/', VerifyTransactionView.as_view()),
 
     # TODO
     #  - create delete stored card api
