@@ -42,13 +42,19 @@ class AnnouncementSerializer(serializers.ModelSerializer):
 
 
 class PaymentGatewayAnnouncementSerializer(serializers.ModelSerializer):
-    gateway_announcement = AnnouncementSerializer(many=True, read_only=True)
+    active_announcement = serializers.SerializerMethodField()
+
+    def get_active_announcement(self, obj):
+        announcement_objs = Announcement.objects.filter(is_active=True,
+                                                        gateway_id=obj.id)
+        serialized_data = AnnouncementSerializer(announcement_objs, many=True)
+        return serialized_data.data
 
     def to_representation(self, instance):
         data = super(PaymentGatewayAnnouncementSerializer,
                      self).to_representation(instance)
-        return data['gateway_name'], data['gateway_announcement']
+        return data['gateway_name'], data['active_announcement']
 
     class Meta:
         model = PaymentGateway
-        fields = ('gateway_name','gateway_announcement')
+        fields = ('gateway_name', 'active_announcement')
