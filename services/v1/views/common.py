@@ -8,7 +8,9 @@ from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
+from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
+from services.utils import get_payment_redirect_url
 
 logger = logging.getLogger(__name__)
 
@@ -117,26 +119,37 @@ class PaymentRequestDataValidator(object):
         return False
 
 
-def is_redirect(transaction_id):
+def is_redirect(transaction_id, transaction_message):
+    logger.info(
+        "is_redirect called for transaction_id: {}\nCheckoutpg Response: {}"
+        .format(transaction_id, transaction_message))
     response_data = None
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
 
-    # TODO - check response codes, if code in the lists
-    #  we need to redirect to payment page itself. otherwise
-    #  redirect to the product page ['20005','20051','20014',]
-    #  - if transaction is fraud, rdr -> product
-    #  - add transaction messages into youpaytransactiondata
+    is_fraud = transaction_message.get('is_fraud', False)
+
+    response_code = transaction_message.get('response_code', None)
+    if response_code in RESPONSE_CODE_LIST or is_fraud:
+        front_end_redirect_url = get_payment_redirect_url()
+        response_data = {
+            "redirect": True,
+            "redirect_url": front_end_redirect_url,
+            "transaction_message": transaction_message
+        }
+        return True, response_data
 
     if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
         response_data = {
             "is_redirect": True,
-            "redirect_url": youpay_transaction.api_client.success_url
+            "redirect_url": youpay_transaction.api_client.success_url,
+            "transaction_message": transaction_message
         }
         return True, response_data
     else:
         response_data = {
             "is_redirect": True,
-            "redirect_url": youpay_transaction.api_client.failure_url
+            "redirect_url": youpay_transaction.api_client.failure_url,
+            "transaction_message": transaction_message
         }
         return False, response_data

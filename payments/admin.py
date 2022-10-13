@@ -1,6 +1,14 @@
 from django.contrib import admin
 
+from integrations.models import YoupayToPaymentGatewaysData
 from payments.models import YouPayTransactionData, Announcement
+
+
+class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
+    readonly_fields = ('created_at', 'updated_at',)
+    model = YoupayToPaymentGatewaysData
+    extra = 0
+    can_delete = False
 
 
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
@@ -16,6 +24,10 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     list_filter = ('created_at', 'payment_status', 'api_client',
                    'payment_gateway', 'currency', "platform")
     raw_id_fields = ('api_client',)
+
+    inlines = [
+        YoupayToPaymentGatewaysDataInline,
+    ]
 
 
 class AnnouncementAdmin(admin.ModelAdmin):

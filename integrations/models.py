@@ -1,6 +1,11 @@
 from django.db import models
 
+from core.constants import REQUEST_METHOD_CHOICES, REQUEST_METHOD_NONE
 from core.models import AbstractDateTime, AbstractUserBase
+from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
+                                    PAYMENT_REQUEST_TYPE_CHOICES)
+
+YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
 
 # Create your models here.
 
@@ -65,3 +70,29 @@ class PaymentGatewayAPI(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return self.payment_gateway.gateway_name + self.api_name
+
+
+class YoupayToPaymentGatewaysData(AbstractDateTime):
+    youpay_payment = models.ForeignKey(
+        YOUPAY_TRANSACTION_DATA,
+        on_delete=models.CASCADE,
+        blank=False, null=True,
+        help_text='Payment'
+    )
+    request_method = models.CharField(
+        max_length=10, null=True, blank=True, choices=REQUEST_METHOD_CHOICES,
+        default=PAYMENT_REQUEST_TYPE_NONE, )
+    payment_request_data = models.JSONField(
+        null=True, blank=True,
+        help_text='Payment API request data to client')
+    payment_response_data = models.JSONField(
+        null=True, blank=True,
+        help_text='Payment API response data to client')
+    request_type = models.CharField(max_length=200,
+                                    choices=PAYMENT_REQUEST_TYPE_CHOICES,
+                                    default=REQUEST_METHOD_NONE,
+                                    db_index=True,
+                                    help_text='Payment status')
+
+    def __str__(self):
+        return self.youpay_payment.payment_reference
