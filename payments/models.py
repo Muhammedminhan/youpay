@@ -109,10 +109,10 @@ def update_client(sender, instance, **kwargs):
 
 class Announcement(AbstractDateTime):
     gateway_id = models.ForeignKey('integrations.PaymentGateway', null=True,
-                                   blank=True, on_delete=models.PROTECT,
+                                   blank=True, on_delete=models.CASCADE,
                                    related_name="gateway_announcement")
     message = models.TextField(null=True, blank=True,
-                               help_text='Payment API request data')
+                               help_text='Announcement message')
     is_active = models.BooleanField(default=False, help_text='Determines '
                                 'whether the announcement is active or not.')
 

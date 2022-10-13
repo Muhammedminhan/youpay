@@ -45,8 +45,8 @@ class PaymentGatewayAnnouncementSerializer(serializers.ModelSerializer):
     gateway_announcement = AnnouncementSerializer(many=True, read_only=True)
 
     def to_representation(self, instance):
-        data = super(PaymentGatewayAnnouncementSerializer, self).to_representation(
-            instance)
+        data = super(PaymentGatewayAnnouncementSerializer,
+                     self).to_representation(instance)
         return data['gateway_name'], data['gateway_announcement']
 
     class Meta:
