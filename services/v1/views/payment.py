@@ -198,57 +198,57 @@ class VerifyTransactionView(APIView):
     response_obj = YouPayResponse()
     youpay_obj = YouPayTransactionCRUD()
 
-    def post(self, request):
-        try:
-            data = self.request.data
-            serializer = PaymentVerifyDataSerializer(data=data)
-            if serializer.is_valid():
-                """Validate transaction data with youpay client"""
-                transaction_id = serializer.validated_data.get(
-                    'transaction_id')
-                transaction_obj = self.youpay_obj.get_youpay_transaction_data(
-                    transaction_id)
+    def verify_transaction(self, data):
+        serializer = PaymentVerifyDataSerializer(data=data)
+        if serializer.is_valid():
+            """Validate transaction data with youpay client"""
+            transaction_id = serializer.validated_data.get(
+                'transaction_id')
+            transaction_obj = self.youpay_obj.get_youpay_transaction_data(
+                transaction_id)
 
-                # get client verify url
-                client_verify_url = transaction_obj.api_client.verify_url
-                if client_verify_url is None or client_verify_url == "":
-                    return_data = self.response_obj.get_400_message(
-                        message="Please configure client verify url")
-                    return Response(return_data,
-                                    status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    # call client verify url
-                    response = requests.post(client_verify_url, data=data)
-                    logger.info("Client verify request data : {}\nresponse "
-                                "data{}".format(data, response.text))
+            # Check weather API client is exists or not
+            if transaction_obj.api_client is None:
+                """Client does not exist"""
+                return_data = self.response_obj.get_400_message(
+                    message="API Client Does Not Exist")
+                return return_data, status.HTTP_400_BAD_REQUEST
 
-                    if response:
-                        return_data = self.response_obj.get_success_dict(
-                            code=self.response_obj.SUCCESS,
-                            success_dict=response.json()
-                        )
-                        return Response(return_data,
-                                        status=status.HTTP_200_OK)
-                    else:
-                        return_data = self.response_obj.get_400_message(
-                            message="Client verify url not working")
-                        return Response(return_data,
-                                        status=status.HTTP_400_BAD_REQUEST)
-
+            # get client verify url
+            client_verify_url = transaction_obj.api_client.verify_url
+            if client_verify_url is None or client_verify_url == "":
+                return_data = self.response_obj.get_400_message(
+                    message="Please configure client verify url")
+                return return_data, status.HTTP_400_BAD_REQUEST
             else:
-                response_data = self.response_obj.get_error_dict(
-                    error_code=self.response_obj.UNKNOWN_ERR,
-                    serializer_error=serializer.errors,
-                )
-                return Response(response_data.get('errors'),
-                                status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
+                """Verify transaction with client by calling verify url"""
+                response = requests.post(client_verify_url, data=data)
+                logger.info("Client verify request data : {}\nresponse "
+                            "data{}".format(data, response.text))
 
-            logger.error("Exception in verify transaction : {}".format(e))
-            return_data = self.response_obj.get_400_message(
-                message={"error": str(e)},
+                if response:
+                    return_data = self.response_obj.get_success_dict(
+                        code=self.response_obj.SUCCESS,
+                        success_dict=response.json()
+                    )
+                    return return_data, status.HTTP_200_OK
+                else:
+                    """Client verify url not responding"""
+                    return_data = self.response_obj.get_400_message(
+                        message="Client verify url not working")
+                    return return_data, status.HTTP_400_BAD_REQUEST
+
+        else:
+            response_data = self.response_obj.get_error_dict(
+                error_code=self.response_obj.UNKNOWN_ERR,
+                serializer_error=serializer.errors,
             )
-            return Response(return_data,
-                            status=status.HTTP_400_BAD_REQUEST)
+            return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
+
+    def post(self, request):
+        """Dummy API to verify transaction"""
+        is_verified = request.data.get('is_verified', True)
+
+        return Response({
+            "is_verified": is_verified,
+        })
