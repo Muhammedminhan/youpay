@@ -70,7 +70,6 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.saved_card_payment(
                     payment_data)
-                print("Response Data", response_data)
 
                 if response_data:
                     data = self.response_obj.get_success_dict(
