@@ -114,7 +114,7 @@ def update_client(sender, instance, **kwargs):
 
 
 class Announcement(AbstractDateTime):
-    gateway_id = models.ForeignKey('integrations.PaymentGateway', null=True,
+    gateway = models.ForeignKey('integrations.PaymentGateway', null=True,
                                    blank=True, on_delete=models.CASCADE,
                                    related_name="gateway_announcement")
     message = models.TextField(null=True, blank=True,
@@ -123,4 +123,4 @@ class Announcement(AbstractDateTime):
                                 'whether the announcement is active or not.')
 
     def __str__(self):
-        return str(self.gateway_id.gateway_name)
+        return str(self.gateway.gateway_name)

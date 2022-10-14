@@ -31,11 +31,11 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
 
 
 class AnnouncementAdmin(admin.ModelAdmin):
-    list_display = ('gateway_id', 'message', 'is_active',
+    list_display = ('gateway', 'message', 'is_active',
                     'created_at', 'updated_at')
-    search_fields = ('gateway_id__gateway_name', 'message')
-    list_filter = ('created_at', 'gateway_id__gateway_name', 'is_active')
-    raw_id_fields = ('gateway_id',)
+    search_fields = ('gateway__gateway_name', 'message')
+    list_filter = ('created_at', 'gateway__gateway_name', 'is_active')
+    raw_id_fields = ('gateway',)
 
 admin.site.register(YouPayTransactionData, YouPayTransactionDataAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)
