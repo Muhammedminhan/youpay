@@ -282,7 +282,6 @@ class CheckoutpgManager(YouPayTransactionCRUD):
                                 "channel_code": payment_data.get(
                                     "channel_code"),
                                 "payment_method": PAYMENT_METHOD_CARD,
-                                "is_verified": verify_response,
                             }
                         )
                     return response.json(), self.response_obj.SUCCESS
