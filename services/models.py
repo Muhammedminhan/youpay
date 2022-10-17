@@ -18,6 +18,9 @@ class APIClient(AbstractDateTime, AbstractUserBase):
                                help_text='API Key',
                                validators=[MinLengthValidator(20)],
                                unique=True)
+    api_secret = models.CharField(max_length=100, blank=True,
+                                  validators=[MinLengthValidator(40)],
+                                  unique=True)
     is_active = models.BooleanField(default=False,
                                     help_text='Denotes whether the API '
                                               'Client is active or not')
