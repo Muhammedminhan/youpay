@@ -72,9 +72,6 @@ class ClientService(object):
             logger.error(
                 "Error sending webhook for {} to client {}".format(
                     self.transaction_id, str(e)))
-            logger.error(
-                "webhook sent failed with error ",
-                exc_info=e)
 
     @retry(ClientWebhookException, tries=3, logger=logger)
     def sent_webhook_to_client(self, url, request_data_json, auth, headers):
