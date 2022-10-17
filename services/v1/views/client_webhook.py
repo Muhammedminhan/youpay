@@ -43,7 +43,7 @@ class ClientService(object):
                 url = youpay_transaction.api_client.webhook_url
                 headers = {
                     'Accept': 'application/json',
-                    # 'X-Api-Key': API_KEY,
+                    'X-Api-Key': API_KEY,
                     'date': str(datetime.datetime.utcnow()),
                 }
                 logger.info(
