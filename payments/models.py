@@ -7,7 +7,7 @@ from django.dispatch import receiver
 
 from core.constants import (PAYMENT_GATEWAY_CHOICES,
                             PURCHASE_PLATFORM_CHOICES)
-from core.models import AbstractDateTime, CustomerProfile
+from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
@@ -113,11 +113,11 @@ def update_client(sender, instance, **kwargs):
         lambda: service.webhook_service(payment_transaction))
 
 
-class Announcement(AbstractDateTime):
+class Announcement(AbstractDateTime, AbstractUserBase):
     gateway = models.ForeignKey('integrations.PaymentGateway', null=True,
                                    blank=True, on_delete=models.CASCADE,
                                    related_name="gateway_announcement")
-    message = models.TextField(null=True, blank=True,
+    offer_message = models.TextField(null=True, blank=True,
                                help_text='Announcement message')
     is_active = models.BooleanField(default=False, help_text='Determines '
                                 'whether the announcement is active or not.')

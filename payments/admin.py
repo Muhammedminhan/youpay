@@ -31,9 +31,9 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
 
 
 class AnnouncementAdmin(admin.ModelAdmin):
-    list_display = ('gateway', 'message', 'is_active',
+    list_display = ('gateway', 'offer_message', 'is_active',
                     'created_at', 'updated_at')
-    search_fields = ('gateway__gateway_name', 'message')
+    search_fields = ('gateway__gateway_name', 'offer_message')
     list_filter = ('created_at', 'gateway__gateway_name', 'is_active')
     raw_id_fields = ('gateway',)
 
