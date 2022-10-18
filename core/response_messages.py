@@ -5,9 +5,11 @@ class YouPayResponse(object):
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
 
+    MESSAGE = {}
+
     def __init__(self):
         super(YouPayResponse, self).__init__()
-        self.MESSAGE = {}
+        # self.MESSAGE = {}
 
         service_unavailable = (
             "The service is temporarily unavailable, please try again "

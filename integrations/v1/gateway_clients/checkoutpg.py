@@ -25,14 +25,18 @@ from integrations.v1.serializers.checkoutpg_payment_request import (
 from payments.constants import (PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD)
-from services.v1.views.common import YouPayTransactionCRUD, is_redirect
+from services.v1.views.common import (
+    # YouPayTransactionCRUD,
+    is_redirect)
 from services.v1.views.payment import VerifyTransactionView
 from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
 
-class CheckoutpgManager(YouPayTransactionCRUD):
+class CheckoutpgManager(
+    # YouPayTransactionCRUD,
+    VerifyTransactionView):
     handler_obj = PaymentHandlers()
 
     def __init__(self):
@@ -145,12 +149,11 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             return None, None
 
     def saved_card_payment(self, data):
-        verify_obj = VerifyTransactionView()
 
         transaction_data = data.get('transaction_data')
         transaction_id = transaction_data.get('transaction_id')
 
-        verify_response, verify_status = verify_obj.verify_transaction(
+        verify_response, verify_status = self.verify_transaction(
             transaction_data)
         logger.info(
             "Verify response: {} - {}".format(verify_status, verify_response))
@@ -223,12 +226,10 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             return None, self.response_obj.CLIENT_TRANSACTION_VERIFICATION_FAILED
 
     def card_payment(self, data):
-        verify_obj = VerifyTransactionView()
-
         transaction_data = data.get('transaction_data')
         transaction_id = transaction_data.get('transaction_id')
 
-        verify_response, verify_status = verify_obj.verify_transaction(
+        verify_response, verify_status = self.verify_transaction(
             transaction_data)
 
         is_verified = verify_response.get('is_verified', False)
@@ -340,6 +341,11 @@ class CheckoutpgManager(YouPayTransactionCRUD):
             else:
                 return response_data, self.response_obj.PAYMENT_FAILED
         else:
+            import sys, os
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            logger.error("Exception in payment request : {} {} {}"
+                         .format(exc_type, fname, exc_tb.tb_lineno))
             logger.error(
                 "Error while verifying_payment status: {}, reason {} \n"
                 .format(response.status_code, response.reason))
