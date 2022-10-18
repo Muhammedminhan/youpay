@@ -8,9 +8,8 @@ from services.v1.views.common import YouPayTransactionCRUD
 logger = logging.getLogger(__name__)
 
 
-class PaymentHandlers(object):
+class PaymentHandlers(YouPayTransactionCRUD):
     """To Handle payment requests To/from client"""
-    youpay_obj = YouPayTransactionCRUD()
 
     def create_youpay_to_payment_gateways_data(self, **kwargs):
         """method to create the payment request data """
@@ -25,7 +24,7 @@ class PaymentHandlers(object):
             request_method = kwargs.get('request_method', None)
 
             if not transaction_obj:
-                transaction_obj = self.youpay_obj.get_youpay_transaction_data(
+                transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
 
             # checks weather the transaction object is passed or not

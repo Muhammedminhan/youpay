@@ -7,7 +7,6 @@ from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
-from core.response_messages import YouPayResponse
 from core.utils import get_checkoutpg_config
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
@@ -33,12 +32,10 @@ logger = logging.getLogger(__name__)
 
 
 class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
-    # handler_obj = PaymentHandlers()
 
     def __init__(self):
         self.checkoutpg_config = get_checkoutpg_config()
-        self.response_obj = YouPayResponse()
-
+        
     def get_checkout_payment_data(self, data):
 
         if (data.get('transaction_data') and data.get('request_data')
@@ -89,19 +86,19 @@ class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
                             'card_bins', None) else []
                         data = {'public_keys': public_keys,
                                 'checkout_mada_bins': checkout_mada_bins}
-                        return data, self.response_obj.SUCCESS
+                        return data, self.SUCCESS
 
                     return message, resp_status
                 logger.error("Unable to fetch Checkoutpg configurations.")
-                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
             except Exception as e:
                 logger.error(
                     "Failed to fetch the checkoutpg v2 configuration "
                     "data {}".format(e))
-                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
-            return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+            return None, self.CHECKOUTPG_CONNECTION_ERROR
 
     def get_saved_cards(self, email, currency):
         """
@@ -178,7 +175,6 @@ class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
                                          headers=headers)
 
                 # storing Youpay to payment gateway request and response data
-                # self.handler_obj.create_youpay_to_payment_gateways_data(
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_id,
@@ -208,19 +204,19 @@ class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
                                 "payment_method": PAYMENT_METHOD_SAVED_CARD,
                             }
                         )
-                    return response.json(), self.response_obj.SUCCESS
+                    return response.json(), self.SUCCESS
 
-                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
             else:
                 logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
-                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
         else:
             msg = (
                 "Youpay transaction verification failed for transaction id "
                 "{} \n response is : {} ".format(transaction_id,
                                                  verify_response))
             logger.error(msg)
-            return None, self.response_obj.CLIENT_TRANSACTION_VERIFICATION_FAILED
+            return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
 
     def card_payment(self, data):
         transaction_data = data.get('transaction_data')
@@ -252,7 +248,6 @@ class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
                 response = requests.post(url, data=payment_data_to_send,
                                          headers=headers)
                 # storing Youpay to payment gateway request and response data
-                # self.handler_obj.create_youpay_to_payment_gateways_data(
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=data.get('transaction_data').get(
@@ -283,18 +278,18 @@ class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
                                 "payment_method": PAYMENT_METHOD_CARD,
                             }
                         )
-                    return response.json(), self.response_obj.SUCCESS
-                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+                    return response.json(), self.SUCCESS
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
             else:
                 logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
-                return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
         else:
             msg = (
                 "Youpay transaction verification failed for transaction id "
                 "{} \n response is : {} ".format(transaction_id,
                                                  verify_response))
             logger.error(msg)
-            return verify_response, self.response_obj.CLIENT_TRANSACTION_VERIFICATION_FAILED
+            return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
 
     def verify_payment(self, data):
         url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT
@@ -310,7 +305,6 @@ class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
         transaction_obj = self.get_youpay_transaction_data(transaction_id)
 
         # storing Youpay to payment gateway request and response data
-        # self.handler_obj.create_youpay_to_payment_gateways_data(
         self.create_youpay_to_payment_gateways_data(
             transaction_obj=transaction_obj,
             transaction_id=transaction_id,
@@ -336,16 +330,11 @@ class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
             redirect, response_data = is_redirect(transaction_id,
                                                   response_data)
             if redirect:
-                return response_data, self.response_obj.SUCCESS
+                return response_data, self.SUCCESS
             else:
-                return response_data, self.response_obj.PAYMENT_FAILED
+                return response_data, self.PAYMENT_FAILED
         else:
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Exception in payment request : {} {} {}"
-                         .format(exc_type, fname, exc_tb.tb_lineno))
             logger.error(
                 "Error while verifying_payment status: {}, reason {} \n"
                 .format(response.status_code, response.reason))
-            return None, self.response_obj.CHECKOUTPG_CONNECTION_ERROR
+            return None, self.CHECKOUTPG_CONNECTION_ERROR
