@@ -25,19 +25,15 @@ from integrations.v1.serializers.checkoutpg_payment_request import (
 from payments.constants import (PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD)
-from services.v1.views.common import (
-    # YouPayTransactionCRUD,
-    is_redirect)
+from services.v1.views.common import (is_redirect)
 from services.v1.views.payment import VerifyTransactionView
 from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
 
-class CheckoutpgManager(
-    # YouPayTransactionCRUD,
-    VerifyTransactionView):
-    handler_obj = PaymentHandlers()
+class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
+    # handler_obj = PaymentHandlers()
 
     def __init__(self):
         self.checkoutpg_config = get_checkoutpg_config()
@@ -182,7 +178,8 @@ class CheckoutpgManager(
                                          headers=headers)
 
                 # storing Youpay to payment gateway request and response data
-                self.handler_obj.create_youpay_to_payment_gateways_data(
+                # self.handler_obj.create_youpay_to_payment_gateways_data(
+                self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_id,
                     request_data=payment_data_to_send,
@@ -255,7 +252,8 @@ class CheckoutpgManager(
                 response = requests.post(url, data=payment_data_to_send,
                                          headers=headers)
                 # storing Youpay to payment gateway request and response data
-                self.handler_obj.create_youpay_to_payment_gateways_data(
+                # self.handler_obj.create_youpay_to_payment_gateways_data(
+                self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=data.get('transaction_data').get(
                         'transaction_id'),
@@ -312,7 +310,8 @@ class CheckoutpgManager(
         transaction_obj = self.get_youpay_transaction_data(transaction_id)
 
         # storing Youpay to payment gateway request and response data
-        self.handler_obj.create_youpay_to_payment_gateways_data(
+        # self.handler_obj.create_youpay_to_payment_gateways_data(
+        self.create_youpay_to_payment_gateways_data(
             transaction_obj=transaction_obj,
             transaction_id=transaction_id,
             request_data=json.dumps(params),

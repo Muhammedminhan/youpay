@@ -9,8 +9,6 @@ class YouPayResponse(object):
 
     def __init__(self):
         super(YouPayResponse, self).__init__()
-        # self.MESSAGE = {}
-
         service_unavailable = (
             "The service is temporarily unavailable, please try again "
             "later.")
