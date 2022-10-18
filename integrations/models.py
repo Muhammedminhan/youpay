@@ -93,3 +93,6 @@ class YoupayToPaymentGatewaysData(AbstractDateTime):
                                     default=REQUEST_METHOD_NONE,
                                     db_index=True,
                                     help_text='Payment status')
+
+    def __str__(self):
+        return self.youpay_payment.payment_reference
