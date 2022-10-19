@@ -25,17 +25,17 @@ from payments.constants import (PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD)
 from services.v1.views.common import (is_redirect)
-from services.v1.views.payment import VerifyTransactionView
+from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
 
-class CheckoutpgManager(VerifyTransactionView, PaymentHandlers):
+class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
     def __init__(self):
         self.checkoutpg_config = get_checkoutpg_config()
-        
+
     def get_checkout_payment_data(self, data):
 
         if (data.get('transaction_data') and data.get('request_data')
