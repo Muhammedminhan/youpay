@@ -136,11 +136,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         except Exception as e:
             logger.error("Exception in payment request : {} "
                          .format(e))
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Exception in payment request : {} {} {}"
-                         .format(exc_type, fname, exc_tb.tb_lineno))
             self.return_data = self.get_400_message(
                 message={"error": str(e)},
             )
