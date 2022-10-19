@@ -209,7 +209,6 @@ class VerifyTransactionView(APIView, YouPayResponse, YouPayTransactionCRUD):
 
             if transaction_obj.api_client is None:
                 """Client does not exist"""
-                # return_data = self.response_obj.get_400_message(
                 return_data = self.get_400_message(
                     message="API Client Does Not Exist")
                 return return_data, status.HTTP_400_BAD_REQUEST
