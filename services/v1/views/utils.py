@@ -6,6 +6,10 @@ from integrations.constants import (
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from services.v1.constants import PAYMENT_OPTIONS
+from integrations.constants import (
+    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE, QITAF_HUB_CODE
+)
+from payments.models import Announcement
 
 logger = logging.getLogger(__name__)
 
@@ -92,3 +96,20 @@ def get_payment_options(payment_gateway_serializer):
             response_payment_options['tabbypg'] = True
 
     return response_payment_options
+
+
+def get_announcements():
+    """
+    used to fetch the active announcements for payment gateways
+    """
+    pg_list = [CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
+               TABBYPG_HUB_CODE, QITAF_HUB_CODE]
+    announcements_list = []
+    for pg in pg_list:
+        announcement_objs = Announcement.objects.filter(gateway__code=pg,
+                                                        is_active=True)
+        pg_announcements = []
+        for obj in announcement_objs:
+            pg_announcements.append(obj.offer_message)
+        announcements_list.append(pg_announcements)
+    return announcements_list

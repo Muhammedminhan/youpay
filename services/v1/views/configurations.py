@@ -10,10 +10,10 @@ from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
-    PaymentGatewaySerializer, PaymentGatewayAnnouncementSerializer
+    PaymentGatewaySerializer
 )
 from services.v1.views.utils import (
-    get_session_id_and_transaction_id, get_payment_options
+    get_session_id_and_transaction_id, get_payment_options, get_announcements
 )
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,6 @@ class ConfigViewSet(ViewSet):
 
     def retrieve(self, request, pk=None):
         session_id, transaction_id = get_session_id_and_transaction_id(pk)
-
         checkout_obj = CheckoutpgManager()
         try:
             transaction = YouPayTransactionData.objects.get(
@@ -51,12 +50,14 @@ class ConfigViewSet(ViewSet):
                             client.payment_gateway.filter(is_active=True),
                             many=True
                         )
-                        announcement_serializer = \
-                            PaymentGatewayAnnouncementSerializer(
-                                client.payment_gateway.filter(is_active=True),
-                            many=True)
                         payment_options = get_payment_options(serializer)
-
+                        announcements_list = get_announcements()
+                        announcements_dict = {
+                            "checkoutpg" : announcements_list[0],
+                            "b2cpayback" : announcements_list[1],
+                            "tabbypg" : announcements_list[2],
+                            "qitafpg" : announcements_list[3]
+                        }
                         response_data = {
                             "data": {
                                 "payment_options": payment_options,
@@ -66,8 +67,7 @@ class ConfigViewSet(ViewSet):
                                 "service_fee": transaction.service_fee,
                                 "vat_amount": transaction.VAT_amount,
                                 "base_amount": transaction.base_amount,
-                                "announcements" :
-                                    dict(announcement_serializer.data)
+                                "announcements" : announcements_dict
                             },
                             "integration_response": {
                                 "checkoutpg": {
