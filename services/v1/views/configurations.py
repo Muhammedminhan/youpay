@@ -51,13 +51,7 @@ class ConfigViewSet(ViewSet):
                             many=True
                         )
                         payment_options = get_payment_options(serializer)
-                        announcements_list = get_announcements()
-                        announcements_dict = {
-                            "checkoutpg" : announcements_list[0],
-                            "b2cpayback" : announcements_list[1],
-                            "tabbypg" : announcements_list[2],
-                            "qitafpg" : announcements_list[3]
-                        }
+                        announcements_dict = get_announcements()
                         response_data = {
                             "data": {
                                 "payment_options": payment_options,

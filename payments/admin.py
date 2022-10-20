@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from integrations.models import YoupayToPaymentGatewaysData
 from payments.models import YouPayTransactionData, Announcement
-
+from core.admin import AdminAbstract
 
 class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
     readonly_fields = ('created_at', 'updated_at',)
@@ -30,21 +30,12 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     ]
 
 
-class AnnouncementAdmin(admin.ModelAdmin):
+class AnnouncementAdmin(AdminAbstract):
     list_display = ('gateway', 'offer_message', 'is_active',
                     'created_at', 'updated_at')
     search_fields = ('gateway__gateway_name', 'offer_message')
     list_filter = ('created_at', 'gateway__gateway_name', 'is_active')
     raw_id_fields = ('gateway',)
-    readonly_fields = (
-        'created_at', 'updated_at', 'created_by', 'modified_by')
-
-    def save_model(self, request, obj, form, change):
-        if not obj.pk:
-            obj.created_by = request.user
-        if form.changed_data:
-            obj.modified_by = request.user
-        super().save_model(request, obj, form, change)
 
 admin.site.register(YouPayTransactionData, YouPayTransactionDataAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)

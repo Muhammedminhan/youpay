@@ -112,4 +112,10 @@ def get_announcements():
         for obj in announcement_objs:
             pg_announcements.append(obj.offer_message)
         announcements_list.append(pg_announcements)
-    return announcements_list
+    announcements_dict = {
+        "checkoutpg": announcements_list[0],
+        "b2cpayback": announcements_list[1],
+        "tabbypg": announcements_list[2],
+        "qitafpg": announcements_list[3]
+    }
+    return announcements_dict

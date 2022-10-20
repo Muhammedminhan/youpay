@@ -3,7 +3,6 @@ from rest_framework import serializers
 from core.validators import URLValidator
 from integrations.models import PaymentGateway
 from services.models import APIClient
-from payments.models import Announcement
 
 class APIClientRegistrationSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=255, required=True)
