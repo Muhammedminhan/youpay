@@ -30,9 +30,6 @@ class YouPayTransactionCRUD(object):
     """
 
     def create_youpay_transaction_data(self, request):
-        print("\n\n Create YouPay Transaction Data \n\n")
-        print(request)
-
         serializer = YouPayTransactionDataSerializer(data=request)
         if serializer.is_valid():
             serializer.save()
