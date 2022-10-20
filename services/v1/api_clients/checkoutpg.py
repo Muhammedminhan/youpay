@@ -70,6 +70,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.saved_card_payment(
                     payment_data)
+
                 if response_data:
                     data = self.response_obj.get_success_dict(
                         code=code,
@@ -80,7 +81,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                 else:
                     data = self.response_obj.get_error_dict(error_code=code)
                     return Response(data,
-                                    status=status.HTTP_404_NOT_FOUND)
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
                     message="Transaction doesn't exists")

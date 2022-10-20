@@ -1,5 +1,6 @@
 import logging
 
+import requests
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,7 +11,7 @@ from payments.constants import PAYMENT_STATUS_CANCELLED
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
-    PaymentRequestDataSerializer)
+    PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from services.v1.views.utils import (
     reformat_payment_request_data
@@ -19,8 +20,8 @@ from services.v1.views.utils import (
 logger = logging.getLogger(__name__)
 
 
-class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
-    response_obj = YouPayResponse()
+class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
+                         YouPayResponse):
     """
     API endpoint that allows clients create payment request for products.
     """
@@ -48,7 +49,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
                 message = (
                     "payment request data is not in proper format, one of the"
                     " data is missing ie order or payment or customer")
-                self.return_data = self.response_obj.get_400_message(
+                self.return_data = self.get_400_message(
                     message=message)
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -59,7 +60,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
                 logger.info(
                     "payment request client validation failed for {0}"
                     .format("order_reference"))
-                self.return_data = self.response_obj.get_400_message(
+                self.return_data = self.get_400_message(
                     message="Client Does Not Exist")
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
@@ -72,7 +73,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
                 """
                 Transaction not created, payment url not configured
                 """
-                self.return_data = self.response_obj.get_400_message(
+                self.return_data = self.get_400_message(
                     message="Please configure payment redirect url")
 
                 return Response(self.return_data.get('errors'),
@@ -92,12 +93,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
                         "message": "created",
                         "url": redirect_url
                     }
-
-                    self.return_data = self.response_obj.get_success_dict(
-                        code=self.response_obj.SUCCESS,
+                    self.return_data = self.get_success_dict(
+                        code=self.SUCCESS,
                         success_dict=response_data
                     )
-
                     self.save_response_data(self.payment_request_obj,
                                             self.return_data)
                     return Response(self.return_data,
@@ -107,7 +106,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
                     """
                     Transaction not created 
                     """
-                    self.return_data = self.response_obj.get_400_message(
+                    self.return_data = self.get_400_message(
                         message=transaction_response["message"],
                     )
                     logger.error(
@@ -123,8 +122,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
                 """
                 PaymentRequestDataSerializer validation failed
                 """
-                self.return_data = self.response_obj.get_error_dict(
-                    error_code=self.response_obj.UNKNOWN_ERR,
+                self.return_data = self.get_error_dict(
+                    error_code=self.UNKNOWN_ERR,
                     serializer_error=serializer.errors,
                 )
                 logger.error(
@@ -137,7 +136,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
         except Exception as e:
             logger.error("Exception in payment request : {} "
                          .format(e))
-            self.return_data = self.response_obj.get_400_message(
+            self.return_data = self.get_400_message(
                 message={"error": str(e)},
             )
 
@@ -163,9 +162,65 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
         except Exception as e:
             logger.error("Error in saving response data for : {}".format(e))
 
+    def verify_transaction(self, data):
+        serializer = PaymentVerifyDataSerializer(data=data)
+        if serializer.is_valid():
+            """Validate transaction data with youpay client"""
+            transaction_id = serializer.validated_data.get(
+                'transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                transaction_id)
+
+            if transaction_obj.api_client is None:
+                """Client does not exist"""
+                return_data = self.get_400_message(
+                    message="API Client Does Not Exist or Inactive")
+                return return_data, status.HTTP_400_BAD_REQUEST
+
+            if transaction_obj.api_client.is_active is False:
+                '''Skip verification if client is inactive'''
+                dummy_response = {
+                    "is_verified": True,
+                }
+                return dummy_response, status.HTTP_200_OK
+
+            client_verify_url = transaction_obj.api_client.verify_url
+            if client_verify_url is None or client_verify_url == "":
+                return_data = self.get_400_message(
+                    message="Please configure client verify url")
+                return return_data, status.HTTP_400_BAD_REQUEST
+            else:
+                """Verify transaction with client by calling verify url"""
+                response = self.verify_transaction_with_client(
+                    client_verify_url, data)
+                logger.info("Client verify request data : {}\nresponse "
+                            "data{}".format(data, response.text))
+
+                if response:
+                    return_data = self.get_success_dict(
+                        code=self.SUCCESS,
+                        success_dict=response.json()
+                    )
+                    return return_data, status.HTTP_200_OK
+                else:
+                    """Client verify url not responding"""
+                    return_data = self.get_400_message(
+                        message="Client verify url not working")
+                    return return_data, status.HTTP_400_BAD_REQUEST
+
+        else:
+            response_data = self.get_error_dict(
+                error_code=self.UNKNOWN_ERR,
+                serializer_error=serializer.errors,
+            )
+            return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
+
+    def verify_transaction_with_client(self, client_verify_url, data):
+        response = requests.post(client_verify_url, data=data)
+        return response
+
 
 class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
-    response_obj = YouPayResponse()
     """
     Test API endpoint for encrypting request data
     """

@@ -3,11 +3,12 @@ import logging
 
 from integrations.constants import PAYMENT_REQUEST_TYPE_NONE
 from integrations.models import YoupayToPaymentGatewaysData
+from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
 
 
-class PaymentHandlers(object):
+class PaymentHandlers(YouPayTransactionCRUD):
     """To Handle payment requests To/from client"""
 
     def create_youpay_to_payment_gateways_data(self, **kwargs):
