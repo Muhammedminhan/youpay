@@ -26,19 +26,6 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     webhook_url = models.CharField(max_length=500, blank=True,
                                    help_text='Webhook URL',
                                    validators=[URLValidator()])
-
-    success_url = models.CharField(max_length=500, blank=True,
-                                   help_text='Success URL',
-                                   validators=[URLValidator()])
-    failure_url = models.CharField(max_length=500, blank=True,
-                                   help_text='Failure URL',
-                                   validators=[URLValidator()])
-    cancel_url = models.CharField(max_length=500, blank=True,
-                                  help_text='Cancel URL',
-                                  validators=[URLValidator()])
-    verify_url = models.CharField(max_length=500, blank=True,
-                                  help_text='Verify URL',
-                                  validators=[URLValidator()])
     client_domain = models.CharField(null=True, blank=True, max_length=100,
                                      help_text='Client Domain, example : '
                                                'https://google.com/')
