@@ -13,8 +13,10 @@ from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
 from services.v1.views.utils import (
-    get_session_id_and_transaction_id, get_payment_options, get_announcements
+    get_session_id_and_transaction_id, get_payment_options, get_announcements,
+    get_payback_config
 )
+from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +54,12 @@ class ConfigViewSet(ViewSet):
                         )
                         payment_options = get_payment_options(serializer)
                         announcements_dict = get_announcements()
+                        payback_config = get_payback_config(transaction)
                         response_data = {
                             "data": {
                                 "payment_options": payment_options,
                                 "checkoutpg_config": checkout_config,
+                                "b2cpayback_config" : payback_config,
                                 "amount": transaction.amount,
                                 "currency": transaction.currency,
                                 "service_fee": transaction.service_fee,

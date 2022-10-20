@@ -1,11 +1,14 @@
 import json
 import logging
+import requests
 
+from django.conf import settings
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
-from services.v1.constants import PAYMENT_OPTIONS
+from services.v1.constants import (
+    PAYMENT_OPTIONS, B2C_PAYBACK_YOUPAY_PRODUCT_CODE)
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE, QITAF_HUB_CODE
 )
@@ -119,3 +122,23 @@ def get_announcements():
         "qitafpg": announcements_list[3]
     }
     return announcements_dict
+
+
+def get_payback_config(transaction):
+    product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
+    amount = str(transaction.amount)
+    currency = str(transaction.currency)
+    config_request_data = {
+        "amount": amount, "currency": currency,
+        "product_code": product_code
+    }
+    request_data_json = json.dumps(config_request_data)
+    url = settings.B2C_PAYBACK_DOMAIN + '/payback/api/v1/configuration/'
+    headers = {'Content-Type': 'application/json'}
+    try:
+        response = requests.post(url, data=request_data_json,
+                             headers=headers)
+    except Exception as e:
+        response = None
+        logger.error("config api call to b2cpayback failed", exc_info=e)
+    return response.json()
