@@ -13,7 +13,7 @@ from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
 from services.v1.views.utils import (
-    get_session_id_and_transaction_id, get_payment_options
+    get_session_id_and_transaction_id, get_payment_options, get_announcements
 )
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,6 @@ class ConfigViewSet(ViewSet):
 
     def retrieve(self, request, pk=None):
         session_id, transaction_id = get_session_id_and_transaction_id(pk)
-
         checkout_obj = CheckoutpgManager()
         try:
             transaction = YouPayTransactionData.objects.get(
@@ -51,9 +50,8 @@ class ConfigViewSet(ViewSet):
                             client.payment_gateway.filter(is_active=True),
                             many=True
                         )
-
                         payment_options = get_payment_options(serializer)
-
+                        announcements_dict = get_announcements()
                         response_data = {
                             "data": {
                                 "payment_options": payment_options,
@@ -63,6 +61,7 @@ class ConfigViewSet(ViewSet):
                                 "service_fee": transaction.service_fee,
                                 "vat_amount": transaction.VAT_amount,
                                 "base_amount": transaction.base_amount,
+                                "announcements" : announcements_dict
                             },
                             "integration_response": {
                                 "checkoutpg": {
