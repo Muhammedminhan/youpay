@@ -9,7 +9,7 @@ from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY
 from core.models import AppConfig
-from integrations.constants import CHECKOUTPG_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE, TABBYPG_HUB_CODE
 from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)
@@ -127,9 +127,25 @@ def get_checkoutpg_config():
             return None
     return checkoutpg_config
 
+
+def get_tabbypg_config():
+    """using low level caching for cache ctabbypgpg config"""
+    cache_key = 'tabbypg_config'
+    tabbypg_config = cache.get(cache_key, None)
+    if tabbypg_config is None:
+        try:
+            checkoutpg_config = PaymentGateway.objects.get(
+                code=TABBYPG_HUB_CODE)
+            cache.set(cache_key, checkoutpg_config)
+        except(PaymentGateway.DoesNotExist, Exception):
+            logging.error('No tabbypg configuration instance found.')
+            return None
+    return tabbypg_config
+
+
 def get_site_domain(request):
     if request.is_secure():
         protocol = 'https://'
     else:
         protocol = 'http://'
-    return protocol+request.get_host()
+    return protocol + request.get_host()

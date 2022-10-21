@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification)
 from services.v1.views.configurations import ConfigViewSet
+from .api_clients.tabbypg import CreateSession
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView)
@@ -25,6 +26,9 @@ urlpatterns = [
     path('checkout/verify/', CheckoutVerification.as_view(),
          name='checkout_verify'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
+
+    # Tabbypg endpoints
+    path('tabby/', CreateSession.as_view()),
 
     # TODO
     #  - create delete stored card api
