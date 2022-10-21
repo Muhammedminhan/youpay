@@ -144,14 +144,14 @@ def is_redirect(transaction_id, transaction_message):
     if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
         response_data = {
             "is_redirect": True,
-            "redirect_url": youpay_transaction.api_client.success_url,
+            "redirect_url": youpay_transaction.success_url,
             "transaction_message": transaction_message
         }
         return True, response_data
     else:
         response_data = {
             "is_redirect": True,
-            "redirect_url": youpay_transaction.api_client.failure_url,
+            "redirect_url": youpay_transaction.failure_url,
             "transaction_message": transaction_message
         }
         return False, response_data

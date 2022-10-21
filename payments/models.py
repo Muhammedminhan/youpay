@@ -1,5 +1,6 @@
 import uuid
 
+from django.core.validators import URLValidator
 from django.db import models
 from django.db import transaction
 from django.db.models.signals import post_save
@@ -99,6 +100,19 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         default=False,
         help_text='Denotes whether the payment is approved or not')
 
+    success_url = models.CharField(max_length=500, blank=True,
+                                   help_text='Success URL',
+                                   validators=[URLValidator()])
+    failure_url = models.CharField(max_length=500, blank=True,
+                                   help_text='Failure URL',
+                                   validators=[URLValidator()])
+    cancel_url = models.CharField(max_length=500, blank=True,
+                                  help_text='Cancel URL',
+                                  validators=[URLValidator()])
+    verify_url = models.CharField(max_length=500, blank=True,
+                                  help_text='Verify URL',
+                                  validators=[URLValidator()])
+
 
 @receiver(post_save, sender=YouPayTransactionData)
 def update_client(sender, instance, **kwargs):
@@ -115,12 +129,12 @@ def update_client(sender, instance, **kwargs):
 
 class Announcement(AbstractDateTime, AbstractUserBase):
     gateway = models.ForeignKey('integrations.PaymentGateway', null=True,
-                                   blank=True, on_delete=models.CASCADE,
-                                   related_name="gateway_announcement")
+                                blank=True, on_delete=models.CASCADE,
+                                related_name="gateway_announcement")
     offer_message = models.TextField(null=True, blank=True,
-                               help_text='Announcement message')
+                                     help_text='Announcement message')
     is_active = models.BooleanField(default=False, help_text='Determines '
-                                'whether the announcement is active or not.')
+                                                             'whether the announcement is active or not.')
 
     def __str__(self):
         return str(self.gateway.gateway_name)
