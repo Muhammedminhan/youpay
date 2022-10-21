@@ -114,11 +114,13 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 saved_cards = requests.get(url=URL, params=PARAMS)
                 if saved_cards:
                     saved_cards = json.loads(saved_cards.text).get('cards')
+                    return saved_cards
+
             except Exception as e:
                 logger.error(
                     "Unable to fetch saved card details for user {0} "
                     "because, {1}".format(email, str(e)))
-            return saved_cards
+                return None
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
