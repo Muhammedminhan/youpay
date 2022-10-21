@@ -1,19 +1,24 @@
+import logging
+
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
+from core.utils import get_site_domain
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
-from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import TOKEN_TYPE_CARD
-from services.constants import TOKEN_TYPE_SAVED_CARD
+from services.constants import TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD
+from services.v1.views.common import YouPayTransactionCRUD
+
+logger = logging.getLogger(__name__)
 
 
-class SavedCardPayment(APIView):
+class SavedCardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
     def get(self, request):
@@ -22,9 +27,8 @@ class SavedCardPayment(APIView):
         """
         try:
             transaction_id = request.GET['transaction_id']
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
 
-            transaction_obj = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
             if transaction_obj:
                 email = transaction_obj.customer_email
                 currency = transaction_obj.currency
@@ -38,7 +42,7 @@ class SavedCardPayment(APIView):
                 return Response(data, status=status.HTTP_200_OK)
             else:
                 data = self.response_obj.get_404_message(
-                    message="Transaction doesn't exists")
+                    message=TRANSACTION_DOESNT_EXIST)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
@@ -51,20 +55,22 @@ class SavedCardPayment(APIView):
         method for handling saved card payment
         """
         try:
+            site_domain = get_site_domain(request)
             transaction_id = request.data.get('transaction_id')
-            # TODO - move this into a common method
 
-            transaction_obj = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
                 payment_data = {'token_type': TOKEN_TYPE_SAVED_CARD,
                                 'transaction_data': transaction_data,
-                                'request_data': request.data}
+                                'request_data': request.data,
+                                'site_domain': site_domain}
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.saved_card_payment(
                     payment_data)
+
                 if response_data:
                     data = self.response_obj.get_success_dict(
                         code=code,
@@ -73,9 +79,9 @@ class SavedCardPayment(APIView):
                     return Response(data,
                                     status=status.HTTP_200_OK)
                 else:
-                    data = self.response_obj.get_error_dict(code=code)
+                    data = self.response_obj.get_error_dict(error_code=code)
                     return Response(data,
-                                    status=status.HTTP_404_NOT_FOUND)
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
                     message="Transaction doesn't exists")
@@ -108,23 +114,80 @@ class SavedCardPayment(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-class CardPayment(APIView):
+class CardPayment(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
 
     def post(self, request):
         """
-        method for card payment
+        method for handling card payment
         """
-        payment_data = {'token_type': TOKEN_TYPE_CARD,
-                        'request_data': request.data}
-        checkout = CheckoutpgManager()
-        checkout.saved_card_payment(payment_data)
-        return Response({},
-                        status=status.HTTP_200_OK)
+        try:
+            site_domain = get_site_domain(request)
+            transaction_id = request.data.get('transaction_id')
+
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+
+            if transaction_obj:
+                serializer = YouPayTransactionDataSerializer(transaction_obj)
+                transaction_data = serializer.data
+                payment_data = {'token_type': TOKEN_TYPE_CARD,
+                                'transaction_data': transaction_data,
+                                'request_data': request.data,
+                                'site_domain': site_domain}
+                checkout = CheckoutpgManager()
+                response_data, code = checkout.card_payment(
+                    payment_data)
+                if response_data:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data,
+                                    status=status.HTTP_404_NOT_FOUND)
+            else:
+                data = self.response_obj.get_404_message(
+                    message="Transaction doesn't exists")
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except ObjectDoesNotExist as e:
+            data = self.response_obj.get_404_message(message=str(e))
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
 
 
 class CheckoutVerification(APIView):
+    response_obj = YouPayResponse()
+
     def get(self, request, *args, **kwargs):
         """method for redirection from the checkout and verify
          the payment from the checkoutpg"""
-        return Response({},
-                        status=status.HTTP_200_OK)
+
+        try:
+            payment_data = {'transaction_id': request.query_params.get('id'),
+                            'cko_session_id': request.query_params.get(
+                                'cko-session-id')}
+            checkout = CheckoutpgManager()
+            response_data, code = checkout.verify_payment(payment_data)
+
+            if response_data:
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=response_data
+                )
+                return Response(data,
+                                status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_error_dict(error_code=code)
+                return Response(data,
+                                status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error("Error in CheckoutVerification: {}".format(str(e)))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)

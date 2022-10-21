@@ -4,11 +4,10 @@ from core.validators import URLValidator
 from integrations.models import PaymentGateway
 from services.models import APIClient
 
-
 class APIClientRegistrationSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=255, required=True)
-    endpoint_url = serializers.CharField(max_length=255, required=True,
-                                         validators=[URLValidator()])
+    webhook_url = serializers.CharField(max_length=255, required=True,
+                                        validators=[URLValidator()])
     client_domain = serializers.CharField(max_length=255, required=True,
                                           validators=[URLValidator()])
 

@@ -1,14 +1,18 @@
 import uuid
 
+from django.core.validators import URLValidator
 from django.db import models
 from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from core.constants import (PAYMENT_GATEWAY_CHOICES)
-from core.models import AbstractDateTime, CustomerProfile
+from core.constants import (PAYMENT_GATEWAY_CHOICES,
+                            PURCHASE_PLATFORM_CHOICES)
+from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
-from payments.constants import YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES
+from payments.constants import (
+    YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
+    PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE)
 
 
 # Create your models here.
@@ -50,10 +54,68 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         max_length=20, null=True, blank=True,
         choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
     session_id = models.CharField(max_length=120, null=True, blank=True)
+    channel_code = models.CharField(
+        max_length=120, null=True, blank=True,
+        help_text="Channel code used for the transaction, if transaction is"
+                  " through checkout")
+
+    is_fraud = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the payment is fraud or not.')
+    is_flagged = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the payment is marked as flagged or not.')
+    card_bin = models.CharField(
+        max_length=6, null=True, blank=True,
+        help_text='Denotes the bin number of the card used for the payment')
+    card_last4 = models.CharField(max_length=4, null=True, blank=True,
+
+                                  help_text='Denotes the last 4 digits of the'
+                                            ' card used for the payment')
+    payment_method = models.CharField(max_length=200,
+                                      choices=PAYMENT_METHOD_CHOICES,
+                                      default=PAYMENT_METHOD_CARD,
+                                      help_text='Payment Method')
+    payment_scheme = models.CharField(
+        max_length=200,
+        choices=PAYMENT_SCHEME_CHOICES,
+        default=PAYMENT_SCHEME_NONE,
+        help_text='Denotes the payment scheme used for the payment')
+
+    is_gcc_card = models.BooleanField(
+        default=False,
+        help_text='Determine whether the transaction is carried out using '
+                  'card belongs to GCC country.')
+
+    card_issuer_country = models.CharField(
+        max_length=4, null=True, blank=True, db_index=True,
+        help_text='Denotes two letter code card issued country.')
+    platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
+                                max_length=200, null=True, blank=True,
+                                help_text="to identify the platform")
+    response_summary = models.CharField(
+        max_length=500, null=True, blank=True,
+        help_text='Checkout response summary text')
+    approved = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the payment is approved or not')
+
+    success_url = models.CharField(max_length=500, blank=True,
+                                   help_text='Success URL',
+                                   validators=[URLValidator()])
+    failure_url = models.CharField(max_length=500, blank=True,
+                                   help_text='Failure URL',
+                                   validators=[URLValidator()])
+    cancel_url = models.CharField(max_length=500, blank=True,
+                                  help_text='Cancel URL',
+                                  validators=[URLValidator()])
+    verify_url = models.CharField(max_length=500, blank=True,
+                                  help_text='Verify URL',
+                                  validators=[URLValidator()])
 
 
 @receiver(post_save, sender=YouPayTransactionData)
-def create_client(sender, instance, **kwargs):
+def update_client(sender, instance, **kwargs):
     """
     Signal to send webhook for client on each transaction
     """
@@ -63,3 +125,16 @@ def create_client(sender, instance, **kwargs):
         id=instance.id)
     transaction.on_commit(
         lambda: service.webhook_service(payment_transaction))
+
+
+class Announcement(AbstractDateTime, AbstractUserBase):
+    gateway = models.ForeignKey('integrations.PaymentGateway', null=True,
+                                blank=True, on_delete=models.CASCADE,
+                                related_name="gateway_announcement")
+    offer_message = models.TextField(null=True, blank=True,
+                                     help_text='Announcement message')
+    is_active = models.BooleanField(default=False, help_text='Determines '
+                                                             'whether the announcement is active or not.')
+
+    def __str__(self):
+        return str(self.gateway.gateway_name)

@@ -18,12 +18,14 @@ class APIClient(AbstractDateTime, AbstractUserBase):
                                help_text='API Key',
                                validators=[MinLengthValidator(20)],
                                unique=True)
+    api_secret = models.CharField(max_length=100, blank=True,
+                                  validators=[MinLengthValidator(20)])
     is_active = models.BooleanField(default=False,
                                     help_text='Denotes whether the API '
                                               'Client is active or not')
-    endpoint_url = models.CharField(max_length=200, blank=True,
-                                    help_text='Endpoint URL',
-                                    validators=[URLValidator()])
+    webhook_url = models.CharField(max_length=500, blank=True,
+                                   help_text='Webhook URL',
+                                   validators=[URLValidator()])
     client_domain = models.CharField(null=True, blank=True, max_length=100,
                                      help_text='Client Domain, example : '
                                                'https://google.com/')
@@ -43,8 +45,10 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     def save(self, *args, **kwargs):
         if not self.api_key:
             self.api_key = secrets.token_urlsafe()
+        if not self.api_secret:
             result = hashlib.sha256(self.api_key.encode())
             self.api_secret = result.hexdigest()
+
         super(APIClient, self).save(*args, **kwargs)
 
 

@@ -1,6 +1,11 @@
 from .base import *
 from decouple import config
 
+try:
+    from youpay.settings.security import *
+except ImportError:
+    pass
+
 YGAG_SECRET_KEY = config('YGAG_SECRET_KEY', None)
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [

@@ -3,6 +3,8 @@ from django.db import models
 
 # Create your models here.
 
+YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
+
 User = get_user_model()
 
 
@@ -40,13 +42,19 @@ class CustomerProfile(models.Model):
                                       help_text="To store user phone from "
                                                 "outside")
     customer_name = models.CharField(max_length=20, null=True, blank=True,
-                                      help_text="To store name")
+                                     help_text="To store name")
 
     class Meta:
         abstract = True
 
 
 class AppConfig(AbstractDateTime, AbstractUserBase):
-    front_end_domain = models.CharField(max_length=500, null=True, blank=True,
-                                        help_text="front-end domain for the"
-                                                  " redirection")
+    front_end_domain = models.CharField(
+        max_length=500, null=True, blank=True,
+        help_text="front-end domain for the"
+                  " redirection from the product")
+    front_end_redirect_url = models.CharField(
+        max_length=500, null=True,
+        blank=True,
+        help_text="front-end url for the"
+                  " redirection from the gateway")

@@ -4,6 +4,7 @@ import logging
 
 import requests
 from django.core.serializers.json import DjangoJSONEncoder
+from httpsig.requests_auth import HTTPSignatureAuth
 
 from core.constants import EXTERNAL_API_REQUEST_TIMEOUT
 from core.exceptions import ClientWebhookException
@@ -28,19 +29,30 @@ class ClientService(object):
             if youpay_transaction:
                 serializer = YouPayTransactionDataSerializer(
                     youpay_transaction)
+
+                API_KEY = youpay_transaction.api_client.api_key
+                API_SECRET = youpay_transaction.api_client.api_secret
+                signature_headers = ['accept', 'date']
+                auth = HTTPSignatureAuth(key_id=API_KEY, secret=API_SECRET,
+                                         headers=signature_headers)
+
                 request_data_json = json.dumps(serializer.data,
                                                cls=DjangoJSONEncoder)
                 self.transaction_id = youpay_transaction.transaction_id
 
-                url = youpay_transaction.api_client.endpoint_url
+                url = youpay_transaction.api_client.webhook_url
                 headers = {
                     'Accept': 'application/json',
+                    'X-Api-Key': API_KEY,
                     'date': str(datetime.datetime.utcnow()),
                 }
-                logger.info("Request data: {}".format(request_data_json))
+                logger.info(
+                    "Sending webhook to client for transaction id: {}\nURL: {}"
+                    "\nHeaders: {}\nData: {}".format(
+                        self.transaction_id, url, headers, request_data_json))
                 response_status = self.sent_webhook_to_client(
                     url,
-                    request_data_json,
+                    request_data_json, auth,
                     headers)
 
                 if response_status is True:
@@ -62,11 +74,12 @@ class ClientService(object):
                     self.transaction_id, str(e)))
 
     @retry(ClientWebhookException, tries=3, logger=logger)
-    def sent_webhook_to_client(self, url, request_data_json, headers):
-        logger.info("Sending webhooks to {} started".format(url))
+    def sent_webhook_to_client(self, url, request_data_json, auth, headers):
+        logger.info("Sending webhooks to {} started \n data : {}"
+                    "".format(url, request_data_json))
         try:
             response = requests.post(url, json=request_data_json,
-                                     headers=headers,
+                                     headers=headers, auth=auth,
                                      timeout=EXTERNAL_API_REQUEST_TIMEOUT)
             if response:
                 response_data = response.json()

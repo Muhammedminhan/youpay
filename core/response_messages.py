@@ -2,11 +2,13 @@ class YouPayResponse(object):
     SUCCESS = 1000
     UNKNOWN_ERR = 1002
     CHECKOUTPG_CONNECTION_ERROR = 1003
+    PAYMENT_FAILED = 1004
+    CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
+
+    MESSAGE = {}
 
     def __init__(self):
         super(YouPayResponse, self).__init__()
-        self.MESSAGE = {}
-
         service_unavailable = (
             "The service is temporarily unavailable, please try again "
             "later.")
@@ -14,7 +16,9 @@ class YouPayResponse(object):
         self.MESSAGE.update({
             self.UNKNOWN_ERR: "Something went wrong",
             self.SUCCESS: "API request completed successfully",
-            self.CHECKOUTPG_CONNECTION_ERROR: "Checkoutpg connection error"
+            self.CHECKOUTPG_CONNECTION_ERROR: "Checkoutpg connection error",
+            self.PAYMENT_FAILED: "Payment failed",
+            self.CLIENT_TRANSACTION_VERIFICATION_FAILED: "Transaction verification failed"
         })
 
     def get_400_message(self, message):

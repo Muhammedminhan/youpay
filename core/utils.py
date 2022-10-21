@@ -5,13 +5,12 @@ from functools import wraps
 from os import urandom
 
 from Crypto.Cipher import AES
-
-from core.constants import COMMON_ENCRYPTION_KEY
 from django.core.cache import cache
 
+from core.constants import COMMON_ENCRYPTION_KEY
 from core.models import AppConfig
-from integrations.models import PaymentGateway
 from integrations.constants import CHECKOUTPG_HUB_CODE
+from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)
 
@@ -120,9 +119,17 @@ def get_checkoutpg_config():
     checkoutpg_config = cache.get(cache_key, None)
     if checkoutpg_config is None:
         try:
-            checkoutpg_config = PaymentGateway.objects.get(code=CHECKOUTPG_HUB_CODE)
+            checkoutpg_config = PaymentGateway.objects.get(
+                code=CHECKOUTPG_HUB_CODE)
             cache.set(cache_key, checkoutpg_config)
         except(PaymentGateway.DoesNotExist, Exception):
             logging.error('No checkoutpg configuration instance found.')
             return None
     return checkoutpg_config
+
+def get_site_domain(request):
+    if request.is_secure():
+        protocol = 'https://'
+    else:
+        protocol = 'http://'
+    return protocol+request.get_host()

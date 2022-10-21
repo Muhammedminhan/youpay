@@ -13,13 +13,13 @@ from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
 from services.v1.views.utils import (
-    get_session_id_and_transaction_id, get_payment_options
+    get_session_id_and_transaction_id, get_payment_options, get_announcements
 )
 
 logger = logging.getLogger(__name__)
 
 
-class ConfigViewSet(ViewSet, CheckoutpgManager):
+class ConfigViewSet(ViewSet):
     """
     Config viewset for getting payment gateways with transaction id
     """
@@ -32,15 +32,16 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
 
     def retrieve(self, request, pk=None):
         session_id, transaction_id = get_session_id_and_transaction_id(pk)
-
+        checkout_obj = CheckoutpgManager()
         try:
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=transaction_id)
             if transaction:
                 checkout_config, status_code = \
-                    self.get_configuratoins(transaction.currency)
-                # TODO - check checkout_config, if not get the status code
-
+                    checkout_obj.get_configurations(transaction.currency)
+                logger.info(
+                    "checkoutpg response : {}, {}".format(checkout_config,
+                                                          status_code))
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)
@@ -49,9 +50,8 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
                             client.payment_gateway.filter(is_active=True),
                             many=True
                         )
-
                         payment_options = get_payment_options(serializer)
-
+                        announcements_dict = get_announcements()
                         response_data = {
                             "data": {
                                 "payment_options": payment_options,
@@ -61,10 +61,17 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
                                 "service_fee": transaction.service_fee,
                                 "vat_amount": transaction.VAT_amount,
                                 "base_amount": transaction.base_amount,
+                                "announcements" : announcements_dict
                             },
+                            "integration_response": {
+                                "checkoutpg": {
+                                    "config": checkout_config,
+                                    "status_code": status_code
+                                }
+                            }
                         }
                         data = self.response_obj.get_success_dict(
-                            code=self.response_obj.SUCCESS,
+                            code=status_code,
                             success_dict=response_data
                         )
 
@@ -94,3 +101,7 @@ class ConfigViewSet(ViewSet, CheckoutpgManager):
             return Response(
                 data,
                 status=status.HTTP_404_NOT_FOUND)
+        finally:
+            logger.info(
+                "ConfigViewSet retrieve method called, Response data :"
+                " {}".format(data))
