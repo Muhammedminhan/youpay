@@ -189,7 +189,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 }
                 return dummy_response, status.HTTP_200_OK
 
-            client_verify_url = transaction_obj.api_client.verify_url
+            client_verify_url = transaction_obj.verify_url
             if client_verify_url is None or client_verify_url == "":
                 return_data = self.get_400_message(
                     message="Please configure client verify url")
