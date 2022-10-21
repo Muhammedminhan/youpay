@@ -134,6 +134,11 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                                 status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
+            import sys, os
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            logger.error("Exception in payment request : {} {} {}"
+                         .format(exc_type, fname, exc_tb.tb_lineno))
             logger.error("Exception in payment request : {} "
                          .format(e))
             self.return_data = self.get_400_message(
@@ -243,5 +248,5 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             'payment_status': PAYMENT_STATUS_CANCELLED
         })
         return Response({
-            "redirect_url": transactoin_object.api_client.cancel_url,
+            "redirect_url": transactoin_object.cancel_url,
         })

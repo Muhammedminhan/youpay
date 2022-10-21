@@ -2,14 +2,11 @@ import json
 import logging
 
 from integrations.constants import (
-    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE
-)
-from payments.constants import PAYMENT_STATUS_INITIATED
-from services.v1.constants import PAYMENT_OPTIONS
-from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE, QITAF_HUB_CODE
 )
+from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
+from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +21,7 @@ def reformat_payment_request_data(data):
     order = data.get('order')
     payment = data.get('payment')
     customer = data.get('customer')
+    urls = data.get('urls')
 
     if order and payment and customer:
         data['amount'] = order.get('amount')
@@ -41,6 +39,11 @@ def reformat_payment_request_data(data):
         data['customer_email'] = customer.get('email')
         data['customer_phone'] = customer.get('phone')
         data['customer_name'] = customer.get('name')
+
+        data['success_url'] = urls.get('success_url')
+        data['failure_url'] = urls.get('failure_url')
+        data['cancel_url'] = urls.get('cancel_url')
+        data['verify_url'] = urls.get('verify_url')
 
         data['payment_status'] = PAYMENT_STATUS_INITIATED
         return data
