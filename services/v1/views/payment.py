@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.response_messages import YouPayResponse
 from core.utils import encrypt_payment_data, decrypt_payment_data
 from payments.constants import PAYMENT_STATUS_CANCELLED
@@ -44,11 +45,9 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
             if not data_formatted:
                 """
-                Decrypted data is empty
+                Decrypted data is empty or does not contain required keys
                 """
-                message = (
-                    "payment request data is not in proper format, one of the"
-                    " data is missing ie order or payment or customer")
+                message = PAYMENT_REQUEST_KEYS_ERROR
                 self.return_data = self.get_400_message(
                     message=message)
                 return Response(self.return_data.get('errors'),
