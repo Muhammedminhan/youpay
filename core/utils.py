@@ -1,4 +1,3 @@
-import base64
 import json
 import logging
 from base64 import b64decode, b64encode
@@ -6,9 +5,10 @@ from functools import wraps
 from os import urandom
 
 from Crypto.Cipher import AES
+from cryptography.fernet import Fernet
 from django.core.cache import cache
 
-from core.constants import COMMON_ENCRYPTION_KEY
+from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway
@@ -143,19 +143,23 @@ def encrypt_string(clear_text):
 
     input data : input_string - str
     output data : encrypted_string - str
+
+    FERNET_KEY which is generated using Fernet.generate_key() method
     """
-    b = base64.b64encode(bytes(clear_text, 'utf-8'))  # bytes
-    base64_str = b.decode('utf-8')  # convert bytes to string
-    return base64_str
+    fernet = Fernet(FERNET_KEY)
+    encrypted_text = fernet.encrypt(clear_text.encode()).decode("utf-8")
+    return encrypted_text
 
 
-def decrypt_string(base64_str):
+def decrypt_string(encrypted_text):
     """
     This method is for decrypt string
 
     input : encrypted_string - str
     output : decrypted_string - str
+
+    FERNET_KEY which is generated using Fernet.generate_key() method
     """
-    b = base64.b64decode(base64_str)  # bytes
-    plane_text = b.decode('utf-8')  # convert bytes to string
-    return plane_text
+    fernet = Fernet(FERNET_KEY)
+    decrypted_text = fernet.decrypt(encrypted_text).decode()
+    return decrypted_text
