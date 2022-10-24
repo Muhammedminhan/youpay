@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
+from core.utils import decrypt_string
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
@@ -41,9 +42,12 @@ class ConfigViewSet(ViewSet):
         session_id = get_session_id_from_header(request)
 
         checkout_obj = CheckoutpgManager()
+
+        decrypted_transaction_id = decrypt_string(pk)
+
         try:
             transaction = YouPayTransactionData.objects.get(
-                transaction_id=pk)
+                transaction_id=decrypted_transaction_id)
             if transaction:
                 checkout_config, status_code = (
                     checkout_obj.get_configurations(transaction.currency)

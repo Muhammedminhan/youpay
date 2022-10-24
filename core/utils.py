@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 from base64 import b64decode, b64encode
@@ -127,9 +128,34 @@ def get_checkoutpg_config():
             return None
     return checkoutpg_config
 
+
 def get_site_domain(request):
     if request.is_secure():
         protocol = 'https://'
     else:
         protocol = 'http://'
-    return protocol+request.get_host()
+    return protocol + request.get_host()
+
+
+def encrypt_string(clear_text):
+    """
+    This method is to encrypt the string.
+
+    input data : input_string - str
+    output data : encrypted_string - str
+    """
+    b = base64.b64encode(bytes(clear_text, 'utf-8'))  # bytes
+    base64_str = b.decode('utf-8')  # convert bytes to string
+    return base64_str
+
+
+def decrypt_string(base64_str):
+    """
+    This method is for decrypt string
+
+    input : encrypted_string - str
+    output : decrypted_string - str
+    """
+    b = base64.b64decode(base64_str)  # bytes
+    plane_text = b.decode('utf-8')  # convert bytes to string
+    return plane_text
