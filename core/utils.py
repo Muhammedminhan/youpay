@@ -9,9 +9,7 @@ from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY
 from core.models import AppConfig
-from integrations.constants import (
-    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
-)
+from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)
@@ -135,17 +133,3 @@ def get_site_domain(request):
     else:
         protocol = 'http://'
     return protocol+request.get_host()
-
-
-def get_b2cpayback_config():
-    cache_key = 'b2cpayback_config'
-    b2cpaybck_config = cache.get(cache_key, None)
-    if b2cpaybck_config is None:
-        try:
-            b2cpaybck_config = PaymentGateway.objects.get(
-                code=B2CPAYBACK_HUB_CODE)
-            cache.set(cache, b2cpaybck_config)
-        except (PaymentGateway.DoesNotExist, Exception):
-            logger.error("No b2cpayback configuration instance found.")
-            return None
-    return b2cpaybck_config
