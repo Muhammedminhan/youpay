@@ -5,9 +5,10 @@ from functools import wraps
 from os import urandom
 
 from Crypto.Cipher import AES
+from cryptography.fernet import Fernet
 from django.core.cache import cache
 
-from core.constants import COMMON_ENCRYPTION_KEY
+from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway
@@ -127,9 +128,62 @@ def get_checkoutpg_config():
             return None
     return checkoutpg_config
 
+
+def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
+    """using low level caching for cache gateway config"""
+    cache_key = gateway_cache_key
+    gateway_config = cache.get(cache_key, None)
+    if gateway_config is None:
+        try:
+            gateway_config = PaymentGateway.objects.get(
+                code=gateway_hub_code)
+            cache.set(cache_key, gateway_config)
+        except(PaymentGateway.DoesNotExist, Exception):
+            logging.error('No gateway configuration instance found.')
+            return None
+    return gateway_config
+
+
 def get_site_domain(request):
     if request.is_secure():
         protocol = 'https://'
     else:
         protocol = 'http://'
-    return protocol+request.get_host()
+    return protocol + request.get_host()
+
+
+def encrypt_string(clear_text):
+    """
+    This method is to encrypt the string.
+
+    input data : input_string - str
+    output data : encrypted_string - str
+
+    FERNET_KEY which is generated using Fernet.generate_key() method
+    """
+
+    try:
+        fernet = Fernet(FERNET_KEY)
+        encrypted_text = fernet.encrypt(clear_text.encode()).decode("utf-8")
+        return encrypted_text
+    except Exception as e:
+        logger.error("Encryption failed. Error: {}".format(e))
+        return None
+
+
+def decrypt_string(encrypted_text):
+    """
+    This method is for decrypt string
+
+    input : encrypted_string - str
+    output : decrypted_string - str
+
+    FERNET_KEY which is generated using Fernet.generate_key() method
+    """
+    try:
+        fernet = Fernet(FERNET_KEY)
+        decrypted_text = fernet.decrypt(encrypted_text).decode()
+        return decrypted_text
+    except Exception as e:
+        logger.error("string decryption failed. {}".format(e))
+        return None
