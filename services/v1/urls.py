@@ -33,8 +33,5 @@ urlpatterns = [
     path('adcb/redemption/', B2CPaybackRedemption.as_view()),
 
     # TODO
-    #  - get ADCB point balance API
-    #  - ADCB authentication api
-    #  - ADCB redemption api
-
+    #  - create ADCB verify API
 ]
