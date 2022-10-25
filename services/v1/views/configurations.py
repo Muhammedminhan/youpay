@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
+from core.utils import decrypt_string
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
@@ -13,7 +14,8 @@ from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
 from services.v1.views.utils import (
-    get_session_id_and_transaction_id, get_payment_options, get_announcements
+    get_payment_options, get_announcements,
+    get_session_id_from_header
 )
 
 logger = logging.getLogger(__name__)
@@ -31,17 +33,34 @@ class ConfigViewSet(ViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-        session_id, transaction_id = get_session_id_and_transaction_id(pk)
+        """
+        Method for getting payment options and announcements
+        session id is required in header
+        transaction id is required in query params
+        """
+
+        session_id = get_session_id_from_header(request)
+
         checkout_obj = CheckoutpgManager()
+
+        decrypted_transaction_id = decrypt_string(pk)
+
         try:
             transaction = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
+                transaction_id=decrypted_transaction_id)
             if transaction:
-                checkout_config, status_code = \
+                checkout_config, status_code = (
                     checkout_obj.get_configurations(transaction.currency)
+                )
+
                 logger.info(
                     "checkoutpg response : {}, {}".format(checkout_config,
                                                           status_code))
+
+                # bypass session checking when api client is inactive
+                if not transaction.api_client.is_active:
+                    session_id = transaction.session_id
+
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)
@@ -61,7 +80,7 @@ class ConfigViewSet(ViewSet):
                                 "service_fee": transaction.service_fee,
                                 "vat_amount": transaction.VAT_amount,
                                 "base_amount": transaction.base_amount,
-                                "announcements" : announcements_dict
+                                "announcements": announcements_dict
                             },
                             "integration_response": {
                                 "checkoutpg": {

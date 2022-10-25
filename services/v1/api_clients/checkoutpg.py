@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.utils import get_site_domain
+from core.utils import get_site_domain, decrypt_string
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -27,7 +27,9 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
         """
         try:
             transaction_id = request.GET['transaction_id']
-            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id)
+            )
 
             if transaction_obj:
                 email = transaction_obj.customer_email
@@ -58,7 +60,8 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
             site_domain = get_site_domain(request)
             transaction_id = request.data.get('transaction_id')
 
-            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
 
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
@@ -125,7 +128,8 @@ class CardPayment(APIView, YouPayTransactionCRUD):
             site_domain = get_site_domain(request)
             transaction_id = request.data.get('transaction_id')
 
-            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
 
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
