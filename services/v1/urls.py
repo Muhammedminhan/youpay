@@ -8,7 +8,8 @@ from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView)
 from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
-                                                 B2CPaybackAuthenticate)
+                                                 B2CPaybackAuthenticate,
+                                                 B2CPaybackRedemption)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -29,6 +30,7 @@ urlpatterns = [
     path('payment-cancel/', PaymentCancelledView.as_view()),
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
     path('adcb/authenticate/', B2CPaybackAuthenticate.as_view()),
+    path('adcb/redemption/', B2CPaybackRedemption.as_view()),
 
     # TODO
     #  - get ADCB point balance API
