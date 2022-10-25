@@ -26,7 +26,8 @@ class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
         try:
             response = requests.post(url, data=request_data_json,
                                      headers=headers)
+            return response.json()
         except Exception as e:
             response = None
             logger.error("config api call to b2cpayback failed", exc_info=e)
-        return response.json()
+            return None
