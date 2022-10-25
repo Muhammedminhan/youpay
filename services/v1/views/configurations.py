@@ -7,14 +7,15 @@ from rest_framework.viewsets import ViewSet
 from core.response_messages import YouPayResponse
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.models import YouPayTransactionData
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
-from services.v1.views.utils import (
-    get_session_id_and_transaction_id, get_payment_options, get_announcements
-)
+from services.v1.views.utils import ( get_payment_options, get_announcements,
+                                      get_session_id_from_header
+                                      )
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +32,23 @@ class ConfigViewSet(ViewSet):
         return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
-        session_id, transaction_id = get_session_id_and_transaction_id(pk)
+        """
+        Method for getting payment options and announcements
+        session id is required in header
+        transaction id is required in query params
+        """
+
+        session_id = get_session_id_from_header(request)
+
         checkout_obj = CheckoutpgManager()
         try:
             transaction = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
+                transaction_id=pk)
             if transaction:
-                checkout_config, status_code = \
+                checkout_config, status_code = (
                     checkout_obj.get_configurations(transaction.currency)
+                )
+
                 logger.info(
                     "checkoutpg response : {}, {}".format(checkout_config,
                                                           status_code))
@@ -52,16 +62,20 @@ class ConfigViewSet(ViewSet):
                         )
                         payment_options = get_payment_options(serializer)
                         announcements_dict = get_announcements()
+                        b2c_payback_obj = B2CPaybackManager()
+                        payback_config = b2c_payback_obj.get_configurations(
+                            transaction.amount, transaction.currency)
                         response_data = {
                             "data": {
                                 "payment_options": payment_options,
                                 "checkoutpg_config": checkout_config,
+                                "b2cpayback_config" : payback_config,
                                 "amount": transaction.amount,
                                 "currency": transaction.currency,
                                 "service_fee": transaction.service_fee,
                                 "vat_amount": transaction.VAT_amount,
                                 "base_amount": transaction.base_amount,
-                                "announcements" : announcements_dict
+                                "announcements": announcements_dict
                             },
                             "integration_response": {
                                 "checkoutpg": {

@@ -1,12 +1,13 @@
 import json
 import logging
 
+from services.v1.constants import PAYMENT_OPTIONS
+from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE, QITAF_HUB_CODE
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
-from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +24,7 @@ def reformat_payment_request_data(data):
     customer = data.get('customer')
     urls = data.get('urls')
 
-    if order and payment and customer:
+    if order and payment and customer and urls:
         data['amount'] = order.get('amount')
         data['service_fee'] = order.get('service_fee')
         data['base_amount'] = order.get('base_amount')
@@ -48,9 +49,7 @@ def reformat_payment_request_data(data):
         data['payment_status'] = PAYMENT_STATUS_INITIATED
         return data
     else:
-        logger.error(
-            "payment request data is not in proper format, one of the data is"
-            "missing ie order or payment or customer")
+        logger.error(PAYMENT_REQUEST_KEYS_ERROR)
         return None
 
 
@@ -65,16 +64,15 @@ def get_data_from_request(fields, request_data):
     return data
 
 
-def get_session_id_and_transaction_id(id):
+def get_session_id_from_header(request):
     """
-    used to get session_id and transaction_id from id
-    syntax : "session_id-transaction_id"
-    example : "SESSION_ID-5717e1f3-727d-4bc5-8055-b65ea096b422"
+    used to get session_id request
+
+    take session_id from request header
     """
-    session_id = id.split('-')[0]
-    transaction_id = id.split('-')[1:]
-    delimiter = '-'
-    return session_id, delimiter.join(transaction_id)
+
+    session_id = request.META.get('HTTP_YOUPAY_SESSION_ID', None)
+    return session_id
 
 
 def get_payment_options(payment_gateway_serializer):
