@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.response_messages import YouPayResponse
-from core.utils import encrypt_payment_data, decrypt_payment_data
+from core.utils import (encrypt_payment_data, decrypt_payment_data,
+                        encrypt_string)
 from payments.constants import PAYMENT_STATUS_CANCELLED
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
@@ -83,9 +84,13 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 transaction_response = self.create_youpay_transaction_data(
                     data_formatted)
                 if transaction_response['status'] == status.HTTP_201_CREATED:
-                    redirect_url = PAYMENT_REDIRECT_URL + "/{}{}".format(
-                        "?transaction_id=",
-                        transaction_response['data']['transaction_id'])
+
+                    encrypted_transaction_id = encrypt_string(
+                        transaction_response['data'][
+                            'transaction_id'])
+
+                    redirect_url = PAYMENT_REDIRECT_URL + "/{}".format(
+                        encrypted_transaction_id)
 
                     response_data = {
                         "status": status.HTTP_201_CREATED,
