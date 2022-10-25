@@ -6,10 +6,10 @@ from django.conf import settings
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from services.v1.constants import B2C_PAYBACK_YOUPAY_PRODUCT_CODE
-from integrations.models import PaymentGateway
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE,
-                                    B2CP_CACHE_KEY)
+                                    B2CP_CACHE_KEY,
+                                    ADCB_AUTHENTICATE_API)
 # from .utils import get_payement_gateway
 from core.utils import get_payment_gateway_config
 
@@ -72,4 +72,43 @@ class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
         except Exception as e:
             response = None
             logger.error("point balance api call to b2cpayback failed {}".format(str(e)))
+            return None
+
+    def authenticate_redemption(self):
+
+        authenticate_request_data = {
+          "card_type": "Visa",
+          "cko-card-token": "tok_plne6tjxnkzezigws6sxwzy3ba",
+          "customer_email": "jomon+pb@yougotagift.com",
+          "is_save_user_token": False,
+          "response_url": "http://192.168.225.176:12000/checkout/invoices/34932/payback/verification/",
+          "client_code": "ADCBTP",
+          "token_type": "card",
+          "platform": "Web",
+          "reference_id": "6HK1IX97UCLE25",
+          "invoice_amount": "107.88",
+          "channel_code": "YGAGAE",
+          "redemption_amount": "57.88",
+          "redemption_currency": "AED",
+          "customer_ip_address": "84.226.122.71",
+          "selected_amount": "50.00",
+          "invoice_id": "123"
+        }
+        request_data_json = json.dumps(authenticate_request_data)
+
+        b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
+                                                     B2CPAYBACK_HUB_CODE)
+        b2c_payback_domain = b2c_gateway_obj.domain
+        url = b2c_payback_domain + ADCB_AUTHENTICATE_API
+
+        headers = {'Content-Type': 'application/json'}
+        try:
+            response = requests.post(url, data=request_data_json,
+                                     headers=headers)
+            return response.json()
+        except Exception as e:
+            response = None
+            logger.error(
+                "authenticate api call to b2cpayback failed {}".format(
+                    str(e)))
             return None
