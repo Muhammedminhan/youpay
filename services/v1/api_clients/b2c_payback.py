@@ -36,3 +36,16 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
         #  -update transaction table with status, payment method, etc
         #  - handle payment response
         return Response(response, status=status.HTTP_200_OK)
+
+
+class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        payback = B2CPaybackManager()
+        response = payback.point_redemption()
+        # TODO
+        #  - create payment request data
+        #  -update transaction table with status, payment method, etc
+        #  - handle payment response
+        return Response(response, status=status.HTTP_200_OK)
