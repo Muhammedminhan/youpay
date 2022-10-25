@@ -16,7 +16,6 @@ from services.v1.serializers.client_registrattion import (
 from services.v1.views.utils import ( get_payment_options, get_announcements,
                                       get_session_id_from_header
                                       )
-from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
 

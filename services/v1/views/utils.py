@@ -1,8 +1,6 @@
 import json
 import logging
-import requests
 
-from django.conf import settings
 from services.v1.constants import PAYMENT_OPTIONS
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
