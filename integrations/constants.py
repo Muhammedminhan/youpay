@@ -77,3 +77,5 @@ CHECKOUTPG_CACHE_KEY = 'checkoutpg_config'
 B2CP_CACHE_KEY = 'b2cp_config'
 
 ADCB_POINT_BALANCE_API = "/payback/api/v1/touchpoint/point-balance/"
+ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
+ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
