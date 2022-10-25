@@ -21,5 +21,3 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*yougotagift.co",
 ]
 CORS_ORIGIN_ALLOW_ALL = True
-
-B2C_PAYBACK_DOMAIN = 'https://b2c-payback-sandbox.yougotagift.com'
