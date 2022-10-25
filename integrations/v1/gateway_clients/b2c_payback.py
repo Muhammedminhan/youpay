@@ -1,11 +1,20 @@
 import json
 import requests
+import logging
 
 from django.conf import settings
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from services.v1.constants import B2C_PAYBACK_YOUPAY_PRODUCT_CODE
 from integrations.models import PaymentGateway
+from integrations.constants import (ADCB_POINT_BALANCE_API,
+                                    B2CPAYBACK_HUB_CODE,
+                                    B2CP_CACHE_KEY)
+# from .utils import get_payement_gateway
+from core.utils import get_payment_gateway_config
+
+logger = logging.getLogger(__name__)
+
 
 class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
     """
@@ -13,6 +22,9 @@ class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
     """
 
     def get_configurations(self, amount, currency):
+
+        # TODO - get amount, currency from the youpay transaction data
+
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
         amount = str(amount)
         currency = str(currency)
@@ -21,7 +33,8 @@ class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
             "product_code": product_code
         }
         request_data_json = json.dumps(config_request_data)
-        b2c_gateway_obj = PaymentGateway.objects.get(code="PAYMTB2CPBK")
+        b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
+                                                     B2CPAYBACK_HUB_CODE)
         b2c_payback_domain = b2c_gateway_obj.domain
         url = b2c_payback_domain + '/payback/api/v1/configuration/'
         headers = {'Content-Type': 'application/json'}
@@ -32,4 +45,31 @@ class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
         except Exception as e:
             response = None
             logger.error("config api call to b2cpayback failed", exc_info=e)
+            return None
+
+    def get_point_balance(self):
+
+        point_balance_request_data = {
+            "card_no": "5420187505091559",
+            "expiry": "2402",
+            "customer_name": "jomon",
+            "client_code": "ADCBTP",
+            "invoice_id": "35022",
+            "platform": "Web"
+        }
+        request_data_json = json.dumps(point_balance_request_data)
+
+        b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
+                                                     B2CPAYBACK_HUB_CODE)
+        b2c_payback_domain = b2c_gateway_obj.domain
+        url = b2c_payback_domain + ADCB_POINT_BALANCE_API
+
+        headers = {'Content-Type': 'application/json'}
+        try:
+            response = requests.post(url, data=request_data_json,
+                                     headers=headers)
+            return response.json()
+        except Exception as e:
+            response = None
+            logger.error("point balance api call to b2cpayback failed {}".format(str(e)))
             return None

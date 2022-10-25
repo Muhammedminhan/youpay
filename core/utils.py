@@ -129,6 +129,21 @@ def get_checkoutpg_config():
     return checkoutpg_config
 
 
+def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
+    """using low level caching for cache gateway config"""
+    cache_key = gateway_cache_key
+    gateway_config = cache.get(cache_key, None)
+    if gateway_config is None:
+        try:
+            gateway_config = PaymentGateway.objects.get(
+                code=gateway_hub_code)
+            cache.set(cache_key, gateway_config)
+        except(PaymentGateway.DoesNotExist, Exception):
+            logging.error('No gateway configuration instance found.')
+            return None
+    return gateway_config
+
+
 def get_site_domain(request):
     if request.is_secure():
         protocol = 'https://'

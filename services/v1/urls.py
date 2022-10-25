@@ -7,6 +7,7 @@ from services.v1.views.configurations import ConfigViewSet
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView)
+from services.v1.api_clients.b2c_payback import B2CPaybackPointBalance
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -25,10 +26,9 @@ urlpatterns = [
     path('checkout/verify/', CheckoutVerification.as_view(),
          name='checkout_verify'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
+    path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
 
     # TODO
-    #  - create delete stored card api
-    #  - get stored card api - card payment api
     #  - get ADCB point balance API
     #  - ADCB authentication api
     #  - ADCB redemption api
