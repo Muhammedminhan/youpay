@@ -1,13 +1,13 @@
 import json
 import logging
 
+from services.v1.constants import PAYMENT_OPTIONS
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE, QITAF_HUB_CODE
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
-from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
 
