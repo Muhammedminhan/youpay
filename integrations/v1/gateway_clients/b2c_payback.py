@@ -1,5 +1,10 @@
+import json
+import requests
+
+from django.conf import settings
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
+from services.v1.constants import B2C_PAYBACK_YOUPAY_PRODUCT_CODE
 
 
 class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
