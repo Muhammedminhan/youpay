@@ -146,9 +146,14 @@ def encrypt_string(clear_text):
 
     FERNET_KEY which is generated using Fernet.generate_key() method
     """
-    fernet = Fernet(FERNET_KEY)
-    encrypted_text = fernet.encrypt(clear_text.encode()).decode("utf-8")
-    return encrypted_text
+
+    try:
+        fernet = Fernet(FERNET_KEY)
+        encrypted_text = fernet.encrypt(clear_text.encode()).decode("utf-8")
+        return encrypted_text
+    except Exception as e:
+        logger.error("Encryption failed. Error: {}".format(e))
+        return None
 
 
 def decrypt_string(encrypted_text):
@@ -160,6 +165,10 @@ def decrypt_string(encrypted_text):
 
     FERNET_KEY which is generated using Fernet.generate_key() method
     """
-    fernet = Fernet(FERNET_KEY)
-    decrypted_text = fernet.decrypt(encrypted_text).decode()
-    return decrypted_text
+    try:
+        fernet = Fernet(FERNET_KEY)
+        decrypted_text = fernet.decrypt(encrypted_text).decode()
+        return decrypted_text
+    except Exception as e:
+        logger.error("string decryption failed. {}".format(e))
+        return None

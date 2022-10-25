@@ -56,6 +56,11 @@ class ConfigViewSet(ViewSet):
                 logger.info(
                     "checkoutpg response : {}, {}".format(checkout_config,
                                                           status_code))
+
+                # bypass session checking when api client is inactive
+                if not transaction.api_client.is_active:
+                    session_id = transaction.session_id
+
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)
