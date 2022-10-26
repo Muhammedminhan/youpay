@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
+from core.utils import decrypt_string
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
@@ -41,9 +42,12 @@ class ConfigViewSet(ViewSet):
         session_id = get_session_id_from_header(request)
 
         checkout_obj = CheckoutpgManager()
+
+        decrypted_transaction_id = decrypt_string(pk)
+
         try:
             transaction = YouPayTransactionData.objects.get(
-                transaction_id=pk)
+                transaction_id=decrypted_transaction_id)
             if transaction:
                 checkout_config, status_code = (
                     checkout_obj.get_configurations(transaction.currency)
@@ -52,6 +56,11 @@ class ConfigViewSet(ViewSet):
                 logger.info(
                     "checkoutpg response : {}, {}".format(checkout_config,
                                                           status_code))
+
+                # bypass session checking when api client is inactive
+                if not transaction.api_client.is_active:
+                    session_id = transaction.session_id
+
                 if transaction.session_id == session_id:
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)
