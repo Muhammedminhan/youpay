@@ -1,3 +1,5 @@
+from .base import *
+
 try:
     from youpay.settings.security import *
 except ImportError:
