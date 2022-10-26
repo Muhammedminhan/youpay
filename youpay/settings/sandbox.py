@@ -1,10 +1,7 @@
-from .base import *
-
 try:
     from youpay.settings.security import *
 except ImportError:
     pass
-
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
