@@ -1,6 +1,7 @@
 import logging
 
 from payments.models import YouPayTransactionData
+from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)
 
