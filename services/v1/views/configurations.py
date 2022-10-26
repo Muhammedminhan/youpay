@@ -8,15 +8,15 @@ from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.models import YouPayTransactionData
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
-from services.v1.views.utils import (
-    get_payment_options, get_announcements,
-    get_session_id_from_header
-)
+from services.v1.views.utils import ( get_payment_options, get_announcements,
+                                      get_session_id_from_header
+                                      )
 
 logger = logging.getLogger(__name__)
 
@@ -71,10 +71,14 @@ class ConfigViewSet(ViewSet):
                         )
                         payment_options = get_payment_options(serializer)
                         announcements_dict = get_announcements()
+                        b2c_payback_obj = B2CPaybackManager()
+                        payback_config = b2c_payback_obj.get_configurations(
+                            transaction.amount, transaction.currency)
                         response_data = {
                             "data": {
                                 "payment_options": payment_options,
                                 "checkoutpg_config": checkout_config,
+                                "b2cpayback_config" : payback_config,
                                 "amount": transaction.amount,
                                 "currency": transaction.currency,
                                 "service_fee": transaction.service_fee,

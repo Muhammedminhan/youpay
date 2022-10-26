@@ -5,12 +5,15 @@ import requests
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG
-from core.utils import get_tabbypg_config
-from integrations.constants import TABBYPG_CREATE_PAYMENT_ENDPOINT, \
-    PAYMENT_REQUEST_TYPE_PAYMENT
+from core.utils import get_payment_gateway_config
+from integrations.constants import (
+    TABBYPG_CREATE_PAYMENT_ENDPOINT,
+    PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE
+)
 from integrations.messages import TABBYPG_CONNECTION_ERROR_MESSAGE
-from integrations.v1.serializers.tabbypg_payment_request import \
+from integrations.v1.serializers.tabbypg_payment_request import (
     TabbyPGPaymentRequestSerializer
+)
 from payments.constants import PAYMENT_STATUS_PENDING
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -20,7 +23,9 @@ logger = logging.getLogger(__name__)
 
 class TabbyPGManager(PaymentRequestView, PaymentHandlers):
     def __init__(self):
-        self.tabbypg_config = get_tabbypg_config()
+
+        self.tabbypg_config = get_payment_gateway_config(TABBYPG_CACHE_KEY,
+                                                         TABBYPG_HUB_CODE)
 
     def get_tabbypg_payment_data(self, data):
 
@@ -118,10 +123,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         )
                     return response.json(), self.SUCCESS
 
-                return None, self.CHECKOUTPG_CONNECTION_ERROR
+                return None, self.TABBYPG_CONNECTION_ERROR
             else:
                 logger.error(TABBYPG_CONNECTION_ERROR_MESSAGE)
-                return None, self.CHECKOUTPG_CONNECTION_ERROR
+                return None, self.TABBYPG_CONNECTION_ERROR
         else:
             msg = (
                 "Youpay transaction verification failed for transaction id "

@@ -129,19 +129,19 @@ def get_checkoutpg_config():
     return checkoutpg_config
 
 
-def get_tabbypg_config():
-    """using low level caching for cache ctabbypgpg config"""
-    cache_key = 'tabbypg_config'
-    tabbypg_config = cache.get(cache_key, None)
-    if tabbypg_config is None:
+def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
+    """using low level caching for cache gateway config"""
+    cache_key = gateway_cache_key
+    gateway_config = cache.get(cache_key, None)
+    if gateway_config is None:
         try:
-            checkoutpg_config = PaymentGateway.objects.get(
-                code=TABBYPG_HUB_CODE)
-            cache.set(cache_key, checkoutpg_config)
+            gateway_config = PaymentGateway.objects.get(
+                code=gateway_hub_code)
+            cache.set(cache_key, gateway_config)
         except(PaymentGateway.DoesNotExist, Exception):
-            logging.error('No tabbypg configuration instance found.')
+            logging.error('No gateway configuration instance found.')
             return None
-    return tabbypg_config
+    return gateway_config
 
 
 def get_site_domain(request):
