@@ -41,7 +41,6 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("payment_reference")
 
     def get_loyality_level(self, data):
-        print("loyality_level \n\n", data.get("loyality_level"))
         return data.get("loyality_level")
 
     def get_registered_since(self, data):

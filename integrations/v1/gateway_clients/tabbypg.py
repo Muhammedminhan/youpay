@@ -81,14 +81,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                 response = requests.post(url, data=payment_data_to_send,
                                          headers=headers)
-
-                print("URL : ", url)
-                print("PAYMENT DATA : ", payment_data_to_send)
-                print("HEADERS : ", headers)
-
                 logger.info("TabbyPG response is {}".format(response))
                 response_data = response.json()
-
                 logger.info("tabbypg payment response: {}"
                             .format(response_data))
 
