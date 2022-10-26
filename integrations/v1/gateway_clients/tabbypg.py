@@ -9,7 +9,7 @@ from core.utils import get_tabbypg_config
 from integrations.constants import TABBYPG_CREATE_PAYMENT_ENDPOINT, \
     PAYMENT_REQUEST_TYPE_PAYMENT
 from integrations.messages import TABBYPG_CONNECTION_ERROR_MESSAGE
-from integrations.v1.serializers.tabbypg_payment_erquest import \
+from integrations.v1.serializers.tabbypg_payment_request import \
     TabbyPGPaymentRequestSerializer
 from payments.constants import PAYMENT_STATUS_PENDING
 from services.v1.views.payment import PaymentRequestView
@@ -23,16 +23,13 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         self.tabbypg_config = get_tabbypg_config()
 
     def get_tabbypg_payment_data(self, data):
-        logger.info("get_tabbypg_payment_data using ?")
 
-        if (data.get('transaction_data') and data.get('request_data')
-                and data.get('token_type')):
+        if (data.get('transaction_data') and data.get('request_data')):
             payment_data = TabbyPGPaymentRequestSerializer(data)
             return payment_data.data
         else:
             logger.error(
-                "transaction_data or request_data or token_type data "
-                "is not available")
+                "transaction_data or request_data data is not available")
             return None
 
     def get_payment_header(self):
@@ -71,12 +68,12 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
             if tabbypg_conf:
                 success_dict = {}
-                payment_data = self.get_checkout_payment_data(data)
+                payment_data = self.get_tabbypg_payment_data(data)
                 logger.info(
                     "Youpay sending payment data is {}".format(payment_data))
                 request_data = data.get('request_data')
                 payment_data_to_send = json.dumps(payment_data)
-                url = self.checkoutpg_config.domain + TABBYPG_CREATE_PAYMENT_ENDPOINT
+                url = self.tabbypg_config.domain + TABBYPG_CREATE_PAYMENT_ENDPOINT
                 headers = self.get_payment_header()
 
                 transaction_obj = self.get_youpay_transaction_data(
@@ -84,6 +81,16 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                 response = requests.post(url, data=payment_data_to_send,
                                          headers=headers)
+
+                print("URL : ", url)
+                print("PAYMENT DATA : ", payment_data_to_send)
+                print("HEADERS : ", headers)
+
+                logger.info("TabbyPG response is {}".format(response))
+                response_data = response.json()
+
+                logger.info("tabbypg payment response: {}"
+                            .format(response_data))
 
                 # storing Youpay to payment gateway request and response data
                 self.create_youpay_to_payment_gateways_data(
@@ -132,13 +139,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
     def verify_session(self, data):
         """
         Method for verifying session with Tabbypg
-        """
-
-        pass
-
-    def webhook_receiver(self, data):
-        """
-        Method for webhook with Tabbypg
         """
 
         pass

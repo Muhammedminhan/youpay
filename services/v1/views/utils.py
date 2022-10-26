@@ -23,6 +23,8 @@ def reformat_payment_request_data(data):
     payment = data.get('payment')
     customer = data.get('customer')
     urls = data.get('urls')
+    order_history = data.get('order_history')
+    order_items = data.get('order_items')
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
@@ -47,6 +49,10 @@ def reformat_payment_request_data(data):
         data['verify_url'] = urls.get('verify_url')
 
         data['payment_status'] = PAYMENT_STATUS_INITIATED
+
+        data['order_items'] = order_items
+        data['order_history'] = order_history
+
         return data
     else:
         logger.error(PAYMENT_REQUEST_KEYS_ERROR)
