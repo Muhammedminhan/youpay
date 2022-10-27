@@ -1,8 +1,14 @@
+import logging
 import json
 import requests
 import logging
 
 from django.conf import settings
+from rest_framework.views import APIView
+from services.v1.constants import ( B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
+                                    B2C_PAYBACK_CONFIG_ENDPOINT
+                                    )
+from integrations.models import PaymentGateway
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from services.v1.constants import B2C_PAYBACK_YOUPAY_PRODUCT_CODE
@@ -11,21 +17,17 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
                                     ADCB_REDEMPTION_API)
-# from .utils import get_payement_gateway
 from core.utils import get_payment_gateway_config
 
 logger = logging.getLogger(__name__)
 
 
-class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
+class B2CPaybackManager(APIView):
     """
     Class to manage b2cpayback related operations
     """
 
     def get_configurations(self, amount, currency):
-
-        # TODO - get amount, currency from the youpay transaction data
-
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
         amount = str(amount)
         currency = str(currency)
@@ -37,42 +39,31 @@ class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
         b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                      B2CPAYBACK_HUB_CODE)
         b2c_payback_domain = b2c_gateway_obj.domain
-        url = b2c_payback_domain + '/payback/api/v1/configuration/'
+        url = b2c_payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
         headers = {'Content-Type': 'application/json'}
         try:
             response = requests.post(url, data=request_data_json,
                                      headers=headers)
             return response.json()
         except Exception as e:
-            response = None
             logger.error("config api call to b2cpayback failed", exc_info=e)
             return None
 
-    def get_point_balance(self):
-
-        point_balance_request_data = {
-            "card_no": "5420187505091559",
-            "expiry": "2402",
-            "customer_name": "jomon",
-            "client_code": "ADCBTP",
-            "invoice_id": "35023",
-            "platform": "Web"
-        }
-        request_data_json = json.dumps(point_balance_request_data)
+    def get_point_balance(self, request_data ):
+        request_data_json = json.dumps(request_data)
 
         b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                      B2CPAYBACK_HUB_CODE)
         b2c_payback_domain = b2c_gateway_obj.domain
         url = b2c_payback_domain + ADCB_POINT_BALANCE_API
-
         headers = {'Content-Type': 'application/json'}
         try:
             response = requests.post(url, data=request_data_json,
                                      headers=headers)
             return response.json()
         except Exception as e:
-            response = None
-            logger.error("point balance api call to b2cpayback failed {}".format(str(e)))
+            logger.error("point balance api call to b2cpayback failed "
+                         "{}".format(str(e)))
             return None
 
     def authenticate_redemption(self):
@@ -106,6 +97,7 @@ class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
         try:
             response = requests.post(url, data=request_data_json,
                                      headers=headers)
+            print(response.text)
             return response.json()
         except Exception as e:
             response = None
@@ -138,7 +130,6 @@ class B2CPaybackManager(PaymentRequestView, PaymentHandlers):
                                      headers=headers)
             return response.json()
         except Exception as e:
-            response = None
             logger.error(
                 "redemption api call to b2cpayback failed {}".format(
                     str(e)))
