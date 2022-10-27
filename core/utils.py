@@ -10,7 +10,7 @@ from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
-from integrations.constants import CHECKOUTPG_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE, TABBYPG_HUB_CODE
 from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)

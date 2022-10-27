@@ -7,7 +7,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from core.constants import (PAYMENT_GATEWAY_CHOICES,
-                            PURCHASE_PLATFORM_CHOICES)
+                            PURCHASE_PLATFORM_CHOICES,
+                            PAYMENT_REQUEST_LANGUAGE_CHOICES)
 from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
 from payments.constants import (
@@ -100,18 +101,28 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         default=False,
         help_text='Denotes whether the payment is approved or not')
 
-    success_url = models.CharField(max_length=500, blank=True,
-                                   help_text='Success URL',
-                                   validators=[URLValidator()])
-    failure_url = models.CharField(max_length=500, blank=True,
-                                   help_text='Failure URL',
-                                   validators=[URLValidator()])
-    cancel_url = models.CharField(max_length=500, blank=True,
-                                  help_text='Cancel URL',
-                                  validators=[URLValidator()])
-    verify_url = models.CharField(max_length=500, blank=True,
-                                  help_text='Verify URL',
-                                  validators=[URLValidator()])
+    success_url = models.CharField(
+        max_length=500, blank=True,
+        help_text='Success URL, example :http://www.example.com/success/',
+        validators=[URLValidator()])
+    failure_url = models.CharField(
+        max_length=500, blank=True,
+        help_text='Failure URL, example :http://www.example.com/failure/',
+        validators=[URLValidator()])
+    cancel_url = models.CharField(
+        max_length=500, blank=True,
+        help_text='Cancel URL, example :http://www.example.com/cancel/',
+        validators=[URLValidator()])
+    verify_url = models.CharField(
+        max_length=500, blank=True,
+        help_text='Verify URL, example :http://www.example.com/verify/',
+        validators=[URLValidator()])
+
+    language = models.CharField(choices=PAYMENT_REQUEST_LANGUAGE_CHOICES,
+                                max_length=15, null=True, blank=True,
+                                help_text="to identify the language")
+    order_items = models.JSONField(null=True, blank=True,
+                                   help_text="used to store order history")
 
 
 @receiver(post_save, sender=YouPayTransactionData)
