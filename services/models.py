@@ -38,6 +38,10 @@ class APIClient(AbstractDateTime, AbstractUserBase):
                                    help_text='Client Code')
     payment_gateway = models.ManyToManyField('integrations.PaymentGateway',
                                              blank=True)
+    validate_session = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the API Client session validation is'
+                  ' enabled or not')
 
     def __str__(self):
         return self.name

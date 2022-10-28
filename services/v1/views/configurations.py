@@ -58,7 +58,7 @@ class ConfigViewSet(ViewSet):
                                                           status_code))
 
                 # bypass session checking when api client is inactive
-                if not transaction.api_client.is_active:
+                if not transaction.api_client.validate_session:
                     session_id = transaction.session_id
 
                 if transaction.session_id == session_id:
