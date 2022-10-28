@@ -44,7 +44,6 @@ SITE_ID = 1
 # Whether or not to construct URLs as https or http
 SITE_SECURE = config('SITE_SECURE', default=True)
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -66,6 +65,7 @@ INSTALLED_APPS = [
     # 3rd party apps
     'rest_framework',
     'django_extensions',
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -146,7 +146,6 @@ REST_FRAMEWORK = {
     'COERCE_DECIMAL_TO_STRING': False,
 }
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -182,7 +181,6 @@ try:
 except ImportError:
     pass
 
-
 YOUPAY_SECRET_KEY = config('YOUPAY_SECRET_KEY', '')
 YOUPAY_PUBLIC_KEY = config('YOUPAY_PUBLIC_KEY', '')
 
@@ -192,7 +190,6 @@ BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 REDIS_HOST = config('REDIS_HOST', 'localhost')
 REDIS_PORT = 6379
 REDIS_LOCKS_DB = config('REDIS_LOCKS_DB', 11)
-
 
 # WAIT LOCK
 #
@@ -216,14 +213,13 @@ DJANGO_SUPERUSER_USERNAME = config('DJANGO_SUPERUSER_USERNAME')
 DJANGO_SUPERUSER_EMAIL = config('DJANGO_SUPERUSER_EMAIL')
 DJANGO_SUPERUSER_PASSWORD = config('DJANGO_SUPERUSER_PASSWORD')
 
-
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': config('REDIS_DJANGO_CACHE_URL', 'redis://localhost:6379/3'),
+        'LOCATION': config('REDIS_DJANGO_CACHE_URL',
+                           'redis://localhost:6379/3'),
         'OPTIONS': {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         },
     },
 }
-
