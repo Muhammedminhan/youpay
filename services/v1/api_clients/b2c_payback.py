@@ -10,7 +10,7 @@ from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_TOUCHPOINTS,
-    PAYMENT_METHOD_TOUCHPOINTS_AND_CARD
+    PAYMENT_METHOD_TOUCHPOINTS_AND_CARD, PAYMENT_METHOD_ADCB_CARD_ONLY
 )
 
 logger = logging.getLogger(__name__)
@@ -39,22 +39,24 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
         transaction_id = request.data.get('transaction_id')
         invoice_amount = float(request.data.get('invoice_amount'))
         selected_amount = float(request.data.get('selected_amount'))
-        if invoice_amount == selected_amount: #full redemption
-            self.update_youpay_transaction_data({
+        update_data = {
                 'transaction_id': transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                 'payment_status': PAYMENT_STATUS_AUTHORIZED,
-                'payment_method' : PAYMENT_METHOD_TOUCHPOINTS,
+            }
+        if invoice_amount == selected_amount: #full redemption
+            update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
 
-            })
-        else: # partial redemption
-            self.update_youpay_transaction_data({
-                'transaction_id': transaction_id,
-                'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
-                'payment_status' : PAYMENT_STATUS_AUTHORIZED,
-                'payment_method' : PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
-                'payment_scheme' : request.data.get('card_type')
-            })
+        elif selected_amount > 0: # partial redemption
+            update_data['payment_method'] = (
+                PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
+            update_data['payment_scheme'] = request.data.get('card_type')
+
+        else: # full amount from card
+            update_data['payment_method'] = PAYMENT_METHOD_ADCB_CARD_ONLY
+            update_data['payment_scheme'] = request.data.get('card_type')
+
+        self.update_youpay_transaction_data(update_data)
         return Response(response, status=status.HTTP_200_OK)
 
 
