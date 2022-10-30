@@ -80,28 +80,15 @@ class B2CPaybackManager(APIView):
                     str(e)))
             return None
 
-    def point_redemption(self):
-
-        redemption_request_data = {
-                  "reference_id": "NS4N2GFYPJFJCV",
-                  "request_id": "HFTBIAXG5QH3GDKD",
-                  "otp_reference_number": "33449757",
-                  "platform": "Web",
-                  "client_code": "ADCBTP",
-                  "authentication_code": "11111111"
-                }
-
-        request_data_json = json.dumps(redemption_request_data)
-
+    def point_redemption(self, request_data):
+        request_data_json = json.dumps(request_data)
         b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                      B2CPAYBACK_HUB_CODE)
         b2c_payback_domain = b2c_gateway_obj.domain
         url = b2c_payback_domain + ADCB_REDEMPTION_API
-
-        headers = {'Content-Type': 'application/json'}
         try:
             response = requests.post(url, data=request_data_json,
-                                     headers=headers)
+                                     headers=ADCB_HEADERS)
             return response.json()
         except Exception as e:
             logger.error(
