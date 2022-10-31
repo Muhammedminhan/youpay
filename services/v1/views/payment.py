@@ -199,11 +199,20 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     message="Please configure client verify url")
                 return return_data, status.HTTP_400_BAD_REQUEST
             else:
-                """Verify transaction with client by calling verify url"""
+                """
+                Verify transaction with client by calling verify url
+                """
+                verify_body = {
+                    "transaction_id": transaction_obj.transaction_id,
+                    "invoice_id": transaction_obj.invoice_id,
+                    "amount": transaction_obj.amount,
+                    "currency": transaction_obj.currency,
+                }
+
                 response = self.verify_transaction_with_client(
-                    client_verify_url, data)
+                    client_verify_url, verify_body)
                 logger.info("Client verify request data : {}\nresponse "
-                            "data{}".format(data, response.text))
+                            "data{}".format(verify_body, response.text))
 
                 if response:
                     return_data = self.get_success_dict(
