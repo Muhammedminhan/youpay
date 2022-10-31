@@ -80,4 +80,6 @@ ADCB_POINT_BALANCE_API = "/payback/api/v1/touchpoint/point-balance/"
 ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
 ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
 
+ADCB_HEADERS =  {'Content-Type': 'application/json'}
+
 TABBYPG_CREATE_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/'

@@ -29,13 +29,12 @@ urlpatterns = [
     path('checkout/verify/', CheckoutVerification.as_view(),
          name='checkout_verify'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
+
+    #b2cpayback endpoints
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
     path('adcb/authenticate/', B2CPaybackAuthenticate.as_view()),
     path('adcb/redemption/', B2CPaybackRedemption.as_view()),
 
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view()),
-
-    # TODO
-    #  - create ADCB verify API
 ]
