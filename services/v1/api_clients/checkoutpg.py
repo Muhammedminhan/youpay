@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.messages import REDIRECT_URL, IS_REDIRECT
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import get_site_domain, decrypt_string
@@ -83,6 +84,8 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                                     status=status.HTTP_200_OK)
                 else:
                     data = self.response_obj.get_error_dict(error_code=code)
+                    data[IS_REDIRECT] = True
+                    data[REDIRECT_URL] = transaction_data.get('failure_url')
                     return Response(data,
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
@@ -150,6 +153,8 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                                     status=status.HTTP_200_OK)
                 else:
                     data = self.response_obj.get_error_dict(error_code=code)
+                    data[IS_REDIRECT] = True
+                    data[REDIRECT_URL] = transaction_data.get('failure_url')
                     return Response(data,
                                     status=status.HTTP_404_NOT_FOUND)
             else:

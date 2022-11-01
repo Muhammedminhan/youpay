@@ -3,6 +3,9 @@ import logging
 from rest_framework import status
 
 from core.messages import ERROR_MISSING_FIELDS
+from core.messages import (
+    REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
+)
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
@@ -135,23 +138,24 @@ def is_redirect(transaction_id, transaction_message):
     if response_code in RESPONSE_CODE_LIST or is_fraud:
         front_end_redirect_url = get_payment_redirect_url()
         response_data = {
-            "redirect": True,
-            "redirect_url": front_end_redirect_url,
-            "transaction_message": transaction_message
+            IS_REDIRECT: True,
+            REDIRECT_URL: front_end_redirect_url,
+            TRANSACTION_MSG: transaction_message
         }
         return True, response_data
 
     if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
+
         response_data = {
-            "is_redirect": True,
-            "redirect_url": youpay_transaction.success_url,
-            "transaction_message": transaction_message
+            IS_REDIRECT: True,
+            REDIRECT_URL: youpay_transaction.success_url,
+            TRANSACTION_MSG: transaction_message
         }
         return True, response_data
     else:
         response_data = {
-            "is_redirect": True,
-            "redirect_url": youpay_transaction.failure_url,
-            "transaction_message": transaction_message
+            IS_REDIRECT: True,
+            REDIRECT_URL: youpay_transaction.failure_url,
+            TRANSACTION_MSG: transaction_message
         }
         return False, response_data
