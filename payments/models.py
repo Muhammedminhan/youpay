@@ -53,7 +53,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     payment_status = models.CharField(
         max_length=20, null=True, blank=True,
         choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
-    session_id = models.CharField(max_length=120, null=True, blank=True)
+    session_id = models.CharField(max_length=500, null=True, blank=True)
     channel_code = models.CharField(
         max_length=120, null=True, blank=True,
         help_text="Channel code used for the transaction, if transaction is"
