@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
-                        encrypt_string)
+                        encrypt_string, decrypt_string)
 from payments.constants import PAYMENT_STATUS_CANCELLED
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
@@ -259,12 +259,13 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
     def post(self, request):
         data = self.request.data
-        transactoin_object = self.get_youpay_transaction_data(
-            data.get('transaction_id'))
+        transaction_id = decrypt_string(data.get('transaction_id'))
+        transaction_object = self.get_youpay_transaction_data(
+            transaction_id)
         self.update_youpay_transaction_data({
-            'transaction_id': data.get('transaction_id'),
+            'transaction_id': transaction_id,
             'payment_status': PAYMENT_STATUS_CANCELLED
         })
         return Response({
-            "redirect_url": transactoin_object.cancel_url,
+            "redirect_url": transaction_object.cancel_url,
         })
