@@ -42,6 +42,18 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
         """
         try:
+
+            # Validate client at first
+            validate, client_pk = self.validate_client(request)
+            if validate is False:
+                logger.info(
+                    "payment request client validation failed for {0}"
+                    .format("order_reference"))
+                self.return_data = self.get_400_message(
+                    message="Client Does Not Exist")
+                return Response(self.return_data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
+
             decrypted_data = decrypt_payment_data(request.data)
             data_formatted = reformat_payment_request_data(decrypted_data)
 
@@ -52,17 +64,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 message = PAYMENT_REQUEST_KEYS_ERROR
                 self.return_data = self.get_400_message(
                     message=message)
-                return Response(self.return_data.get('errors'),
-                                status=status.HTTP_400_BAD_REQUEST)
-
-            validate, client_pk = self.validate_client(request)
-
-            if validate is False:
-                logger.info(
-                    "payment request client validation failed for {0}"
-                    .format("order_reference"))
-                self.return_data = self.get_400_message(
-                    message="Client Does Not Exist")
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
 
