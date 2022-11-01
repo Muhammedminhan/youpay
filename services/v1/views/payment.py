@@ -1,3 +1,4 @@
+import json
 import logging
 
 import requests
@@ -203,15 +204,15 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 Verify transaction with client by calling verify url
                 """
                 verify_body = {
-                    "transaction_id": transaction_obj.transaction_id,
+                    "transaction_id": str(transaction_obj.transaction_id),
                     "invoice_id": transaction_obj.invoice_id,
-                    "amount": transaction_obj.amount,
+                    "amount": str(transaction_obj.amount),
                     "currency": transaction_obj.currency,
                 }
 
                 response = self.verify_transaction_with_client(
-                    client_verify_url, verify_body)
-                logger.info("Client verify request data : {}\nresponse "
+                    client_verify_url, json.dumps(verify_body))
+                logger.info("Client verify request send data : {}\nresponse "
                             "data{}".format(verify_body, response.text))
 
                 if response:
@@ -234,7 +235,11 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
 
     def verify_transaction_with_client(self, client_verify_url, data):
-        response = requests.post(client_verify_url, data=data)
+        headers = {
+            'Accept': 'application/json',
+        }
+        response = requests.post(client_verify_url, json=data,
+                                 headers=headers)
         return response
 
 
