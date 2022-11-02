@@ -82,4 +82,6 @@ ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
 
 ADCB_HEADERS =  {'Content-Type': 'application/json'}
 
+ADCB_CLIENT_CODE = 'ADCBTP'
+
 TABBYPG_CREATE_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/'
