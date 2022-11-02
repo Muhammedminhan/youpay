@@ -95,4 +95,5 @@ class YoupayToPaymentGatewaysData(AbstractDateTime):
                                     help_text='Payment status')
 
     def __str__(self):
-        return self.youpay_payment.payment_reference
+        return "payment_reference : " + str(
+            self.youpay_payment.payment_reference)
