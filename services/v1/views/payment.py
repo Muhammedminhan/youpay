@@ -242,10 +242,11 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         headers = {
             'Accept': 'application/json',
         }
-        logger.info("Client verify request send data : {}".format(data))
+
         response = requests.post(client_verify_url, json=data,
                                  headers=headers)
-        logger.info("Verify client Response {}".format(response.text))
+        logger.info("Verify client with data {} ,Response {}".format(
+            data, response.text))
         return response
 
 
