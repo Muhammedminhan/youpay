@@ -42,7 +42,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
         """
         try:
-
             # Validate client at first
             validate, client_pk = self.validate_client(request)
             if not validate:
