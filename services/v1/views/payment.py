@@ -6,10 +6,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.messages import PAYMENT_REQUEST_KEYS_ERROR
+from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
-                        encrypt_string, decrypt_string)
+                        encrypt_string)
 from payments.constants import PAYMENT_STATUS_CANCELLED
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
@@ -267,5 +267,5 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             'payment_status': PAYMENT_STATUS_CANCELLED
         })
         return Response({
-            "redirect_url": transaction_object.cancel_url,
+            REDIRECT_URL: transaction_object.cancel_url,
         })

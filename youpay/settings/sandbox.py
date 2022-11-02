@@ -5,7 +5,6 @@ try:
 except ImportError:
     pass
 
-
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = 31536000
@@ -19,5 +18,6 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.yougotagift.co",
     "https://*yougotagift.com",
     "https://*yougotagift.co",
+    "http://localhost:3000",
 ]
 CORS_ORIGIN_ALLOW_ALL = True
