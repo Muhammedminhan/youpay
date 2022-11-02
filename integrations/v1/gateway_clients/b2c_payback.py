@@ -22,6 +22,11 @@ from core.utils import ( get_payment_gateway_config,
                          get_app_config, decrypt_string
                          )
 from services.v1.views.common import YouPayTransactionCRUD
+from integrations.v1.gateway_clients.utils import (
+                                    format_adcb_point_balance_data,
+                                    format_adcb_authenticate_data,
+                                    format_adcb_redemption_data
+                                    )
 
 logger = logging.getLogger(__name__)
 
@@ -58,18 +63,22 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
             try:
                 transaction_obj = self.get_youpay_transaction_data(
                     decrypt_string(request_transaction_id))
-                request_data['customer_name'] = transaction_obj.customer_name
-                request_data['client_code'] = ADCB_CLIENT_CODE
-                request_data['invoice_id'] = transaction_obj.invoice_id
-                request_data['platform'] = transaction_obj.platform
-                request_data_json = json.dumps(request_data)
+                formatted_data = format_adcb_point_balance_data(
+                    request_data, transaction_obj)
+                request_data_json = json.dumps(formatted_data)
                 b2c_gateway_obj = get_payment_gateway_config(
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
-                return response.json(), transaction_obj.transaction_id
+                if response:
+                    return response.json(), transaction_obj.transaction_id
+                else:
+                    logger.error(
+                        "No response received from point balance api call "
+                        "to b2cpayback")
+                    return None, None
             except Exception as e:
                 logger.error("point balance api call to b2cpayback failed ",
                              exc_info=e)
@@ -89,23 +98,23 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
                 request_data['customer_email'] = (
                     transaction_obj.customer_email
                 )
-                request_data['is_save_user_token'] = False
-                request_data['client_code'] = ADCB_CLIENT_CODE
-                request_data['platform'] = transaction_obj.platform
-                request_data['invoice_amount'] = str(transaction_obj.amount)
-                request_data['channel_code'] = transaction_obj.channel_code
-                request_data['invoice_id'] = transaction_obj.invoice_id
-                request_data['customer_ip_address'] = transaction_obj.ip
-                request_data['token_type'] = transaction_obj.payment_method
-                request_data['card_type'] = transaction_obj.payment_scheme
-                request_data_json = json.dumps(request_data)
+                formatted_data = format_adcb_authenticate_data(
+                    request_data, transaction_obj
+                )
+                request_data_json = json.dumps(formatted_data)
                 b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                              B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_AUTHENTICATE_API
                 response = requests.post(url, data=request_data_json,
                                      headers=ADCB_HEADERS)
-                return response.json(), transaction_obj.transaction_id
+                if response:
+                    return response.json(), transaction_obj.transaction_id
+                else:
+                    logger.error(
+                        "No response received from authenticate api call "
+                        "to b2cpayback")
+                    return None, None
             except Exception as e:
                 logger.error(
                     "authenticate api call to b2cpayback failed", exc_info=e)
@@ -121,16 +130,23 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
             try:
                 transaction_obj = self.get_youpay_transaction_data(
                     decrypt_string(request_transaction_id))
-                request_data['platform'] = transaction_obj.platform
-                request_data['client_code'] = ADCB_CLIENT_CODE
-                request_data_json = json.dumps(request_data)
+                formatted_data = format_adcb_redemption_data(
+                    request_data, transaction_obj
+                )
+                request_data_json = json.dumps(formatted_data)
                 b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                              B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_REDEMPTION_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
-                return response.json(), transaction_obj.transaction_id
+                if response:
+                    return response.json(), transaction_obj.transaction_id
+                else:
+                    logger.error(
+                        "No response received from redemption api call "
+                        "to b2cpayback")
+                    return None, None
             except Exception as e:
                 logger.error(
                     "redemption api call to b2cpayback failed", exc_info=e)
