@@ -45,7 +45,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
             # Validate client at first
             validate, client_pk = self.validate_client(request)
-            if validate is False:
+            if not validate:
                 logger.info(
                     "payment request client validation failed for {0}"
                     .format("order_reference"))
