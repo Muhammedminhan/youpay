@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
-                        encrypt_string)
+                        encrypt_string, decrypt_string)
 from payments.constants import PAYMENT_STATUS_CANCELLED
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
@@ -192,6 +192,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 dummy_response = {
                     "is_verified": True,
                 }
+                logger.info(
+                    "Client is inactive, skipping verification for "
+                    "transaction : {}".format(transaction_id))
+
                 return dummy_response, status.HTTP_200_OK
 
             client_verify_url = transaction_obj.verify_url
@@ -238,8 +242,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         headers = {
             'Accept': 'application/json',
         }
+        logger.info("Client verify request send data : {}".format(data))
         response = requests.post(client_verify_url, json=data,
                                  headers=headers)
+        logger.info("Verify client Response {}".format(response.text))
         return response
 
 
