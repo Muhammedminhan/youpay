@@ -60,8 +60,6 @@ def format_adcb_authenticate_data(request_data, transaction_obj):
     request_data['channel_code'] = transaction_obj.channel_code
     request_data['invoice_id'] = transaction_obj.invoice_id
     request_data['customer_ip_address'] = transaction_obj.ip
-    request_data['token_type'] = transaction_obj.payment_method
-    request_data['card_type'] = transaction_obj.payment_scheme
     return request_data
 
 def format_adcb_redemption_data(request_data, transaction_obj):

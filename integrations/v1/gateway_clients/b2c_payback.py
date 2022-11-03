@@ -27,6 +27,8 @@ from integrations.v1.gateway_clients.utils import (
                                     format_adcb_authenticate_data,
                                     format_adcb_redemption_data
                                     )
+from httpsig.requests_auth import HTTPSignatureAuth
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +143,11 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
                 if response:
-                    return response.json(), transaction_obj.transaction_id
+                    response_data = response.json()
+                    response_data["is_redirect"] = True
+                    response_data["success_url"] = transaction_obj.success_url
+                    response_data["failure_url"] = transaction_obj.failure_url
+                    return response_data, transaction_obj.transaction_id
                 else:
                     logger.error(
                         "No response received from redemption api call "
