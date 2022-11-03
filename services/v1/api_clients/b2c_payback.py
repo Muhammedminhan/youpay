@@ -93,3 +93,27 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 'code': 400, 'message': "youpay b2cpayback redemption"
                                         " method failed"}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+
+class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        payback = B2CPaybackManager()
+        response, transaction_id = payback.verification(request.data)
+        if response:
+            if response.get('results',"").get('payment_status',"") == True:
+                update_data = {
+                    'transaction_id': transaction_id,
+                    'payment_status': PAYMENT_STATUS_PAID,
+                }
+                self.update_youpay_transaction_data(update_data)
+            else:
+                logger.info("Verification unsuccessful for transaction"
+                            " id {}".format(transaction_id))
+            return Response(response, status=status.HTTP_200_OK)
+        else:
+            response = {'errors': {
+                'code': 400, 'message': "youpay b2cpayback verify"
+                                        " method failed"}}
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
