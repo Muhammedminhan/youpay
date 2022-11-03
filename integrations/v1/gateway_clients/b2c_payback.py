@@ -169,8 +169,7 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
                 transaction_obj = self.get_youpay_transaction_data(
                     decrypt_string(request_transaction_id))
                 formatted_data = format_adcb_verify_data(
-                    request_data, transaction_obj
-                )
+                    request_data, transaction_obj)
                 b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                              B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
