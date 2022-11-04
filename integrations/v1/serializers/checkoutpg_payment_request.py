@@ -47,7 +47,10 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         customer_name = transaction_data.get('customer_name')
         if not customer_name:
             request_data = data.get('request_data')
-            customer_name = request_data.get('customer_name', 'Not Provided')
+            customer_name = request_data.get('customer_name', '')
+            if not customer_name:
+                customer_name = "Not provided"
+
         return customer_name
 
     def get_customer_ip_address(self, data):
