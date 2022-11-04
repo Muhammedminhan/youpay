@@ -79,6 +79,7 @@ TABBYPG_CACHE_KEY = 'tabbypg_config'
 ADCB_POINT_BALANCE_API = "/payback/api/v1/touchpoint/point-balance/"
 ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
 ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
+ADCB_VERIFY_API = "/payback/api/v1/verify"
 
 ADCB_HEADERS =  {'Content-Type': 'application/json'}
 

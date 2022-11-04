@@ -66,3 +66,8 @@ def format_adcb_redemption_data(request_data, transaction_obj):
     request_data['platform'] = transaction_obj.platform
     request_data['client_code'] = ADCB_CLIENT_CODE
     return request_data
+
+def format_adcb_verify_data(request_data, transaction_obj):
+    request_data['invoice_id'] = transaction_obj.invoice_id
+    request_data['channel_code'] = ADCB_CLIENT_CODE
+    return request_data
