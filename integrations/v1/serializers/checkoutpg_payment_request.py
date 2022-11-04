@@ -1,4 +1,3 @@
-# TODO create serializer for checkoutpg request
 from rest_framework import serializers
 
 from core.utils import get_app_config
@@ -40,7 +39,16 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('request_data').get("cvv")
 
     def get_customer_name(self, data):
-        return data.get('transaction_data').get("customer_name")
+        """
+        Method for getting customer name, if customer name is not present
+        in transaction data then need to take it from request data
+        """
+        transaction_data = data.get('transaction_data')
+        customer_name = transaction_data.get('customer_name')
+        if not customer_name:
+            request_data = data.get('request_data')
+            customer_name = request_data.get('customer_name', 'Not Provided')
+        return customer_name
 
     def get_customer_ip_address(self, data):
         return data.get('transaction_data').get("ip")
@@ -49,7 +57,10 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('token_type')
 
     def get_is_save_user_token(self, data):
-        return data.get('request_data').get("is_save_user_token")
+        """
+        Method for getting is_save_user_token, True or False will be returned
+        """
+        return data.get('request_data').get("is_save_user_token", False)
 
     def get_response_url(self, data):
         url = get_app_config().front_end_redirect_url

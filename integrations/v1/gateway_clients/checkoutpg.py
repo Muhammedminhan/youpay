@@ -7,6 +7,7 @@ from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
+from core.messages import IS_REDIRECT
 from core.utils import get_checkoutpg_config
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
@@ -186,13 +187,15 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     request_type=PAYMENT_REQUEST_TYPE_SAVED_CARD,
                 )
 
+                logger.info("Checkoutpg savedcard request response for "
+                            "transaction id {} is {}".format(transaction_id,
+                                                             response.text))
+
                 if response:
                     response_data = response.json()
-                    logger.info("Checkoutpg payment response: {}"
-                                .format(response_data))
                     if response_data.get(
                             'status') == 200 and response_data.get(
-                        'is_redirect') is True:
+                        IS_REDIRECT) is True:
                         self.update_youpay_transaction_data(
                             {
                                 'transaction_id': data.get(
@@ -260,13 +263,15 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     request_type=PAYMENT_REQUEST_TYPE_CARD,
                 )
 
+                logger.info("Checkoutpg savedcard request response for "
+                            "transaction id {} is {}".format(transaction_id,
+                                                             response.text))
+
                 if response:
                     response_data = response.json()
-                    logger.info("Checkoutpg payment response: {}"
-                                .format(response_data))
                     if response_data.get(
                             'status') == 200 and response_data.get(
-                        'is_redirect') is True:
+                        IS_REDIRECT) is True:
                         self.update_youpay_transaction_data(
                             {
                                 'transaction_id': data.get(
@@ -288,8 +293,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         else:
             msg = (
                 "Youpay transaction verification failed for transaction id "
-                "{} \n response is : {} ".format(transaction_id,
-                                                 verify_response))
+                "{}\n response is : {} ".format(transaction_id,
+                                                verify_response))
             logger.error(msg)
             return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
 
