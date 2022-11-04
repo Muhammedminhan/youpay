@@ -112,9 +112,6 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
                 url = b2c_payback_domain + ADCB_AUTHENTICATE_API
                 response = requests.post(url, data=request_data_json,
                                      headers=ADCB_HEADERS)
-                print("------------------------------")
-                print(request_data_json)
-                print(response.json())
                 if response:
                     return response.json(), transaction_obj.transaction_id
                 else:
