@@ -49,7 +49,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
     def create_session(self, data):
         """
         Method for creating session with Tabbypg
-        Sample data input : TABBY_CREATE_SESSION_SAMPLE_BODY
         Step 1 : get transaction id
         Step 2 : get youpaytransaction data corresponding to transaction id
         Step 3 : communicate with tabbypg gateway to create session
