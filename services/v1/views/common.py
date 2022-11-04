@@ -13,7 +13,6 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
-from services.utils import get_payment_redirect_url
 
 logger = logging.getLogger(__name__)
 
@@ -136,10 +135,10 @@ def is_redirect(transaction_id, transaction_message):
 
     response_code = transaction_message.get('response_code', None)
     if response_code in RESPONSE_CODE_LIST or is_fraud:
-        front_end_redirect_url = get_payment_redirect_url()
+        redirect_url = None
         response_data = {
-            IS_REDIRECT: True,
-            REDIRECT_URL: front_end_redirect_url,
+            IS_REDIRECT: False,
+            REDIRECT_URL: redirect_url,
             TRANSACTION_MSG: transaction_message
         }
         return True, response_data
