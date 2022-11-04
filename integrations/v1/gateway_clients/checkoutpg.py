@@ -171,9 +171,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
                 headers = self.get_payment_header()
 
-                print("\n\nCustomer_name : ",
-                      payment_data.get('customer_name'))
-
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
 
@@ -252,9 +249,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     'transaction_id')
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
-
-                print("\n\nCustomer_name : ",
-                      payment_data.get('customer_name'))
 
                 response = requests.post(url, data=payment_data_to_send,
                                          headers=headers)
