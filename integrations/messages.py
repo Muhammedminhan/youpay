@@ -1,3 +1,4 @@
-CHECKOUTPG_CONNECTION_ERROR_MESSAGE = "Unable to fetch Checkoutpg" \
-                                      " configurations. Checkoutpg" \
-                                      " configurations not set"
+CHECKOUTPG_CONNECTION_ERROR_MESSAGE = (
+    "Unable to fetch Checkoutpg configurations. Checkoutpg configurations not set")
+TABBYPG_CONNECTION_ERROR_MESSAGE = (
+    "Unable to fetch Tabbypg configurations. Tabbypg configurations not set")

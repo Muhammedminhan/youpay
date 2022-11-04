@@ -5,3 +5,9 @@ PAYMENT_OPTIONS = {
     "tabbypg": False,
     "applepay": False,
 }
+
+B2C_PAYBACK_YOUPAY_PRODUCT_CODE = "YPAY"
+
+B2C_PAYBACK_CONFIG_ENDPOINT = '/payback/api/v1/configuration/'
+
+B2C_PAYBACK_GATEWAY_CODE = 'PAYMTB2CPBK'

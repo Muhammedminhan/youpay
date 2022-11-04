@@ -1,9 +1,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
+from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
+                                                 B2CPaybackAuthenticate,
+                                                 B2CPaybackRedemption,
+                                                 B2CPaybackVerify)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification)
 from services.v1.views.configurations import ConfigViewSet
+from .api_clients.tabbypg import CreateSession
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView)
@@ -26,11 +31,12 @@ urlpatterns = [
          name='checkout_verify'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
 
-    # TODO
-    #  - create delete stored card api
-    #  - get stored card api - card payment api
-    #  - get ADCB point balance API
-    #  - ADCB authentication api
-    #  - ADCB redemption api
+    #b2cpayback endpoints
+    path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
+    path('adcb/authenticate/', B2CPaybackAuthenticate.as_view()),
+    path('adcb/redemption/', B2CPaybackRedemption.as_view()),
+    path('adcb/verification/', B2CPaybackVerify.as_view()),
 
+    # Tabbypg endpoints
+    path('tabbypg/createsession/', CreateSession.as_view()),
 ]

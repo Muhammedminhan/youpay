@@ -1,6 +1,8 @@
 import logging
 
 from payments.models import YouPayTransactionData
+from integrations.models import PaymentGateway
+from integrations.constants import ADCB_CLIENT_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -41,3 +43,31 @@ def update_transaction_object(data):
         logger.error(
             "while update youpa transaction got exception {0}".format(
                 str(e)))
+
+
+def format_adcb_point_balance_data(request_data, transaction_obj):
+    request_data['customer_name'] = transaction_obj.customer_name
+    request_data['client_code'] = ADCB_CLIENT_CODE
+    request_data['invoice_id'] = transaction_obj.invoice_id
+    request_data['platform'] = transaction_obj.platform
+    return request_data
+
+def format_adcb_authenticate_data(request_data, transaction_obj):
+    request_data['is_save_user_token'] = False
+    request_data['client_code'] = ADCB_CLIENT_CODE
+    request_data['platform'] = transaction_obj.platform
+    request_data['invoice_amount'] = str(transaction_obj.amount)
+    request_data['channel_code'] = transaction_obj.channel_code
+    request_data['invoice_id'] = transaction_obj.invoice_id
+    request_data['customer_ip_address'] = transaction_obj.ip
+    return request_data
+
+def format_adcb_redemption_data(request_data, transaction_obj):
+    request_data['platform'] = transaction_obj.platform
+    request_data['client_code'] = ADCB_CLIENT_CODE
+    return request_data
+
+def format_adcb_verify_data(request_data, transaction_obj):
+    request_data['invoice_id'] = transaction_obj.invoice_id
+    request_data['channel_code'] = ADCB_CLIENT_CODE
+    return request_data

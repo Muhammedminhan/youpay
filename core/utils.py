@@ -10,7 +10,7 @@ from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
-from integrations.constants import CHECKOUTPG_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE, TABBYPG_HUB_CODE
 from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)
@@ -127,6 +127,21 @@ def get_checkoutpg_config():
             logging.error('No checkoutpg configuration instance found.')
             return None
     return checkoutpg_config
+
+
+def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
+    """using low level caching for cache gateway config"""
+    cache_key = gateway_cache_key
+    gateway_config = cache.get(cache_key, None)
+    if gateway_config is None:
+        try:
+            gateway_config = PaymentGateway.objects.get(
+                code=gateway_hub_code)
+            cache.set(cache_key, gateway_config)
+        except(PaymentGateway.DoesNotExist, Exception):
+            logging.error('No gateway configuration instance found.')
+            return None
+    return gateway_config
 
 
 def get_site_domain(request):

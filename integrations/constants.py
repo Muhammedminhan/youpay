@@ -72,3 +72,17 @@ PAYMENT_REQUEST_TYPE_CHOICES = (
     (PAYMENT_REQUEST_TYPE_CARD, PAYMENT_REQUEST_TYPE_CARD),
     (PAYMENT_REQUEST_VERIFY, PAYMENT_REQUEST_VERIFY),
 )
+CHECKOUTPG_CACHE_KEY = 'checkoutpg_config'
+B2CP_CACHE_KEY = 'b2cp_config'
+TABBYPG_CACHE_KEY = 'tabbypg_config'
+
+ADCB_POINT_BALANCE_API = "/payback/api/v1/touchpoint/point-balance/"
+ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
+ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
+ADCB_VERIFY_API = "/payback/api/v1/verify"
+
+ADCB_HEADERS =  {'Content-Type': 'application/json'}
+
+ADCB_CLIENT_CODE = 'ADCBTP'
+
+TABBYPG_CREATE_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/'

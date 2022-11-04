@@ -1,13 +1,13 @@
 import json
 import logging
 
+from services.v1.constants import PAYMENT_OPTIONS
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE, QITAF_HUB_CODE
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
-from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,8 @@ def reformat_payment_request_data(data):
     payment = data.get('payment')
     customer = data.get('customer')
     urls = data.get('urls')
+    order_history = data.get('order_history')
+    order_items = data.get('order_items')
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
@@ -47,6 +49,10 @@ def reformat_payment_request_data(data):
         data['verify_url'] = urls.get('verify_url')
 
         data['payment_status'] = PAYMENT_STATUS_INITIATED
+
+        data['order_items'] = order_items
+        data['order_history'] = order_history
+
         return data
     else:
         logger.error(PAYMENT_REQUEST_KEYS_ERROR)

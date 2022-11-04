@@ -16,15 +16,15 @@ from payments.constants import (
     PAYMENT_STATUS_FLAGGED,
     PAYMENT_STATUS_PAID
 )
+from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.models import YouPayTransactionData
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
-from services.v1.views.utils import (
-    get_payment_options, get_announcements,
-    get_session_id_from_header
-)
+from services.v1.views.utils import ( get_payment_options, get_announcements,
+                                      get_session_id_from_header
+                                      )
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +63,6 @@ class ConfigViewSet(ViewSet):
         checkout_obj = CheckoutpgManager()
 
         decrypted_transaction_id = decrypt_string(pk)
-
-        print("decrypted_transaction_id", decrypted_transaction_id)
 
         try:
             transaction = YouPayTransactionData.objects.get(
@@ -111,9 +109,14 @@ class ConfigViewSet(ViewSet):
                         )
                         payment_options = get_payment_options(serializer)
                         announcements_dict = get_announcements()
+                        b2c_payback_obj = B2CPaybackManager()
+                        payback_config = b2c_payback_obj.get_configurations(
+                            transaction.amount, transaction.currency)
+
                         response_data = self.retrieve_response(
                             payment_options=payment_options,
                             checkoutpg_config=checkout_config,
+                            payback_config=payback_config,
                             transaction=transaction,
                             announcements_dict=announcements_dict,
                             status_code=status_code
@@ -159,6 +162,7 @@ class ConfigViewSet(ViewSet):
 
         payment_options = kwargs.get('payment_options', None)
         checkoutpg_config = kwargs.get('checkoutpg_config', None)
+        payback_config = kwargs.get('payback_config', None)
         transaction = kwargs.get('transaction', None)
         announcements_dict = kwargs.get('announcements_dict', None)
         status_code = kwargs.get('status_code', None)
@@ -187,6 +191,7 @@ class ConfigViewSet(ViewSet):
             "data": {
                 "payment_options": payment_options,
                 "checkoutpg_config": checkoutpg_config,
+                "b2cpayback_config": payback_config,
                 "amount": amount,
                 "currency": currency,
                 "service_fee": service_fee,
