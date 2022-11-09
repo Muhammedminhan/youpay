@@ -1,6 +1,7 @@
-from .views import TabbyWebhookListener
 from django.urls import path
 
+from .views import TabbyPGWebhookListener
+
 urlpatterns = [
-    path('webhook/', TabbyWebhookListener.as_view()),
+    path('webhook/', TabbyPGWebhookListener.as_view()),
 ]
