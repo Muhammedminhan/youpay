@@ -14,13 +14,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.conf import settings
+from django.conf.urls import include
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path, re_path
-from django.conf.urls import include
-from core.views import HealthCheck
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.contrib.staticfiles.views import serve
+from django.urls import path, re_path
+
+from core.views import HealthCheck
 
 
 def trigger_error(request):
@@ -33,6 +34,7 @@ urlpatterns = [
     path('health/', HealthCheck.as_view(), name='health'),
     path('sentry-debug/', trigger_error),
     path('checkoutpg/', include('checkoutpgclient.urls')),
+    path('tabbypg/', include('tabbypgclient.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
