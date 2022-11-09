@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from core.utils import get_app_config
+
 
 class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     currency = serializers.SerializerMethodField()
@@ -71,10 +73,16 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("customer_phone")
 
     def get_cancel_url(self, data):
-        return data.get('transaction_data').get("cancel_url")
+        return common_response_url(data)
 
     def get_failure_url(self, data):
-        return data.get('transaction_data').get("failure_url")
+        return common_response_url(data)
 
     def get_success_url(self, data):
-        return data.get('transaction_data').get("success_url")
+        return common_response_url(data)
+
+
+def common_response_url(data):
+    url = get_app_config().front_end_redirect_url
+    return url + '?id=' + data.get('transaction_data').get(
+        'transaction_id')

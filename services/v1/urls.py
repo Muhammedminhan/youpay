@@ -31,7 +31,7 @@ urlpatterns = [
          name='checkout_verify'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
 
-    #b2cpayback endpoints
+    # b2cpayback endpoints
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
     path('adcb/authenticate/', B2CPaybackAuthenticate.as_view()),
     path('adcb/redemption/', B2CPaybackRedemption.as_view()),
@@ -39,4 +39,5 @@ urlpatterns = [
 
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view()),
+    path('tabbypg/verify/', CreateSession.as_view()),
 ]
