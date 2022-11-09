@@ -27,8 +27,10 @@ from integrations.v1.gateway_clients.utils import (
                                     format_adcb_point_balance_data,
                                     format_adcb_authenticate_data,
                                     format_adcb_redemption_data,
-                                    format_adcb_verify_data
+                                    format_adcb_verify_data,
+                                    get_adcb_redirect_url
                                     )
+from services.utils import get_payment_redirect_url
 
 logger = logging.getLogger(__name__)
 
@@ -174,10 +176,15 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
                                                              B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_VERIFY_API
+                formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
                                          headers=ADCB_HEADERS)
+                response_data = response.json()
+                response_data["is_redirect"] = True
+                response_data["redirect_url"] = get_adcb_redirect_url(
+                    response_data, transaction_obj)
                 if response:
-                    return response.json(), transaction_obj.transaction_id
+                    return response_data, transaction_obj.transaction_id
                 else:
                     logger.error(
                         "No response received from verify api call "
