@@ -19,5 +19,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*yougotagift.com",
     "https://*yougotagift.co",
     "http://localhost:3000",
+    "https://localhost:3000",
+    
 ]
 CORS_ORIGIN_ALLOW_ALL = True
