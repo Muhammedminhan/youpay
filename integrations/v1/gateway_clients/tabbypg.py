@@ -88,7 +88,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
-                print("\n\npayment_data_to_send", payment_data_to_send)
                 response = requests.post(url, data=payment_data_to_send,
                                          headers=headers)
                 logger.info("TabbyPG response is {}".format(response))
