@@ -4,8 +4,8 @@ import logging
 import requests
 from rest_framework import status
 
-from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, \
-    REQUEST_METHOD_GET
+from core.constants import (
+    REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
