@@ -10,7 +10,7 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     invoice_id = serializers.SerializerMethodField()
     payment_reference = serializers.SerializerMethodField()
 
-    loyality_level = serializers.SerializerMethodField()
+    loyalty_level = serializers.SerializerMethodField()
     registered_since = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
     platform = serializers.SerializerMethodField()
@@ -42,8 +42,12 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     def get_payment_reference(self, data):
         return data.get('transaction_data').get("payment_reference")
 
-    def get_loyality_level(self, data):
-        return data.get("loyality_level")
+    def get_loyalty_level(self, data):
+        loyalty_level = data.get("loyalty_level")
+        if loyalty_level:
+            return int(data.get("loyalty_level"))
+        else:
+            return 0
 
     def get_registered_since(self, data):
         return data.get('transaction_data').get("registered_since")

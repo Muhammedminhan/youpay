@@ -16,8 +16,9 @@ from integrations.messages import TABBYPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.tabbypg_payment_request import (
     TabbyPGPaymentRequestSerializer
 )
-from payments.constants import PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID, \
-    PAYMENT_STATUS_CANCELLED
+from payments.constants import (
+    PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_TABBY)
 from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -81,12 +82,13 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     "Youpay sending payment data is {}".format(payment_data))
                 request_data = data.get('request_data')
                 payment_data_to_send = json.dumps(payment_data)
-                url = self.tabbypg_config.domain + TABBYPG_CREATE_PAYMENT_ENDPOINT
+                url = (self.tabbypg_config.domain +
+                       TABBYPG_CREATE_PAYMENT_ENDPOINT)
                 headers = self.get_payment_header()
 
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
-
+                print("\n\npayment_data_to_send", payment_data_to_send)
                 response = requests.post(url, data=payment_data_to_send,
                                          headers=headers)
                 logger.info("TabbyPG response is {}".format(response))
@@ -111,19 +113,21 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     if response_data.get(
                             'status') == 200 and response_data.get(
                         'is_redirect') is True:
-                        self.update_youpay_transaction_data(
-                            {
-                                'transaction_id': data.get(
-                                    'transaction_data').get('transaction_id'),
-                                "payment_status": PAYMENT_STATUS_PENDING,
-                                "payment_reference": response_data.get(
-                                    "reference_id"),
-                                "payment_gateway": PAYMENT_GATEWAY_TABBYPG,
-                                "channel_code": payment_data.get(
-                                    "channel_code"),
-                                "payment_method": "",
-                            }
-                        )
+                        update_data = {
+                            'transaction_id': data.get(
+                                'transaction_data').get('transaction_id'),
+
+                            "payment_status": PAYMENT_STATUS_PENDING,
+                            "payment_gateway": PAYMENT_GATEWAY_TABBYPG,
+                            "channel_code": TABBYPG_HUB_CODE,
+                            "payment_method": PAYMENT_METHOD_TABBY,
+
+                            "payment_reference": response_data.get(
+                                "payment_ref_no"),
+                        }
+
+                        self.update_youpay_transaction_data(update_data)
+
                     return response.json(), self.SUCCESS
 
                 return None, self.TABBYPG_CONNECTION_ERROR
@@ -144,7 +148,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         """
         url = self.tabbypg_config.domain + TABBYPG_VERIFY_PAYMENT_ENDPOINT
         transaction_id = data.get('transaction_id')
-        youpay_transaction = self.get_youpay_transaction_data(transaction_id)
 
         params = {
             'payment_id': data.get('payment_id'),
@@ -170,12 +173,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
             if response_data.get('is_capture'):
                 payment_status = PAYMENT_STATUS_PAID
-                # payment_reference = "asd"
                 approved = True
                 response_summary = "Payment successful"
             else:
                 payment_status = PAYMENT_STATUS_CANCELLED
-                # payment_reference = "asd"
                 approved = False
                 response_summary = "Payment failed"
 
@@ -183,10 +184,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 {
                     'transaction_id': transaction_id,
                     "payment_status": payment_status,
-                    # "payment_reference": payment_reference,
                     "approved": approved,
                     "response_summary": response_summary,
-
                 }
             )
             redirect, response_data = is_redirect(transaction_id,

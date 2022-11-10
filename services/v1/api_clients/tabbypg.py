@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string, get_site_domain
+from integrations.constants import TABBYPG_HUB_CODE
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -24,6 +25,7 @@ class CreateSession(YouPayTransactionCRUD, APIView, ClientValidator):
         try:
             site_domain = get_site_domain(request)
             transaction_id = request.data.get('transaction_id')
+            loyalty_level = request.data.get('loyalty_level', "0")
 
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
@@ -33,9 +35,10 @@ class CreateSession(YouPayTransactionCRUD, APIView, ClientValidator):
                 transaction_data = serializer.data
                 payment_data = {
                     'transaction_data': transaction_data,
-                    'request_data': "request.data",
-                    "language": "en",
-                    "loyality_level": "0",
+                    'request_data': request.data,
+                    "language": transaction_obj.language,
+                    "loyalty_level": loyalty_level,
+                    "channel_code": TABBYPG_HUB_CODE,
                     'site_domain': site_domain}
 
                 tabbypg = TabbyPGManager()
