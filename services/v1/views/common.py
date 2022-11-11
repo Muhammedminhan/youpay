@@ -3,6 +3,9 @@ import logging
 from rest_framework import status
 
 from core.messages import ERROR_MISSING_FIELDS
+from core.messages import (
+    REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
+)
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
@@ -10,7 +13,6 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
-from services.utils import get_payment_redirect_url
 
 logger = logging.getLogger(__name__)
 
@@ -123,8 +125,8 @@ class PaymentRequestDataValidator(object):
 
 def is_redirect(transaction_id, transaction_message):
     logger.info(
-        "is_redirect called for transaction_id: {}\nCheckoutpg Response: {}"
-        .format(transaction_id, transaction_message))
+        "is_redirect called for transaction_id: {}\nPayment Gateway Response:"
+        "{}".format(transaction_id, transaction_message))
     response_data = None
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
@@ -133,25 +135,26 @@ def is_redirect(transaction_id, transaction_message):
 
     response_code = transaction_message.get('response_code', None)
     if response_code in RESPONSE_CODE_LIST or is_fraud:
-        front_end_redirect_url = get_payment_redirect_url()
+        redirect_url = None
         response_data = {
-            "redirect": True,
-            "redirect_url": front_end_redirect_url,
-            "transaction_message": transaction_message
+            IS_REDIRECT: False,
+            REDIRECT_URL: redirect_url,
+            TRANSACTION_MSG: transaction_message
         }
         return True, response_data
 
     if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
+
         response_data = {
-            "is_redirect": True,
-            "redirect_url": youpay_transaction.success_url,
-            "transaction_message": transaction_message
+            IS_REDIRECT: True,
+            REDIRECT_URL: youpay_transaction.success_url,
+            TRANSACTION_MSG: transaction_message
         }
         return True, response_data
     else:
         response_data = {
-            "is_redirect": True,
-            "redirect_url": youpay_transaction.failure_url,
-            "transaction_message": transaction_message
+            IS_REDIRECT: True,
+            REDIRECT_URL: youpay_transaction.failure_url,
+            TRANSACTION_MSG: transaction_message
         }
         return False, response_data

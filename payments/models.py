@@ -54,7 +54,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     payment_status = models.CharField(
         max_length=20, null=True, blank=True,
         choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
-    session_id = models.CharField(max_length=120, null=True, blank=True)
+    session_id = models.CharField(max_length=500, null=True, blank=True)
     channel_code = models.CharField(
         max_length=120, null=True, blank=True,
         help_text="Channel code used for the transaction, if transaction is"
@@ -123,6 +123,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                 help_text="to identify the language")
     order_items = models.JSONField(null=True, blank=True,
                                    help_text="used to store order history")
+    loyalty_level = models.IntegerField(
+        null=True, blank=True, default=0,
+        help_text="used to store loyalty level")
 
 
 @receiver(post_save, sender=YouPayTransactionData)

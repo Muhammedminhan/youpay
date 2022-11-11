@@ -133,3 +133,9 @@ venv/
 media/
 static
 
+#localbackup
+
+db.json
+*.sql
+
+

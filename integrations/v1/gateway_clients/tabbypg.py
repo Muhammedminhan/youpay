@@ -4,17 +4,22 @@ import logging
 import requests
 from rest_framework import status
 
-from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG
+from core.constants import (
+    REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
-    PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE
+    PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE,
+    TABBYPG_VERIFY_PAYMENT_ENDPOINT, PAYMENT_REQUEST_VERIFY
 )
 from integrations.messages import TABBYPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.tabbypg_payment_request import (
     TabbyPGPaymentRequestSerializer
 )
-from payments.constants import PAYMENT_STATUS_PENDING
+from payments.constants import (
+    PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_TABBY)
+from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -49,7 +54,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
     def create_session(self, data):
         """
         Method for creating session with Tabbypg
-        Sample data input : TABBY_CREATE_SESSION_SAMPLE_BODY
         Step 1 : get transaction id
         Step 2 : get youpaytransaction data corresponding to transaction id
         Step 3 : communicate with tabbypg gateway to create session
@@ -78,12 +82,12 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     "Youpay sending payment data is {}".format(payment_data))
                 request_data = data.get('request_data')
                 payment_data_to_send = json.dumps(payment_data)
-                url = self.tabbypg_config.domain + TABBYPG_CREATE_PAYMENT_ENDPOINT
+                url = (self.tabbypg_config.domain +
+                       TABBYPG_CREATE_PAYMENT_ENDPOINT)
                 headers = self.get_payment_header()
 
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
-
                 response = requests.post(url, data=payment_data_to_send,
                                          headers=headers)
                 logger.info("TabbyPG response is {}".format(response))
@@ -108,19 +112,21 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     if response_data.get(
                             'status') == 200 and response_data.get(
                         'is_redirect') is True:
-                        self.update_youpay_transaction_data(
-                            {
-                                'transaction_id': data.get(
-                                    'transaction_data').get('transaction_id'),
-                                "payment_status": PAYMENT_STATUS_PENDING,
-                                "payment_reference": response_data.get(
-                                    "reference_id"),
-                                "payment_gateway": PAYMENT_GATEWAY_TABBYPG,
-                                "channel_code": payment_data.get(
-                                    "channel_code"),
-                                "payment_method": "",
-                            }
-                        )
+                        update_data = {
+                            'transaction_id': data.get(
+                                'transaction_data').get('transaction_id'),
+
+                            "payment_status": PAYMENT_STATUS_PENDING,
+                            "payment_gateway": PAYMENT_GATEWAY_TABBYPG,
+                            "channel_code": TABBYPG_HUB_CODE,
+                            "payment_method": PAYMENT_METHOD_TABBY,
+
+                            "payment_reference": response_data.get(
+                                "payment_ref_no"),
+                        }
+
+                        self.update_youpay_transaction_data(update_data)
+
                     return response.json(), self.SUCCESS
 
                 return None, self.TABBYPG_CONNECTION_ERROR
@@ -139,5 +145,56 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         """
         Method for verifying session with Tabbypg
         """
+        url = self.tabbypg_config.domain + TABBYPG_VERIFY_PAYMENT_ENDPOINT
+        transaction_id = data.get('transaction_id')
 
-        pass
+        params = {
+            'payment_id': data.get('payment_id'),
+        }
+        response = requests.get(url, params=params)
+
+        transaction_obj = self.get_youpay_transaction_data(transaction_id)
+
+        # storing Youpay to payment gateway request and response data
+        self.create_youpay_to_payment_gateways_data(
+            transaction_obj=transaction_obj,
+            transaction_id=transaction_id,
+            request_data=json.dumps(params),
+            response_data=response.text,
+            request_type=PAYMENT_REQUEST_VERIFY,
+            request_method=REQUEST_METHOD_GET,
+        )
+
+        if response:
+            response_data = response.json()
+            logger.info(
+                "Verify payment response data \n{}".format(response_data))
+
+            if response_data.get('is_capture'):
+                payment_status = PAYMENT_STATUS_PAID
+                approved = True
+                response_summary = "Payment successful"
+            else:
+                payment_status = PAYMENT_STATUS_CANCELLED
+                approved = False
+                response_summary = "Payment failed"
+
+            self.update_youpay_transaction_data(
+                {
+                    'transaction_id': transaction_id,
+                    "payment_status": payment_status,
+                    "approved": approved,
+                    "response_summary": response_summary,
+                }
+            )
+            redirect, response_data = is_redirect(transaction_id,
+                                                  response_data)
+            if redirect:
+                return response_data, self.SUCCESS
+            else:
+                return response_data, self.PAYMENT_FAILED
+        else:
+            logger.error(
+                "Error while verifying_payment status: {}, reason {} \n"
+                .format(response.status_code, response.reason))
+            return None, self.CHECKOUTPG_CONNECTION_ERROR
