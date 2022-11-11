@@ -34,12 +34,11 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
         else:
             logger.error("No response received from b2cpayback point "
-                         "balance endpoint {}".format(response.text))
+                         "balance endpoint {}".format(response))
             response = {'errors': {
                 'code': 400, 'message': "youpay b2cpayback point balance"
                                         " method failed"}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
