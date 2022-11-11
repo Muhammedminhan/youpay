@@ -178,5 +178,5 @@ def add_payment_gateway_info_in_url(url, params, code):
     Method to add payment gateway info in url
     sample : https://fe-domain.com/payment-response/+ params + hubcode
     """
-    url = url + params + "&payment_gateway=" + code
+    url = url + params + "&gty=" + code
     return url
