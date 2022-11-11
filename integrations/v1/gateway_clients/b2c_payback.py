@@ -76,13 +76,7 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
-                if response:
-                    return response.json(), transaction_obj.transaction_id
-                else:
-                    logger.error(
-                        "No response received from point balance api call "
-                        "to b2cpayback")
-                    return None, None
+                return response, transaction_obj.transaction_id
             except Exception as e:
                 logger.error("point balance api call to b2cpayback failed ",
                              exc_info=e)

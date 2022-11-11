@@ -23,16 +23,23 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
     def post(self, request):
         payback = B2CPaybackManager()
         response, transaction_id = payback.get_point_balance(request.data)
-        if response:
+        if response and response.status_code == 200:
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK
             })
-            return Response(response, status=status.HTTP_200_OK)
+            return Response(response.json(), status=status.HTTP_200_OK)
+        elif response.status_code == 400:
+            return Response(response.json(),
+                            status=status.HTTP_400_BAD_REQUEST)
         else:
+            logger.error("No response received from b2cpayback point "
+                         "balance endpoint {}".format(response.text))
             response = {'errors': {
-                'code': 400, 'message': "youpay point balance method failed"}}
+                'code': 400, 'message': "youpay b2cpayback point balance"
+                                        " method failed"}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
