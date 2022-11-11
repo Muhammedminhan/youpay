@@ -17,7 +17,6 @@ class TabbyWebhookListener(APIView):
     authentication_classes = (SignatureAuthentication,)
 
     def post(self, request):
-        print("INFO : Webhook request is {}".format(request.data))
         response_data = {}
         logger.info("webhook triggered {}".format(request))
         request_data = json.loads(request.data)

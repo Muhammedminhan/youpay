@@ -27,6 +27,7 @@ class SignatureAuthentication(authentication.BaseAuthentication):
             client_api_key = settings.TABBYPG_API_KEY
             return client_api_key
         except Exception as e:
+            logger.info("Exception in fetch_user_data: {}".format(e))
             return None
 
     def authenticate(self, request):
@@ -41,8 +42,9 @@ class SignatureAuthentication(authentication.BaseAuthentication):
         client_api_key = self.fetch_user_data(api_key)
 
         if client_api_key != api_key:
-            logger.info("API key {} and client api key {} are not matching"
-                        "".format(api_key, client_api_key))
+            logger.info(
+                "API key :'{}', and client api key :'{}', not matching"
+                "".format(api_key, client_api_key))
             raise exceptions.AuthenticationFailed('Bad signature')
 
         return (user, api_key)
