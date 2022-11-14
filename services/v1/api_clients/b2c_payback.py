@@ -24,7 +24,6 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
     def post(self, request):
         payback = B2CPaybackManager()
         response, transaction_id = payback.get_point_balance(request.data)
-        print(response)
         if response and response.status_code == 200:
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,

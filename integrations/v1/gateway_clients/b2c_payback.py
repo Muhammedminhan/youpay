@@ -17,7 +17,6 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
 from core.utils import ( get_payment_gateway_config,
                          get_app_config, decrypt_string
                          )
-from services.v1.views.common import YouPayTransactionCRUD
 from integrations.v1.gateway_clients.utils import (
                                     format_adcb_point_balance_data,
                                     format_adcb_authenticate_data,
@@ -31,11 +30,13 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
 from payments.serializers.youpay_payments import (
                                     YouPayTransactionDataSerializer
                                     )
+from services.v1.views.payment_handlers import PaymentHandlers
+from core.constants import  REQUEST_METHOD_POST
 
 logger = logging.getLogger(__name__)
 
 
-class B2CPaybackManager(APIView, YouPayTransactionCRUD):
+class B2CPaybackManager(APIView, PaymentHandlers):
     """
     Class to manage b2cpayback related operations
     """
@@ -82,6 +83,13 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=request_data_json,
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                )
                 return response, transaction_obj.transaction_id
             except Exception as e:
                 logger.error("point balance api call to b2cpayback failed ",
