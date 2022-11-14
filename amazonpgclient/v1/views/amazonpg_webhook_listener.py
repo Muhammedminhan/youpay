@@ -7,12 +7,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from amazonpgclient.models import AmazonPGTransactionData
+from amazonpgclient.libs.authentication import SignatureAuthentication
 from django.db import transaction as db_transaction
 
 logger = logging.getLogger(__name__)
 
 
 class WebhookListener(APIView):
+
+    authentication_classes = [SignatureAuthentication]
 
     def post(self, request):
 
