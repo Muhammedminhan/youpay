@@ -13,6 +13,7 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
+from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)
 
@@ -158,3 +159,15 @@ def is_redirect(transaction_id, transaction_message):
             TRANSACTION_MSG: transaction_message
         }
         return False, response_data
+
+
+def get_api_key_from_payment_gateway(hubcode):
+    """Method to get api key from payment gateway"""
+    try:
+        payment_gateway = PaymentGateway.objects.get(code=hubcode)
+        return payment_gateway.api_key
+    except PaymentGateway.DoesNotExist:
+        logger.error(
+            "Unable to find payment gateway for hubcode '{}' ".format(
+                hubcode))
+        return None

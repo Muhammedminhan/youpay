@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class WebhookListener(APIView):
 
-    authentication_classes = [SignatureAuthentication]
+    authentication_classes = (SignatureAuthentication,)
 
     def post(self, request):
 
