@@ -5,6 +5,18 @@ from integrations.constants import TABBYPG_HUB_CODE
 from services.v1.views.common import add_payment_gateway_info_in_url
 
 
+def validate_tabby_amount(data):
+    # in case of SAR currency, amount should between 1 and 1500
+    if data.get('amount') < 0 or data.get('amount') > 1500:
+        raise serializers.ValidationError(
+            {'amount': 'Amount should be in range 0 to 1500'})
+
+
+class TabbyPGRequestValidator(serializers.Serializer):
+    # amount
+    pass
+
+
 class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     currency = serializers.SerializerMethodField()
     amount = serializers.SerializerMethodField()
