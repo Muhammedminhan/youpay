@@ -6,6 +6,7 @@ from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
 )
+from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
@@ -158,3 +159,24 @@ def is_redirect(transaction_id, transaction_message):
             TRANSACTION_MSG: transaction_message
         }
         return False, response_data
+
+
+def get_api_key_from_payment_gateway(hubcode):
+    """Method to get api key from payment gateway"""
+    try:
+        payment_gateway = PaymentGateway.objects.get(code=hubcode)
+        return payment_gateway.api_key
+    except PaymentGateway.DoesNotExist:
+        logger.error(
+            "Unable to find payment gateway for hubcode '{}' ".format(
+                hubcode))
+        return None
+
+
+def add_payment_gateway_info_in_url(url, params, code):
+    """
+    Method to add payment gateway info in url
+    sample : https://fe-domain.com/payment-response/+ params + hubcode
+    """
+    url = url + params + "&gty=" + code
+    return url

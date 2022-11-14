@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from core.utils import get_app_config
+from integrations.constants import TABBYPG_HUB_CODE
+from services.v1.views.common import add_payment_gateway_info_in_url
 
 
 class TabbyPGPaymentRequestSerializer(serializers.Serializer):
@@ -88,5 +90,8 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
 
 def common_response_url(data):
     url = get_app_config().front_end_redirect_url
-    return url + '?id=' + data.get('transaction_data').get(
+    params = '?id=' + data.get('transaction_data').get(
         'transaction_id')
+
+    return add_payment_gateway_info_in_url(url, params,
+                                           TABBYPG_HUB_CODE)
