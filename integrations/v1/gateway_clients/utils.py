@@ -71,3 +71,10 @@ def format_adcb_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
     request_data['channel_code'] = ADCB_CLIENT_CODE
     return request_data
+
+def get_adcb_redirect_url(response_data, transaction_obj):
+    if (response_data.get("results").get("payment_status") and
+            response_data.get("results").get("redemption_status")):
+        return transaction_obj.success_url
+    else:
+        return transaction_obj.failure_url

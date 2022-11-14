@@ -1,3 +1,4 @@
+import json
 import logging
 
 from rest_framework.views import APIView
@@ -23,15 +24,20 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
     def post(self, request):
         payback = B2CPaybackManager()
         response, transaction_id = payback.get_point_balance(request.data)
-        if response:
+        if response and response.status_code == 200:
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK
             })
-            return Response(response, status=status.HTTP_200_OK)
+            return Response(response.json(), status=status.HTTP_200_OK)
         else:
-            response = {'errors': {
-                'code': 400, 'message': "youpay point balance method failed"}}
+            response_text = json.loads(response.text)
+            resp_code = response_text.get('code', False)
+            message = response_text.get('message', None)
+            logger.error("Failed response received from b2cpayback point "
+                         "balance endpoint {}".format(response_text))
+            response = {'error': {
+                'code': resp_code, 'message': message}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -98,9 +104,14 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
 class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
-    def post(self, request):
+    def get(self, request, *args, **kwargs):
         payback = B2CPaybackManager()
-        response, transaction_id = payback.verification(request.data)
+        payment_data = {'transaction_id': request.query_params.get('id'),
+                        'redemption_reference_id': request.query_params.get(
+                            'redemption_reference_id'),
+                        'cko-session-id': request.query_params.get(
+                            'cko-session-id')}
+        response, transaction_id = payback.verification(payment_data)
         if response:
             if response.get('results',"").get('payment_status',"") == True:
                 update_data = {
