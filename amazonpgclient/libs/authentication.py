@@ -72,7 +72,7 @@ class SignatureAuthentication(authentication.BaseAuthentication):
     def fetch_user_data(self, api_key):
         """Retuns (User instance, API Secret) or None if api_key is bad."""
         try:
-            api_secret = settings.CHECKOUTPG_API_SECRET
+            api_secret = settings.AMAZONPG_API_SECRET
             return api_secret
         except Exception:
             return None
