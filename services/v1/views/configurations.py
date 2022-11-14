@@ -186,6 +186,14 @@ class ConfigViewSet(ViewSet):
             if transaction.payment_status in self.list_failure_statuses:
                 redirect_url = transaction.failure_url
 
+            if transaction.payment_status == PAYMENT_STATUS_CANCELLED:
+                redirect_url = transaction.cancel_url
+
+            # add transaction id in response
+            if redirect_url:
+                redirect_url = (redirect_url + '?transaction_id=' +
+                                str(transaction.transaction_id))
+
         response_data = {
             "data": {
                 "payment_options": payment_options,
