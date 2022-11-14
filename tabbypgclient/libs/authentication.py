@@ -1,8 +1,10 @@
 import logging
 
-from django.conf import settings
 from rest_framework import authentication
 from rest_framework import exceptions
+
+from integrations.constants import TABBYPG_HUB_CODE
+from services.v1.views.common import get_api_key_from_payment_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -22,11 +24,14 @@ class SignatureAuthentication(authentication.BaseAuthentication):
         return 'HTTP_%s' % header_name.replace('-', '_').upper()
 
     def fetch_user_data(self, api_key):
-        """Retuns (User instance, API Secret) or None if api_key is bad."""
+        """Returns (User instance, API Secret) or None if api_key is bad."""
         try:
-            client_api_key = settings.TABBYPG_API_KEY
+            client_api_key = get_api_key_from_payment_gateway(
+                TABBYPG_HUB_CODE)
             return client_api_key
+
         except Exception as e:
+            logger.info("Exception in fetch_user_data: {}".format(e))
             return None
 
     def authenticate(self, request):
@@ -39,10 +44,10 @@ class SignatureAuthentication(authentication.BaseAuthentication):
             logger.info("Authentication failed due to api key not exists")
             return None
         client_api_key = self.fetch_user_data(api_key)
-
         if client_api_key != api_key:
-            logger.info("API key {} and client api key {} are not matching"
-                        "".format(api_key, client_api_key))
+            logger.info(
+                "API key :'{}', and client api key :'{}', not matching"
+                "".format(api_key, client_api_key))
             raise exceptions.AuthenticationFailed('Bad signature')
 
         return (user, api_key)
