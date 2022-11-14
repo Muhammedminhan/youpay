@@ -273,6 +273,9 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             'transaction_id': transaction_id,
             'payment_status': PAYMENT_STATUS_CANCELLED
         })
+
+        redirect_url = (transaction_object.cancel_url +
+                        '?transaction_id=' + transaction_id)
         return Response({
-            REDIRECT_URL: transaction_object.cancel_url,
+            REDIRECT_URL: redirect_url,
         })

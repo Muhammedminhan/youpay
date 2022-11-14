@@ -3,15 +3,10 @@ import json
 import requests
 import logging
 
-from django.conf import settings
 from rest_framework.views import APIView
 from services.v1.constants import ( B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                     B2C_PAYBACK_CONFIG_ENDPOINT
                                     )
-from integrations.models import PaymentGateway
-from services.v1.views.payment import PaymentRequestView
-from services.v1.views.payment_handlers import PaymentHandlers
-from services.v1.constants import B2C_PAYBACK_YOUPAY_PRODUCT_CODE
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE,
                                     B2CP_CACHE_KEY,
@@ -22,7 +17,6 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
 from core.utils import ( get_payment_gateway_config,
                          get_app_config, decrypt_string
                          )
-from services.v1.views.common import YouPayTransactionCRUD
 from integrations.v1.gateway_clients.utils import (
                                     format_adcb_point_balance_data,
                                     format_adcb_authenticate_data,
@@ -30,12 +24,19 @@ from integrations.v1.gateway_clients.utils import (
                                     format_adcb_verify_data,
                                     get_adcb_redirect_url
                                     )
-from services.utils import get_payment_redirect_url
+from integrations.v1.serializers.b2c_payback_payment_request import (
+                                    PointBalanceRequestSerializer
+                                    )
+from payments.serializers.youpay_payments import (
+                                    YouPayTransactionDataSerializer
+                                    )
+from services.v1.views.payment_handlers import PaymentHandlers
+from core.constants import  REQUEST_METHOD_POST
 
 logger = logging.getLogger(__name__)
 
 
-class B2CPaybackManager(APIView, YouPayTransactionCRUD):
+class B2CPaybackManager(APIView, PaymentHandlers):
     """
     Class to manage b2cpayback related operations
     """
@@ -67,22 +68,29 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
             try:
                 transaction_obj = self.get_youpay_transaction_data(
                     decrypt_string(request_transaction_id))
-                formatted_data = format_adcb_point_balance_data(
-                    request_data, transaction_obj)
-                request_data_json = json.dumps(formatted_data)
+                transaction_data = YouPayTransactionDataSerializer(
+                    transaction_obj)
+                request_dict = {
+                    'data' : request_data,
+                    'transaction_data' : transaction_data.data
+                }
+                balance_request_data = PointBalanceRequestSerializer(
+                    request_dict)
+                request_data_json = json.dumps(balance_request_data.data)
                 b2c_gateway_obj = get_payment_gateway_config(
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
-                if response:
-                    return response.json(), transaction_obj.transaction_id
-                else:
-                    logger.error(
-                        "No response received from point balance api call "
-                        "to b2cpayback")
-                    return None, None
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=request_data_json,
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                )
+                return response, transaction_obj.transaction_id
             except Exception as e:
                 logger.error("point balance api call to b2cpayback failed ",
                              exc_info=e)
