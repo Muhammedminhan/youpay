@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'services',
     'payments',
     'checkoutpgclient',
+    'amazonpgclient',
 
     # 3rd party apps
     'rest_framework',
