@@ -1,5 +1,9 @@
 from rest_framework import serializers
 
+from core.utils import get_app_config
+from integrations.constants import TABBYPG_HUB_CODE
+from services.v1.views.common import add_payment_gateway_info_in_url
+
 
 class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     currency = serializers.SerializerMethodField()
@@ -8,7 +12,7 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     invoice_id = serializers.SerializerMethodField()
     payment_reference = serializers.SerializerMethodField()
 
-    loyality_level = serializers.SerializerMethodField()
+    loyalty_level = serializers.SerializerMethodField()
     registered_since = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
     platform = serializers.SerializerMethodField()
@@ -40,8 +44,12 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     def get_payment_reference(self, data):
         return data.get('transaction_data').get("payment_reference")
 
-    def get_loyality_level(self, data):
-        return data.get("loyality_level")
+    def get_loyalty_level(self, data):
+        loyalty_level = data.get("loyalty_level")
+        if loyalty_level:
+            return int(data.get("loyalty_level"))
+        else:
+            return 0
 
     def get_registered_since(self, data):
         return data.get('transaction_data').get("registered_since")
@@ -71,10 +79,19 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("customer_phone")
 
     def get_cancel_url(self, data):
-        return data.get('transaction_data').get("cancel_url")
+        return common_response_url(data)
 
     def get_failure_url(self, data):
-        return data.get('transaction_data').get("failure_url")
+        return common_response_url(data)
 
     def get_success_url(self, data):
-        return data.get('transaction_data').get("success_url")
+        return common_response_url(data)
+
+
+def common_response_url(data):
+    url = get_app_config().front_end_redirect_url
+    params = '?id=' + data.get('transaction_data').get(
+        'transaction_id')
+
+    return add_payment_gateway_info_in_url(url, params,
+                                           TABBYPG_HUB_CODE)
