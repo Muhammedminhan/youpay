@@ -3,15 +3,10 @@ import json
 import requests
 import logging
 
-from django.conf import settings
 from rest_framework.views import APIView
 from services.v1.constants import ( B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                     B2C_PAYBACK_CONFIG_ENDPOINT
                                     )
-from integrations.models import PaymentGateway
-from services.v1.views.payment import PaymentRequestView
-from services.v1.views.payment_handlers import PaymentHandlers
-from services.v1.constants import B2C_PAYBACK_YOUPAY_PRODUCT_CODE
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE,
                                     B2CP_CACHE_KEY,
@@ -30,7 +25,12 @@ from integrations.v1.gateway_clients.utils import (
                                     format_adcb_verify_data,
                                     get_adcb_redirect_url
                                     )
-from services.utils import get_payment_redirect_url
+from integrations.v1.serializers.b2c_payback_payment_request import (
+                                    PointBalanceRequestSerializer
+                                    )
+from payments.serializers.youpay_payments import (
+                                    YouPayTransactionDataSerializer
+                                    )
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +67,15 @@ class B2CPaybackManager(APIView, YouPayTransactionCRUD):
             try:
                 transaction_obj = self.get_youpay_transaction_data(
                     decrypt_string(request_transaction_id))
-                formatted_data = format_adcb_point_balance_data(
-                    request_data, transaction_obj)
-                request_data_json = json.dumps(formatted_data)
+                transaction_data = YouPayTransactionDataSerializer(
+                    transaction_obj)
+                request_dict = {
+                    'data' : request_data,
+                    'transaction_data' : transaction_data.data
+                }
+                balance_request_data = PointBalanceRequestSerializer(
+                    request_dict)
+                request_data_json = json.dumps(balance_request_data.data)
                 b2c_gateway_obj = get_payment_gateway_config(
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain

@@ -1,3 +1,4 @@
+import json
 import logging
 
 from rest_framework.views import APIView
@@ -23,21 +24,21 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
     def post(self, request):
         payback = B2CPaybackManager()
         response, transaction_id = payback.get_point_balance(request.data)
+        print(response)
         if response and response.status_code == 200:
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK
             })
             return Response(response.json(), status=status.HTTP_200_OK)
-        elif response.status_code == 400:
-            return Response(response.json(),
-                            status=status.HTTP_400_BAD_REQUEST)
         else:
-            logger.error("No response received from b2cpayback point "
-                         "balance endpoint {}".format(response))
-            response = {'errors': {
-                'code': 400, 'message': "youpay b2cpayback point balance"
-                                        " method failed"}}
+            response_text = json.loads(response.text)
+            resp_code = response_text.get('code', False)
+            message = response_text.get('message', None)
+            logger.error("Failed response received from b2cpayback point "
+                         "balance endpoint {}".format(response_text))
+            response = {'error': {
+                'code': resp_code, 'message': message}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
