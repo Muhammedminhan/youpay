@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from amazonpgclient.models import AmazonPGTransactionData
 from amazonpgclient.libs.authentication import SignatureAuthentication
 from django.db import transaction as db_transaction
+from amazonpgclient.utils import wait_redis_lock
 
 logger = logging.getLogger(__name__)
 
@@ -25,54 +26,58 @@ class WebhookListener(APIView):
             payment_reference = request_data.get('payment_reference', None)
             logger.info("Amazonpg webhook received for payment {}".format(
                 payment_reference))
-            transaction_obj = self.get_transaction_object(payment_reference)
 
-            if transaction_obj:
-                transaction_obj.payment_status = request_data.get(
-                    'payment_status')
-                transaction_obj.apg_payment_status = request_data.get(
-                    'apg_payment_status')
-                transaction_obj.authorization_code = request_data.get(
-                    'authorization_code', None)
-                transaction_obj.response_code = request_data.get(
-                    'response_code', None)
-                transaction_obj.response_message = request_data.get(
-                    'response_message', None)
-                transaction_obj.acquirer_response_code = request_data.get(
-                    'acquirer_response_code', None)
-                transaction_obj.fort_id = request_data.get('fort_id', None)
+            lock_name = 'lock:AmazonPGWebhookListener:invoice_%d' % (1,)
+            with wait_redis_lock(lock_name=lock_name):
+                transaction_obj = self.get_transaction_object(
+                    payment_reference)
+                if transaction_obj:
+                    transaction_obj.payment_status = request_data.get(
+                        'payment_status')
+                    transaction_obj.apg_payment_status = request_data.get(
+                        'apg_payment_status')
+                    transaction_obj.authorization_code = request_data.get(
+                        'authorization_code', None)
+                    transaction_obj.response_code = request_data.get(
+                        'response_code', None)
+                    transaction_obj.response_message = request_data.get(
+                        'response_message', None)
+                    transaction_obj.acquirer_response_code = request_data.get(
+                        'acquirer_response_code', None)
+                    transaction_obj.fort_id = request_data.get('fort_id', None)
 
-                transaction_obj.save()
-            else:
-                transaction_obj = AmazonPGTransactionData.objects.create(
-                    customer_email=request_data.get('customer_email'),
-                    customer_phone=request_data.get('customer_phone'),
-                    customer_name=request_data.get('customer_name'),
-                    transaction_id=request_data.get('transaction_id'),
-                    amount=decimal.Decimal(request_data.get('amount')),
-                    currency=request_data.get('currency'),
-                    invoice_id=request_data.get('invoice_id'),
-                    order_reference=request_data.get('order_reference'),
-                    payment_reference=request_data.get('payment_reference'),
-                    fort_id=request_data.get('fort_id'),
-                    payment_status=request_data.get('payment_status'),
-                    apg_payment_status=request_data.get(
-                        'apg_payment_status'),
-                    card_bin=request_data.get('card_bin'),
-                    card_last4=request_data.get('card_last4'),
-                    authorization_code=request_data.get(
-                        'authorization_code'),
-                    response_code=request_data.get('response_code'),
-                    response_message=request_data.get('response_message'),
-                    acquirer_response_code=request_data.get(
-                        'acquirer_response_code')
-                )
-            response_data = {'message': "AmazonPG webhook listener "
-                                        "successfully processed data",
-                             'status': True}
-            logger.info("Amazonpg webhook successfully processed "
-                        "for payment {}".format(payment_reference))
-            return self.pg_response('HTTP_200_OK', data=response_data)
+                    transaction_obj.save()
+                else:
+                    transaction_obj = AmazonPGTransactionData.objects.create(
+                        customer_email=request_data.get('customer_email'),
+                        customer_phone=request_data.get('customer_phone'),
+                        customer_name=request_data.get('customer_name'),
+                        transaction_id=request_data.get('transaction_id'),
+                        amount=decimal.Decimal(request_data.get('amount')),
+                        currency=request_data.get('currency'),
+                        invoice_id=request_data.get('invoice_id'),
+                        order_reference=request_data.get('order_reference'),
+                        payment_reference=request_data.get(
+                            'payment_reference'),
+                        fort_id=request_data.get('fort_id'),
+                        payment_status=request_data.get('payment_status'),
+                        apg_payment_status=request_data.get(
+                            'apg_payment_status'),
+                        card_bin=request_data.get('card_bin'),
+                        card_last4=request_data.get('card_last4'),
+                        authorization_code=request_data.get(
+                            'authorization_code'),
+                        response_code=request_data.get('response_code'),
+                        response_message=request_data.get('response_message'),
+                        acquirer_response_code=request_data.get(
+                            'acquirer_response_code')
+                    )
+                response_data = {'message': "AmazonPG webhook listener "
+                                            "successfully processed data",
+                                 'status': True}
+                logger.info("Amazonpg webhook successfully processed "
+                            "for payment {}".format(payment_reference))
+                return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
             response_data = {'message': "Data not  updated", 'status': False}
             logger.error("Amazontpg webhook failed with error {}".format(e))
