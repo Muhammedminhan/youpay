@@ -6,6 +6,7 @@ from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
 )
+from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import YouPayTransactionData
 from payments.serializers.youpay_payments import (
@@ -126,8 +127,8 @@ class PaymentRequestDataValidator(object):
 
 def is_redirect(transaction_id, transaction_message):
     logger.info(
-        "is_redirect called for transaction_id: {}\nCheckoutpg Response: {}"
-        .format(transaction_id, transaction_message))
+        "is_redirect called for transaction_id: {}\nPayment Gateway Response:"
+        "{}".format(transaction_id, transaction_message))
     response_data = None
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
@@ -146,16 +147,21 @@ def is_redirect(transaction_id, transaction_message):
 
     if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
 
+        redirect_url = (youpay_transaction.success_url +
+                        '?transaction_id=' + transaction_id)
+
         response_data = {
             IS_REDIRECT: True,
-            REDIRECT_URL: youpay_transaction.success_url,
+            REDIRECT_URL: redirect_url,
             TRANSACTION_MSG: transaction_message
         }
         return True, response_data
     else:
+        redirect_url = (youpay_transaction.failure_url +
+                        '?transaction_id=' + transaction_id)
         response_data = {
             IS_REDIRECT: True,
-            REDIRECT_URL: youpay_transaction.failure_url,
+            REDIRECT_URL: redirect_url,
             TRANSACTION_MSG: transaction_message
         }
         return False, response_data
@@ -171,3 +177,12 @@ def get_api_key_from_payment_gateway(hubcode):
             "Unable to find payment gateway for hubcode '{}' ".format(
                 hubcode))
         return None
+
+
+def add_payment_gateway_info_in_url(url, params, code):
+    """
+    Method to add payment gateway info in url
+    sample : https://fe-domain.com/payment-response/+ params + hubcode
+    """
+    url = url + params + "&gty=" + code
+    return url

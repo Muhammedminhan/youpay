@@ -34,6 +34,23 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
                 payment_data = {'transaction_data': transaction_data,
                                 'request_data': request.data}
                 amazon_pay = AmazonPGManager()
+                response_data, code = amazon_pay.payment_authentication(
+                    payment_data)
+                if response_data:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_404_message(
+                    message="Transaction doesn't exists")
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),

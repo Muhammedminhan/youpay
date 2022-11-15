@@ -5,6 +5,7 @@ class YouPayResponse(object):
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
     TABBYPG_CONNECTION_ERROR = 1006
+    AMAZONPG_CONNECTION_ERROR = 2002
 
     MESSAGE = {}
 
@@ -20,6 +21,7 @@ class YouPayResponse(object):
             self.CHECKOUTPG_CONNECTION_ERROR: "Checkoutpg connection error",
             self.PAYMENT_FAILED: "Payment failed",
             self.TABBYPG_CONNECTION_ERROR: "Tabbypg connection error",
+            self.AMAZONPG_CONNECTION_ERROR: "Amzonpg connection error",
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: "Transaction verification failed"
         })
 
