@@ -1,0 +1,37 @@
+from django.utils.translation import gettext_lazy as _
+
+PAYMENT_STATUS_AUTHORIZED = 'authorized'
+PAYMENT_STATUS_CAPUTRED = 'captured'
+PAYMENT_STATUS_PENDING = 'pending'
+PAYMENT_STATUS_REFUNDED = 'refunded'
+PAYMENT_STATUS_PAID = 'paid'
+PAYMENT_STATUS_NONE = 'None'
+PAYMENT_STATUS_ERROR = 'Error'
+PAYMENT_STATUS_CLOSED = 'closed'
+PAYMENT_STATUS_CREATED = 'created'
+PAYMENT_STATUS_EXPIRED = 'expired'
+
+PAYMENT_STATUS_CHOICES = (
+    (PAYMENT_STATUS_NONE, _('None')),
+    (PAYMENT_STATUS_AUTHORIZED, _('authorized')),
+    (PAYMENT_STATUS_CAPUTRED, _('captured')),
+    (PAYMENT_STATUS_REFUNDED, _('refunded')),
+    (PAYMENT_STATUS_PAID, _('paid')),
+    (PAYMENT_STATUS_ERROR, _('Error')),
+    (PAYMENT_STATUS_PENDING, _('pending')),
+    (PAYMENT_STATUS_CLOSED, _('closed')),
+    (PAYMENT_STATUS_CREATED, _('created')),
+    (PAYMENT_STATUS_EXPIRED, _('expired')),
+)
+
+PURCHASE_PLATFORM_WEB = 'Web'
+PURCHASE_PLATFORM_MWEB = 'Mweb'
+PURCHASE_PLATFORM_ANDROID = 'Android'
+PURCHASE_PLATFORM_IOS = 'IOS'
+
+PURCHASE_PLATFORM_CHOICES = (
+    (PURCHASE_PLATFORM_WEB, _('Web')),
+    (PURCHASE_PLATFORM_MWEB, _('Mweb')),
+    (PURCHASE_PLATFORM_ANDROID, _('Android')),
+    (PURCHASE_PLATFORM_IOS, _('IOS')),
+)

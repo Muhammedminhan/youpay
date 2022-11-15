@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'payments',
     'checkoutpgclient',
     'amazonpgclient',
+    'tabbypgclient',
 
     # 3rd party apps
     'rest_framework',
@@ -184,6 +185,7 @@ except ImportError:
 
 YOUPAY_SECRET_KEY = config('YOUPAY_SECRET_KEY', '')
 YOUPAY_PUBLIC_KEY = config('YOUPAY_PUBLIC_KEY', '')
+TABBYPG_API_KEY = config('TABBYPG_API_KEY', '')
 
 BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 

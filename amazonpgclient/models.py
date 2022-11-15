@@ -1,12 +1,16 @@
 import uuid
+import logging
 
+from django.db.models import signals
+from django.dispatch import receiver
 from django.db import models
 
 from core.models import AbstractDateTime, CustomerProfile
 from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
                         APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
+from payments.models import YouPayTransactionData
 
-# Create your models here.
+logger = logging.getLogger(__name__)
 
 
 class AmazonPGTransactionData(AbstractDateTime, CustomerProfile):
@@ -52,3 +56,17 @@ class AmazonPGTransactionData(AbstractDateTime, CustomerProfile):
 
     def __str__(self):
         return self.payment_reference
+
+
+@receiver(signals.post_save, sender=AmazonPGTransactionData)
+def update_youpay_status(sender, instance, created, **kwargs):
+
+    logger.info("Executiong AmazonPGTransactionData signal")
+    try:
+        transaction_obj = YouPayTransactionData.objects.get(
+            payment_reference=instance.payment_reference)
+        transaction_obj.payment_status = instance.payment_status
+        transaction_obj.save()
+    except YouPayTransactionData.DoesNotExist:
+        logger.error("Unable to find youpay transaction object for {}"
+                     "".format(instance.payment_reference))
