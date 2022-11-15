@@ -6,13 +6,17 @@ from services.v1.views.common import add_payment_gateway_info_in_url
 
 
 def validate_tabby_amount(data):
+    print("Data in validate_tabby_amount", data)
     # in case of SAR currency, amount should between 1 and 1500
-    if data.get('amount') < 0 or data.get('amount') > 1500:
-        raise serializers.ValidationError(
-            {'amount': 'Amount should be in range 0 to 1500'})
+    # if data.get('amount') < 0 or data.get('amount') > 1500:
+    #     raise serializers.ValidationError(
+    #         {'amount': 'Amount should be in range 0 to 1500'})
 
 
 class TabbyPGRequestValidator(serializers.Serializer):
+    amount = serializers.DecimalField(decimal_places=4, max_digits=12,
+                                      validators=[validate_tabby_amount])
+
     # amount
     pass
 
@@ -45,7 +49,23 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("currency")
 
     def get_amount(self, data):
-        return str(data.get('transaction_data').get("amount"))
+        amount = float(data.get('transaction_data').get("amount"))
+        currency = data.get('transaction_data').get("currency")
+        if currency == "SAR":
+            if amount < 0 or amount > 750:
+                raise serializers.ValidationError(
+                    {
+                        'amount': 'SAR Amount should be in range 0 to 750, provided amount is {}'.format(
+                            amount)})
+
+        elif currency == "AED":
+            if amount < 0 or amount > 1500:
+                raise serializers.ValidationError(
+                    {
+                        'amount': 'AED Amount should be in range 0 to 1500, provided amount is {}'.format(
+                            amount)})
+
+        return amount
 
     def get_order_reference(self, data):
         return data.get('transaction_data').get("order_reference")

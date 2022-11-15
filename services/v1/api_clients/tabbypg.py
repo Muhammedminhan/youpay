@@ -60,6 +60,7 @@ class CreateSession(YouPayTransactionCRUD, APIView, ClientValidator):
                     message="Transaction doesn't exists")
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            logger.error("Exception in tabbypg create session : {}".format(e))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

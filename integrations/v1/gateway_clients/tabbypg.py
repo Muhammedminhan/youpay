@@ -68,6 +68,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         validation = TabbyPGRequestValidator(data=transaction_data)
         if validation.is_valid() is False:
             print("Validation error : ", validation.errors)
+
             logger.info("Validation is failed")
 
         verify_response, verify_status = self.verify_transaction(
