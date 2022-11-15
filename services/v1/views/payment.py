@@ -193,8 +193,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     "is_verified": True,
                 }
                 logger.info(
-                    "Client is inactive, skipping verification for "
-                    "transaction : {}".format(transaction_id))
+                    "Client is inactive, skipping payment verification with "
+                    "API Client for : {}".format(transaction_id))
 
                 return dummy_response, status.HTTP_200_OK
 

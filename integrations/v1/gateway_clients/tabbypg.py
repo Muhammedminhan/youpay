@@ -14,7 +14,7 @@ from integrations.constants import (
 )
 from integrations.messages import TABBYPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.tabbypg_payment_request import (
-    TabbyPGPaymentRequestSerializer, TabbyPGRequestValidator
+    TabbyPGPaymentRequestSerializer
 )
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
@@ -62,14 +62,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
         transaction_data = data.get('transaction_data')
         transaction_id = transaction_data.get('transaction_id')
-
-        # validate tabby payment request data
-        print("Transaction data : ", transaction_data)
-        validation = TabbyPGRequestValidator(data=transaction_data)
-        if validation.is_valid() is False:
-            print("Validation error : ", validation.errors)
-
-            logger.info("Validation is failed")
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
