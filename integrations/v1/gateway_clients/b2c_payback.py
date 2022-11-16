@@ -34,8 +34,6 @@ from payments.serializers.youpay_payments import (
                                     )
 from services.v1.views.payment_handlers import PaymentHandlers
 from core.constants import  REQUEST_METHOD_POST
-
-                                    )
 from services.utils import get_payment_redirect_url
 
 
