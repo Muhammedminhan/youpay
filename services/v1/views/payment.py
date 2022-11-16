@@ -266,6 +266,7 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
     def post(self, request):
         try:
+            logger.info("Triggered PaymentCancelledView")
             data = self.request.data
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
