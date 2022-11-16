@@ -23,6 +23,7 @@ from integrations.v1.gateway_clients.utils import (
                                     format_adcb_redemption_data,
                                     format_adcb_verify_data,
                                     get_adcb_redirect_url
+
                                     )
 from integrations.v1.serializers.b2c_payback_payment_request import (
                                     PointBalanceRequestSerializer,
@@ -33,6 +34,10 @@ from payments.serializers.youpay_payments import (
                                     )
 from services.v1.views.payment_handlers import PaymentHandlers
 from core.constants import  REQUEST_METHOD_POST
+
+                                    )
+from services.utils import get_payment_redirect_url
+
 
 logger = logging.getLogger(__name__)
 
