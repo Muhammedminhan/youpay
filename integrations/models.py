@@ -44,6 +44,9 @@ class PaymentGateway(AbstractDateTime, AbstractUserBase):
                                help_text='API Key String')
     api_secret = models.CharField(max_length=255, blank=True, null=True,
                                   help_text='API Secret String')
+    validation_json = models.JSONField(
+        null=True, blank=True,
+        help_text="used to store amount validation json data")
 
     def __str__(self):
         return self.gateway_name
@@ -51,7 +54,7 @@ class PaymentGateway(AbstractDateTime, AbstractUserBase):
 
 class PaymentGatewayAPI(AbstractDateTime, AbstractUserBase):
     api_name = models.CharField(max_length=255,
-                                help_text='Name of the API as Per the Payment '
+                                help_text='Name of the API as Per the Payment'
                                           'Gateway Documentation')
     payment_gateway = models.ForeignKey('integrations.PaymentGateway',
                                         on_delete=models.CASCADE,
