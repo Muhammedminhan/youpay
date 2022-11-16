@@ -4,13 +4,14 @@ import logging
 
 from rest_framework import status
 
-from core.constants import (PAYMENT_GATEWAY_AMAZONPG, REQUEST_METHOD_POST)
+from core.constants import (PAYMENT_GATEWAY_AMAZONPG, REQUEST_METHOD_POST,
+                            REQUEST_METHOD_GET)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     AMAZONPG_AUTHENTICATE_API, AMAZONPG_VERIFY_API, AMAZONPG_CACHE_KEY,
-    AMAZONPG_HUB_CODE
+    AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY
 )
 from integrations.v1.serializers.amazonpg_payment_request import (
     AmazonPGPaymentRequestSerializer)
@@ -18,6 +19,7 @@ from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON)
+from services.v1.views.common import is_redirect
 
 logger = logging.getLogger(__name__)
 
@@ -118,3 +120,66 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                                                  verify_response))
             logger.error(msg)
             return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+
+    def verify_payment(self, data):
+        """
+        Method for verifying payment with Amazonpg
+        """
+        url = self.amazonpg_config.domain + AMAZONPG_VERIFY_API
+        transaction_id = data.get('transaction_id')
+
+        params = {
+            'payment_reference': data.get('payment_reference'),
+        }
+        logger.info(
+            "Youpay sending payment_reference to amazonpg "
+            "is {}".format(params))
+        response = requests.get(url, params=params)
+        logger.info("Amazonpg verify response: {}".format(response))
+
+        transaction_obj = self.get_youpay_transaction_data(transaction_id)
+
+        # storing Youpay to payment gateway request and response data
+        self.create_youpay_to_payment_gateways_data(
+            transaction_obj=transaction_obj,
+            transaction_id=transaction_id,
+            request_data=json.dumps(params),
+            response_data=response.text,
+            request_type=PAYMENT_REQUEST_VERIFY,
+            request_method=REQUEST_METHOD_GET,
+        )
+
+        if response:
+            response_data = response.json()
+            logger.info(
+                "Verify payment response data \n{}".format(response_data))
+
+            if response_data.get('is_capture'):
+                payment_status = PAYMENT_STATUS_PAID
+                approved = True
+                response_summary = "Payment successful"
+            else:
+                payment_status = PAYMENT_STATUS_CANCELLED
+                approved = False
+                response_summary = "Payment failed"
+
+            self.update_youpay_transaction_data(
+                {
+                    'transaction_id': transaction_id,
+                    "payment_status": payment_status,
+                    "approved": approved,
+                    "response_summary": response_summary
+                }
+            )
+
+            redirect, response_data = is_redirect(transaction_id,
+                                                  response_data)
+            if redirect:
+                return response_data, self.SUCCESS
+            else:
+                return response_data, self.PAYMENT_FAILED
+        else:
+            logger.error(
+                "Error while verifying_payment amazonpg status: {}, reason "
+                "{} \n".format(response.status_code, response.reason))
+            return None, self.CHECKOUTPG_CONNECTION_ERROR

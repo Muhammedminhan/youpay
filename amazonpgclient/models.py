@@ -9,6 +9,7 @@ from core.models import AbstractDateTime, CustomerProfile
 from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
                         APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
 from payments.models import YouPayTransactionData
+from payments.constants import PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +62,14 @@ class AmazonPGTransactionData(AbstractDateTime, CustomerProfile):
 @receiver(signals.post_save, sender=AmazonPGTransactionData)
 def update_youpay_status(sender, instance, created, **kwargs):
 
-    logger.info("Executiong AmazonPGTransactionData signal")
+    logger.info("Executing AmazonPGTransactionData signal")
     try:
         transaction_obj = YouPayTransactionData.objects.get(
             payment_reference=instance.payment_reference)
-        transaction_obj.payment_status = instance.payment_status
+        if instance.payment_status == PAYMENT_STATUS_CAPTURED:
+            transaction_obj.payment_status = PAYMENT_STATUS_PAID
+        else:
+            transaction_obj.payment_status = instance.payment_status
         transaction_obj.save()
     except YouPayTransactionData.DoesNotExist:
         logger.error("Unable to find youpay transaction object for {}"

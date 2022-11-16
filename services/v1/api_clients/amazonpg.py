@@ -55,3 +55,39 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class AmazonPGVerification(APIView):
+    response_obj = YouPayResponse()
+
+    def get(self, request, *args, **kwargs):
+        """
+        method for redirection from the checkout and verify
+        the payment from the amazonpg
+        """
+
+        try:
+            payment_data = {
+                'transaction_id': request.query_params.get('id'),
+                'payment_reference': request.query_params.get('payment_id')
+            }
+
+            amazonpg = AmazonPGManager()
+            response_data, code = amazonpg.verify_payment(payment_data)
+
+            if response_data:
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=response_data
+                )
+                return Response(data,
+                                status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_error_dict(error_code=code)
+                return Response(data,
+                                status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error("Error in AmazonPGVerification: {}".format(str(e)))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
