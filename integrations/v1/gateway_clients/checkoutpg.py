@@ -148,6 +148,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         transaction_data = data.get('transaction_data')
         transaction_id = transaction_data.get('transaction_id')
+        payment_method = transaction_data.get('payment_method')
+        payment_gateway = transaction_data.get('payment_gateway')
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
