@@ -41,7 +41,7 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "point balance endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': response}}
+                    'code': "400", 'message': "No response received"}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -85,7 +85,7 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "authenticate endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': response}}
+                    'code': "400", 'message': "No response received"}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -117,7 +117,7 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "redemption endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': response}}
+                    'code': "400", 'message': "No response received"}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -154,5 +154,5 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "verify endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': response}}
+                    'code': "400", 'message': "No response received"}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)

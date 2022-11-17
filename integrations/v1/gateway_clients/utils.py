@@ -72,9 +72,15 @@ def format_adcb_verify_data(request_data, transaction_obj):
     request_data['channel_code'] = ADCB_CLIENT_CODE
     return request_data
 
-def get_adcb_redirect_url(response_data, transaction_obj):
+def get_adcb_verify_redirect_url(response_data, transaction_obj): # partial redemption
     if (response_data.get("results").get("payment_status") and
             response_data.get("results").get("redemption_status")):
+        return transaction_obj.success_url
+    else:
+        return transaction_obj.failure_url
+
+def get_adcb_redemption_redirect_url(response_data, transaction_obj): #full redemption
+    if response_data.get('results', {}).get('redemption_status'):
         return transaction_obj.success_url
     else:
         return transaction_obj.failure_url

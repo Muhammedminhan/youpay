@@ -22,8 +22,8 @@ from integrations.v1.gateway_clients.utils import (
                                     format_adcb_authenticate_data,
                                     format_adcb_redemption_data,
                                     format_adcb_verify_data,
-                                    get_adcb_redirect_url
-
+                                    get_adcb_verify_redirect_url,
+                                    get_adcb_redemption_redirect_url
                                     )
 from integrations.v1.serializers.b2c_payback_payment_request import (
                                     PointBalanceRequestSerializer,
@@ -164,8 +164,9 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 if response:
                     response_data = response.json()
                     response_data["is_redirect"] = True
-                    response_data["success_url"] = transaction_obj.success_url
-                    response_data["failure_url"] = transaction_obj.failure_url
+                    response_data["redirect_url"] = (
+                        get_adcb_redemption_redirect_url(response_data,
+                                                         transaction_obj))
                     return response_data, transaction_obj.transaction_id
                 else:
                     logger.error(
@@ -198,7 +199,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                                          headers=ADCB_HEADERS)
                 response_data = response.json()
                 response_data["is_redirect"] = True
-                response_data["redirect_url"] = get_adcb_redirect_url(
+                response_data["redirect_url"] = get_adcb_verify_redirect_url(
                     response_data, transaction_obj)
                 if response:
                     return response_data, transaction_obj.transaction_id
