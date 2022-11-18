@@ -96,7 +96,7 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
         payback = B2CPaybackManager()
         response, transaction_id = payback.point_redemption(request.data)
         if response:
-            if response.get('results',"").get('redemption_status',"") == True:
+            if response.get('results',{}).get('redemption_status') == True:
                 update_data = {
                     'transaction_id': transaction_id,
                     'payment_status': PAYMENT_STATUS_PAID,
@@ -133,7 +133,7 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                             'cko-session-id')}
         response, transaction_id = payback.verification(payment_data)
         if response:
-            if response.get('results',"").get('payment_status',"") == True:
+            if response.get('results', {}).get('payment_status') == True:
                 update_data = {
                     'transaction_id': transaction_id,
                     'payment_status': PAYMENT_STATUS_PAID,

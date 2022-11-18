@@ -8,12 +8,13 @@ from services.v1.constants import ( B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                     B2C_PAYBACK_CONFIG_ENDPOINT
                                     )
 from integrations.constants import (ADCB_POINT_BALANCE_API,
-                                    B2CPAYBACK_HUB_CODE,
-                                    B2CP_CACHE_KEY,
+                                    B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
                                     ADCB_REDEMPTION_API, ADCB_HEADERS,
-                                    ADCB_CLIENT_CODE,
-                                    ADCB_VERIFY_API)
+                                    ADCB_CLIENT_CODE, ADCB_VERIFY_API,
+                                    PAYMENT_REQUEST_TYPE_NONE,
+                                    PAYMENT_REQUEST_TYPE_CARD,
+                                    PAYMENT_REQUEST_VERIFY)
 from core.utils import ( get_payment_gateway_config,
                          get_app_config, decrypt_string
                          )
@@ -33,7 +34,7 @@ from payments.serializers.youpay_payments import (
                                     YouPayTransactionDataSerializer
                                     )
 from services.v1.views.payment_handlers import PaymentHandlers
-from core.constants import  REQUEST_METHOD_POST
+from core.constants import  REQUEST_METHOD_POST, REQUEST_METHOD_GET
 from services.utils import get_payment_redirect_url
 
 
@@ -93,6 +94,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     request_data=request_data_json,
                     response_data=response.text,
                     request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_TYPE_NONE
                 )
                 return response, transaction_obj.transaction_id
             except Exception as e:
@@ -130,6 +132,14 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 response = requests.post(url, data=request_data_json,
                                      headers=ADCB_HEADERS)
                 if response:
+                    self.create_youpay_to_payment_gateways_data(
+                        transaction_obj=transaction_obj,
+                        transaction_id=transaction_obj.transaction_id,
+                        request_data=request_data_json,
+                        response_data=response.text,
+                        request_method=REQUEST_METHOD_POST,
+                        request_type=PAYMENT_REQUEST_TYPE_CARD
+                    )
                     return response.json(), transaction_obj
                 else:
                     logger.error(
@@ -167,6 +177,14 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     response_data["redirect_url"] = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
+                    self.create_youpay_to_payment_gateways_data(
+                        transaction_obj=transaction_obj,
+                        transaction_id=transaction_obj.transaction_id,
+                        request_data=request_data_json,
+                        response_data=response.text,
+                        request_method=REQUEST_METHOD_POST,
+                        request_type=PAYMENT_REQUEST_TYPE_NONE
+                    )
                     return response_data, transaction_obj.transaction_id
                 else:
                     logger.error(
@@ -202,6 +220,14 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 response_data["redirect_url"] = get_adcb_verify_redirect_url(
                     response_data, transaction_obj)
                 if response:
+                    self.create_youpay_to_payment_gateways_data(
+                        transaction_obj=transaction_obj,
+                        transaction_id=transaction_obj.transaction_id,
+                        request_data=json.dumps(formatted_data),
+                        response_data=response.text,
+                        request_method=REQUEST_METHOD_GET,
+                        request_type=PAYMENT_REQUEST_VERIFY
+                    )
                     return response_data, transaction_obj.transaction_id
                 else:
                     logger.error(
