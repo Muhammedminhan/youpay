@@ -23,6 +23,7 @@ def get_saved_fields(saved_fields, data_dict, transaction_obj):
         if value:
             transaction_obj.__dict__[key] = value
             saved_fields.append(key)
+            print("Appended - {} : {}".format(key, value))
 
     return saved_fields
 
@@ -63,7 +64,7 @@ class YouPayTransactionCRUD(object):
         data_dict['payment_reference'] = data.get('payment_reference', None)
         data_dict['payment_status'] = data.get('payment_status', None)
         data_dict['payment_gateway'] = data.get('payment_gateway', None)
-        data_dict['channel_code'] = data.get('channel_code', None)
+        # data_dict['channel_code'] = data.get('channel_code', None)
         data_dict['payment_method'] = data.get('payment_method', None)
         data_dict['payment_scheme'] = data.get('payment_scheme', None)
         data_dict['is_gcc_card'] = data.get('is_gcc_card', False)
@@ -74,12 +75,32 @@ class YouPayTransactionCRUD(object):
         data_dict['approved'] = data.get('approved', None)
         data_dict['response_summary'] = data.get('response_summary', None)
 
+        data_dict['channel_code'] = "TEST4"
+
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
-                saved_fields = ['updated_at']
-                saved_fields = get_saved_fields(saved_fields, data_dict,
+                print("Updating transaction object", data_dict)
+                saved_fields = []
+                saved_fields = get_saved_fields(saved_fields,
+                                                data_dict,
                                                 transaction_obj)
+                saved_fields.append('updated_at')
+
+                print("Transaction obj ", transaction_obj)
+                print("Saved fields", saved_fields)
+                print("Saved fields", type(saved_fields))
+                print("data dict payment_status ",
+                      data_dict['payment_status'])
+                print("data dict channel_code' ",
+                      data_dict['channel_code'])
+                print("data dict payment_method ",
+                      data_dict['payment_method'])
+                for field in saved_fields:
+                    print("Field", field)
+                    f = data_dict[field]
+                    print("Updating field", f)
+
                 transaction_obj.save(update_fields=saved_fields)
             else:
                 logger.error("unable to find the transaction object for {}"
