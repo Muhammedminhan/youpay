@@ -5,13 +5,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from core.messages import REDIRECT_URL, IS_REDIRECT
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import get_site_domain, decrypt_string
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
-from payments.constants import PAYMENT_METHOD_SAVED_CARD
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -73,8 +71,6 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                                 'transaction_data': transaction_data,
                                 'request_data': request.data,
                                 'site_domain': site_domain,
-                                'payment_method': PAYMENT_METHOD_SAVED_CARD,
-                                'payment_gateway': PAYMENT_GATEWAY_CHECKOUTPG
                                 }
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.saved_card_payment(

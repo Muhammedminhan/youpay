@@ -14,7 +14,8 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT,
-                                    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT)
+                                    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT,
+                                    CHECKOUTPG_HUB_CODE)
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
@@ -23,7 +24,8 @@ from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
 from payments.constants import (PAYMENT_STATUS_PENDING,
-                                PAYMENT_METHOD_CARD)
+                                PAYMENT_METHOD_CARD, PAYMENT_STATUS_ERROR,
+                                PAYMENT_METHOD_SAVED_CARD)
 from services.v1.views.common import (is_redirect)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -153,19 +155,12 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         transaction_data = data.get('transaction_data')
 
-        self.channel_code = data.get('transaction_data')
-
+        self.channel_code = CHECKOUTPG_HUB_CODE
         self.transaction_id = transaction_data.get('transaction_id')
-        self.payment_method = transaction_data.get('payment_method')
-        self.payment_gateway = transaction_data.get('payment_gateway')
+        self.payment_method = PAYMENT_METHOD_SAVED_CARD
+        self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
-
-        # "payment_status": PAYMENT_STATUS_PENDING,
-        # "payment_reference": response_data.get("reference_id"),
-        # "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-        # "channel_code": payment_data.get("channel_code")
-        # "payment_method": PAYMENT_METHOD_SAVED_CARD,
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
@@ -216,6 +211,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     if response:
                         response_data = response.json()
+                        print(
+                            "\n\n Received response from checkoutpg is {} ".format(
+                                response_data))
                         if response_data.get(
                                 'status') == 200 and response_data.get(
                             IS_REDIRECT) is True:
@@ -223,7 +221,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                                 "reference_id")
                             self.payment_status = PAYMENT_STATUS_PENDING
 
-                            print("\n\nresponse_data", response_data)
+                            # print("\n\nresponse_data", response_data)
+                            print("Raising exception\n\n\n")
+                            # raise Exception("Sample excepction")
 
                             # self.update_youpay_transaction_data(
                             #     {
@@ -239,7 +239,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             #         "payment_method": PAYMENT_METHOD_SAVED_CARD,
                             #     }
                             # )
-                        return response.json(), self.SUCCESS
+                            return response.json(), self.SUCCESS
+
+                    print("\n\nReturning None")
+                    self.payment_status = PAYMENT_STATUS_ERROR
 
                     return None, self.CHECKOUTPG_CONNECTION_ERROR
                 else:
