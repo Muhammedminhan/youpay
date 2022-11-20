@@ -179,9 +179,11 @@ class CheckoutVerification(APIView):
          the payment from the checkoutpg"""
 
         try:
-            payment_data = {'transaction_id': request.query_params.get('id'),
-                            'cko_session_id': request.query_params.get(
-                                'cko-session-id')}
+            payment_data = {
+                'transaction_id': decrypt_string(
+                    request.query_params.get('id')),
+                'cko_session_id': request.query_params.get(
+                    'cko-session-id')}
             checkout = CheckoutpgManager()
             response_data, code = checkout.verify_payment(payment_data)
 
