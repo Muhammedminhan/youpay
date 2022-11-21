@@ -185,14 +185,3 @@ def add_payment_gateway_info_in_url(url, params, code):
     """
     url = url + params + "&gty=" + code
     return url
-
-
-def get_payment_gateway(code):
-    """Method to get payment gateway"""
-    try:
-        payment_gateway = PaymentGateway.objects.get(code=code)
-        return payment_gateway
-    except PaymentGateway.DoesNotExist:
-        logger.error(
-            "Unable to find payment gateway for code '{}' ".format(code))
-        return None
