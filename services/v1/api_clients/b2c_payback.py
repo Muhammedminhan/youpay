@@ -67,12 +67,12 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
             if invoice_amount == selected_amount: #full redemption
                 update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
 
-            elif selected_amount > 0: # partial redemption
+            elif selected_amount > 0:  # partial redemption
                 update_data['payment_method'] = (
                     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
                 update_data['payment_scheme'] = request.data.get('card_type')
 
-            else: # full amount from card
+            else:  # full amount from card
                 update_data['payment_method'] = PAYMENT_METHOD_ADCB_CARD_ONLY
                 update_data['payment_scheme'] = request.data.get('card_type')
 
@@ -110,8 +110,9 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
-                logger.info("Point redemption not successful for transaction id "
-                            "{}".format(transaction_id))
+                logger.info(
+                    "Point redemption not successful for transaction id "
+                    "{}".format(transaction_id))
             return Response(response, status=status.HTTP_200_OK)
         else:
             try:
@@ -133,11 +134,12 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
 
     def get(self, request, *args, **kwargs):
         payback = B2CPaybackManager()
-        payment_data = {'transaction_id': request.query_params.get('id'),
-                        'redemption_reference_id': request.query_params.get(
-                            'redemption_reference_id'),
-                        'cko-session-id': request.query_params.get(
-                            'cko-session-id')}
+        payment_data = {
+            'transaction_id': request.query_params.get('id'),
+            'redemption_reference_id': request.query_params.get(
+                'redemption_reference_id'),
+            'cko-session-id': request.query_params.get(
+                'cko-session-id')}
         response, transaction_id = payback.verification(payment_data)
         if response:
             if response.get('results', {}).get('payment_status') == True:

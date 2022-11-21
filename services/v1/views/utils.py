@@ -79,6 +79,8 @@ def get_session_id_from_header(request):
     """
 
     session_id = request.META.get('HTTP_YOUPAY_SESSION_ID', None)
+    logger.info("Request META {} \nsession_id is :{}".format(request.META,
+                                                             session_id))
     return session_id
 
 

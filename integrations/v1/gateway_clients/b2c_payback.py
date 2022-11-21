@@ -1,12 +1,11 @@
-import logging
 import json
-import requests
 import logging
+import requests
 
 from rest_framework.views import APIView
-from services.v1.constants import ( B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
-                                    B2C_PAYBACK_CONFIG_ENDPOINT
-                                    )
+from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
+                                   B2C_PAYBACK_CONFIG_ENDPOINT
+                                   )
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
@@ -15,7 +14,6 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    PAYMENT_REQUEST_TYPE_CARD,
                                     PAYMENT_REQUEST_VERIFY)
 from core.utils import ( get_payment_gateway_config,
                          get_app_config, decrypt_string
@@ -84,8 +82,8 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 transaction_data = YouPayTransactionDataSerializer(
                     transaction_obj)
                 request_dict = {
-                    'data' : request_data,
-                    'transaction_data' : transaction_data.data
+                    'data': request_data,
+                    'transaction_data': transaction_data.data
                 }
                 balance_request_data = PointBalanceRequestSerializer(
                     request_dict)
@@ -118,8 +116,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
         else:
             logger.error("Invalid transaction id received for point balance "
                          "api")
-            return None , None
-
+            return None, None
 
     def authenticate_redemption(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
@@ -144,7 +141,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_AUTHENTICATE_API
                 response = requests.post(url, data=request_data_json,
-                                     headers=ADCB_HEADERS)
+                                         headers=ADCB_HEADERS)
                 if response:
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
@@ -172,7 +169,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
         else:
             logger.error("Invalid transaction id received for b2cpayback "
                          "authentication api")
-            return None , None
+            return None, None
 
     def point_redemption(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
@@ -217,9 +214,9 @@ class B2CPaybackManager(APIView, PaymentHandlers):
         else:
             logger.error("Invalid transaction id received for b2cpayback "
                          "redemption api")
-            return None , None
+            return None, None
 
-    def verification(self ,request_data):
+    def verification(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
         if request_transaction_id:
             try:
@@ -233,7 +230,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 url = b2c_payback_domain + ADCB_VERIFY_API
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
-                                         headers=ADCB_HEADERS)
+                                        headers=ADCB_HEADERS)
                 response_data = response.json()
                 response_data["is_redirect"] = True
                 response_data["redirect_url"] = get_adcb_verify_redirect_url(
