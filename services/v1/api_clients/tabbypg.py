@@ -78,7 +78,7 @@ class TabbyPGVerification(APIView):
                     request.query_params.get('id')),
                 'payment_id': request.query_params.get('payment_id')
             }
-
+            print("payment_data", payment_data)
             tabbypg = TabbyPGManager()
             response_data, code = tabbypg.verify_session(payment_data)
 
