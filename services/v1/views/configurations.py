@@ -226,7 +226,6 @@ class ConfigViewSet(ViewSet):
 
     def get_tabby_conf(self, tabbypg_obj=None):
         tabbypg_config = {}
-        print("tabbypg_obj", tabbypg_obj)
         if tabbypg_obj:
             tabbypg_config[
                 "validation_json"] = tabbypg_obj.validation_json
