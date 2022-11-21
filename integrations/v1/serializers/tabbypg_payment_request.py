@@ -4,10 +4,10 @@ from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
 from core.exceptions import ValidationFailed
-from core.utils import get_app_config
-from integrations.constants import TABBYPG_HUB_CODE
-from services.v1.views.common import add_payment_gateway_info_in_url, \
-    get_payment_gateway
+from core.utils import get_app_config, get_payment_gateway_config
+from integrations.constants import TABBYPG_HUB_CODE, TABBYPG_CACHE_KEY
+from services.v1.views.common import (
+    add_payment_gateway_info_in_url)
 
 
 class TabbyPGPaymentRequestSerializer(serializers.Serializer):
@@ -41,7 +41,8 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
         amount = float(data.get('transaction_data').get("amount"))
         currency = data.get('transaction_data').get("currency")
 
-        payment_gateway = get_payment_gateway(TABBYPG_HUB_CODE)
+        payment_gateway = get_payment_gateway_config(TABBYPG_CACHE_KEY,
+                                                     TABBYPG_HUB_CODE)
         if payment_gateway.validation_json:
 
             # check the currency is in payment_gateway.validation_json
