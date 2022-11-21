@@ -73,13 +73,13 @@ class AuthenticateRequestSerializer(serializers.Serializer):
         return data.get('data', {}).get('reference_id')
 
     def get_token_type(self, data):
-        return data.get('data', {}).get('token_type')
+        return "card"
 
     def get_card_type(self, data):
         return data.get('data', {}).get('card_type')
 
     def get_redemption_currency(self, data):
-        return data.get('data', {}).get('redemption_currency')
+        return "AED"
 
     def get_selected_amount(self, data):
         return data.get('data', {}).get('selected_amount')

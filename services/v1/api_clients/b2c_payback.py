@@ -24,10 +24,13 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
     def post(self, request):
         payback = B2CPaybackManager()
         response, transaction_id = payback.get_point_balance(request.data)
+        request_data = request.data
         if response and response.status_code == 200:
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,
-                'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK
+                'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
+                'card_bin' : request_data.get('card_no', "")[0:6],
+                'card_last4' : request_data.get('card_no', "")[-4:],
             })
             return Response(response.json(), status=status.HTTP_200_OK)
         else:
@@ -59,6 +62,7 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                     'transaction_id': transaction_obj.transaction_id ,
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                     'payment_status': PAYMENT_STATUS_AUTHORIZED,
+                    'is_gcc_card' : True
                 }
             if invoice_amount == selected_amount: #full redemption
                 update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
@@ -100,6 +104,9 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 update_data = {
                     'transaction_id': transaction_id,
                     'payment_status': PAYMENT_STATUS_PAID,
+                    'payment_reference' : response.get(
+                        'results',{}).get('reference_id'),
+                    'approved': True
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
@@ -137,6 +144,9 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                 update_data = {
                     'transaction_id': transaction_id,
                     'payment_status': PAYMENT_STATUS_PAID,
+                    'payment_reference': response.get(
+                        'results', {}).get('reference_id'),
+                    'approved' : True
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
