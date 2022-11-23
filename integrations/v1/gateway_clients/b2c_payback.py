@@ -106,7 +106,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     return response, transaction_obj.transaction_id
                 else:
                     logger.error(
-                        "No response received from authenticate api call "
+                        "No response received from point balance api call "
                         "to b2cpayback")
                     return None, None
             except Exception as e:
