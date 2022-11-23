@@ -157,7 +157,9 @@ class Announcement(AbstractDateTime, AbstractUserBase):
 class ClientNotification(AbstractDateTime):
     transaction = models.ForeignKey('payments.YouPayTransactionData',
                                     on_delete=models.CASCADE, help_text=
-                                    'Associated transaction')
+                                    'Associated transaction',
+                                    related_name=
+                                    "transaction_clientnotification")
     api_client = models.ForeignKey('services.APIClient',
                                    on_delete=models.CASCADE, help_text=
                                    'Related api client')
@@ -177,6 +179,5 @@ class ClientNotification(AbstractDateTime):
     'Denotes webhook notification retries, how many time it is retired')
     payment_status = models.CharField(max_length=100, null=True, blank=True,
                                       help_text='payment transaction status')
-    
     def __str__(self):
         return str(self.transaction.transaction_id)
