@@ -82,7 +82,8 @@ class TabbyPGVerification(APIView):
         try:
 
             payment_data = {
-                'transaction_id': request.query_params.get('id'),
+                'transaction_id': decrypt_string(
+                    request.query_params.get('id')),
                 'payment_id': request.query_params.get('payment_id')
             }
 

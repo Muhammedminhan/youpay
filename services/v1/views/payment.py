@@ -265,17 +265,28 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
     def post(self, request):
-        data = self.request.data
-        transaction_id = decrypt_string(data.get('transaction_id'))
-        transaction_object = self.get_youpay_transaction_data(
-            transaction_id)
-        self.update_youpay_transaction_data({
-            'transaction_id': transaction_id,
-            'payment_status': PAYMENT_STATUS_CANCELLED
-        })
+        try:
+            logger.info("Triggered PaymentCancelledView")
+            data = self.request.data
+            transaction_id = decrypt_string(data.get('transaction_id'))
+            transaction_object = self.get_youpay_transaction_data(
+                transaction_id)
+            self.update_youpay_transaction_data({
+                'transaction_id': transaction_id,
+                'payment_status': PAYMENT_STATUS_CANCELLED
+            })
 
-        redirect_url = (transaction_object.cancel_url +
-                        '?transaction_id=' + transaction_id)
-        return Response({
-            REDIRECT_URL: redirect_url,
-        })
+            redirect_url = (transaction_object.cancel_url +
+                            '?transaction_id=' + transaction_id)
+            logger.info(
+                "Payment cancelled for transaction_id : {}, order reference :"
+                "{}".format(transaction_id,
+                            transaction_object.order_reference))
+            return Response({
+                REDIRECT_URL: redirect_url,
+            })
+        except Exception as e:
+            logger.error("Error in payment cancel api  : {}".format(e))
+            return Response({
+                "error": str(e),
+            })

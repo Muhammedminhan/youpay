@@ -137,5 +137,5 @@ static
 
 db.json
 *.sql
-
+*.rdb
 
