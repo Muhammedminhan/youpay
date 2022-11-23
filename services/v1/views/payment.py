@@ -193,8 +193,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     "is_verified": True,
                 }
                 logger.info(
-                    "Client is inactive, skipping verification for "
-                    "transaction : {}".format(transaction_id))
+                    "Client is inactive, skipping payment verification with "
+                    "API Client for : {}".format(transaction_id))
 
                 return dummy_response, status.HTTP_200_OK
 
@@ -207,6 +207,16 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 """
                 Verify transaction with client by calling verify url
                 """
+
+                api_key, api_secret = self.get_api_client_keys(
+                    transaction_obj)
+
+                verify_headers = {
+                    'Accept': 'application/json',
+                    "API-KEY": transaction_obj.api_client.api_key,
+                    "API-SECRET": transaction_obj.api_client.api_secret,
+                }
+
                 verify_body = {
                     "transaction_id": str(transaction_obj.transaction_id),
                     "invoice_id": transaction_obj.invoice_id,
@@ -215,7 +225,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 }
 
                 response = self.verify_transaction_with_client(
-                    client_verify_url, json.dumps(verify_body))
+                    url=client_verify_url, body=json.dumps(verify_body),
+                    headers=verify_headers)
                 logger.info("Client verify request send data : {}\nresponse "
                             "data{}".format(verify_body, response.text))
 
@@ -238,15 +249,23 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             )
             return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
 
-    def verify_transaction_with_client(self, client_verify_url, data):
-        headers = {
-            'Accept': 'application/json',
-        }
+    def get_api_client_keys(self, transaction_obj):
+        api_key = ""
+        api_secret = ""
+        if transaction_obj and transaction_obj.api_client is not None:
+            api_key = transaction_obj.api_client.api_key
+            api_secret = transaction_obj.api_client.api_secret
+        return api_key, api_secret
 
-        response = requests.post(client_verify_url, json=data,
-                                 headers=headers)
+    def verify_transaction_with_client(self, **kwargs):
+
+        url = kwargs.get('url')
+        body = kwargs.get('body')
+        headers = kwargs.get('headers')
+
+        response = requests.post(url, json=body, headers=headers)
         logger.info("Verify client with data {} ,Response {}".format(
-            data, response.text))
+            body, response.text))
         return response
 
 
