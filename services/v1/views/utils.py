@@ -77,8 +77,9 @@ def get_session_id_from_header(request):
 
     take session_id from request header
     """
+    session_key = "youpay-session-id"
+    session_id = request.session[session_key]
 
-    session_id = request.META.get('HTTP_YOUPAY_SESSION_ID', None)
     return session_id
 
 
