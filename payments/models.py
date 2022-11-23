@@ -152,3 +152,31 @@ class Announcement(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return str(self.gateway.gateway_name)
+
+
+class ClientNotification(AbstractDateTime):
+    transaction = models.ForeignKey('payments.YouPayTransactionData',
+                                    on_delete=models.CASCADE, help_text=
+                                    'Associated transaction')
+    api_client = models.ForeignKey('services.APIClient',
+                                   on_delete=models.CASCADE, help_text=
+                                   'Related api client')
+    event_type = models.CharField(max_length=100,
+                                  help_text='Name of the notification event')
+    is_notified = models.BooleanField(default=False, db_index=True,
+                                      help_text='Denotes whether the webhook '
+                                                'is received at client end or '
+                                                'not')
+    notification_response_status = models.BooleanField(default=False,
+                                                       db_index=True,
+                                                       help_text=
+                                                       'Denotes webhook '
+                                                       'notification is '
+                                                       'successful or not')
+    retries_count = models.IntegerField(default=0, help_text=
+    'Denotes webhook notification retries, how many time it is retired')
+    payment_status = models.CharField(max_length=100, null=True, blank=True,
+                                      help_text='payment transaction status')
+    
+    def __str__(self):
+        return str(self.transaction.transaction_id)
