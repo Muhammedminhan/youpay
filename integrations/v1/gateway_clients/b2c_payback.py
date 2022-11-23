@@ -1,19 +1,19 @@
-import logging
 import json
-import requests
 import logging
+import requests
 
 from rest_framework.views import APIView
-from services.v1.constants import ( B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
-                                    B2C_PAYBACK_CONFIG_ENDPOINT
-                                    )
+from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
+                                   B2C_PAYBACK_CONFIG_ENDPOINT
+                                   )
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
                                     ADCB_REDEMPTION_API, ADCB_HEADERS,
                                     ADCB_CLIENT_CODE, ADCB_VERIFY_API,
-                                    PAYMENT_REQUEST_TYPE_NONE,
-                                    PAYMENT_REQUEST_TYPE_CARD,
+                                    PAYMENT_REQUEST_POINT_BALANCE,
+                                    PAYMENT_REQUEST_AUTHENTICATE,
+                                    PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY)
 from core.utils import ( get_payment_gateway_config,
                          get_app_config, decrypt_string
@@ -62,7 +62,13 @@ class B2CPaybackManager(APIView, PaymentHandlers):
         try:
             response = requests.post(url, data=request_data_json,
                                      headers=ADCB_HEADERS)
-            return response.json()
+            if response:
+                return response.json()
+            else:
+                logger.error(
+                    "No response received from configuration api call "
+                    "to b2cpayback")
+                return None
         except Exception as e:
             logger.error("config api call to b2cpayback failed", exc_info=e)
             return None
@@ -76,8 +82,8 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 transaction_data = YouPayTransactionDataSerializer(
                     transaction_obj)
                 request_dict = {
-                    'data' : request_data,
-                    'transaction_data' : transaction_data.data
+                    'data': request_data,
+                    'transaction_data': transaction_data.data
                 }
                 balance_request_data = PointBalanceRequestSerializer(
                     request_dict)
@@ -88,15 +94,21 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
-                self.create_youpay_to_payment_gateways_data(
-                    transaction_obj=transaction_obj,
-                    transaction_id=transaction_obj.transaction_id,
-                    request_data=request_data_json,
-                    response_data=response.text,
-                    request_method=REQUEST_METHOD_POST,
-                    request_type=PAYMENT_REQUEST_TYPE_NONE
-                )
-                return response, transaction_obj.transaction_id
+                if response:
+                    self.create_youpay_to_payment_gateways_data(
+                        transaction_obj=transaction_obj,
+                        transaction_id=transaction_obj.transaction_id,
+                        request_data=request_data_json,
+                        response_data=response.text,
+                        request_method=REQUEST_METHOD_POST,
+                        request_type=PAYMENT_REQUEST_POINT_BALANCE
+                    )
+                    return response, transaction_obj.transaction_id
+                else:
+                    logger.error(
+                        "No response received from authenticate api call "
+                        "to b2cpayback")
+                    return None, None
             except Exception as e:
                 logger.error("point balance api call to b2cpayback failed ",
                              exc_info=e)
@@ -104,8 +116,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
         else:
             logger.error("Invalid transaction id received for point balance "
                          "api")
-            return None , None
-
+            return None, None
 
     def authenticate_redemption(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
@@ -130,7 +141,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_AUTHENTICATE_API
                 response = requests.post(url, data=request_data_json,
-                                     headers=ADCB_HEADERS)
+                                         headers=ADCB_HEADERS)
                 if response:
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
@@ -138,9 +149,14 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                         request_data=request_data_json,
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
-                        request_type=PAYMENT_REQUEST_TYPE_CARD
+                        request_type=PAYMENT_REQUEST_AUTHENTICATE
                     )
-                    return response.json(), transaction_obj
+                    if response.json().get('url'):
+                        response_data = response.json()
+                        response_data['is_redirect'] = True
+                        return response_data, transaction_obj
+                    else:
+                        return response.json(), transaction_obj
                 else:
                     logger.error(
                         "No response received from authenticate api call "
@@ -153,7 +169,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
         else:
             logger.error("Invalid transaction id received for b2cpayback "
                          "authentication api")
-            return None , None
+            return None, None
 
     def point_redemption(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
@@ -183,7 +199,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                         request_data=request_data_json,
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
-                        request_type=PAYMENT_REQUEST_TYPE_NONE
+                        request_type=PAYMENT_REQUEST_REDEMPTION
                     )
                     return response_data, transaction_obj.transaction_id
                 else:
@@ -198,14 +214,14 @@ class B2CPaybackManager(APIView, PaymentHandlers):
         else:
             logger.error("Invalid transaction id received for b2cpayback "
                          "redemption api")
-            return None , None
+            return None, None
 
-    def verification(self ,request_data):
+    def verification(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
         if request_transaction_id:
             try:
                 transaction_obj = self.get_youpay_transaction_data(
-                    request_transaction_id)
+                    decrypt_string(request_transaction_id))
                 formatted_data = format_adcb_verify_data(
                     request_data, transaction_obj)
                 b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
@@ -214,7 +230,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 url = b2c_payback_domain + ADCB_VERIFY_API
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
-                                         headers=ADCB_HEADERS)
+                                        headers=ADCB_HEADERS)
                 response_data = response.json()
                 response_data["is_redirect"] = True
                 response_data["redirect_url"] = get_adcb_verify_redirect_url(

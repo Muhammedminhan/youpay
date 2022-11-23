@@ -79,7 +79,7 @@ def get_session_id_from_header(request):
     """
     session_key = "youpay-session-id"
     session_id = request.session[session_key]
-    logger.info("session data is {} and session_id: {}"
+    logger.info("Session data is {} and session_id: {}"
                 "".format(request.session, session_id))
 
     return session_id

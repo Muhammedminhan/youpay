@@ -1,8 +1,13 @@
+import logging
+
 from rest_framework import serializers
 
-from core.utils import get_app_config
-from integrations.constants import TABBYPG_HUB_CODE
-from services.v1.views.common import add_payment_gateway_info_in_url
+logger = logging.getLogger(__name__)
+from core.exceptions import ValidationFailed
+from core.utils import get_app_config, get_payment_gateway_config
+from integrations.constants import TABBYPG_HUB_CODE, TABBYPG_CACHE_KEY
+from services.v1.views.common import (
+    add_payment_gateway_info_in_url)
 
 
 class TabbyPGPaymentRequestSerializer(serializers.Serializer):
@@ -33,7 +38,41 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("currency")
 
     def get_amount(self, data):
-        return str(data.get('transaction_data').get("amount"))
+        amount = float(data.get('transaction_data').get("amount"))
+        currency = data.get('transaction_data').get("currency")
+
+        payment_gateway = get_payment_gateway_config(TABBYPG_CACHE_KEY,
+                                                     TABBYPG_HUB_CODE)
+        if payment_gateway.validation_json:
+
+            # check the currency is in payment_gateway.validation_json
+            if currency not in payment_gateway.validation_json.keys():
+                raise ValidationFailed(
+                    "Currency is not in payment_gateway.validation_json, "
+                    "supported currencies are: {}".format(
+                        list(payment_gateway.validation_json.keys())))
+
+            currency_dict = payment_gateway.validation_json.get(currency)
+
+            # check the min_amount, max_amount are there in currency_dict
+            if ("min_amount" not in currency_dict.keys() or
+                    "max_amount" not in currency_dict.keys()):
+                raise ValidationFailed(
+                    "min_amount or max_amount keys are not in "
+                    "payment_gateway.validation_json")
+
+            min_limit = float(currency_dict['min_amount'])
+            max_limit = float(currency_dict['max_amount'])
+
+            if amount < min_limit or amount > max_limit:
+                raise ValidationFailed(
+                    "Amount {} {} should be between {} and"
+                    " {}".format(amount, currency, min_limit, max_limit))
+        else:
+            logger.info("Amount validation not set for payment gateway {}"
+                        "".format(payment_gateway.gateway_name))
+
+        return amount
 
     def get_order_reference(self, data):
         return data.get('transaction_data').get("order_reference")
