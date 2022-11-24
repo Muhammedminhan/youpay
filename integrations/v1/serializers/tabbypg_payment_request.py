@@ -3,11 +3,11 @@ import logging
 from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
+from core.utils import (
+    get_app_config, encrypt_string, get_payment_gateway_config)
 from core.exceptions import ValidationFailed
-from core.utils import get_app_config, get_payment_gateway_config
 from integrations.constants import TABBYPG_HUB_CODE, TABBYPG_CACHE_KEY
-from services.v1.views.common import (
-    add_payment_gateway_info_in_url)
+from services.v1.views.common import add_payment_gateway_info_in_url
 
 
 class TabbyPGPaymentRequestSerializer(serializers.Serializer):
@@ -129,8 +129,8 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
 
 def common_response_url(data):
     url = get_app_config().front_end_redirect_url
-    params = '?id=' + data.get('transaction_data').get(
-        'transaction_id')
+    params = '?id=' + encrypt_string(data.get('transaction_data').get(
+        'transaction_id'))
 
     return add_payment_gateway_info_in_url(url, params,
                                            TABBYPG_HUB_CODE)
