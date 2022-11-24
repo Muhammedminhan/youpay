@@ -13,7 +13,8 @@ from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
-    PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE)
+    PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
+    PAYMENT_METHOD_NONE)
 
 
 # Create your models here.
@@ -75,7 +76,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                             ' card used for the payment')
     payment_method = models.CharField(max_length=200,
                                       choices=PAYMENT_METHOD_CHOICES,
-                                      default=PAYMENT_METHOD_CARD,
+                                      default=PAYMENT_METHOD_NONE,
                                       help_text='Payment Method')
     payment_scheme = models.CharField(
         max_length=200,

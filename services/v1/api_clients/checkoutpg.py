@@ -70,7 +70,8 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                 payment_data = {'token_type': TOKEN_TYPE_SAVED_CARD,
                                 'transaction_data': transaction_data,
                                 'request_data': request.data,
-                                'site_domain': site_domain}
+                                'site_domain': site_domain,
+                                }
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.saved_card_payment(
                     payment_data)
@@ -178,9 +179,11 @@ class CheckoutVerification(APIView):
          the payment from the checkoutpg"""
 
         try:
-            payment_data = {'transaction_id': request.query_params.get('id'),
-                            'cko_session_id': request.query_params.get(
-                                'cko-session-id')}
+            payment_data = {
+                'transaction_id': decrypt_string(
+                    request.query_params.get('id')),
+                'cko_session_id': request.query_params.get(
+                    'cko-session-id')}
             checkout = CheckoutpgManager()
             response_data, code = checkout.verify_payment(payment_data)
 

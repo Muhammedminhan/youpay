@@ -77,9 +77,13 @@ class YouPayTransactionCRUD(object):
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
-                saved_fields = ['updated_at']
-                saved_fields = get_saved_fields(saved_fields, data_dict,
+                saved_fields = [
+                    'updated_at'
+                ]
+                saved_fields = get_saved_fields(saved_fields,
+                                                data_dict,
                                                 transaction_obj)
+
                 transaction_obj.save(update_fields=saved_fields)
             else:
                 logger.error("unable to find the transaction object for {}"

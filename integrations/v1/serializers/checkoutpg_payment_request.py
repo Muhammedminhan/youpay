@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from core.utils import encrypt_string
 from core.utils import get_app_config
 from integrations.constants import (CHECKOUTPG_CHANNEL_CONFIGURATIONS,
                                     CHECKOUTPG_HUB_CODE)
@@ -69,8 +70,8 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 
     def get_response_url(self, data):
         url = get_app_config().front_end_redirect_url
-        params = '?id=' + data.get('transaction_data').get(
-            'transaction_id')
+        params = '?id=' + encrypt_string(data.get('transaction_data').get(
+            'transaction_id'))
         return add_payment_gateway_info_in_url(url, params,
                                                CHECKOUTPG_HUB_CODE)
 
