@@ -23,7 +23,6 @@ def get_saved_fields(saved_fields, data_dict, transaction_obj):
         if value:
             transaction_obj.__dict__[key] = value
             saved_fields.append(key)
-            print("Appended - {} : {}".format(key, value))
 
     return saved_fields
 
@@ -78,17 +77,12 @@ class YouPayTransactionCRUD(object):
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
-                print("Updating transaction object", data_dict)
                 saved_fields = [
                     'updated_at'
                 ]
                 saved_fields = get_saved_fields(saved_fields,
                                                 data_dict,
                                                 transaction_obj)
-                for x in saved_fields:
-                    print("Saved - {} : {}".format(x,
-                                                   transaction_obj.__dict__[
-                                                       x]))
 
                 transaction_obj.save(update_fields=saved_fields)
             else:
