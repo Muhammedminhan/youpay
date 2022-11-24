@@ -14,6 +14,7 @@ from payments.constants import (
     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD, PAYMENT_METHOD_ADCB_CARD_ONLY,
     PAYMENT_STATUS_PAID
 )
+from services.v1.constants import B2C_PAYBACK_NO_RESPONSE_MESSAGE
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "point balance endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': "No response received"}}
+                    'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -89,7 +90,7 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "authenticate endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': "No response received"}}
+                    'code': "400", 'message':B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -125,7 +126,7 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "redemption endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': "No response received"}}
+                    'code': "400", 'message':B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -166,5 +167,5 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "verify endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': "No response received"}}
+                    'code': "400", 'message':B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
