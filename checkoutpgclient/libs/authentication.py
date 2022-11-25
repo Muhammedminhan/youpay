@@ -1,9 +1,11 @@
-from rest_framework import authentication
-from rest_framework import exceptions
-from httpsig import HeaderSigner
 import re
 
-from django.conf import settings
+from httpsig import HeaderSigner
+from rest_framework import authentication
+from rest_framework import exceptions
+
+from integrations.constants import CHECKOUTPG_HUB_CODE
+from services.v1.views.common import get_api_key_from_payment_gateway
 
 
 class SignatureAuthentication(authentication.BaseAuthentication):
@@ -72,12 +74,14 @@ class SignatureAuthentication(authentication.BaseAuthentication):
     def fetch_user_data(self, api_key):
         """Retuns (User instance, API Secret) or None if api_key is bad."""
         try:
-            api_secret = settings.CHECKOUTPG_API_SECRET
+            api_secret = "GEj5PRFU3yKxOvdOq5tRRISne9L3hr2KFUfuWZgOfio"
             return api_secret
         except Exception:
             return None
 
     def authenticate(self, request):
+        print("\n\nAuthenticate request ")
+        print("Authenticate header", request.headers)
         # Check for API key header.
         user = None
         api_key_header = self.header_canonical(self.API_KEY_HEADER)
@@ -90,20 +94,71 @@ class SignatureAuthentication(authentication.BaseAuthentication):
         sent_string = request.META.get(authorization_header)
         if not sent_string:
             raise exceptions.AuthenticationFailed('No signature provided')
+
         sent_signature = self.get_signature_from_signature_string(sent_string)
 
+        print("sent_signature", sent_signature)
         # Fetch credentials for API key from the data store.
         try:
             secret = self.fetch_user_data(api_key)
+            print("secret", secret)
         except TypeError:
             raise exceptions.AuthenticationFailed('Bad API key')
 
         # Build string to sign from "headers" part of Signature value.
         computed_string = self.build_signature(api_key, secret, request)
+        print("computed_string", computed_string)
         computed_signature = self.get_signature_from_signature_string(
             computed_string)
+        print("computed_signature", computed_signature)
 
         if computed_signature != sent_signature:
             raise exceptions.AuthenticationFailed('Bad signature')
 
-        return (user, api_key)
+        print("\n\n\nSignature matched\n\n\n")
+        return user, api_key
+
+
+class YoupayAuthentication(authentication.BaseAuthentication):
+    API_KEY_HEADER = 'X-Api-Key'
+    SIGNATURE_RE = re.compile('signature="(.+?)"')
+
+    def header_canonical(self, header_name):
+        """Translate HTTP headers to Django header names."""
+        # Translate as stated in the docs:
+        # https://docs.djangoproject.com/en/1.6/ref/request-response/#django.http.HttpRequest.META
+        header_name = header_name.lower()
+        if header_name == 'content-type':
+            return 'CONTENT-TYPE'
+        elif header_name == 'content-length':
+            return 'CONTENT-LENGTH'
+        return 'HTTP_%s' % header_name.replace('-', '_').upper()
+
+    def fetch_user_data(self, api_key):
+        """Retuns (User instance, API Secret) or None if api_key is bad."""
+        try:
+            api_secret = get_api_key_from_payment_gateway(
+                CHECKOUTPG_HUB_CODE)
+            return api_secret
+        except Exception:
+            return None
+
+    def authenticate(self, request):
+        # Check for API key header.
+        user = None
+        api_key_header = self.header_canonical(self.API_KEY_HEADER)
+        api_key = request.META.get(api_key_header)
+        if not api_key:
+            return None
+
+        try:
+            secret = self.fetch_user_data(api_key)
+        except TypeError:
+            raise exceptions.AuthenticationFailed('Bad API key')
+
+        if api_key != secret:
+            raise exceptions.AuthenticationFailed('Key Doest match')
+
+        print("user", user)
+        print("key", api_key)
+        return user, api_key

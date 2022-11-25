@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from checkoutpgclient.constants import PAYMENT_METHOD_CARD
-from checkoutpgclient.libs.authentication import SignatureAuthentication
+from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 
 # from core.utils import wait_redis_lock TODO
@@ -31,7 +31,7 @@ def get_transaction_object(payment_reference):
 
 class WebhookListener(APIView):
     authentication_classes = (
-        SignatureAuthentication,
+        YoupayAuthentication,
     )
 
     def post(self, request):
