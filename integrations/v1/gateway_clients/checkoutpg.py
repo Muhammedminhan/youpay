@@ -209,7 +209,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     if response:
                         response_data = response.json()
-                        print("\n\n\n\nCHECKOUT RESPONSE DATA", response_data)
                         if response_data.get(
                                 'status') == 200 and response_data.get(
                             IS_REDIRECT) is True:
@@ -301,9 +300,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     if response:
                         response_data = response.json()
-
-                        print("\n\n Received response from checkoutpg is {}"
-                              "".format(response_data))
                         if response_data.get(
                                 'status') == 200 and response_data.get(
                             IS_REDIRECT) is True:
