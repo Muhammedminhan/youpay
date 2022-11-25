@@ -130,7 +130,7 @@ class PaymentRequestDataValidator(object):
 
 def is_redirect(transaction_id, transaction_message):
     logger.info(
-        "is_redirect called for transaction_id: {}\nPayment Gateway Response:"
+        "is_redirect called for transaction_id: {} Payment Gateway Response:"
         "{}".format(transaction_id, transaction_message))
     response_data = None
     youpay = YouPayTransactionCRUD()
