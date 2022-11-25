@@ -258,7 +258,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         return api_key, api_secret
 
     def verify_transaction_with_client(self, **kwargs):
-
         url = kwargs.get('url')
         body = kwargs.get('body')
         headers = kwargs.get('headers')
