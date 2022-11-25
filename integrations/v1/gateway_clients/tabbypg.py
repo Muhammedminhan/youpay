@@ -36,7 +36,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         self.payment_gateway = PAYMENT_GATEWAY_TABBYPG
         self.payment_status = None
         self.payment_reference = None
-        self.channel_code = TABBYPG_HUB_CODE
+        self.channel_code = None
 
     def get_tabbypg_payment_data(self, data):
 
@@ -87,12 +87,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 tabbypg_conf = self.tabbypg_config
 
                 if tabbypg_conf:
-                    success_dict = {}
                     payment_data = self.get_tabbypg_payment_data(data)
                     logger.info(
                         "Youpay sending payment data is {}".format(
                             payment_data))
-                    request_data = data.get('request_data')
                     payment_data_to_send = json.dumps(payment_data)
                     url = (self.tabbypg_config.domain +
                            TABBYPG_CREATE_PAYMENT_ENDPOINT)
@@ -149,8 +147,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             else:
                 msg = (
                     "Youpay transaction verification failed, transaction id"
-                    "{} \n response is : {} ".format(self.transaction_id,
-                                                     verify_response))
+                    "{} response is : {} ".format(self.transaction_id,
+                                                  verify_response))
                 logger.error(msg)
                 return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
@@ -195,7 +193,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         if response:
             response_data = response.json()
             logger.info(
-                "Verify payment response data \n{}".format(response_data))
+                "Verify payment response data {}".format(response_data))
 
             if response_data.get('is_capture'):
                 payment_status = PAYMENT_STATUS_PAID
@@ -222,6 +220,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 return response_data, self.PAYMENT_FAILED
         else:
             logger.error(
-                "Error while verifying_payment status: {}, reason {} \n"
+                "Error while verifying_payment status: {}, reason {}"
                 .format(response.status_code, response.reason))
-            return None, self.CHECKOUTPG_CONNECTION_ERROR
+            return None, self.TABBYPG_CONNECTION_ERROR
