@@ -14,8 +14,7 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT,
-                                    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT,
-                                    CHECKOUTPG_HUB_CODE)
+                                    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT)
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
@@ -43,7 +42,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
         self.payment_status = None
         self.payment_reference = None
-        self.channel_code = CHECKOUTPG_HUB_CODE
+        self.channel_code = None
 
     def get_checkout_payment_data(self, data):
 
@@ -79,8 +78,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
             params = {'channel_code': channel_codes}
             headers = {'Api-key': self.checkoutpg_config.api_key}
-            URL = self.checkoutpg_config.domain + CHECKOUTPG_CONFIG_ENDPOINT_V2
             try:
+                URL = (self.checkoutpg_config.domain +
+                       CHECKOUTPG_CONFIG_ENDPOINT_V2)
+
                 configurations = requests.get(url=URL, params=params,
                                               headers=headers)
                 if configurations:
@@ -177,12 +178,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 checkoutpg_config = get_checkoutpg_config()
 
                 if checkoutpg_config:
-                    success_dict = {}
                     payment_data = self.get_checkout_payment_data(data)
+                    self.channel_code = payment_data.get('channel_code')
                     logger.info(
                         "Youpay sending payment data is {}".format(
                             payment_data))
-                    request_data = data.get('request_data')
                     payment_data_to_send = json.dumps(payment_data)
                     url = (self.checkoutpg_config.domain +
                            CHECKOUTPG_PAYMENT_ENDPOINT)
@@ -231,8 +231,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             else:
                 msg = (
                     "Youpay transaction verification failed for transaction id "
-                    "{} \n response is : {} ".format(self.transaction_id,
-                                                     verify_response))
+                    "{} response is : {} ".format(self.transaction_id,
+                                                  verify_response))
                 logger.error(msg)
                 return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
@@ -271,12 +271,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             if verify_status == status.HTTP_200_OK and is_verified:
                 checkoutpg_config = get_checkoutpg_config()
                 if checkoutpg_config:
-                    success_dict = {}
                     payment_data = self.get_checkout_payment_data(data)
+                    self.channel_code = payment_data.get('channel_code')
                     logger.info(
                         "Youpay sending payment data is {}".format(
                             payment_data))
-                    request_data = data.get('request_data')
                     payment_data_to_send = json.dumps(payment_data)
                     url = self.checkoutpg_config.domain + CHECKOUTPG_PAYMENT_ENDPOINT
                     headers = self.get_payment_header()
@@ -303,9 +302,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     if response:
                         response_data = response.json()
-
-                        print("\n\n Received response from checkoutpg is {}"
-                              "".format(response_data))
                         if response_data.get(
                                 'status') == 200 and response_data.get(
                             IS_REDIRECT) is True:
@@ -327,8 +323,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             else:
                 msg = (
                     "Youpay transaction verification failed for transaction id "
-                    "{}\n response is : {} ".format(self.transaction_id,
-                                                    verify_response))
+                    "{} response is : {} ".format(self.transaction_id,
+                                                  verify_response))
                 logger.error(msg)
                 return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
@@ -352,7 +348,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT)
         transaction_id = data.get('transaction_id')
         youpay_transaction = self.get_youpay_transaction_data(transaction_id)
-        print("\n\n Youpay transaction is ", youpay_transaction)
 
         if youpay_transaction is None:
             response = {
@@ -377,12 +372,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             request_type=PAYMENT_REQUEST_VERIFY,
             request_method=REQUEST_METHOD_GET,
         )
-        print("\n\n Checkoutpg verify payment response is ", response.text)
 
         if response:
             response_data = response.json()
             logger.info(
-                "Verify payment response data \n{}".format(response_data))
+                "Verify payment response data {}".format(response_data))
             self.update_youpay_transaction_data(
                 {
                     'transaction_id': transaction_id,
@@ -400,7 +394,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 return response_data, self.PAYMENT_FAILED
         else:
             logger.error(
-                "Error while verifying_payment status: {}, reason {} \n"
+                "Error while verifying_payment status: {}, reason {} "
                 .format(response.status_code, response.json()))
             return ({"error": response.json()},
                     self.CHECKOUTPG_CONNECTION_ERROR)

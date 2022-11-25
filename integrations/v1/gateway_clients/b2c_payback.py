@@ -1,42 +1,39 @@
 import json
 import logging
-import requests
 
+import requests
 from rest_framework.views import APIView
-from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
-                                   B2C_PAYBACK_CONFIG_ENDPOINT
-                                   )
+
+from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
+from core.utils import (get_payment_gateway_config,
+                        decrypt_string
+                        )
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
                                     ADCB_REDEMPTION_API, ADCB_HEADERS,
-                                    ADCB_CLIENT_CODE, ADCB_VERIFY_API,
+                                    ADCB_VERIFY_API,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY)
-from core.utils import ( get_payment_gateway_config,
-                         get_app_config, decrypt_string
-                         )
 from integrations.v1.gateway_clients.utils import (
-                                    format_adcb_point_balance_data,
-                                    format_adcb_authenticate_data,
-                                    format_adcb_redemption_data,
-                                    format_adcb_verify_data,
-                                    get_adcb_verify_redirect_url,
-                                    get_adcb_redemption_redirect_url
-                                    )
+    format_adcb_redemption_data,
+    format_adcb_verify_data,
+    get_adcb_verify_redirect_url,
+    get_adcb_redemption_redirect_url
+)
 from integrations.v1.serializers.b2c_payback_payment_request import (
-                                    PointBalanceRequestSerializer,
-                                    AuthenticateRequestSerializer
-                                    )
+    PointBalanceRequestSerializer,
+    AuthenticateRequestSerializer
+)
 from payments.serializers.youpay_payments import (
-                                    YouPayTransactionDataSerializer
-                                    )
+    YouPayTransactionDataSerializer
+)
+from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
+                                   B2C_PAYBACK_CONFIG_ENDPOINT
+                                   )
 from services.v1.views.payment_handlers import PaymentHandlers
-from core.constants import  REQUEST_METHOD_POST, REQUEST_METHOD_GET
-from services.utils import get_payment_redirect_url
-
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +55,9 @@ class B2CPaybackManager(APIView, PaymentHandlers):
         b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                      B2CPAYBACK_HUB_CODE)
         b2c_payback_domain = b2c_gateway_obj.domain
-        url = b2c_payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
         try:
+            url = b2c_payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
+
             response = requests.post(url, data=request_data_json,
                                      headers=ADCB_HEADERS)
             if response:
@@ -133,7 +131,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 authenticate_request_data = AuthenticateRequestSerializer(
                     request_dict)
                 update_data = {'cko-card-token':
-                               request_data.get('cko-card-token')}
+                                   request_data.get('cko-card-token')}
                 update_data.update(authenticate_request_data.data)
                 request_data_json = json.dumps(update_data)
                 b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,

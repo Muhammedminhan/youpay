@@ -36,7 +36,12 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         self.payment_gateway = PAYMENT_GATEWAY_TABBYPG
         self.payment_status = None
         self.payment_reference = None
-        self.channel_code = TABBYPG_HUB_CODE
+        self.channel_code = None
+        self.request_data = None
+        self.response_data = None
+        self.request_type = None
+        self.request_method = None
+        self.transaction_obj = None
 
     def get_tabbypg_payment_data(self, data):
 
@@ -147,8 +152,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             else:
                 msg = (
                     "Youpay transaction verification failed, transaction id"
-                    "{} \n response is : {} ".format(self.transaction_id,
-                                                     verify_response))
+                    "{} response is : {} ".format(self.transaction_id,
+                                                  verify_response))
                 logger.error(msg)
                 return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
@@ -176,36 +181,37 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         params = {
             'payment_id': data.get('payment_id'),
         }
-        transaction_obj = self.get_youpay_transaction_data(transaction_id)
 
-        if transaction_obj is None:
+        self.transaction_obj = self.get_youpay_transaction_data(
+            transaction_id)
+
+        self.transaction_id = transaction_id
+        self.request_data = json.dumps(params)
+        self.request_type = PAYMENT_REQUEST_VERIFY
+        self.request_method = REQUEST_METHOD_GET
+
+        if self.transaction_obj is None:
             return None, self.TRANSACTION_NOT_FOUND
 
-        # if transaction is already verified then redirect to corresponding
-        # client url
-        if transaction_obj.payment_status == PAYMENT_STATUS_PAID:
-            response_data = {
-                "is_redirect": True,
-                "redirect_url": transaction_obj.success_url,
-                "transaction_message": {
-                    "status": 200,
-                    "is_capture": True,
-                }
-            }
-            return response_data, self.SUCCESS
-
         try:
-            response = requests.get(url, params=params)
+            # if transaction is already verified then redirect to
+            # corresponding client url
+            if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
+                response_data = {
+                    "is_redirect": True,
+                    "redirect_url": (self.transaction_obj.success_url +
+                                     '?transaction_id=' + transaction_id),
+                    "transaction_message": {
+                        "status": 200,
+                        "is_capture": True,
+                        "message": "Duplicate verification"
+                    }
+                }
+                self.response_data = json.dumps(response_data)
 
-            # storing Youpay to payment gateway request and response data
-            self.create_youpay_to_payment_gateways_data(
-                transaction_obj=transaction_obj,
-                transaction_id=transaction_id,
-                request_data=json.dumps(params),
-                response_data=response.text,
-                request_type=PAYMENT_REQUEST_VERIFY,
-                request_method=REQUEST_METHOD_GET,
-            )
+                return response_data, self.SUCCESS
+
+            response = requests.get(url, params=params)
 
             if response:
                 response_data = response.json()
@@ -232,8 +238,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 redirect, response_data = is_redirect(transaction_id,
                                                       response_data)
                 if redirect:
+                    self.response_data = json.dumps(response_data)
                     return response_data, self.SUCCESS
                 else:
+                    self.response_data = json.dumps(response_data)
                     return response_data, self.PAYMENT_FAILED
             else:
                 logger.error(
@@ -243,3 +251,13 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         except Exception as e:
             logger.error("Exception in tabbypg verify session: {}".format(e))
             return {"error": e}, self.TABBYPG_CONNECTION_ERROR
+        finally:
+            print("Finally Worked")
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=self.request_data,
+                response_data=self.response_data,
+                request_type=self.request_type,
+                request_method=self.request_method,
+            )
