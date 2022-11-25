@@ -1,4 +1,4 @@
 TOKEN_TYPE_SAVED_CARD = 'savedcard'
 TOKEN_TYPE_CARD = 'card'
 RESPONSE_CODE_LIST = ['20005', '20051', '20014']
-YOUPAY_SESSION_ID = "youpay-session-id"
+YOUPAY_SESSION_KEY = "youpay-session-id"
