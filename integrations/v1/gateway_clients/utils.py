@@ -74,7 +74,14 @@ def format_adcb_verify_data(request_data, transaction_obj):
 
 def get_adcb_verify_redirect_url(response_data, transaction_obj): # partial redemption
     if (response_data.get("results", {}).get("payment_status") and
-            response_data.get("results", {}).get("redemption_status")):
+            response_data.get("results", {}).get("redemption_status")) :
+        logger.info("Partial payment through card and touchpoints for id "
+                    "{}".format(transaction_obj.transaction_id))
+        return transaction_obj.success_url
+    elif (response_data.get("results", {}).get("payment_status") and not
+            response_data.get("results", {}).get("redemption_status")) :
+        logger.info("Full amount paid through card for id {}".format(
+            transaction_obj.transaction_id))
         return transaction_obj.success_url
     else:
         return transaction_obj.failure_url
