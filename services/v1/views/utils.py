@@ -75,7 +75,7 @@ def get_session_id_from_header(request):
     """
     used to get session_id request
 
-    take session_id from request header
+    take session_id from request session
     """
     session_key = "youpay-session-id"
     try:
