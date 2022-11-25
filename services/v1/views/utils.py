@@ -7,6 +7,7 @@ from integrations.constants import (
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
+from services.constants import YOUPAY_SESSION_ID
 from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ def get_session_id_from_header(request):
 
     take session_id from request session
     """
-    session_key = "youpay-session-id"
+    session_key = YOUPAY_SESSION_ID
     try:
         session_id = request.session[session_key]
         logger.info("Session data is {} and session_id: {}"
