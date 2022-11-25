@@ -78,8 +78,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
             params = {'channel_code': channel_codes}
             headers = {'Api-key': self.checkoutpg_config.api_key}
-            URL = self.checkoutpg_config.domain + CHECKOUTPG_CONFIG_ENDPOINT_V2
             try:
+                URL = (self.checkoutpg_config.domain +
+                       CHECKOUTPG_CONFIG_ENDPOINT_V2)
+
                 configurations = requests.get(url=URL, params=params,
                                               headers=headers)
                 if configurations:
