@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from httpsig import HeaderSigner
 from rest_framework import authentication
 from rest_framework import exceptions
@@ -74,14 +75,12 @@ class SignatureAuthentication(authentication.BaseAuthentication):
     def fetch_user_data(self, api_key):
         """Retuns (User instance, API Secret) or None if api_key is bad."""
         try:
-            api_secret = "GEj5PRFU3yKxOvdOq5tRRISne9L3hr2KFUfuWZgOfio"
+            api_secret = settings.CHECKOUTPG_API_SECRET
             return api_secret
         except Exception:
             return None
 
     def authenticate(self, request):
-        print("\n\nAuthenticate request ")
-        print("Authenticate header", request.headers)
         # Check for API key header.
         user = None
         api_key_header = self.header_canonical(self.API_KEY_HEADER)
@@ -94,28 +93,22 @@ class SignatureAuthentication(authentication.BaseAuthentication):
         sent_string = request.META.get(authorization_header)
         if not sent_string:
             raise exceptions.AuthenticationFailed('No signature provided')
-
         sent_signature = self.get_signature_from_signature_string(sent_string)
 
-        print("sent_signature", sent_signature)
         # Fetch credentials for API key from the data store.
         try:
             secret = self.fetch_user_data(api_key)
-            print("secret", secret)
         except TypeError:
             raise exceptions.AuthenticationFailed('Bad API key')
 
         # Build string to sign from "headers" part of Signature value.
         computed_string = self.build_signature(api_key, secret, request)
-        print("computed_string", computed_string)
         computed_signature = self.get_signature_from_signature_string(
             computed_string)
-        print("computed_signature", computed_signature)
 
         if computed_signature != sent_signature:
             raise exceptions.AuthenticationFailed('Bad signature')
 
-        print("\n\n\nSignature matched\n\n\n")
         return user, api_key
 
 
@@ -159,6 +152,4 @@ class YoupayAuthentication(authentication.BaseAuthentication):
         if api_key != secret:
             raise exceptions.AuthenticationFailed('Key Doest match')
 
-        print("user", user)
-        print("key", api_key)
         return user, api_key
