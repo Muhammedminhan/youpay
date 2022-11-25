@@ -83,7 +83,9 @@ def get_session_id_from_header(request):
         logger.info("Session data is {} and session_id: {}"
                     "".format(request.session, session_id))
     except KeyError:
-        logger.info("Couldnt able to load Session data")
+        logger.info(
+            "Couldnt able to load Session keys {} ".format(
+                request.session.keys()))
         session_id = None
 
     return session_id
