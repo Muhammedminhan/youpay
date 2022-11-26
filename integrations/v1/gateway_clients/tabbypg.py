@@ -37,6 +37,11 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         self.payment_status = None
         self.payment_reference = None
         self.channel_code = None
+        self.request_data = None
+        self.response_data = None
+        self.request_type = None
+        self.request_method = None
+        self.transaction_obj = None
 
     def get_tabbypg_payment_data(self, data):
 
@@ -176,50 +181,83 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         params = {
             'payment_id': data.get('payment_id'),
         }
-        response = requests.get(url, params=params)
 
-        transaction_obj = self.get_youpay_transaction_data(transaction_id)
+        self.transaction_obj = self.get_youpay_transaction_data(
+            transaction_id)
 
-        # storing Youpay to payment gateway request and response data
-        self.create_youpay_to_payment_gateways_data(
-            transaction_obj=transaction_obj,
-            transaction_id=transaction_id,
-            request_data=json.dumps(params),
-            response_data=response.text,
-            request_type=PAYMENT_REQUEST_VERIFY,
-            request_method=REQUEST_METHOD_GET,
-        )
+        self.transaction_id = transaction_id
+        self.request_data = json.dumps(params)
+        self.request_type = PAYMENT_REQUEST_VERIFY
+        self.request_method = REQUEST_METHOD_GET
 
-        if response:
-            response_data = response.json()
-            logger.info(
-                "Verify payment response data {}".format(response_data))
+        if self.transaction_obj is None:
+            return None, self.TRANSACTION_NOT_FOUND
 
-            if response_data.get('is_capture'):
-                payment_status = PAYMENT_STATUS_PAID
-                approved = True
-                response_summary = "Payment successful"
-            else:
-                payment_status = PAYMENT_STATUS_CANCELLED
-                approved = False
-                response_summary = "Payment failed"
-
-            self.update_youpay_transaction_data(
-                {
-                    'transaction_id': transaction_id,
-                    "payment_status": payment_status,
-                    "approved": approved,
-                    "response_summary": response_summary,
+        try:
+            # if transaction is already verified then redirect to
+            # corresponding client url
+            if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
+                response_data = {
+                    "is_redirect": True,
+                    "redirect_url": (self.transaction_obj.success_url +
+                                     '?transaction_id=' + transaction_id),
+                    "transaction_message": {
+                        "status": 200,
+                        "is_capture": True,
+                        "message": "Duplicate verification"
+                    }
                 }
-            )
-            redirect, response_data = is_redirect(transaction_id,
-                                                  response_data)
-            if redirect:
+                self.response_data = json.dumps(response_data)
+
                 return response_data, self.SUCCESS
+
+            response = requests.get(url, params=params)
+
+            if response:
+                response_data = response.json()
+                logger.info(
+                    "Verify payment response data {}".format(response_data))
+
+                if response_data.get('is_capture'):
+                    payment_status = PAYMENT_STATUS_PAID
+                    approved = True
+                    response_summary = "Payment successful"
+                else:
+                    payment_status = PAYMENT_STATUS_CANCELLED
+                    approved = False
+                    response_summary = "Payment failed"
+
+                self.update_youpay_transaction_data(
+                    {
+                        'transaction_id': transaction_id,
+                        "payment_status": payment_status,
+                        "approved": approved,
+                        "response_summary": response_summary,
+                    }
+                )
+                redirect, response_data = is_redirect(transaction_id,
+                                                      response_data)
+                if redirect:
+                    self.response_data = json.dumps(response_data)
+                    return response_data, self.SUCCESS
+                else:
+                    self.response_data = json.dumps(response_data)
+                    return response_data, self.PAYMENT_FAILED
             else:
-                return response_data, self.PAYMENT_FAILED
-        else:
-            logger.error(
-                "Error while verifying_payment status: {}, reason {}"
-                .format(response.status_code, response.reason))
-            return None, self.TABBYPG_CONNECTION_ERROR
+                logger.error(
+                    "Error while verifying_payment status: {}, reason {} "
+                    .format(response.status_code, response.reason))
+                return None, self.TABBYPG_CONNECTION_ERROR
+        except Exception as e:
+            logger.error("Exception in tabbypg verify session: {}".format(e))
+            return {"error": e}, self.TABBYPG_CONNECTION_ERROR
+        finally:
+            print("Finally Worked")
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=self.request_data,
+                response_data=self.response_data,
+                request_type=self.request_type,
+                request_method=self.request_method,
+            )
