@@ -1,10 +1,10 @@
 from rest_framework import serializers
 
+from core.utils import encrypt_string
 from core.utils import get_app_config
 from integrations.constants import (CHECKOUTPG_CHANNEL_CONFIGURATIONS,
                                     CHECKOUTPG_HUB_CODE)
 from services.v1.views.common import add_payment_gateway_info_in_url
-from core.utils import encrypt_string
 
 
 class CheckoutPaymentRequestSerializer(serializers.Serializer):
