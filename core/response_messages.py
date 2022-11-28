@@ -1,11 +1,38 @@
 class YouPayResponse(object):
+    """
+    try use error codes as 4-digit numbers, after this onwards, also keep
+    ascending order
+
+    1XXX - for general errors
+    2XXX - for checkoutpg
+    3XXX - for tabbypg
+    4XXX - for Amazon Pay
+    5XXX - for b2c
+    6XXX - for youpay
+    """
+
     SUCCESS = 1000
     UNKNOWN_ERR = 1002
-    CHECKOUTPG_CONNECTION_ERROR = 1003
+
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
+    TRANSACTION_NOT_FOUND = 1404
+
+    """checkoutpg related begins"""
+    CHECKOUTPG_CONNECTION_ERROR = 2003
+    """checkoutpg related ends"""
+
+    """tabbypg related begins"""
     TABBYPG_CONNECTION_ERROR = 1006
-    AMAZONPG_CONNECTION_ERROR = 2002
+    """tabbypg related ends"""
+
+    """b2cpayback related begins"""
+    TRANSACTION_NOT_FOUND = 6404
+    """b2cpayback related ends"""
+
+    """Amazonpay related begins"""
+    AMAZONPG_CONNECTION_ERROR = 4002
+    """Amazonpay related ends"""
 
     MESSAGE = {}
 
@@ -22,7 +49,9 @@ class YouPayResponse(object):
             self.PAYMENT_FAILED: "Payment failed",
             self.TABBYPG_CONNECTION_ERROR: "Tabbypg connection error",
             self.AMAZONPG_CONNECTION_ERROR: "Amzonpg connection error",
-            self.CLIENT_TRANSACTION_VERIFICATION_FAILED: "Transaction verification failed"
+            self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
+                "Transaction verification failed"),
+            self.TRANSACTION_NOT_FOUND: "Transaction not found",
         })
 
     def get_400_message(self, message):

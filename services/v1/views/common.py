@@ -78,9 +78,13 @@ class YouPayTransactionCRUD(object):
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
-                saved_fields = ['updated_at']
-                saved_fields = get_saved_fields(saved_fields, data_dict,
+                saved_fields = [
+                    'updated_at'
+                ]
+                saved_fields = get_saved_fields(saved_fields,
+                                                data_dict,
                                                 transaction_obj)
+
                 transaction_obj.save(update_fields=saved_fields)
             else:
                 logger.error("unable to find the transaction object for {}"
@@ -127,7 +131,7 @@ class PaymentRequestDataValidator(object):
 
 def is_redirect(transaction_id, transaction_message):
     logger.info(
-        "is_redirect called for transaction_id: {}\nPayment Gateway Response:"
+        "is_redirect called for transaction_id: {} Payment Gateway Response:"
         "{}".format(transaction_id, transaction_message))
     response_data = None
     youpay = YouPayTransactionCRUD()

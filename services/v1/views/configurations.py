@@ -9,6 +9,7 @@ from core.utils import decrypt_string
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_ERROR,
     PAYMENT_STATUS_REJECTED,
@@ -61,6 +62,7 @@ class ConfigViewSet(ViewSet):
         session_id = get_session_id_from_header(request)
 
         checkout_obj = CheckoutpgManager()
+        tabbypg_obj = TabbyPGManager()
 
         decrypted_transaction_id = decrypt_string(pk)
         try:
@@ -89,6 +91,8 @@ class ConfigViewSet(ViewSet):
                 checkout_config, status_code = (
                     checkout_obj.get_configurations(transaction.currency)
                 )
+                tabbypg_config = self.get_tabby_conf(
+                    tabbypg_obj.tabbypg_config)
 
                 logger.info(
                     "checkoutpg response : {}, {}".format(checkout_config,
@@ -112,8 +116,13 @@ class ConfigViewSet(ViewSet):
                         payback_config = b2c_payback_obj.get_configurations(
                             transaction.amount, transaction.currency)
 
+                        api_client = {'color': client.color_code,
+                                      'logo': self.get_logo_url(client)}
+
                         response_data = self.retrieve_response(
+                            api_client=api_client,
                             payment_options=payment_options,
+                            tabbypg_config=tabbypg_config,
                             checkoutpg_config=checkout_config,
                             payback_config=payback_config,
                             transaction=transaction,
@@ -160,7 +169,9 @@ class ConfigViewSet(ViewSet):
     def retrieve_response(self, **kwargs):
 
         payment_options = kwargs.get('payment_options', None)
+        api_client = kwargs.get('api_client', None)
         checkoutpg_config = kwargs.get('checkoutpg_config', None)
+        tabbypg_config = kwargs.get('tabbypg_config', None)
         payback_config = kwargs.get('payback_config', None)
         transaction = kwargs.get('transaction', None)
         announcements_dict = kwargs.get('announcements_dict', None)
@@ -196,9 +207,11 @@ class ConfigViewSet(ViewSet):
 
         response_data = {
             "data": {
+                "api_client": api_client,
                 "payment_options": payment_options,
                 "checkoutpg_config": checkoutpg_config,
                 "b2cpayback_config": payback_config,
+                "tabbypg_config": tabbypg_config,
                 "amount": amount,
                 "currency": currency,
                 "service_fee": service_fee,
@@ -216,3 +229,16 @@ class ConfigViewSet(ViewSet):
         }
 
         return response_data
+
+    def get_tabby_conf(self, tabbypg_obj=None):
+        tabbypg_config = {}
+        if tabbypg_obj:
+            tabbypg_config[
+                "validation_json"] = tabbypg_obj.validation_json
+        return tabbypg_config
+
+    def get_logo_url(self, client):
+        if client.logo_file and hasattr(client.logo_file, 'url'):
+            return client.logo_file.url
+        else:
+            return None
