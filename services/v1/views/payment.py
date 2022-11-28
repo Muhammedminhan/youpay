@@ -41,6 +41,12 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         data with keys as fields in PaymentRequestData table
 
         """
+        logger.info("session data is {}, keys {}".format(
+            request.session, request.session.keys()))
+        
+        logger.info("cookie data is {}, keys {}".format(
+            request.COOKIES, request.COOKIES.keys()))
+
         try:
             # Validate client at first
             validate, client_pk = self.validate_client(request)
