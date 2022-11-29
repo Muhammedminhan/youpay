@@ -70,7 +70,8 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                 payment_data = {'token_type': TOKEN_TYPE_SAVED_CARD,
                                 'transaction_data': transaction_data,
                                 'request_data': request.data,
-                                'site_domain': site_domain}
+                                'site_domain': site_domain,
+                                }
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.saved_card_payment(
                     payment_data)
