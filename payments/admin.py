@@ -41,13 +41,19 @@ class AnnouncementAdmin(AdminAbstract):
 
 
 class ClientNotificationAdmin(admin.ModelAdmin):
-    list_display = ('transaction', 'api_client', 'is_notified', 'event_type',
+    list_display = ('get_transaction', 'api_client', 'is_notified', 'event_type',
                     'payment_status','created_at', 'updated_at',)
     search_fields = ('transaction__transaction_id', 'api_client__name',)
     list_filter = ('created_at', 'api_client__name', 'is_notified',
                    'payment_status',)
     raw_id_fields = ('transaction', 'api_client',)
     readonly_fields = ('created_at', 'updated_at')
+
+    def get_transaction(self, obj):
+        return obj.transaction.transaction_id
+
+    get_transaction.admin_order_field = 'transaction'
+    get_transaction.short_description = 'youpay transaction id'
 
 admin.site.register(YouPayTransactionData, YouPayTransactionDataAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)

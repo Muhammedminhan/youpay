@@ -1,5 +1,9 @@
 from rest_framework import serializers
-from integrations.constants import ADCB_CLIENT_CODE
+from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
+                                    ADCB_TOKEN_TYPE, ADCB_REDEMPTION_CURRENCY)
+from core.utils import get_app_config
+from services.v1.views.common import add_payment_gateway_info_in_url
+from core.utils import encrypt_string
 
 class PointBalanceRequestSerializer(serializers.Serializer):
     card_no = serializers.SerializerMethodField()
@@ -25,3 +29,70 @@ class PointBalanceRequestSerializer(serializers.Serializer):
 
     def get_platform(self, data):
         return data.get('transaction_data', {}).get('platform')
+
+
+class AuthenticateRequestSerializer(serializers.Serializer):
+    is_save_user_token = serializers.SerializerMethodField()
+    client_code = serializers.SerializerMethodField()
+    platform = serializers.SerializerMethodField()
+    invoice_amount = serializers.SerializerMethodField()
+    channel_code = serializers.SerializerMethodField()
+    invoice_id = serializers.SerializerMethodField()
+    customer_ip_address = serializers.SerializerMethodField()
+    customer_email = serializers.SerializerMethodField()
+    reference_id = serializers.SerializerMethodField()
+    token_type = serializers.SerializerMethodField()
+    card_type = serializers.SerializerMethodField()
+    redemption_currency = serializers.SerializerMethodField()
+    selected_amount = serializers.SerializerMethodField()
+    checkout_amount = serializers.SerializerMethodField()
+    response_url = serializers.SerializerMethodField()
+
+    def get_is_save_user_token(self, data):
+        return False
+
+    def get_client_code(self, data):
+        return ADCB_CLIENT_CODE
+
+    def get_platform(self, data):
+        return data.get('transaction_data', {}).get('platform')
+
+    def get_invoice_amount(self, data):
+        return str(data.get('transaction_data', {}).get('amount'))
+
+    def get_channel_code(self, data):
+        return data.get('transaction_data', {}).get('channel_code')
+    def get_invoice_id(self, data):
+        return data.get('transaction_data', {}).get('invoice_id')
+
+    def get_customer_ip_address(self, data):
+        return data.get('transaction_data', {}).get('ip')
+
+    def get_customer_email(self, data):
+        return data.get('transaction_data', {}).get('customer_email')
+
+    def get_reference_id(self, data):
+        return data.get('data', {}).get('reference_id')
+
+    def get_token_type(self, data):
+        return ADCB_TOKEN_TYPE
+
+    def get_card_type(self, data):
+        return data.get('data', {}).get('card_type')
+
+    def get_redemption_currency(self, data):
+        return ADCB_REDEMPTION_CURRENCY
+
+    def get_selected_amount(self, data):
+        return data.get('data', {}).get('selected_amount')
+
+    def get_checkout_amount(self, data):
+        return data.get('data', {}).get('checkout_amount')
+
+    def get_response_url(self, data):
+        url = get_app_config().front_end_redirect_url
+        params = '?id=' + encrypt_string(data.get('transaction_data', {}).get(
+            'transaction_id')) + '&redemption_reference_id=' + data.get(
+            'data', {}).get('reference_id')
+        return add_payment_gateway_info_in_url(url, params,
+                                               B2CPAYBACK_HUB_CODE)
