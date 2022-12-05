@@ -30,10 +30,16 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
-                'card_bin' : request_data.get('card_no', "")[0:6],
-                'card_last4' : request_data.get('card_no', "")[-4:],
+                'card_bin': request_data.get('card_no', "")[0:6],
+                'card_last4': request_data.get('card_no', "")[-4:],
             })
-            return Response(response.json(), status=status.HTTP_200_OK)
+            data = self.response_obj.get_success_dict(
+                code=code,
+                success_dict=response_data
+            )
+            return Response(data,
+                            status=status.HTTP_200_OK)
+            # return Response(response.json(), status=status.HTTP_200_OK)
         else:
             try:
                 response_text = json.loads(response.text)
@@ -45,7 +51,8 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "point balance endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
+                    'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}
+                }
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -60,12 +67,12 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
             invoice_amount = transaction_obj.amount
             selected_amount = float(request.data.get('selected_amount'))
             update_data = {
-                    'transaction_id': transaction_obj.transaction_id ,
+                    'transaction_id': transaction_obj.transaction_id,
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                     'payment_status': PAYMENT_STATUS_AUTHORIZED,
-                    'is_gcc_card' : True
+                    'is_gcc_card': True
                 }
-            if invoice_amount == selected_amount: #full redemption
+            if invoice_amount == selected_amount:  # full redemption
                 update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
 
             elif selected_amount > 0:  # partial redemption
@@ -90,7 +97,8 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "authenticate endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message':B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
+                    'code': "400", 'message':
+                        B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -105,8 +113,8 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 update_data = {
                     'transaction_id': transaction_id,
                     'payment_status': PAYMENT_STATUS_PAID,
-                    'payment_reference' : response.get(
-                        'results',{}).get('reference_id'),
+                    'payment_reference': response.get(
+                        'results', {}).get('reference_id'),
                     'approved': True
                 }
                 self.update_youpay_transaction_data(update_data)
@@ -126,7 +134,8 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "redemption endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message':B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
+                    'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}
+                }
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -149,7 +158,7 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                     'payment_status': PAYMENT_STATUS_PAID,
                     'payment_reference': response.get(
                         'results', {}).get('reference_id'),
-                    'approved' : True
+                    'approved': True
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
@@ -167,5 +176,6 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                 logger.error("Failed response received from b2cpayback "
                              "verify endpoint", exc_info=e)
                 response = {'error': {
-                    'code': "400", 'message':B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
+                    'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}
+                }
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
