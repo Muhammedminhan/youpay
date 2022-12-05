@@ -9,6 +9,7 @@ from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification)
 from services.v1.views.configurations import ConfigViewSet
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
+from .api_clients.amazonpg import AmazonPGAuthentication, AmazonPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView)
@@ -40,4 +41,8 @@ urlpatterns = [
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view()),
     path('tabbypg/verify/', TabbyPGVerification.as_view()),
+
+    # Amazonpg endpoints
+    path('amazonpg/authentication/', AmazonPGAuthentication.as_view()),
+    path('amazonpg/verify/', AmazonPGVerification.as_view()),
 ]
