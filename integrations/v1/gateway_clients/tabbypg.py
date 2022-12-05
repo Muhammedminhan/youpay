@@ -18,7 +18,7 @@ from integrations.v1.serializers.tabbypg_payment_request import (
 )
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_TABBY)
+    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED)
 from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -223,7 +223,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     approved = True
                     response_summary = "Payment successful"
                 else:
-                    payment_status = PAYMENT_STATUS_CANCELLED
+                    payment_status = PAYMENT_STATUS_FAILED
                     approved = False
                     response_summary = "Payment failed"
 
