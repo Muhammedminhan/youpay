@@ -73,6 +73,7 @@ class YouPayTransactionCRUD(object):
                                                     None)
         data_dict['approved'] = data.get('approved', None)
         data_dict['response_summary'] = data.get('response_summary', None)
+        data_dict['name_on_card'] = data.get('name_on_card', None)
 
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)

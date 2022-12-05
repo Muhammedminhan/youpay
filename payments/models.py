@@ -74,6 +74,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
 
                                   help_text='Denotes the last 4 digits of the'
                                             ' card used for the payment')
+    name_on_card = models.CharField(max_length=255, null=True, blank=True,
+                                    help_text='Denotes the name on the card')
     payment_method = models.CharField(max_length=200,
                                       choices=PAYMENT_METHOD_CHOICES,
                                       default=PAYMENT_METHOD_NONE,
