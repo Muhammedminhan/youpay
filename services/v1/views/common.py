@@ -14,6 +14,7 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
+from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)
 
