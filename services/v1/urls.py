@@ -40,4 +40,6 @@ urlpatterns = [
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view()),
     path('tabbypg/verify/', TabbyPGVerification.as_view()),
+
+    #ApplePay endpoints
 ]

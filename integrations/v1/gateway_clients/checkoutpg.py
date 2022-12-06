@@ -398,3 +398,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 .format(response.status_code, response.json()))
             return ({"error": response.json()},
                     self.CHECKOUTPG_CONNECTION_ERROR)
+
+    def applepay_payment(self, data):
+        pass
