@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'services',
     'payments',
     'checkoutpgclient',
+    'amazonpgclient',
     'tabbypgclient',
 
     # 3rd party apps

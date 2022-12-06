@@ -6,7 +6,7 @@ from django.core.cache import cache
 from core.admin import AdminAbstract
 from integrations.models import PaymentGateway, PaymentGatewayAPI
 from .constants import (B2CP_CACHE_KEY, CHECKOUTPG_CACHE_KEY,
-                        TABBYPG_CACHE_KEY)
+                        AMAZONPG_CACHE_KEY, TABBYPG_CACHE_KEY)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +25,7 @@ class PaymentGatewayAdmin(AdminAbstract):
             try:
                 cache.delete(CHECKOUTPG_CACHE_KEY)
                 cache.delete(B2CP_CACHE_KEY)
+                cache.delete(AMAZONPG_CACHE_KEY)
                 cache.delete(TABBYPG_CACHE_KEY)
             except (TypeError, AttributeError):
                 logging.error(

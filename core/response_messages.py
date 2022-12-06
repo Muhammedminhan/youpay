@@ -31,7 +31,7 @@ class YouPayResponse(object):
     """b2cpayback related ends"""
 
     """Amazonpay related begins"""
-
+    AMAZONPG_CONNECTION_ERROR = 4002
     """Amazonpay related ends"""
 
     MESSAGE = {}
@@ -48,6 +48,7 @@ class YouPayResponse(object):
             self.CHECKOUTPG_CONNECTION_ERROR: "Checkoutpg connection error",
             self.PAYMENT_FAILED: "Payment failed",
             self.TABBYPG_CONNECTION_ERROR: "Tabbypg connection error",
+            self.AMAZONPG_CONNECTION_ERROR: "Amzonpg connection error",
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
             self.TRANSACTION_NOT_FOUND: "Transaction not found",
