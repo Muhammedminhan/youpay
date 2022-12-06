@@ -45,4 +45,6 @@ urlpatterns = [
     # Amazonpg endpoints
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view()),
     path('amazonpg/verify/', AmazonPGVerification.as_view()),
+
+    #ApplePay endpoints
 ]
