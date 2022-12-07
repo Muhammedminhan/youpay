@@ -80,6 +80,9 @@ def get_session_id_from_header(request):
     """
     session_key = YOUPAY_SESSION_KEY
     logger.info("Cookies keys: %s", request.COOKIES.keys())
+
+    logger.info("Header data is {} ".format(request.headers))
+
     try:
         session_id = request.session[session_key]
         logger.info("Session data is {} and session_id: {}"

@@ -43,9 +43,11 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         """
         logger.info("session data is {}, keys {}".format(
             request.session, request.session.keys()))
-        
+
         logger.info("cookie data is {}, keys {}".format(
             request.COOKIES, request.COOKIES.keys()))
+
+        logger.info("Header data is {} ".format(self.request.headers))
 
         try:
             # Validate client at first
