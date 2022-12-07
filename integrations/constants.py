@@ -29,6 +29,7 @@ B2CPAYBACK_HUB_CODE = 'PAYMTB2CPBK'
 TABBYPG_HUB_CODE = 'PAYMTTPG'
 QITAF_HUB_CODE = 'PAYMTQTF'
 AMAZONPG_HUB_CODE = 'PAYMTAPG'
+APPLE_PAY_HUB_CODE = 'PAYMTAPL'
 
 CHECKOUT_VERIFY_URL = 'services/checkout/verify/'
 
@@ -83,6 +84,7 @@ CHECKOUTPG_CACHE_KEY = 'checkoutpg_config'
 B2CP_CACHE_KEY = 'b2cp_config'
 TABBYPG_CACHE_KEY = 'tabbypg_config'
 AMAZONPG_CACHE_KEY = 'amazonpg_config'
+APPLE_PAY_CACHE_KEY = "apple_pay_config"
 
 ADCB_POINT_BALANCE_API = "/payback/api/v1/touchpoint/point-balance/"
 ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
@@ -92,7 +94,7 @@ ADCB_VERIFY_API = "/payback/api/v1/verify"
 ADCB_HEADERS = {'Content-Type': 'application/json'}
 
 ADCB_CLIENT_CODE = 'ADCBTP'
-ADCB_TOKEN_TYPE =  "card"
+ADCB_TOKEN_TYPE = "card"
 ADCB_REDEMPTION_CURRENCY = "AED"
 
 TABBYPG_CREATE_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/'

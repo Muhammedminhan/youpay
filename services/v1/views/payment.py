@@ -43,7 +43,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         """
         logger.info("session data is {}, keys {}".format(
             request.session, request.session.keys()))
-        
+
         logger.info("cookie data is {}, keys {}".format(
             request.COOKIES, request.COOKIES.keys()))
 
@@ -280,6 +280,7 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
 
     def post(self, request):
+        print("Request data : {}".format(request.data))
         data = self.request.data
         enc_data = eval(encrypt_payment_data(data))
         return Response({

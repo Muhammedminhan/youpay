@@ -34,6 +34,10 @@ class YouPayResponse(object):
     AMAZONPG_CONNECTION_ERROR = 4002
     """Amazonpay related ends"""
 
+    """Apple Pay back related begins"""
+    APPLE_PAY_CONNECTION_ERROR = 5002
+    """Apple Pay back related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
