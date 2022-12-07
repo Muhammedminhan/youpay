@@ -33,13 +33,7 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
                 'card_bin': request_data.get('card_no', "")[0:6],
                 'card_last4': request_data.get('card_no', "")[-4:],
             })
-            data = self.response_obj.get_success_dict(
-                code=code,
-                success_dict=response_data
-            )
-            return Response(data,
-                            status=status.HTTP_200_OK)
-            # return Response(response.json(), status=status.HTTP_200_OK)
+            return Response(response.json(), status=status.HTTP_200_OK)
         else:
             try:
                 response_text = json.loads(response.text)

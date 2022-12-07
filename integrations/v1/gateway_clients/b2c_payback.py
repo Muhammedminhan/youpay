@@ -105,11 +105,13 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 else:
                     logger.error(
                         "Error response received from point balance api call "
-                        "to b2cpayback {}".format(response.text))
+                        "to b2cpayback for transaction {0}, {1}".format(
+                            transaction_obj.transaction_id, response.text))
                     return response, None
             except Exception as e:
-                logger.error("point balance api call to b2cpayback failed ",
-                             exc_info=e)
+                logger.error("point balance api call to b2cpayback failed for"
+                             " for transaction {}".format(
+                                request_transaction_id), exc_info=e)
                 return None, None
         else:
             logger.error("Invalid transaction id received for point balance "
@@ -158,11 +160,14 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 else:
                     logger.error(
                         "Error response received from authenticate api call "
-                        "to b2cpayback {}".format(response.text))
+                        "to b2cpayback for transaction {0}, {1}".format(
+                            transaction_obj.transaction_id, response.text))
                     return response, None
             except Exception as e:
                 logger.error(
-                    "authenticate api call to b2cpayback failed", exc_info=e)
+                    "authenticate api call to b2cpayback failed for "
+                    "transaction {}".format(request_transaction_id),
+                    exc_info=e)
                 return None, None
         else:
             logger.error("Invalid transaction id received for b2cpayback "
