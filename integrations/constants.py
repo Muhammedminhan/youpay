@@ -92,3 +92,4 @@ TABBYPG_VERIFY_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/verify/'
 
 AMAZONPG_AUTHENTICATE_API = "services/api/v1/authorization/"
 AMAZONPG_VERIFY_API = "services/api/v1/verify/"
+AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"
