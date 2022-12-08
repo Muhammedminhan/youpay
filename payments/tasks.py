@@ -28,6 +28,4 @@ def set_transaction_expired():
         transaction_objs.update(payment_status=PAYMENT_STATUS_EXPIRED)
         logger.info("cronjob has set transactions {} to expired "
                     "status".format(transaction_ids))
-    else:
-        logger.info("No transactions were set to expired status by cronjob")
     return True
