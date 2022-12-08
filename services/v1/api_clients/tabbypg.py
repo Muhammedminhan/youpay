@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.exceptions import ValidationFailed
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string, get_site_domain
 from integrations.constants import TABBYPG_HUB_CODE
@@ -59,7 +60,14 @@ class CreateSession(YouPayTransactionCRUD, APIView, ClientValidator):
                 data = self.response_obj.get_404_message(
                     message="Transaction doesn't exists")
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except ValidationFailed as e:
+            logger.error(
+                "Validation Failed in tabbypg create session : {}".format(e))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error("Exception in tabbypg create session : {}".format(e))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
@@ -78,7 +86,6 @@ class TabbyPGVerification(APIView):
                     request.query_params.get('id')),
                 'payment_id': request.query_params.get('payment_id')
             }
-
             tabbypg = TabbyPGManager()
             response_data, code = tabbypg.verify_session(payment_data)
 

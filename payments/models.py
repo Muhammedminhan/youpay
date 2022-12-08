@@ -13,7 +13,8 @@ from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
-    PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE)
+    PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
+    PAYMENT_METHOD_NONE)
 
 
 # Create your models here.
@@ -75,7 +76,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                             ' card used for the payment')
     payment_method = models.CharField(max_length=200,
                                       choices=PAYMENT_METHOD_CHOICES,
-                                      default=PAYMENT_METHOD_CARD,
+                                      default=PAYMENT_METHOD_NONE,
                                       help_text='Payment Method')
     payment_scheme = models.CharField(
         max_length=200,
@@ -152,3 +153,36 @@ class Announcement(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return str(self.gateway.gateway_name)
+
+
+class ClientNotification(AbstractDateTime):
+    transaction = models.ForeignKey('payments.YouPayTransactionData',
+                                    null=True, blank=True,
+                                    on_delete=models.CASCADE, help_text=
+                                    'Associated transaction',
+                                    related_name=
+                                    "transaction_clientnotification")
+    api_client = models.ForeignKey('services.APIClient', null=True,
+                                   blank=True, on_delete=models.CASCADE,
+                                   help_text='Related api client')
+    event_type = models.CharField(max_length=100, null=True, blank=True,
+                                  help_text='Name of the notification event')
+    is_notified = models.BooleanField(default=False, db_index=True,
+                                      help_text='Denotes whether the webhook '
+                                                'is received at client end or '
+                                                'not')
+    notification_response_status = models.BooleanField(default=False,
+                                                       db_index=True,
+                                                       help_text=
+                                                       'Denotes webhook '
+                                                       'notification is '
+                                                       'successful or not')
+    retries_count = models.IntegerField(default=0,
+                                        help_text='Denotes webhook '
+                                                  'notification retries, '
+                                                  'how many time it is'
+                                                  ' retried')
+    payment_status = models.CharField(max_length=100, null=True, blank=True,
+                                      help_text='payment transaction status')
+    def __str__(self):
+        return str(self.transaction.transaction_id)

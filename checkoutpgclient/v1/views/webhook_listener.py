@@ -6,11 +6,11 @@ from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import viewsets
 
 from checkoutpgclient.constants import PAYMENT_METHOD_CARD
-from checkoutpgclient.libs.authentication import SignatureAuthentication
+from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
+
 # from core.utils import wait_redis_lock TODO
 
 logger = logging.getLogger(__name__)
@@ -30,9 +30,9 @@ def get_transaction_object(payment_reference):
 
 
 class WebhookListener(APIView):
-    # authentication_classes = (
-    #     SignatureAuthentication,
-    # ) TODO
+    authentication_classes = (
+        YoupayAuthentication,
+    )
 
     def post(self, request):
         request_data = json.loads(request.data)
