@@ -10,7 +10,8 @@ from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
                         encrypt_string, decrypt_string)
-from payments.constants import PAYMENT_STATUS_CANCELLED
+from payments.constants import (PAYMENT_STATUS_CANCELLED,
+                                PAYMENT_STATUS_EXPIRED)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -314,3 +315,39 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             return Response({
                 "error": str(e),
             })
+
+
+class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
+                            YouPayResponse):
+
+
+    def __init__(self):
+        self.return_data = None
+
+    def post(self, request):
+        try:
+            logger.info("Triggered TransactionExpireView")
+            validate, client_pk = self.validate_client(request)
+            if not validate:
+                logger.info(
+                    "payment expire client validation failed for {0}"
+                    .format("order_reference"))
+                self.return_data = self.get_400_message(
+                    message="Client Does Not Exist")
+                return Response(self.return_data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
+            data = self.request.data
+            transaction_id = decrypt_string(data.get('transaction_id'))
+            transaction_object = self.get_youpay_transaction_data(
+                transaction_id)
+            self.update_youpay_transaction_data({
+                'transaction_id': transaction_object.transaction_id,
+                'payment_status': PAYMENT_STATUS_EXPIRED
+            })
+            logger.info(
+                "Payment status set to expired for transaction_id "
+                ": {}".format(transaction_id))
+            return Response(True, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error("Error in transaction expire api ", exc_info=e)
+            return Response({"error": str(e), })
