@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
-from core.utils import get_app_config
+from core.utils import get_app_config, encrypt_string
+from integrations.constants import AMAZONPG_HUB_CODE
+from services.v1.views.common import add_payment_gateway_info_in_url
 
 
 class AmazonPGPaymentRequestSerializer(serializers.Serializer):
@@ -52,4 +54,7 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
 
     def get_return_url(self, data):
         url = get_app_config().front_end_redirect_url
-        return url
+        params = '?id=' + encrypt_string(data.get('transaction_data').get(
+            'transaction_id'))
+        return add_payment_gateway_info_in_url(url, params,
+                                               AMAZONPG_HUB_CODE)
