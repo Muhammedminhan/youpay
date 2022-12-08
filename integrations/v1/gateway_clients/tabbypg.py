@@ -252,7 +252,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             logger.error("Exception in tabbypg verify session: {}".format(e))
             return {"error": e}, self.TABBYPG_CONNECTION_ERROR
         finally:
-            print("Finally Worked")
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,
