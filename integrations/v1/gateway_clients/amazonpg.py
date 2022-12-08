@@ -11,7 +11,7 @@ from services.v1.views.payment_handlers import PaymentHandlers
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     AMAZONPG_AUTHENTICATE_API, AMAZONPG_VERIFY_API, AMAZONPG_CACHE_KEY,
-    AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY
+    AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API
 )
 from integrations.v1.serializers.amazonpg_payment_request import (
     AmazonPGPaymentRequestSerializer)
@@ -66,6 +66,29 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             'HTTP-X-API-KEY': self.amazonpg_config.api_key
         }
         return headers
+
+    def tokenization(self, data):
+        """
+        Calls amazonpg tokenization api
+        """
+        try:
+            url = self.amazonpg_config.domain + AMAZONPG_TOKENIZATION_API
+            card_details = data.get('request_data')
+            logger.info(
+                "Youpay sending card details to amazonpg "
+                "is {}".format(card_details))
+            payload = card_details
+
+            response = requests.post(url, data=payload)
+            logger.info("Response from AmazonPG tokenization api "
+                        "{}".format(response))
+            if response:
+                response_data = response.json()
+                return response_data, self.SUCCESS
+        except Exception as e:
+            error = "Error in amazonpg tokenization api: {}".format(e)
+            logger.error("Exception in amazonpg payment: {}".format(e))
+            return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
 
     def payment_authentication(self, data):
         """
