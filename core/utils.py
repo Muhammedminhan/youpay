@@ -1,5 +1,10 @@
 import json
 import logging
+
+import redis
+
+from contextlib import contextmanager
+from time import sleep
 from base64 import b64decode, b64encode
 from functools import wraps
 from os import urandom
@@ -7,6 +12,7 @@ from os import urandom
 from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
 from django.core.cache import cache
+from django.conf import settings
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
@@ -187,3 +193,43 @@ def decrypt_string(encrypted_text):
     except Exception as e:
         logger.error("string decryption failed. {}".format(e))
         return None
+
+
+@contextmanager
+def wait_redis_lock(
+        lock_name, lock_timeout=settings.WAIT_LOCK_DEFAULT_TIMEOUT,
+        wait_duration=settings.WAIT_LOCK_DEFAULT_WAIT_DURATION,
+        max_retries=settings.WAIT_LOCK_DEFAULT_MAX_RETRIES):
+    """
+    Executes code if lock `lock_name` isn't set, else it retries after
+    `wait_duration` seconds.
+    """
+    redis_conn = redis.StrictRedis(
+        host=settings.REDIS_HOST, port=settings.REDIS_PORT,
+        db=settings.REDIS_LOCKS_DB
+    )
+
+    retries = 0
+    while True:
+        value = redis_conn.setnx(lock_name, 1)
+        redis_conn.expire(lock_name, lock_timeout)
+        if value:
+            break
+        elif retries < max_retries:
+            logger.debug("Lock exists...sleeping.")
+            sleep(wait_duration)
+            retries += 1
+        else:
+            raise WaitLockException('Unable to acquire lock.')
+    try:
+        yield
+    finally:
+        redis_conn.delete(lock_name)
+
+
+class WaitLockException(Exception):
+    """
+    WaitLockException
+    If retry limit exceeds the maximum limit
+    """
+    pass
