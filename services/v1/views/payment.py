@@ -347,7 +347,9 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
             logger.info(
                 "Payment status set to expired for transaction_id "
                 ": {}".format(transaction_id))
-            return Response(True, status=status.HTTP_200_OK)
+            response_data = {"status": status.HTTP_200_OK,
+                             "message": "Successfully expired transaction"}
+            return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error("Error in transaction expire api ", exc_info=e)
             return Response({"error": str(e), })
