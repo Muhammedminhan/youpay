@@ -279,8 +279,15 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     Test API endpoint for encrypting request data
     """
 
+    def get(self, request):
+        request.session['test'] = 'test'
+
+        return Response("Test Payment Request View")
+
     def post(self, request):
         print("Request data : {}".format(request.data))
+        print("Request session : {}".format(request.session))
+        print(request.session.get('test'))
         data = self.request.data
         enc_data = eval(encrypt_payment_data(data))
         return Response({

@@ -9,7 +9,7 @@ from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification)
 from services.v1.views.configurations import ConfigViewSet
 from .api_clients.amazonpg import AmazonPGAuthentication, AmazonPGVerification
-from .api_clients.apple_pay import ApplePayValidateSession
+from .api_clients.apple_pay import ApplePayValidateSession, ApplePayPayment
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
@@ -49,5 +49,8 @@ urlpatterns = [
 
     # ApplePay endpoints
     path('applepay/validate-session/', ApplePayValidateSession.as_view()),
-    path('applepay/pay/', ApplePayValidateSession.as_view()),
+    path('applepay/pay/', ApplePayPayment.as_view()),
+
+    path('sample/', TestPaymentRequestView.as_view()),
+
 ]
