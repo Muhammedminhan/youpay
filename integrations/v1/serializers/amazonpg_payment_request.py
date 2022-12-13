@@ -1,3 +1,6 @@
+import string
+import random
+
 from rest_framework import serializers
 
 from core.utils import get_app_config, encrypt_string
@@ -58,3 +61,34 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
             'transaction_id'))
         return add_payment_gateway_info_in_url(url, params,
                                                AMAZONPG_HUB_CODE)
+
+
+class AmazonPGTokenizationSerializer(serializers.Serializer):
+    card_number = serializers.SerializerMethodField()
+    expiry_date = serializers.SerializerMethodField()
+    card_security_code = serializers.SerializerMethodField()
+    card_holder_name = serializers.SerializerMethodField()
+    order_reference = serializers.SerializerMethodField()
+    language = serializers.SerializerMethodField()
+
+    def get_card_number(self, data):
+        return data.get('request_data').get("card_number")
+
+    def get_expiry_date(self, data):
+        return data.get('request_data').get("expiry_date")
+
+    def get_card_security_code(self, data):
+        return data.get('request_data').get("card_security_code")
+
+    def get_card_holder_name(self, data):
+        return data.get('request_data').get("card_holder_name")
+
+    def get_order_reference(self, data):
+        reference_string = ''.join(random.choices(string.ascii_uppercase +
+                                                  string.digits, k=10))
+        order_reference = (data.get('transaction_data').get('order_reference')
+                           + '-' + reference_string)
+        return order_reference
+
+    def get_language(self, data):
+        return data.get('transaction_data').get("language")

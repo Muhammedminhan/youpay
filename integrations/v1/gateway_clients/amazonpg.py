@@ -14,7 +14,7 @@ from integrations.constants import (
     AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API
 )
 from integrations.v1.serializers.amazonpg_payment_request import (
-    AmazonPGPaymentRequestSerializer)
+    AmazonPGPaymentRequestSerializer, AmazonPGTokenizationSerializer)
 from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
@@ -56,6 +56,19 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 "for amzonpg")
             return None
 
+    def get_tokenization_data(self, data):
+        """
+        Returns amazonpg tokenization api request data
+        """
+        if data.get('transaction_data') and data.get('request_data'):
+            tokenization_data = AmazonPGTokenizationSerializer(data)
+            return tokenization_data.data
+        else:
+            logger.error(
+                "transaction_data or request_data is not available "
+                "for amzonpg tokenization")
+            return None
+
     def get_payment_header(self):
         """
         Returns headers
@@ -72,8 +85,9 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         Calls amazonpg tokenization api
         """
         try:
+
             url = self.amazonpg_config.domain + AMAZONPG_TOKENIZATION_API
-            card_details = data.get('request_data')
+            card_details = self.get_tokenization_data(data)
             logger.info(
                 "Youpay sending card details to amazonpg "
                 "is {}".format(card_details))
