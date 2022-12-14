@@ -51,6 +51,4 @@ urlpatterns = [
     path('applepay/validate-session/', ApplePayValidateSession.as_view()),
     path('applepay/pay/', ApplePayPayment.as_view()),
 
-    path('sample/', TestPaymentRequestView.as_view()),
-
 ]
