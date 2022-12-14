@@ -10,7 +10,7 @@ from integrations.constants import (APPLE_PAY_HUB_CODE,
                                     PAYMENT_REQUEST_TYPE_PAYMENT,
                                     PAYMENT_REQUEST_GENERATE_TOKEN,
                                     PAYMENT_REQUEST_VALIDATE_SESSION,
-                                    APPLE_PAY_KEY_PATH,
+                                    APPLE_PAY_AED_KEY_PATH,
                                     APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH,
                                     APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH)
 from services.constants import (APPLEPAY_MERCHANT_IDENTIFIER,
@@ -41,10 +41,12 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
             "Configuring certificate for currency {}".format(currency))
         if currency == 'AED':
             return (
-                APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH, APPLE_PAY_KEY_PATH)
+                APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH,
+                APPLE_PAY_AED_KEY_PATH)
         elif currency == 'SAR':
             return (
-                APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH, APPLE_PAY_KEY_PATH)
+                APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH,
+                APPLE_PAY_AED_KEY_PATH)
         else:
             logger.info(
                 "Currently {} Currency is not supported".format(currency))
