@@ -3,7 +3,8 @@ import logging
 
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
-    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE, QITAF_HUB_CODE
+    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
+    QITAF_HUB_CODE, AMAZONPG_HUB_CODE
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
@@ -118,6 +119,9 @@ def get_payment_options(payment_gateway_serializer):
 
         if code == TABBYPG_HUB_CODE:
             response_payment_options['tabbypg'] = True
+
+        if code == AMAZONPG_HUB_CODE:
+            response_payment_options['amazonpg'] = True
 
     return response_payment_options
 
