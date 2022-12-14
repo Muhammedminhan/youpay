@@ -163,7 +163,7 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 """
                 Step 1: Generate a Checkout.com token from the Apple Pay token
                 """
-                generate_token_response = self.generate_applepay_token()
+                generate_token_response, response_code = self.generate_applepay_token()
                 logger.info("Applepay generate token response for "
                             "transaction id {} is {}".format(
                     self.transaction_id, generate_token_response))
@@ -171,7 +171,7 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 """
                 Step 2: Request a payment with the token 
                 """
-                request_payment_response = self.request_payment()
+                request_payment_response, response_code = self.request_payment()
                 logger.info(
                     "Applepay pay request response for transaction id {},is"
                     " {}".format(self.transaction_id,
@@ -183,7 +183,8 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                         "transaction id {} is {}".format(
                             self.transaction_id,
                             request_payment_response))
-                    self.response_data = request_payment_response
+                    self.response_data = {
+                        "error": str(request_payment_response)}
                     response_code = self.SUCCESS
                 else:
                     logger.error(
@@ -203,15 +204,15 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 logger.error(msg)
                 return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
-            logger.error(
-                "Error while processing applepay payment for transaction id {}, err : {}".format(
-                    self.transaction_id, str(e)))
+            error_msg = "Error while processing applepay payment for transaction id {}, err : {}".format(
+                self.transaction_id, str(e))
+            logger.error(error_msg)
             import sys, os
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             logger.error("Exception in payment request : {} {} {}"
                          .format(exc_type, fname, exc_tb.tb_lineno))
-            return None, self.APPLE_PAY_CONNECTION_ERROR
+            return {"error": error_msg}, self.APPLE_PAY_CONNECTION_ERROR
 
         finally:
             data_to_update = {
