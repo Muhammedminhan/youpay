@@ -8,3 +8,7 @@ YOUPAY_SESSION_KEY = "youpay-session-id"
 APPLEPAY_MERCHANT_IDENTIFIER = "merchant.com.yougotagift.aed.sandbox"
 APPLEPAY_DOMAIN_NAME = "yougotagift.com"
 APPLEPAY_DISPLAY_NAME = "YouGotAGift"
+
+APPLEPAY_SUPPORTED_NETWORKS = ["visa", "masterCard", "amex"]
+APPLEPAY_MERCHANT_CAPABILITIES = ["supports3DS"]
+APPLEPAY_LABEL = "Gift Card"

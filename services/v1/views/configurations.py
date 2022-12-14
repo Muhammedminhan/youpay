@@ -19,6 +19,8 @@ from payments.constants import (
     PAYMENT_STATUS_PAID
 )
 from payments.models import YouPayTransactionData
+from services.constants import APPLEPAY_SUPPORTED_NETWORKS, \
+    APPLEPAY_MERCHANT_CAPABILITIES, APPLEPAY_LABEL
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -94,6 +96,8 @@ class ConfigViewSet(ViewSet):
                 tabbypg_config = self.get_tabby_conf(
                     tabbypg_obj.tabbypg_config)
 
+                applepay_config = self.get_applepay_config()
+
                 logger.info(
                     "checkoutpg response : {}, {}".format(checkout_config,
                                                           status_code))
@@ -125,6 +129,7 @@ class ConfigViewSet(ViewSet):
                             tabbypg_config=tabbypg_config,
                             checkoutpg_config=checkout_config,
                             payback_config=payback_config,
+                            applepay_config=applepay_config,
                             transaction=transaction,
                             announcements_dict=announcements_dict,
                             status_code=status_code
@@ -173,6 +178,7 @@ class ConfigViewSet(ViewSet):
         checkoutpg_config = kwargs.get('checkoutpg_config', None)
         tabbypg_config = kwargs.get('tabbypg_config', None)
         payback_config = kwargs.get('payback_config', None)
+        applepay_config = kwargs.get('applepay_config', None)
         transaction = kwargs.get('transaction', None)
         announcements_dict = kwargs.get('announcements_dict', None)
         status_code = kwargs.get('status_code', None)
@@ -212,8 +218,11 @@ class ConfigViewSet(ViewSet):
                 "checkoutpg_config": checkoutpg_config,
                 "b2cpayback_config": payback_config,
                 "tabbypg_config": tabbypg_config,
+                "applepay_config": applepay_config,
                 "amount": amount,
                 "currency": currency,
+                "country_code": "AE",
+                # TODO : get country code from API client
                 "service_fee": service_fee,
                 "vat_amount": VAT_amount,
                 "base_amount": base_amount,
@@ -242,3 +251,11 @@ class ConfigViewSet(ViewSet):
             return client.logo_file.url
         else:
             return None
+
+    def get_applepay_config(self):
+        applepay_config = {}
+        applepay_config["supportedNetworks"] = APPLEPAY_SUPPORTED_NETWORKS
+        applepay_config["supports3DS"] = APPLEPAY_MERCHANT_CAPABILITIES
+        applepay_config["label"] = APPLEPAY_LABEL
+
+        return applepay_config
