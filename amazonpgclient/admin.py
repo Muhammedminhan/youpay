@@ -1,7 +1,14 @@
+import logging
+
 from django.contrib import admin
 from django.contrib import messages
 
 from .models import AmazonPGTransactionData
+from payments.models import YouPayTransactionData
+from integrations.v1.gateway_clients.amazonpg import AmazonPGManager
+from payments.constants import PAYMENT_STATUS_REFUNDED
+
+logger = logging.getLogger(__name__)
 
 # Register your models here.
 
@@ -18,6 +25,14 @@ class AmazonPGTransactionDataAdmin(admin.ModelAdmin):
     list_filter = ('apg_payment_status', 'payment_status')
     actions = ['refund_payment']
 
+    def get_transaction_data(self, payment_reference):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=payment_reference)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            return None
+
     def refund_payment(self, request, queryset):
         """
         It will process the refund for the selected captured payment
@@ -25,9 +40,24 @@ class AmazonPGTransactionDataAdmin(admin.ModelAdmin):
         payment_status = queryset.values_list('payment_status', flat=True)
 
         if all(status == 'captured' for status in payment_status):
-            messages.info(request, "Refund request initiated, "
-                                   "It may take 3  to 5 minutes "
-                                   "to reflect on youpay portal")
+            payment_reference = queryset.values_list('payment_reference')
+            for payment_ref in payment_reference:
+                payment_id = payment_ref[0]
+                refund_data = {
+                    "payment_reference": payment_id,
+                    "transaction_obj": self.get_transaction_data(
+                        payment_id
+                    )
+                }
+                amazon_pay = AmazonPGManager()
+                status, code = amazon_pay.payment_refund(refund_data)
+                if status == PAYMENT_STATUS_REFUNDED:
+                    logger.info("Payment refund success for "
+                                "{}".format(payment_id))
+                else:
+                    logger.error("Payment refund failed for "
+                                 "{}".format(payment_id))
+            messages.info(request, "Refund request completed successfully.")
         else:
             messages.error(request,
                            "Please select only captured payments")

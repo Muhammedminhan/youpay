@@ -11,14 +11,16 @@ from services.v1.views.payment_handlers import PaymentHandlers
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     AMAZONPG_AUTHENTICATE_API, AMAZONPG_VERIFY_API, AMAZONPG_CACHE_KEY,
-    AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API
+    AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API,
+    AMAZONPG_REFUND_API, PAYMENT_REQUEST_AUTHENTICATE, PAYMENT_REQUEST_REFUND
 )
 from integrations.v1.serializers.amazonpg_payment_request import (
     AmazonPGPaymentRequestSerializer, AmazonPGTokenizationSerializer)
 from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON)
+    PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON,
+    PAYMENT_STATUS_REFUNDED)
 from services.v1.views.common import is_redirect
 
 logger = logging.getLogger(__name__)
@@ -135,9 +137,6 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                     response = requests.post(url, data=payload,
                                              headers=headers)
                     logger.info("Response from AmazonPG {}".format(response))
-                    response_data = response.json()
-                    logger.info("Json response from AmazonPG {}"
-                                "".format(response))
 
                     # storing Youpay to payment gateway
                     # request and response data
@@ -147,6 +146,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         request_data=payload,
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
+                        request_type=PAYMENT_REQUEST_AUTHENTICATE
                     )
 
                     if response:
@@ -167,7 +167,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         return ({"error": response.json()},
                                 self.AMAZONPG_CONNECTION_ERROR)
 
-                    return ({"error": response_data},
+                    return ({"error": response.text},
                             self.AMAZONPG_CONNECTION_ERROR)
                 else:
                     logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
@@ -239,7 +239,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             if response:
                 response_data = response.json()
                 logger.info(
-                    "Verify payment response data \n{}".format(response_data))
+                    "Verify payment response data {}".format(response_data))
 
                 if response_data.get('is_capture'):
                     payment_status = PAYMENT_STATUS_PAID
@@ -270,7 +270,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             else:
                 logger.error("Error while verifying_payment amazonpg "
                              "status: {}, reason {} "
-                             "".format(response.status_code, response.reason))
+                             "".format(response.status_code, response.text))
                 return None, self.AMAZONPG_CONNECTION_ERROR
         except Exception as e:
             logger.error("Exception in amazonpg verify session: {}"
@@ -286,3 +286,58 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 request_type=self.request_type,
                 request_method=self.request_method,
             )
+
+    def payment_refund(self, data):
+        """
+        Method for refund the payment with Amazonpg
+        """
+        url = self.amazonpg_config.domain + AMAZONPG_REFUND_API
+
+        payload = {
+            'payment_reference': data.get('payment_reference'),
+        }
+
+        self.transaction_obj = data.get('transaction_obj')
+        self.transaction_id = self.transaction_obj.transaction_id
+        self.request_data = json.dumps(payload)
+        self.request_type = PAYMENT_REQUEST_REFUND
+        self.request_method = REQUEST_METHOD_POST
+
+        if self.transaction_obj is None:
+            return None, self.TRANSACTION_NOT_FOUND
+        try:
+            response = requests.post(url, data=payload)
+            logger.info("Response from AmazonPG refund api "
+                        "{}".format(response))
+            if response:
+                response_data = response.json()
+                logger.info(
+                    "Refund payment response data {}".format(response_data))
+                if response_data.get('is_refund'):
+                    payment_status = PAYMENT_STATUS_REFUNDED
+                    response_summary = "Refund successful"
+                else:
+                    payment_status = PAYMENT_STATUS_CANCELLED
+                    response_summary = "Refund failed"
+
+                self.update_youpay_transaction_data(
+                    {
+                        'transaction_id': self.transaction_id,
+                        "payment_status": payment_status,
+                        "response_summary": response_summary
+                    }
+                )
+
+                if payment_status == PAYMENT_STATUS_REFUNDED:
+                    return payment_status, self.SUCCESS
+                else:
+                    return payment_status, self.PAYMENT_FAILED
+            else:
+                logger.error("Error while refund_payment amazonpg "
+                             "status: {}, reason {} "
+                             "".format(response.status_code, response.text))
+                return None, self.AMAZONPG_CONNECTION_ERROR
+        except Exception as e:
+            logger.error("Exception in amazonpg refund api call: {}"
+                         "".format(str(e)))
+            return {"error": e}, self.AMAZONPG_CONNECTION_ERROR
