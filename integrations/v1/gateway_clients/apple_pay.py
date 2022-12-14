@@ -11,7 +11,8 @@ from integrations.constants import (APPLE_PAY_HUB_CODE,
                                     PAYMENT_REQUEST_GENERATE_TOKEN,
                                     PAYMENT_REQUEST_VALIDATE_SESSION,
                                     APPLE_PAY_KEY_PATH,
-                                    APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH)
+                                    APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH,
+                                    APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH)
 from services.constants import (APPLEPAY_MERCHANT_IDENTIFIER,
                                 APPLEPAY_DOMAIN_NAME, APPLEPAY_DISPLAY_NAME)
 from services.v1.views.payment import PaymentRequestView
@@ -35,6 +36,20 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
         self.request_method = None
         self.transaction_obj = None
 
+    def configure_certificate(self, currency):
+        logger.info(
+            "Configuring certificate for currency {}".format(currency))
+        if currency == 'AED':
+            return (
+                APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH, APPLE_PAY_KEY_PATH)
+        elif currency == 'SAR':
+            return (
+                APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH, APPLE_PAY_KEY_PATH)
+        else:
+            logger.info(
+                "Currently {} Currency is not supported".format(currency))
+            return None, None
+
     def validate_session(self, request_data):
         transaction_data = request_data.get('transaction_data')
 
@@ -47,7 +62,8 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
         self.channel_code = APPLE_PAY_HUB_CODE
         self.transaction_obj = request_data.get('transaction_obj')
 
-        logger.info("APPLE PAY Validating session")
+        logger.info("APPLE PAY Validating session {} ".format(
+            self.transaction_obj.currency))
 
         """if transaction is verified then proceed with payment"""
         try:
@@ -62,8 +78,10 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
             }
 
             # certificate secret and key
-            cert_file = (
-                APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH, APPLE_PAY_KEY_PATH)
+            certificate, key = self.configure_certificate(
+                self.transaction_obj.currency)
+
+            cert_file = (certificate, key)
 
             verify_response, verify_status = self.verify_transaction(
                 transaction_data)
