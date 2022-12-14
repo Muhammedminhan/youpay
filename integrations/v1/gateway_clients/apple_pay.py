@@ -243,7 +243,8 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 }
             }
             self.request_data = json.dumps(payload)
-            url = "https://api.checkout.com/tokens"
+            # url = "https://api.checkout.com/tokens"
+            url = "https://api.sandbox.checkout.com/tokens"
             response = requests.post(url, data=self.request_data, headers={})
             logger.info("Applepay Generate token response for "
                         "transaction id {} is {}".format(
@@ -301,7 +302,8 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
 
     def request_payment(self):
         try:
-            url = "https://api.checkout.com/payments"
+            # url = "https://api.checkout.com/payments"
+            url = "https://api.sandbox.checkout.com/payments"
             payload = {
                 "source": {
                     "type": "token",
