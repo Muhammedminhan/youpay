@@ -255,7 +255,8 @@ class ConfigViewSet(ViewSet):
     def get_applepay_config(self):
         applepay_config = {}
         applepay_config["supportedNetworks"] = APPLEPAY_SUPPORTED_NETWORKS
-        applepay_config["supports3DS"] = APPLEPAY_MERCHANT_CAPABILITIES
+        applepay_config[
+            "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
         applepay_config["label"] = APPLEPAY_LABEL
 
         return applepay_config
