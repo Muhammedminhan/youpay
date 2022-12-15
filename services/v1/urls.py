@@ -12,7 +12,7 @@ from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .api_clients.amazonpg import AmazonPGAuthentication, AmazonPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
-                            PaymentCancelledView)
+                            PaymentCancelledView, TransactionExpireView)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -31,6 +31,8 @@ urlpatterns = [
     path('checkout/verify/', CheckoutVerification.as_view(),
          name='checkout_verify'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
+    path('payment-expire/', TransactionExpireView.as_view()),
+
 
     # b2cpayback endpoints
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
