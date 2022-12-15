@@ -99,8 +99,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                         transaction_response['data'][
                             'transaction_id'])
 
-                    redirect_url = PAYMENT_REDIRECT_URL + "/{}".format(
-                        encrypted_transaction_id)
+                    language = data_formatted.get('language')
+
+                    redirect_url = PAYMENT_REDIRECT_URL + "/{}/{}".format(
+                        language, encrypted_transaction_id)
 
                     response_data = {
                         "status": status.HTTP_201_CREATED,
