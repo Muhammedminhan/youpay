@@ -4,6 +4,7 @@ PAYMENT_OPTIONS = {
     "adcb": False,
     "tabbypg": False,
     "applepay": False,
+    "amazonpg": False,
 }
 
 B2C_PAYBACK_YOUPAY_PRODUCT_CODE = "YPAY"
