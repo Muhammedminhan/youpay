@@ -298,13 +298,14 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         }
 
         self.transaction_obj = data.get('transaction_obj')
+
+        if not self.transaction_obj:
+            return None, self.TRANSACTION_NOT_FOUND
+
         self.transaction_id = self.transaction_obj.transaction_id
         self.request_data = json.dumps(payload)
         self.request_type = PAYMENT_REQUEST_REFUND
         self.request_method = REQUEST_METHOD_POST
-
-        if self.transaction_obj is None:
-            return None, self.TRANSACTION_NOT_FOUND
         try:
             response = requests.post(url, data=payload)
             logger.info("Response from AmazonPG refund api "

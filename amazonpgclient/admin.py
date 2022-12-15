@@ -38,6 +38,8 @@ class AmazonPGTransactionDataAdmin(admin.ModelAdmin):
         It will process the refund for the selected captured payment
         """
         payment_status = queryset.values_list('payment_status', flat=True)
+        lst_success_id = []
+        lst_failed_id = []
 
         if all(status == 'captured' for status in payment_status):
             payment_reference = queryset.values_list('payment_reference')
@@ -54,10 +56,15 @@ class AmazonPGTransactionDataAdmin(admin.ModelAdmin):
                 if status == PAYMENT_STATUS_REFUNDED:
                     logger.info("Payment refund success for "
                                 "{}".format(payment_id))
+                    lst_success_id.append(payment_id)
                 else:
                     logger.error("Payment refund failed for "
                                  "{}".format(payment_id))
-            messages.info(request, "Refund request completed successfully.")
+                    lst_failed_id.append(payment_id)
+            message = ("Payment refund completed successfully for " +
+                        ", ".join(lst_success_id) + " and refund failed for "
+                       + ", ".join(lst_failed_id))
+            messages.info(request, message)
         else:
             messages.error(request,
                            "Please select only captured payments")
