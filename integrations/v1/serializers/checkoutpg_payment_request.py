@@ -43,16 +43,14 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 
     def get_customer_name(self, data):
         """
-        Method for getting customer name, if customer name is not present
-        in transaction data then need to take it from request data
+        Method for getting customer name, take customer name from request data
         """
-        transaction_data = data.get('transaction_data')
-        customer_name = transaction_data.get('customer_name')
+
+        request_data = data.get('request_data')
+
+        customer_name = request_data.get('customer_name', '')
         if not customer_name:
-            request_data = data.get('request_data')
-            customer_name = request_data.get('customer_name', '')
-            if not customer_name:
-                customer_name = "Not provided"
+            customer_name = "Not provided"
 
         return customer_name
 
