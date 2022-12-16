@@ -139,3 +139,7 @@ db.json
 *.sql
 *.rdb
 
+
+#key and certificates
+*.key
+*.pem
