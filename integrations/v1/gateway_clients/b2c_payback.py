@@ -92,24 +92,26 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=request_data_json,
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_POINT_BALANCE
+                )
                 if response:
-                    self.create_youpay_to_payment_gateways_data(
-                        transaction_obj=transaction_obj,
-                        transaction_id=transaction_obj.transaction_id,
-                        request_data=request_data_json,
-                        response_data=response.text,
-                        request_method=REQUEST_METHOD_POST,
-                        request_type=PAYMENT_REQUEST_POINT_BALANCE
-                    )
                     return response, transaction_obj.transaction_id
                 else:
                     logger.error(
-                        "No response received from point balance api call "
-                        "to b2cpayback")
-                    return None, None
+                        "Error response received from point balance api call "
+                        "to b2cpayback for transaction {0}, {1}".format(
+                            transaction_obj.transaction_id, response.text))
+                    return response, None
             except Exception as e:
-                logger.error("point balance api call to b2cpayback failed ",
-                             exc_info=e)
+                logger.error("point balance api call to b2cpayback failed for"
+                             " for transaction {}".format(
+                                request_transaction_id), exc_info=e)
                 return None, None
         else:
             logger.error("Invalid transaction id received for point balance "
@@ -140,15 +142,15 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 url = b2c_payback_domain + ADCB_AUTHENTICATE_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=request_data_json,
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_AUTHENTICATE
+                )
                 if response:
-                    self.create_youpay_to_payment_gateways_data(
-                        transaction_obj=transaction_obj,
-                        transaction_id=transaction_obj.transaction_id,
-                        request_data=request_data_json,
-                        response_data=response.text,
-                        request_method=REQUEST_METHOD_POST,
-                        request_type=PAYMENT_REQUEST_AUTHENTICATE
-                    )
                     if response.json().get('url'):
                         response_data = response.json()
                         response_data['is_redirect'] = True
@@ -157,12 +159,15 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                         return response.json(), transaction_obj
                 else:
                     logger.error(
-                        "No response received from authenticate api call "
-                        "to b2cpayback")
-                    return None, None
+                        "Error response received from authenticate api call "
+                        "to b2cpayback for transaction {0}, {1}".format(
+                            transaction_obj.transaction_id, response.text))
+                    return response, None
             except Exception as e:
                 logger.error(
-                    "authenticate api call to b2cpayback failed", exc_info=e)
+                    "authenticate api call to b2cpayback failed for "
+                    "transaction {}".format(request_transaction_id),
+                    exc_info=e)
                 return None, None
         else:
             logger.error("Invalid transaction id received for b2cpayback "
@@ -185,26 +190,26 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 url = b2c_payback_domain + ADCB_REDEMPTION_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=request_data_json,
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_REDEMPTION
+                )
                 if response:
                     response_data = response.json()
                     response_data["is_redirect"] = True
                     response_data["redirect_url"] = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
-                    self.create_youpay_to_payment_gateways_data(
-                        transaction_obj=transaction_obj,
-                        transaction_id=transaction_obj.transaction_id,
-                        request_data=request_data_json,
-                        response_data=response.text,
-                        request_method=REQUEST_METHOD_POST,
-                        request_type=PAYMENT_REQUEST_REDEMPTION
-                    )
                     return response_data, transaction_obj.transaction_id
                 else:
                     logger.error(
-                        "No response received from redemption api call "
-                        "to b2cpayback")
-                    return None, None
+                        "Error response received from redemption api call "
+                        "to b2cpayback {}".format(response.text))
+                    return response, None
             except Exception as e:
                 logger.error(
                     "redemption api call to b2cpayback failed", exc_info=e)
@@ -233,21 +238,21 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 response_data["is_redirect"] = True
                 response_data["redirect_url"] = get_adcb_verify_redirect_url(
                     response_data, transaction_obj)
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=json.dumps(formatted_data),
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_GET,
+                    request_type=PAYMENT_REQUEST_VERIFY
+                )
                 if response:
-                    self.create_youpay_to_payment_gateways_data(
-                        transaction_obj=transaction_obj,
-                        transaction_id=transaction_obj.transaction_id,
-                        request_data=json.dumps(formatted_data),
-                        response_data=response.text,
-                        request_method=REQUEST_METHOD_GET,
-                        request_type=PAYMENT_REQUEST_VERIFY
-                    )
                     return response_data, transaction_obj.transaction_id
                 else:
                     logger.error(
-                        "No response received from verify api call "
-                        "to b2cpayback")
-                    return None, None
+                        "Error response received from verify api call "
+                        "to b2cpayback {}".format(response.text))
+                    return response, None
             except Exception as e:
                 logger.error(
                     "Verify api call to b2cpayback failed", exc_info=e)
