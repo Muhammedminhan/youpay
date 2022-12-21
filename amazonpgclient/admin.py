@@ -1,5 +1,3 @@
-import logging
-
 from django.contrib import admin
 from django.contrib import messages
 
@@ -8,7 +6,6 @@ from payments.models import YouPayTransactionData
 from integrations.v1.gateway_clients.amazonpg import AmazonPGManager
 from payments.constants import PAYMENT_STATUS_REFUNDED
 
-logger = logging.getLogger(__name__)
 
 # Register your models here.
 
@@ -37,6 +34,7 @@ class AmazonPGTransactionDataAdmin(admin.ModelAdmin):
         """
         It will process the refund for the selected captured payment
         """
+
         payment_status = queryset.values_list('payment_status', flat=True)
         lst_success_id = []
         lst_failed_id = []
@@ -54,17 +52,18 @@ class AmazonPGTransactionDataAdmin(admin.ModelAdmin):
                 amazon_pay = AmazonPGManager()
                 status, code = amazon_pay.payment_refund(refund_data)
                 if status == PAYMENT_STATUS_REFUNDED:
-                    logger.info("Payment refund success for "
-                                "{}".format(payment_id))
                     lst_success_id.append(payment_id)
                 else:
-                    logger.error("Payment refund failed for "
-                                 "{}".format(payment_id))
                     lst_failed_id.append(payment_id)
-            message = ("Payment refund completed successfully for " +
-                        ", ".join(lst_success_id) + " and refund failed for "
-                       + ", ".join(lst_failed_id))
-            messages.info(request, message)
+
+            if lst_success_id:
+                message = ("Payment refund completed successfully for " +
+                           ", ".join(lst_success_id))
+                messages.info(request, message)
+            if lst_failed_id:
+                message = ("Payment refund failed for " +
+                           ", ".join(lst_failed_id))
+                messages.error(request, message)
         else:
             messages.error(request,
                            "Please select only captured payments")
