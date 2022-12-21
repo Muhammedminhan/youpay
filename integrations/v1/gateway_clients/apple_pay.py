@@ -2,6 +2,7 @@ import json
 import logging
 
 import requests
+from django.conf import settings
 from rest_framework import status
 
 from amazonpgclient.constants import PAYMENT_STATUS_ERROR
@@ -12,7 +13,10 @@ from integrations.constants import (APPLE_PAY_HUB_CODE,
                                     PAYMENT_REQUEST_VALIDATE_SESSION,
                                     APPLE_PAY_AED_KEY_PATH,
                                     APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH,
-                                    APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH)
+                                    APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH,
+                                    APPLE_PAY_PRODUCTION_AED_CERTIFICATE_PATH,
+                                    APPLE_PAY_PRODUCTION_SAR_CERTIFICATE_PATH,
+                                    APPLE_PAY_SAR_KEY_PATH)
 from services.constants import (APPLEPAY_MERCHANT_IDENTIFIER,
                                 APPLEPAY_DOMAIN_NAME, APPLEPAY_DISPLAY_NAME)
 from services.v1.views.payment import PaymentRequestView
@@ -39,18 +43,50 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
     def configure_certificate(self, currency):
         logger.info(
             "Configuring certificate for currency {}".format(currency))
-        if currency == 'AED':
-            return (
-                APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH,
-                APPLE_PAY_AED_KEY_PATH)
-        elif currency == 'SAR':
-            return (
-                APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH,
-                APPLE_PAY_AED_KEY_PATH)
+        logger.info("Environment : {}".format(settings.ENVIRONMENT))
+
+        environment = settings.ENVIRONMENT
+
+        return_dict = {}
+        message = None
+        status = True
+        certificate = None
+        key = None
+
+        if environment == 'production':
+            if currency == 'AED':
+                certificate = APPLE_PAY_PRODUCTION_AED_CERTIFICATE_PATH
+                key = APPLE_PAY_AED_KEY_PATH
+            elif currency == "SAR":
+                certificate = APPLE_PAY_PRODUCTION_SAR_CERTIFICATE_PATH
+                key = APPLE_PAY_SAR_KEY_PATH
+            else:
+                message = "Invalid currency or not provided"
+                status = False
+
+
+        elif environment == 'sandbox':
+            if currency == 'AED':
+                certificate = APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH
+                key = APPLE_PAY_AED_KEY_PATH
+            elif currency == "SAR":
+                certificate = APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH
+                key = APPLE_PAY_AED_KEY_PATH
+            else:
+                message = ("unsupported currency or not provided, got {}"
+                           "".format(currency))
+                status = False
+
         else:
-            logger.info(
-                "Currently {} Currency is not supported".format(currency))
-            return None, None
+            message = "Invalid environment, got '{}' ".format(environment)
+            status = False
+
+        return_dict['certificate'] = certificate
+        return_dict['key'] = key
+        return_dict['message'] = message
+        return_dict['status'] = status
+
+        return return_dict
 
     def validate_session(self, request_data):
         transaction_data = request_data.get('transaction_data')
@@ -80,10 +116,18 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
             }
 
             # certificate secret and key
-            certificate, key = self.configure_certificate(
+            response_dict = self.configure_certificate(
                 self.transaction_obj.currency)
-
-            cert_file = (certificate, key)
+            print("Response dict : {}".format(response_dict))
+            if response_dict['status']:
+                certificate = response_dict['certificate']
+                key = response_dict['key']
+                cert_file = (certificate, key)
+            else:
+                logger.error("Error in configuring certificate : {}".format(
+                    response_dict['message']))
+                return ({"error": response_dict['message']},
+                        self.APPLE_PAY_CONNECTION_ERROR)
 
             verify_response, verify_status = self.verify_transaction(
                 transaction_data)
@@ -112,7 +156,8 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 self.response_data = {"response_data": response.json()}
                 response_code = self.SUCCESS
             else:
-                self.response_data = {"error": str(response)}
+                self.response_data = {"error": str(response),
+                                      "response_data": str(response.text)}
                 response_code = self.APPLE_PAY_CONNECTION_ERROR
 
             # storing Youpay to payment gateway request and response data
@@ -128,10 +173,11 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
             return self.response_data, response_code
 
         except Exception as e:
-            logger.error(
-                "Error while processing validating session for transaction id {}, err : {}".format(
-                    self.transaction_id, str(e)))
-            return None, self.APPLE_PAY_CONNECTION_ERROR
+            msg = (
+                "Error while processing validating session for transaction "
+                "id {}, err : {}".format(self.transaction_id, str(e)))
+            logger.error(msg)
+            return {"error": msg}, self.APPLE_PAY_CONNECTION_ERROR
 
     def pay(self, request_data):
         # Step 1 : Generate Token
@@ -177,7 +223,7 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                     " {}".format(self.transaction_id,
                                  request_payment_response))
 
-                if request_payment_response:
+                if response_code == self.SUCCESS:
                     logger.info(
                         "Applepay validate session request response for "
                         "transaction id {} is {}".format(
@@ -207,11 +253,6 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
             error_msg = "Error while processing applepay payment for transaction id {}, err : {}".format(
                 self.transaction_id, str(e))
             logger.error(error_msg)
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Exception in payment request : {} {} {}"
-                         .format(exc_type, fname, exc_tb.tb_lineno))
             return {"error": error_msg}, self.APPLE_PAY_CONNECTION_ERROR
 
         finally:
@@ -284,11 +325,6 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
         except Exception as e:
             logger.error("Error in generating apple pay token, {}".format(
                 str(e)))
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Exception in payment request : {} {} {}"
-                         .format(exc_type, fname, exc_tb.tb_lineno))
             return None, self.APPLE_PAY_CONNECTION_ERROR
         finally:
             self.create_youpay_to_payment_gateways_data(
@@ -336,3 +372,5 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
             )
+
+# pip install pyngrok

@@ -226,3 +226,6 @@ CACHES = {
         },
     },
 }
+
+# Environment name config
+ENVIRONMENT = config('ENVIRONMENT')

@@ -30,7 +30,7 @@ class ApplePayValidateSession(YouPayTransactionCRUD, APIView,
                 apple_pay = ApplePayManager()
                 response_data, code = apple_pay.validate_session(
                     payment_data)
-                if response_data:
+                if code == YouPayResponse.SUCCESS:
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
@@ -38,7 +38,10 @@ class ApplePayValidateSession(YouPayTransactionCRUD, APIView,
                     return Response(data,
                                     status=status.HTTP_200_OK)
                 else:
-                    data = self.response_obj.get_error_dict(error_code=code)
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
                     return Response(data,
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
@@ -72,7 +75,9 @@ class ApplePayPayment(APIView, YouPayTransactionCRUD):
                 apple_pay = ApplePayManager()
                 response_data, code = apple_pay.pay(
                     payment_data)
-                if response_data:
+                print("Response data: ", code, response_data)
+
+                if code == YouPayResponse.SUCCESS:
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
@@ -80,7 +85,10 @@ class ApplePayPayment(APIView, YouPayTransactionCRUD):
                     return Response(data,
                                     status=status.HTTP_200_OK)
                 else:
-                    data = self.response_obj.get_error_dict(error_code=code)
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
                     return Response(data,
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
@@ -91,4 +99,3 @@ class ApplePayPayment(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
-
