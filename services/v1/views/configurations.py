@@ -117,6 +117,8 @@ class ConfigViewSet(ViewSet):
                             transaction.amount, transaction.currency)
 
                         api_client = {'color': client.color_code,
+                                      'mobile_logo': self.get_mobile_logo_url(
+                                          client),
                                       'logo': self.get_logo_url(client)}
 
                         response_data = self.retrieve_response(
@@ -260,5 +262,12 @@ class ConfigViewSet(ViewSet):
     def get_logo_url(self, client):
         if client.logo_file and hasattr(client.logo_file, 'url'):
             return client.logo_file.url
+        else:
+            return None
+
+    def get_mobile_logo_url(self, client):
+        if client.mobile_logo_file and hasattr(client.mobile_logo_file,
+                                               'url'):
+            return client.mobile_logo_file.url
         else:
             return None
