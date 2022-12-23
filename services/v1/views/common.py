@@ -76,6 +76,14 @@ class YouPayTransactionCRUD(object):
         data_dict['response_summary'] = data.get('response_summary', None)
         data_dict['name_on_card'] = data.get('name_on_card', None)
 
+        data_dict['redeemed_amount'] = data.get('redeemed_amount', None) or 0
+        data_dict['redeemed_points'] = data.get('redeemed_points', None) or 0
+        data_dict['payable_amount'] = data.get('payable_amount', None) or 0
+        data_dict['available_amount'] = (data.get('available_amount', None)
+                                         or 0)
+        data_dict['available_points'] = (data.get('available_points', None)
+                                         or 0)
+        data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
@@ -85,7 +93,11 @@ class YouPayTransactionCRUD(object):
                 saved_fields = get_saved_fields(saved_fields,
                                                 data_dict,
                                                 transaction_obj)
-
+                """
+                below data update condition specific for adcb transactions
+                """
+                adcb_updated_saved_fields = get_adcb_saved_fields(
+                    saved_fields, data_dict, transaction_obj)
                 transaction_obj.save(update_fields=saved_fields)
             else:
                 logger.error("unable to find the transaction object for {}"
@@ -191,3 +203,12 @@ def add_payment_gateway_info_in_url(url, params, code):
     """
     url = url + params + "&gty=" + code
     return url
+
+
+def get_adcb_saved_fields(saved_fields, data_dict, transaction_obj):
+    for key, value in data_dict.items():
+        if value == 0 or value is False:
+            transaction_obj.__dict__[key] = value
+            saved_fields.append(key)
+
+    return saved_fields
