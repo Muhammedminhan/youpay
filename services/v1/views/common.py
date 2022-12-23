@@ -96,7 +96,7 @@ class YouPayTransactionCRUD(object):
                 """
                 below data update condition specific for adcb transactions
                 """
-                adcb_updated_saved_fields = get_adcb_saved_fields(
+                saved_fields = get_adcb_saved_fields(
                     saved_fields, data_dict, transaction_obj)
                 transaction_obj.save(update_fields=saved_fields)
             else:
