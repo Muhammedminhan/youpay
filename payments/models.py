@@ -74,6 +74,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
 
                                   help_text='Denotes the last 4 digits of the'
                                             ' card used for the payment')
+    name_on_card = models.CharField(max_length=255, null=True, blank=True,
+                                    help_text='Denotes the name on the card')
     payment_method = models.CharField(max_length=200,
                                       choices=PAYMENT_METHOD_CHOICES,
                                       default=PAYMENT_METHOD_NONE,
@@ -127,6 +129,27 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     loyalty_level = models.IntegerField(
         null=True, blank=True, default=0,
         help_text="used to store loyalty level")
+
+    # adcb related data
+    redeemed_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        help_text='amount which is redeemed on ADCB')
+    redeemed_points = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        help_text='points which is redeemed on ADCB')
+    payable_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        help_text='amount which is paid using credit/debit card by the'
+                  ' customer')
+    available_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        help_text='Available amount for the card')
+    available_points = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        help_text='Available points for the card')
+    is_full_redemption = models.BooleanField(
+        db_index=True, null=True, blank=True,
+        help_text='Denotes whether the redemption is full or not.')
 
 
 @receiver(post_save, sender=YouPayTransactionData)

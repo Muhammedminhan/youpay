@@ -4,6 +4,7 @@ from datetime import timedelta
 from celery import shared_task
 from payments.models import YouPayTransactionData, ClientNotification
 from payments.constants import (PAYMENT_STATUS_INITIATED,
+                                PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_EXPIRED,
                                 TRANSACTION_EXPIRE_TIME)
 from django.db.models.functions import Now
@@ -25,9 +26,11 @@ def set_transaction_expired():
         set_transaction_expired.request.id)
     try:
         with wait_redis_lock(lock_name=lock_name):
+            payment_statuses = [PAYMENT_STATUS_INITIATED,
+                                PAYMENT_STATUS_PENDING]
             transaction_objs = YouPayTransactionData.objects.filter(
-                payment_status=PAYMENT_STATUS_INITIATED,
-                created_at__lt=Now() - timedelta(
+                payment_status__in=payment_statuses,
+                updated_at__lt=Now()-timedelta(
                     minutes=TRANSACTION_EXPIRE_TIME))
             if transaction_objs:
                 transaction_ids = []
