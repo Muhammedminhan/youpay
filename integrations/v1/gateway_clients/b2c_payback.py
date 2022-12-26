@@ -238,6 +238,8 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 response_data["is_redirect"] = True
                 response_data["redirect_url"] = get_adcb_verify_redirect_url(
                     response_data, transaction_obj)
+                logger.info("adcb verify api call response : {}"
+                            "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_obj.transaction_id,

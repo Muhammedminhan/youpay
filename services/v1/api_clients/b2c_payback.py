@@ -109,7 +109,19 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                     'payment_status': PAYMENT_STATUS_PAID,
                     'payment_reference': response.get(
                         'results', {}).get('reference_id'),
-                    'approved': True
+                    'approved': True,
+                    "redeemed_amount": response.get(
+                        'results', {}).get('redeemed_amount'),
+                    "redeemed_points": response.get(
+                        'results', {}).get('redeemed_points'),
+                    "payable_amount": response.get(
+                        'results', {}).get('payable_amount'),
+                    "available_amount": response.get(
+                        'results', {}).get('available_amount'),
+                    "available_points": response.get(
+                        'results', {}).get('available_points'),
+                    "is_full_redemption": response.get(
+                        'results', {}).get('is_full_redemption')
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
@@ -155,7 +167,19 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                                           else response.get(
                         'results', {}).get('reference_id')),
                     'is_flagged': response.get('is_flagged', False),
-                    'approved': True
+                    'approved': True,
+                    'redeemed_amount': response.get(
+                        'results', {}).get('redeemed_amount'),
+                    'redeemed_points': response.get(
+                        'results', {}).get('redeemed_points'),
+                    'payable_amount': response.get(
+                        'results', {}).get('payable_amount'),
+                    'available_amount': response.get(
+                        'results', {}).get('available_amount'),
+                    'available_points': response.get(
+                        'results', {}).get('available_points'),
+                    'is_full_redemption': response.get(
+                        'results', {}).get('is_full_redemption')
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
