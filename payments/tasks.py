@@ -72,7 +72,7 @@ def client_event_notification_logging(transaction_id, status):
                             ClientNotification.objects.filter(
                                 transaction=transaction_obj,
                                 payment_status=payment_status)
-                            .order_by('-created_on')[0])
+                            .order_by('-created_at')[0])
                     if notification:
                         notification.is_notified = status if status else False
                         notification.notification_response_status = status
@@ -87,7 +87,7 @@ def client_event_notification_logging(transaction_id, status):
                         )
         else:
             logger.error("Unable to find the transaction while logging client"
-                         " event notification {0}".format(transaction_id))
+                         " event notification {}".format(transaction_id))
     except Exception as e:
         logger.error(
             "Unable to store client event notification log for "
