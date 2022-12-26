@@ -52,6 +52,7 @@ def format_adcb_point_balance_data(request_data, transaction_obj):
     request_data['platform'] = transaction_obj.platform
     return request_data
 
+
 def format_adcb_authenticate_data(request_data, transaction_obj):
     request_data['is_save_user_token'] = False
     request_data['client_code'] = ADCB_CLIENT_CODE
@@ -62,15 +63,18 @@ def format_adcb_authenticate_data(request_data, transaction_obj):
     request_data['customer_ip_address'] = transaction_obj.ip
     return request_data
 
+
 def format_adcb_redemption_data(request_data, transaction_obj):
     request_data['platform'] = transaction_obj.platform
     request_data['client_code'] = ADCB_CLIENT_CODE
     return request_data
 
+
 def format_adcb_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
     request_data['channel_code'] = ADCB_CLIENT_CODE
     return request_data
+
 
 def get_adcb_verify_redirect_url(response_data, transaction_obj): # partial redemption
     if (response_data.get("results", {}).get("payment_status") and
@@ -84,7 +88,11 @@ def get_adcb_verify_redirect_url(response_data, transaction_obj): # partial rede
             transaction_obj.transaction_id))
         return transaction_obj.success_url
     else:
+        logger.info("Transaction failed for transaction id {}, failure url "
+                    "{}".format(transaction_obj.transaction_id,
+                                transaction_obj.failure_url))
         return transaction_obj.failure_url
+
 
 def get_adcb_redemption_redirect_url(response_data, transaction_obj): #full redemption
     if response_data.get('results', {}).get('redemption_status'):
