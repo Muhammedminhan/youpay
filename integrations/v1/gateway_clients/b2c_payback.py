@@ -254,7 +254,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     logger.error(
                         "Error response received from verify api call "
                         "to b2cpayback {}".format(response.text))
-                    return response, None
+                    return response_data, None
             except Exception as e:
                 logger.error(
                     "Verify api call to b2cpayback failed", exc_info=e)
