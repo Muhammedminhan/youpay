@@ -117,6 +117,8 @@ class ConfigViewSet(ViewSet):
                             transaction.amount, transaction.currency)
 
                         api_client = {'color': client.color_code,
+                                      'mobile_logo': self.get_mobile_logo_url(
+                                          client),
                                       'logo': self.get_logo_url(client)}
 
                         response_data = self.retrieve_response(
@@ -184,12 +186,24 @@ class ConfigViewSet(ViewSet):
         base_amount = None
         redirect_url = None
 
+        cart_amount = None
+        cart_currency = None
+        cart_service_fee = None
+        cart_base_amount = None
+        cart_VAT_amount = None
+
         if transaction:
             amount = transaction.amount
             currency = transaction.currency
             service_fee = transaction.service_fee
             VAT_amount = transaction.VAT_amount
             base_amount = transaction.base_amount
+
+            cart_amount = transaction.cart_amount
+            cart_currency = transaction.cart_currency
+            cart_service_fee = transaction.cart_service_fee
+            cart_base_amount = transaction.cart_base_amount
+            cart_VAT_amount = transaction.cart_VAT_amount
 
             if transaction.payment_status == PAYMENT_STATUS_PAID:
                 redirect_url = transaction.success_url
@@ -212,11 +226,19 @@ class ConfigViewSet(ViewSet):
                 "checkoutpg_config": checkoutpg_config,
                 "b2cpayback_config": payback_config,
                 "tabbypg_config": tabbypg_config,
+
                 "amount": amount,
                 "currency": currency,
                 "service_fee": service_fee,
                 "vat_amount": VAT_amount,
                 "base_amount": base_amount,
+
+                "cart_amount": cart_amount,
+                "cart_currency": cart_currency,
+                "cart_service_fee": cart_service_fee,
+                "cart_vat_amount": cart_VAT_amount,
+                "cart_base_amount": cart_base_amount,
+
                 "redirect_url": redirect_url,
                 "announcements": announcements_dict
             },
@@ -240,5 +262,12 @@ class ConfigViewSet(ViewSet):
     def get_logo_url(self, client):
         if client.logo_file and hasattr(client.logo_file, 'url'):
             return client.logo_file.url
+        else:
+            return None
+
+    def get_mobile_logo_url(self, client):
+        if client.mobile_logo_file and hasattr(client.mobile_logo_file,
+                                               'url'):
+            return client.mobile_logo_file.url
         else:
             return None
