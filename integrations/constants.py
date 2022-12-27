@@ -108,9 +108,12 @@ TABBYPG_VERIFY_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/verify/'
 AMAZONPG_AUTHENTICATE_API = "services/api/v1/authorization/"
 AMAZONPG_VERIFY_API = "services/api/v1/verify/"
 
-APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH = "cert/applepay/sandbox/certificate_aed_sandbox.pem"
-APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH = "cert/applepay/sandbox/certificate_sar_sandbox.pem"
 APPLE_PAY_PRODUCTION_AED_CERTIFICATE_PATH = "cert/applepay/production/"
 APPLE_PAY_PRODUCTION_SAR_CERTIFICATE_PATH = "cert/applepay/production/"
-APPLE_PAY_AED_KEY_PATH = "cert/applepay/sandbox/aed_sandbox.key"
+APPLE_PAY_DEVELOPMENT_SAR_CERTIFICATE_PATH = "cert/applepay/development/"
+
+APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH = "cert/applepay/sandbox/certificate_sandbox.pem"
+APPLE_PAY_AED_KEY_PATH = "cert/applepay/sandbox/certificate_sandbox.key"
+
+APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH = "cert/applepay/sandbox/certificate_sar_sandbox.pem"
 APPLE_PAY_SAR_KEY_PATH = "cert/applepay/sandbox/sar_sandbox.key"
