@@ -31,6 +31,9 @@ class APIClient(AbstractDateTime, AbstractUserBase):
                                                'https://google.com/')
     logo_file = models.ImageField(upload_to='logo_files', blank=True,
                                   null=True, help_text='Logo for the client')
+    mobile_logo_file = models.ImageField(
+        upload_to='mobile_logo_file', blank=True, null=True,
+        help_text='Mobile logo for the client')
     color_code = models.CharField(max_length=20, blank=True, null=True,
                                   validators=[MinLengthValidator(4)],
                                   help_text='Color code for the client')
