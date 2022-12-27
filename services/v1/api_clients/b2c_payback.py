@@ -179,7 +179,8 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                     'available_points': response.get(
                         'results', {}).get('available_points'),
                     'is_full_redemption': response.get(
-                        'results', {}).get('is_full_redemption')
+                        'results', {}).get('is_full_redemption'),
+                    'is_gcc_card': True
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
