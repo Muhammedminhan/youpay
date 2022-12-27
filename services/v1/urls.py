@@ -6,11 +6,12 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackRedemption,
                                                  B2CPaybackVerify)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
-                                                CheckoutVerification)
+                                                CheckoutVerification,
+                                                PaypalPayment)
 from services.v1.views.configurations import ConfigViewSet
-from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
+from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView)
@@ -29,11 +30,11 @@ urlpatterns = [
 
     path('checkout/saved-card/', SavedCardPayment.as_view()),
     path('checkout/card/', CardPayment.as_view()),
+    path('checkout/paypal/', PaypalPayment.as_view()),
     path('checkout/verify/', CheckoutVerification.as_view(),
          name='checkout_verify'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
     path('payment-expire/', TransactionExpireView.as_view()),
-
 
     # b2cpayback endpoints
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
