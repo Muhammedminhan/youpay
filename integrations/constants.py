@@ -112,8 +112,8 @@ APPLE_PAY_PRODUCTION_AED_CERTIFICATE_PATH = "cert/applepay/production/"
 APPLE_PAY_PRODUCTION_SAR_CERTIFICATE_PATH = "cert/applepay/production/"
 APPLE_PAY_DEVELOPMENT_SAR_CERTIFICATE_PATH = "cert/applepay/development/"
 
-APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH = "cert/applepay/sandbox/certificate_sandbox.pem"
-APPLE_PAY_AED_KEY_PATH = "cert/applepay/sandbox/certificate_sandbox.key"
+APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH = "cert/applepay/new/certificate_sandbox.pem"
+APPLE_PAY_AED_KEY_PATH = "cert/applepay/new/certificate_sandbox.key"
 
 APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH = "cert/applepay/sandbox/certificate_sar_sandbox.pem"
 APPLE_PAY_SAR_KEY_PATH = "cert/applepay/sandbox/sar_sandbox.key"

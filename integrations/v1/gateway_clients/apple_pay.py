@@ -86,6 +86,9 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
         return_dict['message'] = message
         return_dict['status'] = status
 
+        logger.info("Certificate path : {}".format(certificate))
+        logger.info("Key path : {}".format(key))
+
         return return_dict
 
     def validate_session(self, request_data):
