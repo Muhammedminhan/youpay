@@ -204,7 +204,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     response_data["redirect_url"] = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
-                    return response_data, transaction_obj.transaction_id
+                    return response_data, transaction_obj
                 else:
                     logger.error(
                         "Error response received from redemption api call "
@@ -249,7 +249,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     request_type=PAYMENT_REQUEST_VERIFY
                 )
                 if response:
-                    return response_data, transaction_obj.transaction_id
+                    return response_data, transaction_obj
                 else:
                     logger.error(
                         "Error response received from verify api call "

@@ -26,14 +26,17 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
         payback = B2CPaybackManager()
         response, transaction_id = payback.get_point_balance(request.data)
         request_data = request.data
+        response_data = response.json()
         if response and response.status_code == 200:
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                 'card_bin': request_data.get('card_no', "")[0:6],
                 'card_last4': request_data.get('card_no', "")[-4:],
+                'available_amount': response_data.get('available_amount'),
+                'available_points': response_data.get('available_points')
             })
-            return Response(response.json(), status=status.HTTP_200_OK)
+            return Response(response_data, status=status.HTTP_200_OK)
         else:
             try:
                 response_text = json.loads(response.text)
@@ -60,11 +63,16 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
         if response:
             invoice_amount = transaction_obj.amount
             selected_amount = float(request.data.get('selected_amount'))
+            checkout_amount = float(request.data.get('checkout_amount'))
             update_data = {
                 'transaction_id': transaction_obj.transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                 'payment_status': PAYMENT_STATUS_AUTHORIZED,
-                'is_gcc_card': True
+                'is_gcc_card': True,
+                'payable_amount': checkout_amount,
+                'available_amount': transaction_obj.available_amount,
+                'available_points': transaction_obj.available_points,
+                'is_full_redemption': response.get('is_full_redemption')
             }
             if invoice_amount == selected_amount:  # full redemption
                 update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
@@ -101,11 +109,13 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
 
     def post(self, request):
         payback = B2CPaybackManager()
-        response, transaction_id = payback.point_redemption(request.data)
+        response, transaction_obj = payback.point_redemption(request.data)
+        transaction_id = (transaction_obj.transaction_id if transaction_obj
+                          else None)
         if response:
             if response.get('results', {}).get('redemption_status') == True:
                 update_data = {
-                    'transaction_id': transaction_id,
+                    'transaction_id': transaction_obj.transaction_id,
                     'payment_status': PAYMENT_STATUS_PAID,
                     'payment_reference': response.get(
                         'results', {}).get('reference_id'),
@@ -114,14 +124,10 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                         'results', {}).get('redeemed_amount'),
                     "redeemed_points": response.get(
                         'results', {}).get('redeemed_points'),
-                    "payable_amount": response.get(
-                        'results', {}).get('payable_amount'),
-                    "available_amount": response.get(
-                        'results', {}).get('available_amount'),
-                    "available_points": response.get(
-                        'results', {}).get('available_points'),
-                    "is_full_redemption": response.get(
-                        'results', {}).get('is_full_redemption')
+                    'available_amount': transaction_obj.available_amount,
+                    'available_points': transaction_obj.available_points,
+                    'payable_amount': transaction_obj.payable_amount,
+                    'is_full_redemption': transaction_obj.is_full_redemption
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
@@ -156,11 +162,13 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                 'redemption_reference_id'),
             'cko-session-id': request.query_params.get(
                 'cko-session-id')}
-        response, transaction_id = payback.verification(payment_data)
+        response, transaction_obj = payback.verification(payment_data)
+        transaction_id = (transaction_obj.transaction_id if transaction_obj
+                          else None)
         if response:
             if response.get('results', {}).get('payment_status') == True:
                 update_data = {
-                    'transaction_id': transaction_id,
+                    'transaction_id': transaction_obj.transaction_id,
                     'payment_status': PAYMENT_STATUS_PAID,
                     'payment_reference': (response.get('payment_reference')
                                           if response.get('payment_reference')
@@ -172,15 +180,11 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                         'results', {}).get('redeemed_amount'),
                     'redeemed_points': response.get(
                         'results', {}).get('redeemed_points'),
-                    'payable_amount': response.get(
-                        'results', {}).get('payable_amount'),
-                    'available_amount': response.get(
-                        'results', {}).get('available_amount'),
-                    'available_points': response.get(
-                        'results', {}).get('available_points'),
-                    'is_full_redemption': response.get(
-                        'results', {}).get('is_full_redemption'),
-                    'is_gcc_card': True
+                    'is_gcc_card': True,
+                    'available_amount': transaction_obj.available_amount,
+                    'available_points': transaction_obj.available_points,
+                    'payable_amount': transaction_obj.payable_amount,
+                    'is_full_redemption': transaction_obj.is_full_redemption
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
