@@ -118,6 +118,9 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 "displayName": APPLEPAY_DISPLAY_NAME,
             }
 
+            logger.info("\n\nAPPLE PAY Validating session payload {} ".format(
+                payload))
+
             # certificate secret and key
             response_dict = self.configure_certificate(
                 self.transaction_obj.currency)
