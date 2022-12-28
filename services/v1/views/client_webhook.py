@@ -9,6 +9,7 @@ from httpsig.requests_auth import HTTPSignatureAuth
 from core.constants import EXTERNAL_API_REQUEST_TIMEOUT
 from core.exceptions import ClientWebhookException
 from core.utils import retry
+from payments.tasks import client_event_notification_logging
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,9 @@ class ClientService(object):
                     url,
                     request_data_json, auth,
                     headers)
+
+                client_event_notification_logging.delay(
+                    youpay_transaction.transaction_id, status=response_status)
 
                 if response_status is True:
                     logger.info(
