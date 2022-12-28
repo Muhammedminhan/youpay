@@ -130,6 +130,33 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         null=True, blank=True, default=0,
         help_text="used to store loyalty level")
 
+    cart_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                      null=True, blank=True,
+                                      validators=[DecimalValidator(12, 4)],
+                                      help_text="used to store cart "
+                                                "VAT amount")
+    cart_currency = models.CharField(null=True, blank=True, max_length=15,
+                                     help_text="used to store cart currency "
+                                               "details")
+    cart_service_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                           null=True, blank=True,
+                                           validators=[
+                                               DecimalValidator(12, 4)],
+                                           help_text="used to store cart "
+                                                     "service fee")
+    cart_base_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                           null=True, blank=True,
+                                           validators=[
+                                               DecimalValidator(12, 4)],
+                                           help_text="used to store cart "
+                                                     "base amount")
+    cart_VAT_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                          null=True, blank=True,
+                                          validators=[
+                                              DecimalValidator(12, 4)],
+                                          help_text="used to store cart "
+                                                    "VAT amount")
+
 
 @receiver(post_save, sender=YouPayTransactionData)
 def update_client(sender, instance, **kwargs):
@@ -186,5 +213,6 @@ class ClientNotification(AbstractDateTime):
                                                   ' retried')
     payment_status = models.CharField(max_length=100, null=True, blank=True,
                                       help_text='payment transaction status')
+
     def __str__(self):
         return str(self.transaction.transaction_id)
