@@ -354,7 +354,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
-        name_on_card = ""
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
@@ -367,7 +366,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 checkoutpg_config = get_checkoutpg_config()
                 if checkoutpg_config:
                     payment_data = self.get_checkout_payment_data(data)
-                    self.channel_code = payment_data.get('channel_code')
                     logger.info(
                         "Youpay sending paypal payment data is {}".format(
                             payment_data))
@@ -437,7 +435,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "payment_status": self.payment_status,
                 "payment_reference": self.payment_reference,
                 "payment_gateway": self.payment_gateway,
-                "channel_code": self.channel_code,
                 "payment_method": self.payment_method,
             }
             self.update_youpay_transaction_data(data_to_update)
