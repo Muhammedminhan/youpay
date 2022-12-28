@@ -13,7 +13,8 @@ from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD
+from services.constants import TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD, \
+    TOKEN_TYPE_PAYPAL
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -188,8 +189,7 @@ class PaypalPayment(APIView, YouPayTransactionCRUD):
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
-                payment_data = {'token_type': "paypal",
-                                # todo move to constant
+                payment_data = {'token_type': TOKEN_TYPE_PAYPAL,
                                 'transaction_data': transaction_data,
                                 'request_data': request.data,
                                 'site_domain': site_domain}
