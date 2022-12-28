@@ -92,7 +92,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
-                    message="Transaction does not exists")
+                    message=TRANSACTION_DOESNT_EXIST)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except ObjectDoesNotExist as e:
             data = self.response_obj.get_404_message(message=str(e))
@@ -161,7 +161,7 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                                     status=status.HTTP_404_NOT_FOUND)
             else:
                 data = self.response_obj.get_404_message(
-                    message="Transaction doesn't exists")
+                    message=TRANSACTION_DOESNT_EXIST)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except ObjectDoesNotExist as e:
             data = self.response_obj.get_404_message(message=str(e))
@@ -211,7 +211,7 @@ class PaypalPayment(APIView, YouPayTransactionCRUD):
                                     status=status.HTTP_404_NOT_FOUND)
             else:
                 data = self.response_obj.get_404_message(
-                    message="Transaction doesn't exists")
+                    message=TRANSACTION_DOESNT_EXIST)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except ObjectDoesNotExist as e:
             data = self.response_obj.get_404_message(message=str(e))
