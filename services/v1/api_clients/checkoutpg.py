@@ -189,6 +189,7 @@ class PaypalPayment(APIView, YouPayTransactionCRUD):
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
                 payment_data = {'token_type': "paypal",
+                                # todo move to constant
                                 'transaction_data': transaction_data,
                                 'request_data': request.data,
                                 'site_domain': site_domain}
