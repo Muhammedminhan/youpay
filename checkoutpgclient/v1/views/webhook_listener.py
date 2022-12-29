@@ -41,8 +41,6 @@ class WebhookListener(APIView):
             logger.info("Checkoutpg webhook received for invoice {}".format(
                 invoice_pk))
 
-            lock_name = 'lock:WebhookListener:invoice_%d' % (int(invoice_pk),)
-
             transaction_obj = get_transaction_object(
                 request_data.get(
                     'payment_reference', None))
