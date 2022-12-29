@@ -324,22 +324,13 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
 class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
                             YouPayResponse):
 
-
     def __init__(self):
         self.return_data = None
 
     def post(self, request):
         try:
             logger.info("Triggered TransactionExpireView")
-            validate, client_pk = self.validate_client(request)
-            if not validate:
-                logger.info(
-                    "payment expire client validation failed for {0}"
-                    .format("order_reference"))
-                self.return_data = self.get_400_message(
-                    message="Client Does Not Exist")
-                return Response(self.return_data.get('errors'),
-                                status=status.HTTP_400_BAD_REQUEST)
+
             data = self.request.data
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
@@ -351,7 +342,11 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
             logger.info(
                 "Payment status set to expired for transaction_id "
                 ": {}".format(transaction_id))
+            redirect_url = (transaction_object.cancel_url +
+                            '?transaction_id=' + transaction_id)
             response_data = {"status": status.HTTP_200_OK,
+                             "is_redirect": True,
+                             REDIRECT_URL: redirect_url,
                              "message": "Successfully expired transaction"}
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
