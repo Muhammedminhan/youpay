@@ -119,6 +119,7 @@ def get_payment_options(payment_gateway_serializer):
             response_payment_options['checkoutpg'] = True
             response_payment_options['saved_card'] = True
             response_payment_options['applepay'] = True
+            response_payment_options['paypal'] = True
 
         if code == B2CPAYBACK_HUB_CODE:
             response_payment_options['adcb'] = True
