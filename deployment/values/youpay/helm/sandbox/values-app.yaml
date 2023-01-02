@@ -1,37 +1,37 @@
-namespace: '<APPLICATION_NAME>'
+namespace: 'youpay'
 
-app_name: '<APPLICATION_NAME>'
+app_name: 'youpay'
 environment: 'sandbox'
 
 service:
-  name: '<APPLICATION_NAME>-app'
+  name: 'youpay-app'
   default:
     port: 8000
     protocol: 'TCP'
     targetPort: 8000
 
 hpa:
-  name: '<APPLICATION_NAME>-app-hpa'
+  name: 'youpay-app-hpa'
   minReplicas: 3
   maxReplicas: 6
   targetCPUUtilizationPercentage: 80
 
 pdb:
-  name: '<APPLICATION_NAME>-app-pdb'
+  name: 'youpay-app-pdb'
   minAvailable: 80%
 
 deployment:
-  name: '<APPLICATION_NAME>-app-deployment'
+  name: 'youpay-app-deployment'
   replicas: 3
   maxSurge: 100%
   maxUnavailable: 0%
-  serviceAccountName: '<PREFIX><APPLICATION_NAME>-vault'
+  serviceAccountName: 'ygag-youpay-vault'
 
   containers:
     default:
       name: 'app'
       imagePullPolicy: 'Always'
-      image: '<ECR_REGISTRY>.dkr.ecr.<AWS_REGION>.amazonaws.com/<APP_IMAGE_REPOSITORY>:[BUILD_TAG]'
+      image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "/ygag/deployment/app/app-entrypoint.sh"]'
       env:
         - name: 'DJANGO_SETTINGS_MODUL'
@@ -43,7 +43,7 @@ deployment:
       cpu:
         requests: 100m
       health:
-        path: '<APP_HEALTH_FULL_PATH>'
+        path: '/health/'
         port: 8000
         scheme: 'HTTP'
       startupProbe:
@@ -66,44 +66,44 @@ deployment:
         failureThreshold: 4
       volumeMounts:
         - mountPath: '/ygag/logs/'
-          name: '<PREFIX><APPLICATION_NAME>-sandbox-app-logs'
-        - name: '<APPLICATION_NAME>-app-env-volume'
+          name: 'ygag-youpay-sandbox-app-logs'
+        - name: 'youpay-app-env-volume'
           mountPath: "/vault/secrets"
-        - name: '<APPLICATION_NAME>-certs-sample1-volume'
+        - name: 'youpay-certs-sample1-volume'
           mountPath: "/ygag/certs/sample1dir"
-        - name: '<APPLICATION_NAME>-certs-sample2-volume'
+        - name: 'youpay-certs-sample2-volume'
           mountPath: "/ygag/certs/sample2dir"
-        - name: '<APPLICATION_NAME>-certs-sample-client3-volume'
+        - name: 'youpay-certs-sample-client3-volume'
           mountPath: "/ygag/certs/sample-client3dir"
 
   volumes:
-    - name: '<PREFIX><APPLICATION_NAME>-sandbox-app-logs'
+    - name: 'ygag-youpay-sandbox-app-logs'
       hostPath:
-        path: '/home/ec2-user/ygag-logs/<PREFIX><APPLICATION_NAME>-sandbox/app'
-    - name: '<APPLICATION_NAME>-app-env-volume'
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/app'
+    - name: 'youpay-app-env-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-envs"
-    - name: '<APPLICATION_NAME>-certs-sample1-volume'
+          secretProviderClass: "youpay-envs"
+    - name: 'youpay-certs-sample1-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample1"
-    - name: '<APPLICATION_NAME>-certs-sample2-volume'
+          secretProviderClass: "youpay-certs-sample1"
+    - name: 'youpay-certs-sample2-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample2"
-    - name: '<APPLICATION_NAME>-certs-sample-client3-volume'
+          secretProviderClass: "youpay-certs-sample2"
+    - name: 'youpay-certs-sample-client3-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample-client3"
+          secretProviderClass: "youpay-certs-sample-client3"
 
   nodeSelector:
     key: 'karpenter.sh/provisioner-name'
@@ -115,14 +115,14 @@ deployment:
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: '<APPLICATION_NAME>'
+          app: 'youpay'
           tier: app
     - maxSkew: 1
       topologyKey: 'kubernetes.io/hostname'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: '<APPLICATION_NAME>'
+          app: 'youpay'
           tier: app
 
   priorityClassName: 'sandbox-medium'

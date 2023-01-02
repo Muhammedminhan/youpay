@@ -1,10 +1,10 @@
-namespace: '<APPLICATION_NAME>'
+namespace: 'youpay'
 
-app_name: '<APPLICATION_NAME>'
+app_name: 'youpay'
 environment: 'production'
 
 service:
-  name: '<APPLICATION_NAME>-nginx'
+  name: 'youpay-nginx'
   default:
     port: 80
     protocol: 'TCP'
@@ -15,17 +15,17 @@ service:
     targetPort: 80
 
 hpa:
-  name: '<APPLICATION_NAME>-nginx-hpa'
+  name: 'youpay-nginx-hpa'
   minReplicas: 5
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
 
 pdb:
-  name: '<APPLICATION_NAME>-nginx-pdb'
+  name: 'youpay-nginx-pdb'
   minAvailable: 80%
 
 deployment:
-  name: '<APPLICATION_NAME>-nginx-deployment'
+  name: 'youpay-nginx-deployment'
   replicas: 5
   maxSurge: 100%
   maxUnavailable: 0%
@@ -34,7 +34,7 @@ deployment:
     default:
       name: 'nginx'
       imagePullPolicy: 'Always'
-      image: '<ECR_REGISTRY>.dkr.ecr.<AWS_REGION>.amazonaws.com/<NGINX_IMAGE_REPOSITORY>:[BUILD_TAG]'
+      image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-nginx:[BUILD_TAG]'
       port: 80
       memory:
         requests: 32Mi
@@ -67,9 +67,9 @@ deployment:
 
   volumes:
     local:
-      - name: '<PREFIX><APPLICATION_NAME>-production-nginx-logs'
+      - name: 'ygag-youpay-production-nginx-logs'
         mountPath: '/var/log/nginx/'
-        hostPath: '/home/ec2-user/ygag-logs/<PREFIX><APPLICATION_NAME>-production/nginx'
+        hostPath: '/home/ec2-user/ygag-logs/ygag-youpay-production/nginx'
 
   nodeSelector:
     key: 'karpenter.sh/provisioner-name'
@@ -81,14 +81,14 @@ deployment:
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: '<APPLICATION_NAME>'
+          app: 'youpay'
           tier: nginx
     - maxSkew: 1
       topologyKey: 'kubernetes.io/hostname'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: '<APPLICATION_NAME>'
+          app: 'youpay'
           tier: nginx
 
   priorityClassName: 'production-medium'

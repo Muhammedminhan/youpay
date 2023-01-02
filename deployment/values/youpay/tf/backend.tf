@@ -6,6 +6,6 @@ terraform {
     region = "us-east-1"
     bucket = "ygag-[ENVIRONMENT]-terraform-state-tf"
 
-    key = "<RESOURCE_ACCOUNT>/[ENVIRONMENT]/applications-v2/eks-v2/<APPLICATION_NAME>.tfstate"
+    key = "ygag/[ENVIRONMENT]/applications-v2/eks-v2/youpay.tfstate"
   }
 }

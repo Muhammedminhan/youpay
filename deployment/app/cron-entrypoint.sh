@@ -18,7 +18,7 @@ term_handler() {
 
 trap 'term_handler' SIGTERM
 
-celery -A <APP_MODULE_NAME> beat -l INFO -f /ygag/logs/cron.out.celery.log >> /ygag/logs/cron.out.celery.console.log 2>&1 &
+celery -A youpay beat -l INFO -f /ygag/logs/cron.out.celery.log >> /ygag/logs/cron.out.celery.console.log 2>&1 &
 
 pid="$!"
 

@@ -1,37 +1,37 @@
-namespace: '<APPLICATION_NAME>'
+namespace: 'youpay'
 
-app_name: '<APPLICATION_NAME>'
+app_name: 'youpay'
 environment: 'sandbox'
 
 service:
-  name: '<APPLICATION_NAME>-worker'
+  name: 'youpay-worker'
   default:
     port: 8000
     protocol: 'TCP'
     targetPort: 8000
 
 hpa:
-  name: '<APPLICATION_NAME>-worker-hpa'
+  name: 'youpay-worker-hpa'
   minReplicas: 1
   maxReplicas: 3
   targetCPUUtilizationPercentage: 80
 
 pdb:
-  name: '<APPLICATION_NAME>-worker-pdb'
+  name: 'youpay-worker-pdb'
   minAvailable: 80%
 
 deployment:
-  name: '<APPLICATION_NAME>-worker-deployment'
+  name: 'youpay-worker-deployment'
   replicas: 1
   maxSurge: 100%
   maxUnavailable: 0%
-  serviceAccountName: 'ygag-<APPLICATION_NAME>-vault'
+  serviceAccountName: 'ygag-youpay-vault'
 
   containers:
     default:
       name: 'worker'
       imagePullPolicy: 'Always'
-      image: '<ECR_REGISTRY>.dkr.ecr.<AWS_REGION>.amazonaws.com/<APP_IMAGE_REPOSITORY>:[BUILD_TAG]'
+      image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "/ygag/deployment/app/worker-entrypoint.sh"]'
       memory:
         requests: 300Mi
@@ -40,44 +40,44 @@ deployment:
         requests: 50m
       volumeMounts:
         - mountPath: /ygag/logs/
-          name: 'ygag-<APPLICATION_NAME>-sandbox-worker-logs'
-        - name: '<APPLICATION_NAME>-app-env-volume'
+          name: 'ygag-youpay-sandbox-worker-logs'
+        - name: 'youpay-app-env-volume'
           mountPath: "/vault/secrets"
-        - name: '<APPLICATION_NAME>-certs-sample1-volume'
+        - name: 'youpay-certs-sample1-volume'
           mountPath: "/ygag/certs/sample1dir"
-        - name: '<APPLICATION_NAME>-certs-sample2-volume'
+        - name: 'youpay-certs-sample2-volume'
           mountPath: "/ygag/certs/sample2dir"
-        - name: '<APPLICATION_NAME>-certs-sample-client3-volume'
+        - name: 'youpay-certs-sample-client3-volume'
           mountPath: "/ygag/certs/sample-client3dir"
 
   volumes:
-    - name: 'ygag-<APPLICATION_NAME>-sandbox-worker-logs'
+    - name: 'ygag-youpay-sandbox-worker-logs'
       hostPath:
-        path: '/home/ec2-user/ygag-logs/ygag-<APPLICATION_NAME>-sandbox/worker'
-    - name: '<APPLICATION_NAME>-app-env-volume'
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/worker'
+    - name: 'youpay-app-env-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-envs"
-    - name: '<APPLICATION_NAME>-certs-sample1-volume'
+          secretProviderClass: "youpay-envs"
+    - name: 'youpay-certs-sample1-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample1"
-    - name: '<APPLICATION_NAME>-certs-sample2-volume'
+          secretProviderClass: "youpay-certs-sample1"
+    - name: 'youpay-certs-sample2-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample2"
-    - name: '<APPLICATION_NAME>-certs-sample-client3-volume'
+          secretProviderClass: "youpay-certs-sample2"
+    - name: 'youpay-certs-sample-client3-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample-client3"
+          secretProviderClass: "youpay-certs-sample-client3"
 
   nodeSelector:
     key: 'karpenter.sh/provisioner-name'
@@ -89,14 +89,14 @@ deployment:
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: '<APPLICATION_NAME>'
+          app: 'youpay'
           tier: worker
     - maxSkew: 1
       topologyKey: 'kubernetes.io/hostname'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: '<APPLICATION_NAME>'
+          app: 'youpay'
           tier: worker
 
   priorityClassName: 'sandbox-medium'

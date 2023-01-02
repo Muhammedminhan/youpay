@@ -13,11 +13,11 @@ on:
         - production
 
 env:
-  APPLICATION_NAME: <APPLICATION_NAME>
-  APP_IMAGE_REPOSITORY: <APP_IMAGE_REPOSITORY>
-  NGINX_IMAGE_REPOSITORY: <NGINX_IMAGE_REPOSITORY>
-  ECR_REGISTRY: <ECR_REGISTRY>
-  ECR_REGION: <AWS_REGION>
+  APPLICATION_NAME: youpay
+  APP_IMAGE_REPOSITORY: production/ygag/youpay/backend-app
+  NGINX_IMAGE_REPOSITORY: production/ygag/youpay/backend-nginx
+  ECR_REGISTRY: 459037613883
+  ECR_REGION: ap-south-1
   ENVIRONMENT: ${{ inputs.environment }}
   VAULT_ADDRESS: ${{ secrets.VAULT_ADDRESS }}
 
@@ -156,23 +156,23 @@ jobs:
      - name: Setup Production env variable
        if: env.ENVIRONMENT  == 'production'
        run: |
-        echo "KUBERNETES_HOST=${{ secrets.<ACCOUNT_REGION_PRODUCTION_KUBERNETES_HOST> }}" >> $GITHUB_ENV
-        echo "KUBERNETES_CLUSTER_CA_CERT=${{ secrets.<ACCOUNT_REGION_PRODUCTION_KUBERNETES_CLUSTER_CA_CERT> }}" >> $GITHUB_ENV
+        echo "KUBERNETES_HOST=${{ secrets.YGAG_AP_SOUTH_1_PRODUCTION_KUBERNETES_HOST }}" >> $GITHUB_ENV
+        echo "KUBERNETES_CLUSTER_CA_CERT=${{ secrets.YGAG_AP_SOUTH_1_PRODUCTION_KUBERNETES_CLUSTER_CA_CERT }}" >> $GITHUB_ENV
         echo "KUBERNETES_TOKEN=${{ secrets.PRODUCTION_KUBERNETES_TOKEN }}" >> $GITHUB_ENV
         echo "DOMAIN=${{ secrets.PRODUCTION_DOMAIN }}" >> $GITHUB_ENV
         echo "CERTIFICATE_ARN=${{ secrets.PRODUCTION_CERTIFICATE_ARN }}" >> $GITHUB_ENV
-        echo "WAF_ARN=${{ secrets.<ACCOUNT_REGION_PRODUCTION_WAF_ARN> }}" >> $GITHUB_ENV
-        echo "ALB_ACCESS_LOG_BUCKET=${{ secrets.<ACCOUNT_REGION_PRODUCTION_ALB_ACCESS_LOG_BUCKET> }}" >> $GITHUB_ENV
+        echo "WAF_ARN=${{ secrets.YGAG_AP_SOUTH_1_PRODUCTION_WAF_ARN }}" >> $GITHUB_ENV
+        echo "ALB_ACCESS_LOG_BUCKET=${{ secrets.YGAG_AP_SOUTH_1_PRODUCTION_ALB_ACCESS_LOG_BUCKET }}" >> $GITHUB_ENV
      - name: Setup sandbox env variable
        if: env.ENVIRONMENT == 'sandbox'
        run: |
-          echo "KUBERNETES_HOST=${{ secrets.<ACCOUNT_REGION_SANDBOX_KUBERNETES_HOST> }}" >> $GITHUB_ENV
-          echo "KUBERNETES_CLUSTER_CA_CERT=${{ secrets.<ACCOUNT_REGION_SANDBOX_KUBERNETES_CLUSTER_CA_CERT> }}" >> $GITHUB_ENV
+          echo "KUBERNETES_HOST=${{ secrets.YGAG_AP_SOUTH_1_SANDBOX_KUBERNETES_HOST }}" >> $GITHUB_ENV
+          echo "KUBERNETES_CLUSTER_CA_CERT=${{ secrets.YGAG_AP_SOUTH_1_SANDBOX_KUBERNETES_CLUSTER_CA_CERT }}" >> $GITHUB_ENV
           echo "KUBERNETES_TOKEN=${{ secrets.SANDBOX_KUBERNETES_TOKEN }}" >> $GITHUB_ENV
           echo "DOMAIN=${{ secrets.SANDBOX_DOMAIN }}" >> $GITHUB_ENV
           echo "CERTIFICATE_ARN=${{ secrets.SANDBOX_CERTIFICATE_ARN }}" >> $GITHUB_ENV
-          echo "WAF_ARN=${{ secrets.<ACCOUNT_REGION_SANDBOX_WAF_ARN> }}" >> $GITHUB_ENV
-          echo "ALB_ACCESS_LOG_BUCKET=${{ secrets.<ACCOUNT_REGION_SANDBOX_ALB_ACCESS_LOG_BUCKET> }}" >> $GITHUB_ENV
+          echo "WAF_ARN=${{ secrets.YGAG_AP_SOUTH_1_SANDBOX_WAF_ARN }}" >> $GITHUB_ENV
+          echo "ALB_ACCESS_LOG_BUCKET=${{ secrets.YGAG_AP_SOUTH_1_SANDBOX_ALB_ACCESS_LOG_BUCKET }}" >> $GITHUB_ENV
      - name: Checkout template
        uses: actions/checkout@v3
        with:
