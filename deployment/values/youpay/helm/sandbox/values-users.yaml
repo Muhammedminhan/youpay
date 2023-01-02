@@ -1,0 +1,5 @@
+users:
+  - service_account:
+      create: 'true'
+      name: 'ygag-<APPLICATION_NAME>-vault'
+      namespace: '<APPLICATION_NAME>'

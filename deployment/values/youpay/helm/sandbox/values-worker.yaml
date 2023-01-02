@@ -1,0 +1,103 @@
+namespace: '<APPLICATION_NAME>'
+
+app_name: '<APPLICATION_NAME>'
+environment: 'sandbox'
+
+service:
+  name: '<APPLICATION_NAME>-worker'
+  default:
+    port: 8000
+    protocol: 'TCP'
+    targetPort: 8000
+
+hpa:
+  name: '<APPLICATION_NAME>-worker-hpa'
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+pdb:
+  name: '<APPLICATION_NAME>-worker-pdb'
+  minAvailable: 80%
+
+deployment:
+  name: '<APPLICATION_NAME>-worker-deployment'
+  replicas: 1
+  maxSurge: 100%
+  maxUnavailable: 0%
+  serviceAccountName: 'ygag-<APPLICATION_NAME>-vault'
+
+  containers:
+    default:
+      name: 'worker'
+      imagePullPolicy: 'Always'
+      image: '<ECR_REGISTRY>.dkr.ecr.<AWS_REGION>.amazonaws.com/<APP_IMAGE_REPOSITORY>:[BUILD_TAG]'
+      command: '["sh", "/ygag/deployment/app/worker-entrypoint.sh"]'
+      memory:
+        requests: 300Mi
+        limits: 400Mi
+      cpu:
+        requests: 50m
+      volumeMounts:
+        - mountPath: /ygag/logs/
+          name: 'ygag-<APPLICATION_NAME>-sandbox-worker-logs'
+        - name: '<APPLICATION_NAME>-app-env-volume'
+          mountPath: "/vault/secrets"
+        - name: '<APPLICATION_NAME>-certs-sample1-volume'
+          mountPath: "/ygag/certs/sample1dir"
+        - name: '<APPLICATION_NAME>-certs-sample2-volume'
+          mountPath: "/ygag/certs/sample2dir"
+        - name: '<APPLICATION_NAME>-certs-sample-client3-volume'
+          mountPath: "/ygag/certs/sample-client3dir"
+
+  volumes:
+    - name: 'ygag-<APPLICATION_NAME>-sandbox-worker-logs'
+      hostPath:
+        path: '/home/ec2-user/ygag-logs/ygag-<APPLICATION_NAME>-sandbox/worker'
+    - name: '<APPLICATION_NAME>-app-env-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "<APPLICATION_NAME>-envs"
+    - name: '<APPLICATION_NAME>-certs-sample1-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "<APPLICATION_NAME>-certs-sample1"
+    - name: '<APPLICATION_NAME>-certs-sample2-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "<APPLICATION_NAME>-certs-sample2"
+    - name: '<APPLICATION_NAME>-certs-sample-client3-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "<APPLICATION_NAME>-certs-sample-client3"
+
+  nodeSelector:
+    key: 'karpenter.sh/provisioner-name'
+    value: 'default'
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: 'topology.kubernetes.io/zone'
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app: '<APPLICATION_NAME>'
+          tier: worker
+    - maxSkew: 1
+      topologyKey: 'kubernetes.io/hostname'
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app: '<APPLICATION_NAME>'
+          tier: worker
+
+  priorityClassName: 'sandbox-medium'
+  terminationGracePeriodSeconds: 60
