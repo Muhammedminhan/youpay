@@ -3,8 +3,8 @@ variable "global_variables" {
   type        = any
   default = {
     prefix      = "ygag-"
-    suffix      = "<SUFFIX>"
-    region      = "<AWS_REGION>"
+    suffix      = "-tf"
+    region      = "ap-south-1"
     environment = "[ENVIRONMENT]"
 
     default_tags = {

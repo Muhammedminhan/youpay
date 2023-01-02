@@ -1,5 +1,5 @@
 users:
   - service_account:
       create: 'true'
-      name: '<PREFIX><APPLICATION_NAME>-vault'
-      namespace: '<APPLICATION_NAME>'
+      name: 'ygag-youpay-vault'
+      namespace: 'youpay'

@@ -6,7 +6,7 @@ application_access_control_charts = [
   {
     create_helm_release = true
 
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
     release_name     = "users"
@@ -20,10 +20,10 @@ application_access_control_charts = [
 ]
 # Variables for K8s secret provider class
 application_secret_provider_class_charts = [
-  # <APPLICATION_NAME>-envs
+  # youpay-envs
   {
     create_helm_release = true
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
     release_name     = "secret-provider-class"
@@ -41,10 +41,10 @@ application_migration_charts = [
   {
     create_helm_release = true
 
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "<APPLICATION_NAME>-migration"
+    release_name     = "youpay-migration"
     chart            = "migration"
     version          = "1.0.1"
     timeout          = 600
@@ -57,10 +57,10 @@ application_migration_charts = [
   {
     create_helm_release = true
 
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "<APPLICATION_NAME>-collectstatic"
+    release_name     = "youpay-collectstatic"
     chart            = "collectstatic"
     version          = "1.0.1"
     timeout          = 600
@@ -78,10 +78,10 @@ application_charts = [
   {
     create_helm_release = true
 
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "<APPLICATION_NAME>-app"
+    release_name     = "youpay-app"
     chart            = "app"
     version          = "1.0.1"
     timeout          = 600
@@ -93,10 +93,10 @@ application_charts = [
   {
     create_helm_release = true
 
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "<APPLICATION_NAME>-cron"
+    release_name     = "youpay-cron"
     chart            = "cron"
     version          = "1.0.1"
     timeout          = 600
@@ -108,10 +108,10 @@ application_charts = [
   {
     create_helm_release = true
 
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "<APPLICATION_NAME>-ingress"
+    release_name     = "youpay-ingress"
     chart            = "ingress"
     version          = "1.0.0"
     timeout          = 600
@@ -123,10 +123,10 @@ application_charts = [
   {
     create_helm_release = true
 
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "<APPLICATION_NAME>-nginx"
+    release_name     = "youpay-nginx"
     chart            = "nginx"
     version          = "1.0.1"
     timeout          = 600
@@ -138,10 +138,10 @@ application_charts = [
   {
     create_helm_release = true
 
-    namespace        = "<APPLICATION_NAME>"
+    namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "<APPLICATION_NAME>-worker"
+    release_name     = "youpay-worker"
     chart            = "worker"
     version          = "1.0.1"
     timeout          = 600

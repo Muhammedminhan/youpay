@@ -2,10 +2,10 @@ name: Build Base
 
 on: workflow_dispatch
 env:
-  APPLICATION_NAME:  <APPLICATION_NAME>
-  APP_IMAGE_REPOSITORY: <APP_IMAGE_REPOSITORY>
-  ECR_REGISTRY: <ECR_REGISTRY>
-  ECR_REGION: <AWS_REGION>
+  APPLICATION_NAME:  youpay
+  APP_IMAGE_REPOSITORY: production/ygag/youpay/backend-app
+  ECR_REGISTRY: 459037613883
+  ECR_REGION: ap-south-1
 
 
 jobs:

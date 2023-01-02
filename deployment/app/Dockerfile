@@ -1,4 +1,4 @@
-FROM <ECR_REGISTRY>.dkr.ecr.<AWS_REGION>.amazonaws.com/<APP_IMAGE_REPOSITORY>:req
+FROM 459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:req
 
 WORKDIR /ygag
 

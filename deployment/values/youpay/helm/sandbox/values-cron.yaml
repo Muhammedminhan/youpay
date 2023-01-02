@@ -1,37 +1,37 @@
-namespace: '<APPLICATION_NAME>'
+namespace: 'youpay'
 
-app_name: '<APPLICATION_NAME>'
+app_name: 'youpay'
 environment: 'sandbox'
 
 service:
-  name: '<APPLICATION_NAME>-cron'
+  name: 'youpay-cron'
   default:
     port: 8000
     protocol: 'TCP'
     targetPort: 8000
 
 hpa:
-  name: '<APPLICATION_NAME>-cron-hpa'
+  name: 'youpay-cron-hpa'
   minReplicas: 1
   maxReplicas: 1
   targetCPUUtilizationPercentage: 80
 
 pdb:
-  name: '<APPLICATION_NAME>-cron-pdb'
+  name: 'youpay-cron-pdb'
   minAvailable: 0%
 
 deployment:
-  name: '<APPLICATION_NAME>-cron-deployment'
+  name: 'youpay-cron-deployment'
   replicas: 1
   maxSurge: 100%
   maxUnavailable: 0
-  serviceAccountName: 'ygag-<APPLICATION_NAME>-vault'
+  serviceAccountName: 'ygag-youpay-vault'
 
   containers:
     default:
       name: 'cron'
       imagePullPolicy: 'Always'
-      image: '<ECR_REGISTRY>.dkr.ecr.<AWS_REGION>.amazonaws.com/<APP_IMAGE_REPOSITORY>:[BUILD_TAG]'
+      image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "/ygag/deployment/app/cron-entrypoint.sh"]'
       memory:
         requests: 200Mi
@@ -40,44 +40,44 @@ deployment:
         requests: 50m
       volumeMounts:
         - mountPath: '/ygag/logs/'
-          name: 'ygag-<APPLICATION_NAME>-sandbox-cron-logs'
-        - name: '<APPLICATION_NAME>-app-env-volume'
+          name: 'ygag-youpay-sandbox-cron-logs'
+        - name: 'youpay-app-env-volume'
           mountPath: "/vault/secrets"
-        - name: '<APPLICATION_NAME>-certs-sample1-volume'
+        - name: 'youpay-certs-sample1-volume'
           mountPath: "/ygag/certs/sample1dir"
-        - name: '<APPLICATION_NAME>-certs-sample2-volume'
+        - name: 'youpay-certs-sample2-volume'
           mountPath: "/ygag/certs/sample2dir"
-        - name: '<APPLICATION_NAME>-certs-sample-client3-volume'
+        - name: 'youpay-certs-sample-client3-volume'
           mountPath: "/ygag/certs/sample-client3dir"
 
   volumes:
-    - name: 'ygag-<APPLICATION_NAME>-sandbox-cron-logs'
+    - name: 'ygag-youpay-sandbox-cron-logs'
       hostPath:
-        path: '/home/ec2-user/ygag-logs/ygag-<APPLICATION_NAME>-sandbox/cron'
-    - name: '<APPLICATION_NAME>-app-env-volume'
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/cron'
+    - name: 'youpay-app-env-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-envs"
-    - name: '<APPLICATION_NAME>-certs-sample1-volume'
+          secretProviderClass: "youpay-envs"
+    - name: 'youpay-certs-sample1-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample1"
-    - name: '<APPLICATION_NAME>-certs-sample2-volume'
+          secretProviderClass: "youpay-certs-sample1"
+    - name: 'youpay-certs-sample2-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample2"
-    - name: '<APPLICATION_NAME>-certs-sample-client3-volume'
+          secretProviderClass: "youpay-certs-sample2"
+    - name: 'youpay-certs-sample-client3-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "<APPLICATION_NAME>-certs-sample-client3"
+          secretProviderClass: "youpay-certs-sample-client3"
 
   nodeSelector:
     key: 'karpenter.sh/provisioner-name'
@@ -89,14 +89,14 @@ deployment:
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: '<APPLICATION_NAME>'
+          app: 'youpay'
           tier: cron
     - maxSkew: 1
       topologyKey: 'kubernetes.io/hostname'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: '<APPLICATION_NAME>'
+          app: 'youpay'
           tier: cron
 
   priorityClassName: 'sandbox-critical'
