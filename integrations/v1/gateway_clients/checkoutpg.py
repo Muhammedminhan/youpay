@@ -477,6 +477,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 {
                     'transaction_id': transaction_id,
                     "payment_status": response_data.get("status").lower(),
+                    'payment_scheme': response_data.get("payment_scheme"),
+                    'is_gcc_card': response_data.get("is_gcc_card"),
                     "payment_reference": response_data.get("reference"),
                     "approved": response_data.get("approved"),
                     "response_summary": response_data.get("response_summary"),

@@ -11,7 +11,6 @@ from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 
-# from core.utils import wait_redis_lock TODO
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +40,6 @@ class WebhookListener(APIView):
                 str(request_data.get('payment_reference', None)))
             logger.info("Checkoutpg webhook received for invoice {}".format(
                 invoice_pk))
-
-            lock_name = 'lock:WebhookListener:invoice_%d' % (int(invoice_pk),)
-            # with wait_redis_lock(lock_name=lock_name): TODO
 
             transaction_obj = get_transaction_object(
                 request_data.get(
