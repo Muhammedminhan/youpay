@@ -81,21 +81,30 @@ def get_adcb_verify_redirect_url(response_data, transaction_obj): # partial rede
             response_data.get("results", {}).get("redemption_status")) :
         logger.info("Partial payment through card and touchpoints for id "
                     "{}".format(transaction_obj.transaction_id))
-        return transaction_obj.success_url
+        return get_adcb_response_url(
+            transaction_obj.success_url, transaction_obj.transaction_id)
     elif (response_data.get("results", {}).get("payment_status") and not
             response_data.get("results", {}).get("redemption_status")) :
         logger.info("Full amount paid through card for id {}".format(
             transaction_obj.transaction_id))
-        return transaction_obj.success_url
+        return get_adcb_response_url(
+            transaction_obj.success_url, transaction_obj.transaction_id)
     else:
         logger.info("Transaction failed for transaction id {}, failure url "
                     "{}".format(transaction_obj.transaction_id,
                                 transaction_obj.failure_url))
-        return transaction_obj.failure_url
+        return get_adcb_response_url(
+            transaction_obj.failure_url, transaction_obj.transaction_id)
 
 
 def get_adcb_redemption_redirect_url(response_data, transaction_obj): #full redemption
     if response_data.get('results', {}).get('redemption_status'):
-        return transaction_obj.success_url
+        return get_adcb_response_url(
+            transaction_obj.success_url, transaction_obj.transaction_id)
     else:
-        return transaction_obj.failure_url
+        return get_adcb_response_url(
+            transaction_obj.failure_url, transaction_obj.transaction_id)
+
+
+def get_adcb_response_url(url, transaction_id):
+    return url+'?transaction_id=' + str(transaction_id)
