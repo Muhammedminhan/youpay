@@ -1,0 +1,9 @@
+FROM <ECR_REGISTRY>.dkr.ecr.<AWS_REGION>.amazonaws.com/<APP_IMAGE_REPOSITORY>:req
+
+WORKDIR /ygag
+
+ADD ./ /ygag
+
+EXPOSE 8000
+
+ENV C_FORCE_ROOT=1
