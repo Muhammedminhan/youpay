@@ -14,7 +14,6 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
-from integrations.models import PaymentGateway
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +58,8 @@ class YouPayTransactionCRUD(object):
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
+        print("Type of data is {}".format(type(data)))
+        print("Data is {}".format(data))
         data_dict = {}
         transaction_id = data.get('transaction_id')
         data_dict['payment_reference'] = data.get('payment_reference', None)

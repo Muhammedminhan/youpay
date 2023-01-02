@@ -10,7 +10,8 @@ from rest_framework.views import APIView
 from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
-
+from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
 
@@ -36,16 +37,19 @@ class WebhookListener(APIView):
     def post(self, request):
         request_data = json.loads(request.data)
         try:
+            checkout_obj = CheckoutpgManager()
+
             invoice_pk = self.get_invoice_id(
                 str(request_data.get('payment_reference', None)))
             logger.info("Checkoutpg webhook received for invoice {}".format(
                 invoice_pk))
 
-            transaction_obj = get_transaction_object(
-                request_data.get(
-                    'payment_reference', None))
+            payment_reference = request_data.get('payment_reference', None)
+            transaction_obj = get_transaction_object(payment_reference)
 
             if transaction_obj:
+                print(
+                    "Transaction object Found, is {}".format(transaction_obj))
                 logger.info(
                     "In Webhook listner payment scheme for invoice {0}"
                     " is {1}".format(invoice_pk,
@@ -63,8 +67,8 @@ class WebhookListener(APIView):
                 transaction_obj.is_fraud = request_data.get('is_fraud',
                                                             False)
                 transaction_obj.is_flagged = request_data.get(
-                    'is_flagged',
-                    False)
+                    'is_flagged', True)
+
                 # Update the card bin & last4 if it is present in data
                 card_bin = request_data.get('card_bin', None)
                 card_last4 = request_data.get('card_last4', None)
@@ -76,9 +80,11 @@ class WebhookListener(APIView):
                 transaction_obj.payment_scheme = request_data.get(
                     'payment_scheme',
                     None)
-
                 transaction_obj.save()
+
             else:
+                print("Transaction Object Not Found Creating new")
+
                 transaction_obj = TransactionData.objects.create(
                     invoice_id=invoice_pk,
                     order_reference=request_data.get('idempotency_key',
@@ -117,6 +123,11 @@ class WebhookListener(APIView):
                                                     None)
                 )
 
+            data_to_update = self.prepare_youpay_transaction_update_data(
+                request_data, payment_reference)
+            if data_to_update:
+                checkout_obj.update_youpay_transaction_data(data_to_update)
+
             logger.info("Payment scheme set is {0} for transaction"
                         " {1}".format(transaction_obj.payment_scheme,
                                       transaction_obj.payment_reference))
@@ -125,8 +136,14 @@ class WebhookListener(APIView):
                              'status': True}
             logger.info("Checkoutpg webhook successfully processed "
                         "for invoice {}".format(invoice_pk))
+
             return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
+            import sys, os
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            logger.error("Exception in payment request : {} {} {}"
+                         .format(exc_type, fname, exc_tb.tb_lineno))
             logger.error("Checkoutpg webhook failed with error {}".format(e))
             response_data = {'message': "Data not  updated", 'status': False}
             return self.pg_response('HTTP_500_INTERNAL_SERVER_ERROR',
@@ -148,3 +165,48 @@ class WebhookListener(APIView):
             },
             content_type='application/json'
         )
+
+    def prepare_youpay_transaction_update_data(self, request_data,
+                                               payment_reference):
+        print("Preparing data for youpay transaction update")
+        print("Request data is {}".format(request_data))
+        try:
+            transaction_obj = (
+                self.get_youpay_transaction_data_with_payment_reference(
+                    payment_reference))
+            print("Transaction object is {}".format(transaction_obj))
+            if transaction_obj:
+                data_to_update = {
+                    'transaction_id': transaction_obj.transaction_id,
+                    "payment_status": request_data.get("status").lower(),
+                    "payment_reference": request_data.get("reference"),
+                    "approved": request_data.get("approved"),
+                    "response_summary": request_data.get("response_summary"),
+                    "card_bin": request_data.get("card_bin"),
+                    "card_last4": request_data.get("card_last4"),
+                    'payment_scheme': request_data.get("payment_scheme"),
+                    'is_gcc_card': request_data.get("is_gcc_card"),
+                    'card_issuer_country': request_data.get(
+                        "card_issuer_country"),
+                }
+                return data_to_update
+            else:
+                logger.info(
+                    "Transaction object not found for payment referance "
+                    "{}".format(payment_reference))
+                return None
+        except Exception as e:
+            logger.error("Error while preparing data for youpay transaction "
+                         "update {}".format(e))
+
+    def get_youpay_transaction_data_with_payment_reference(self,
+                                                           payment_reference):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=payment_reference)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            logger.error(
+                "Unable to find youpay transaction object with payment"
+                "_referance {}".format(payment_reference))
+            return None

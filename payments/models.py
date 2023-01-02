@@ -2,7 +2,6 @@ import uuid
 
 from django.core.validators import URLValidator
 from django.db import models
-from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -184,12 +183,13 @@ def update_client(sender, instance, **kwargs):
     """
     Signal to send webhook for client on each transaction
     """
-    from services.v1.views.client_webhook import ClientService
-    service = ClientService()
-    payment_transaction = YouPayTransactionData.objects.get(
-        id=instance.id)
-    transaction.on_commit(
-        lambda: service.webhook_service(payment_transaction))
+    pass
+    # from services.v1.views.client_webhook import ClientService
+    # service = ClientService()
+    # payment_transaction = YouPayTransactionData.objects.get(
+    #     id=instance.id)
+    # transaction.on_commit(
+    #     lambda: service.webhook_service(payment_transaction))
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):
