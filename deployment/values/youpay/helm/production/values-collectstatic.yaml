@@ -24,12 +24,8 @@ job:
           name: 'ygag-youpay-production-collectstatic-logs'
         - name: 'youpay-app-env-volume'
           mountPath: "/vault/secrets"
-        - name: 'youpay-certs-sample1-volume'
-          mountPath: "/ygag/certs/sample1dir"
-        - name: 'youpay-certs-sample2-volume'
-          mountPath: "/ygag/certs/sample2dir"
-        - name: 'youpay-certs-sample-client3-volume'
-          mountPath: "/ygag/certs/sample-client3dir"
+        - name: 'youpay-certs-applepay-volume'
+          mountPath: "/ygag/certs/applepay"
 
   volumes:
     - name: 'ygag-youpay-production-collectstatic-logs'
