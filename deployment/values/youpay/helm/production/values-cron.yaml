@@ -1,0 +1,103 @@
+namespace: 'youpay'
+
+app_name: 'youpay'
+environment: 'production'
+
+service:
+  name: 'youpay-cron'
+  default:
+    port: 8000
+    protocol: 'TCP'
+    targetPort: 8000
+
+hpa:
+  name: 'youpay-cron-hpa'
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+
+pdb:
+  name: 'youpay-cron-pdb'
+  minAvailable: 0%
+
+deployment:
+  name: 'youpay-cron-deployment'
+  replicas: 1
+  maxSurge: 100%
+  maxUnavailable: 0
+  serviceAccountName: 'ygag-youpay-vault'
+
+  containers:
+    default:
+      name: 'cron'
+      imagePullPolicy: 'Always'
+      image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
+      command: '["sh", "/ygag/deployment/app/cron-entrypoint.sh"]'
+      memory:
+        requests: 200Mi
+        limits: 300Mi
+      cpu:
+        requests: 50m
+      volumeMounts:
+        - mountPath: '/ygag/logs/'
+          name: 'ygag-youpay-production-cron-logs'
+        - name: 'youpay-app-env-volume'
+          mountPath: "/vault/secrets"
+        - name: 'youpay-certs-sample1-volume'
+          mountPath: "/ygag/certs/sample1dir"
+        - name: 'youpay-certs-sample2-volume'
+          mountPath: "/ygag/certs/sample2dir"
+        - name: 'youpay-certs-sample-client3-volume'
+          mountPath: "/ygag/certs/sample-client3dir"
+
+  volumes:
+    - name: 'ygag-youpay-production-cron-logs'
+      hostPath:
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-production/cron'
+    - name: 'youpay-app-env-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-envs"
+    - name: 'youpay-certs-sample1-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-sample1"
+    - name: 'youpay-certs-sample2-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-sample2"
+    - name: 'youpay-certs-sample-client3-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-sample-client3"
+
+  nodeSelector:
+    key: 'karpenter.sh/provisioner-name'
+    value: 'default'
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: 'topology.kubernetes.io/zone'
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app: 'youpay'
+          tier: cron
+    - maxSkew: 1
+      topologyKey: 'kubernetes.io/hostname'
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app: 'youpay'
+          tier: cron
+
+  priorityClassName: 'production-critical'
+  terminationGracePeriodSeconds: 60
