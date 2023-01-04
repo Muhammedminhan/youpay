@@ -41,24 +41,12 @@ job:
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpay-envs"
-    - name: 'youpay-certs-sample1-volume'
+    - name: 'youpay-certs-applepay-volume'
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "youpay-certs-sample1"
-    - name: 'youpay-certs-sample2-volume'
-      csi:
-        driver: secrets-store.csi.k8s.io
-        readOnly: true
-        volumeAttributes:
-          secretProviderClass: "youpay-certs-sample2"
-    - name: 'youpay-certs-sample-client3-volume'
-      csi:
-        driver: secrets-store.csi.k8s.io
-        readOnly: true
-        volumeAttributes:
-          secretProviderClass: "youpay-certs-sample-client3"
+          secretProviderClass: "youpay-certs-applepay"
 
   nodeSelector:
     key: 'karpenter.sh/provisioner-name'
