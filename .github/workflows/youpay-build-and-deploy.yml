@@ -1,0 +1,263 @@
+name: Build & Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'environment'
+        required: true
+        default: 'sandbox'
+        type: choice
+        options:
+        - sandbox
+        - production
+
+env:
+  APPLICATION_NAME: youpay
+  APP_IMAGE_REPOSITORY: production/ygag/youpay/backend-app
+  NGINX_IMAGE_REPOSITORY: production/ygag/youpay/backend-nginx
+  ECR_REGISTRY: 459037613883
+  ECR_REGION: ap-south-1
+  ENVIRONMENT: ${{ inputs.environment }}
+  VAULT_ADDRESS: ${{ secrets.VAULT_ADDRESS }}
+
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    # Set job outputs to values from filter step
+    outputs:
+      requirements: ${{ steps.filter.outputs.requirements }}
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3.0.2
+      with:
+       ref: main
+    - uses: yougotagift/paths-filter@v2
+      id: filter
+      with:
+        base: release
+        filters: |
+          requirements:
+            - 'requirements.txt'
+
+  build-app-req:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3.0.2
+        with:
+         ref: main
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }}
+          aws-region: ${{ env.ECR_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1.5.1
+        with:
+          registries: ${{ env.ECR_REGISTRY }}
+          registry-type: private
+          region: ${{ env.ECR_REGION }}
+
+      - name: Docker Build and push
+        env:
+          CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
+        run: |
+          docker build -f deployment/app/Dockerfile.req -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:req .
+          docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:req"
+
+  build-app:
+    needs: [build-app-req]
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }}
+          aws-region: ${{ env.ECR_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1.5.1
+        with:
+          registries: ${{ env.ECR_REGISTRY }}
+          registry-type: private
+          region: ${{ env.ECR_REGION }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v3.0.2
+        with:
+         ref: main
+
+      - name: Docker Build and push
+        env:
+          CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
+        run: |
+          IMAGE_TAG=$(git rev-parse --short HEAD)-${{ env.ENVIRONMENT }}
+
+          docker build -f deployment/app/Dockerfile -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:$IMAGE_TAG -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:latest .
+          docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:$IMAGE_TAG"
+          docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:latest"
+
+  build-nginx:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1.7.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }}
+          aws-region: ${{ env.ECR_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1.5.1
+        with:
+          registries: ${{ env.ECR_REGISTRY }}
+          registry-type: private
+          region: ${{ env.ECR_REGION }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v3.0.2
+        with:
+         ref: main
+
+
+      - name: Docker Build and push
+        env:
+          CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
+        run: |
+          IMAGE_TAG=$(git rev-parse --short HEAD)-${{ env.ENVIRONMENT }}
+          cd deployment/nginx/${{ env.APPLICATION_NAME }}/${{ env.ENVIRONMENT }}/
+          docker build -f Dockerfile -t $CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:$IMAGE_TAG -t $CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:latest-${{ env.ENVIRONMENT }} .
+          docker push "$CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:$IMAGE_TAG"
+          docker push "$CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:latest-${{ env.ENVIRONMENT }}"
+
+  deploy-app-nginx:
+    needs: [build-app, build-nginx]
+    runs-on: ubuntu-latest
+    steps:
+     - name: Checkout Code
+       uses: actions/checkout@v3.0.2
+       with:
+         ref: main
+
+     - name: Setup Dynamic env variables
+       run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)-${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
+
+     - name: Setup Production env variable
+       if: env.ENVIRONMENT  == 'production'
+       run: |
+        echo "KUBERNETES_HOST=${{ secrets.YGAG_AP_SOUTH_1_PRODUCTION_KUBERNETES_HOST }}" >> $GITHUB_ENV
+        echo "KUBERNETES_CLUSTER_CA_CERT=${{ secrets.YGAG_AP_SOUTH_1_PRODUCTION_KUBERNETES_CLUSTER_CA_CERT }}" >> $GITHUB_ENV
+        echo "KUBERNETES_TOKEN=${{ secrets.PRODUCTION_KUBERNETES_TOKEN }}" >> $GITHUB_ENV
+        echo "DOMAIN=${{ secrets.PRODUCTION_DOMAIN }}" >> $GITHUB_ENV
+        echo "CERTIFICATE_ARN=${{ secrets.PRODUCTION_CERTIFICATE_ARN }}" >> $GITHUB_ENV
+        echo "WAF_ARN=${{ secrets.YGAG_AP_SOUTH_1_PRODUCTION_WAF_ARN }}" >> $GITHUB_ENV
+        echo "ALB_ACCESS_LOG_BUCKET=${{ secrets.YGAG_AP_SOUTH_1_PRODUCTION_ALB_ACCESS_LOG_BUCKET }}" >> $GITHUB_ENV
+     - name: Setup sandbox env variable
+       if: env.ENVIRONMENT == 'sandbox'
+       run: |
+          echo "KUBERNETES_HOST=${{ secrets.YGAG_AP_SOUTH_1_SANDBOX_KUBERNETES_HOST }}" >> $GITHUB_ENV
+          echo "KUBERNETES_CLUSTER_CA_CERT=${{ secrets.YGAG_AP_SOUTH_1_SANDBOX_KUBERNETES_CLUSTER_CA_CERT }}" >> $GITHUB_ENV
+          echo "KUBERNETES_TOKEN=${{ secrets.SANDBOX_KUBERNETES_TOKEN }}" >> $GITHUB_ENV
+          echo "DOMAIN=${{ secrets.SANDBOX_DOMAIN }}" >> $GITHUB_ENV
+          echo "CERTIFICATE_ARN=${{ secrets.SANDBOX_CERTIFICATE_ARN }}" >> $GITHUB_ENV
+          echo "WAF_ARN=${{ secrets.YGAG_AP_SOUTH_1_SANDBOX_WAF_ARN }}" >> $GITHUB_ENV
+          echo "ALB_ACCESS_LOG_BUCKET=${{ secrets.YGAG_AP_SOUTH_1_SANDBOX_ALB_ACCESS_LOG_BUCKET }}" >> $GITHUB_ENV
+     - name: Checkout template
+       uses: actions/checkout@v3
+       with:
+          repository: yougotagift/devops-cd
+          ref: 'main'
+          ssh-key: ${{ secrets.DEVOPS_CD_DEPLOYMENT_KEY }}
+          path: devops-cd
+
+     - name: Search and replace values
+       run: |
+        cd devops-cd
+        mkdir -p build/${{ env.APPLICATION_NAME }}
+        cp application/* build/${{ env.APPLICATION_NAME }}
+        cp ../deployment/values/${{ env.APPLICATION_NAME }}/helm/${{ env.ENVIRONMENT }}/* build/${{ env.APPLICATION_NAME }}
+        cp ../deployment/values/${{ env.APPLICATION_NAME }}/tf/* build/${{ env.APPLICATION_NAME }}
+        
+        find ./ -type f -exec sed -i 's/\[ENVIRONMENT\]/${{ env.ENVIRONMENT }}/g' '{}' \;
+        find ./ -type f -exec sed -i 's/\[KUBERNETES_TOKEN\]/${{ env.KUBERNETES_TOKEN }}/g' '{}' \;
+        find ./ -type f -exec sed -i 's/\[VAULT_TOKEN\]/${{ secrets.VAULT_TOKEN }}/g' '{}' \;
+        find ./ -type f -exec sed -i 's/\[BUILD_TAG\]/${{ env.IMAGE_TAG }}/g' '{}' \;
+        find ./ -type f -exec sed -i 's/\[NGINX_BUILD_TAG\]/${{ env.IMAGE_TAG }}/g' '{}' \;
+        find ./ -type f -exec sed -i 's/\[IMAGE_PULL_SECRET\]/${{ env.IMAGE_PULL_SECRET }}/g' '{}' \;
+        find ./ -type f -exec sed -i 's/\[APPLICATION_NAME\]/${{ env.APPLICATION_NAME }}/g' '{}' \;
+        find ./ -type f -exec sed -i 's/\[KUBERNETES_CLUSTER_CA_CERT\]/${{ env.KUBERNETES_CLUSTER_CA_CERT }}/g' '{}' \;
+        find ./ -type f -exec sed -i 's!\[VAULT_ADDRESS\]!${{ env.VAULT_ADDRESS }}!g' '{}' \;
+        find ./ -type f -exec sed -i 's!\[KUBERNETES_HOST\]!${{ env.KUBERNETES_HOST }}!g' '{}' \;
+        find ./ -type f -exec sed -i 's!\[DOMAIN\]!${{ env.DOMAIN }}!g' '{}' \;
+        find ./ -type f -exec sed -i 's!\[CERTIFICATE_ARN\]!${{ env.CERTIFICATE_ARN }}!g' '{}' \;
+        find ./ -type f -exec sed -i 's!\[WAF_ARN\]!${{ env.WAF_ARN }}!g' '{}' \;
+        find ./ -type f -exec sed -i 's!\[ALB_ACCESS_LOG_BUCKET\]!${{ env.ALB_ACCESS_LOG_BUCKET }}!g' '{}' \;
+
+     - name: Installing Terraform
+       uses: hashicorp/setup-terraform@v2
+       with:
+         terraform_version: 1.2.7
+
+
+     - run: sudo apt install wireguard
+     - run: |-
+         sudo cat <<EOF > wg0.conf
+         [Interface]
+         Address = ${{ secrets.WG_IP_ADDRESS }}
+         PrivateKey = ${{ secrets.WG_PRIVATE_KEY }}
+         ListenPort = ${{ secrets.WG_PORT }}
+         [Peer]
+         PublicKey = ${{ secrets.WG_PEER_PUBLIC_KEY }}
+         PresharedKey = ${{ secrets.WG_PEER_PRESHARED_KEY }}
+         Endpoint = ${{ secrets.WG_PEER_ENDPOINT }}
+         AllowedIPs = 10.0.0.0/8
+         EOF
+     - run: sudo cat ./wg0.conf
+     - run: sudo chmod 600 ./wg0.conf
+     - run: sudo wg-quick up ./wg0.conf
+     - run: sudo wg show
+
+
+     - name: Configure AWS credentials
+       uses: aws-actions/configure-aws-credentials@v1.7.0
+       with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }}
+        aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }}
+        aws-region: us-east-1
+
+     - name: Login to Amazon ECR helm registry
+       id: login-ecr
+       uses: aws-actions/amazon-ecr-login@v1.5.1
+       with:
+         registries: 459037613883
+         registry-type: private
+         region: us-east-1
+
+     - name: Deploying application
+       env:
+          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }}
+          VAULT_ADDRESS: ${{ secrets.VAULT_ADDRESS }}
+          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+       run: |
+         cd devops-cd/build/${{ env.APPLICATION_NAME }}
+         ls -lt
+         cat tf.auto.tfvars
+         cat data.tf
+         cat main.tf
+         cat locals.tf
+         aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin 459037613883.dkr.ecr.us-east-1.amazonaws.com
+         terraform version
+         terraform init
+         terraform apply -auto-approve
