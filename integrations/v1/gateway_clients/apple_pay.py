@@ -142,7 +142,7 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
 
             payment_data_to_send = json.dumps(payload)
             logger.info("Youpay to applepay url : {}, data : {} "
-                        .format(applepay_url, payload))
+                        .format(applepay_url, payment_data_to_send))
 
             # make request to applepay url
             response = requests.post(applepay_url,
