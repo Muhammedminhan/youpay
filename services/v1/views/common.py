@@ -58,8 +58,6 @@ class YouPayTransactionCRUD(object):
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
-        print("Type of data is {}".format(type(data)))
-        print("Data is {}".format(data))
         data_dict = {}
         transaction_id = data.get('transaction_id')
         data_dict['payment_reference'] = data.get('payment_reference', None)
