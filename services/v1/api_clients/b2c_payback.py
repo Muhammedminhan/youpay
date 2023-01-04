@@ -12,7 +12,7 @@ from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_TOUCHPOINTS,
     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD, PAYMENT_METHOD_ADCB_CARD_ONLY,
-    PAYMENT_STATUS_PAID
+    PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING
 )
 from services.v1.constants import B2C_PAYBACK_NO_RESPONSE_MESSAGE
 
@@ -31,8 +31,10 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
+                'payment_status': PAYMENT_STATUS_PENDING,
                 'card_bin': request_data.get('card_no', "")[0:6],
                 'card_last4': request_data.get('card_no', "")[-4:],
+                'name_on_card': request_data.get('name_on_card', ""),
                 'available_amount': response_data.get('available_amount'),
                 'available_points': response_data.get('available_points')
             })
@@ -124,7 +126,8 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                         'results', {}).get('redeemed_amount'),
                     "redeemed_points": response.get(
                         'results', {}).get('redeemed_points'),
-                    'available_amount': transaction_obj.available_amount,
+                    'available_amount': response.get(
+                        'results', {}).get('available_amount'),
                     'available_points': transaction_obj.available_points,
                     'payable_amount': transaction_obj.payable_amount,
                     'is_full_redemption': transaction_obj.is_full_redemption
@@ -181,7 +184,8 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                     'redeemed_points': response.get(
                         'results', {}).get('redeemed_points'),
                     'is_gcc_card': True,
-                    'available_amount': transaction_obj.available_amount,
+                    'available_amount': response.get(
+                        'results', {}).get('available_amount'),
                     'available_points': transaction_obj.available_points,
                     'payable_amount': transaction_obj.payable_amount,
                     'is_full_redemption': transaction_obj.is_full_redemption
