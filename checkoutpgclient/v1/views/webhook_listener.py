@@ -48,8 +48,6 @@ class WebhookListener(APIView):
             transaction_obj = get_transaction_object(payment_reference)
 
             if transaction_obj:
-                print(
-                    "Transaction object Found, is {}".format(transaction_obj))
                 logger.info(
                     "In Webhook listner payment scheme for invoice {0}"
                     " is {1}".format(invoice_pk,
@@ -66,8 +64,8 @@ class WebhookListener(APIView):
                     request_data.get('payment_reference'))
                 transaction_obj.is_fraud = request_data.get('is_fraud',
                                                             False)
-                transaction_obj.is_flagged = request_data.get(
-                    'is_flagged', True)
+                transaction_obj.is_flagged = request_data.get('is_flagged',
+                                                              False)
 
                 # Update the card bin & last4 if it is present in data
                 card_bin = request_data.get('card_bin', None)
@@ -83,8 +81,6 @@ class WebhookListener(APIView):
                 transaction_obj.save()
 
             else:
-                print("Transaction Object Not Found Creating new")
-
                 transaction_obj = TransactionData.objects.create(
                     invoice_id=invoice_pk,
                     order_reference=request_data.get('idempotency_key',
@@ -168,13 +164,10 @@ class WebhookListener(APIView):
 
     def prepare_youpay_transaction_update_data(self, request_data,
                                                payment_reference):
-        print("Preparing data for youpay transaction update")
-        print("Request data is {}".format(request_data))
         try:
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(
                     payment_reference))
-            print("Transaction object is {}".format(transaction_obj))
             if transaction_obj:
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
