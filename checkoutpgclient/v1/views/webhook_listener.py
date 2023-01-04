@@ -135,11 +135,6 @@ class WebhookListener(APIView):
 
             return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Exception in payment request : {} {} {}"
-                         .format(exc_type, fname, exc_tb.tb_lineno))
             logger.error("Checkoutpg webhook failed with error {}".format(e))
             response_data = {'message': "Data not  updated", 'status': False}
             return self.pg_response('HTTP_500_INTERNAL_SERVER_ERROR',
