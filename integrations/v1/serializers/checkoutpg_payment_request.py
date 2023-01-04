@@ -50,7 +50,9 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 
         customer_name = request_data.get('customer_name', '')
         if not customer_name:
-            customer_name = "Not provided"
+            customer_name = data.get('transaction_data').get("customer_name")
+            # if not customer_name:
+            #     customer_name = "Not provided"
 
         return customer_name
 
