@@ -1,0 +1,14 @@
+FROM 459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:base
+
+WORKDIR /ygag
+
+ADD requirements.txt /ygag/requirements.txt
+
+# Add packages to the image
+ADD ./deployment/app/packages/apk/req /ygag/packages/apk/req
+
+RUN apk update && \
+    apk add --no-cache --no-network --virtual .build-deps /ygag/packages/apk/req/* && \
+    pip3.9 install --no-cache-dir -r requirements.txt && \
+    apk del .build-deps && \
+    rm -rf /ygag/packages/apk

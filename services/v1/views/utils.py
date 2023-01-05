@@ -3,7 +3,8 @@ import logging
 
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
-    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE, QITAF_HUB_CODE
+    CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
+    QITAF_HUB_CODE, AMAZONPG_HUB_CODE
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
@@ -33,6 +34,12 @@ def reformat_payment_request_data(data):
         data['base_amount'] = order.get('base_amount')
         data['VAT_amount'] = order.get('VAT_amount')
         data['currency'] = order.get('currency')
+
+        data['cart_amount'] = order.get('cart_amount')
+        data['cart_currency'] = order.get('cart_currency')
+        data['cart_service_fee'] = order.get('cart_service_fee')
+        data['cart_base_amount'] = order.get('cart_base_amount')
+        data['cart_VAT_amount'] = order.get('cart_VAT_amount')
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')
@@ -112,12 +119,16 @@ def get_payment_options(payment_gateway_serializer):
             response_payment_options['checkoutpg'] = True
             response_payment_options['saved_card'] = True
             response_payment_options['applepay'] = True
+            response_payment_options['paypal'] = True
 
         if code == B2CPAYBACK_HUB_CODE:
             response_payment_options['adcb'] = True
 
         if code == TABBYPG_HUB_CODE:
             response_payment_options['tabbypg'] = True
+
+        if code == AMAZONPG_HUB_CODE:
+            response_payment_options['amazonpg'] = True
 
     return response_payment_options
 

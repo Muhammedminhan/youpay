@@ -70,6 +70,9 @@ def update_youpay_status(sender, instance, created, **kwargs):
             transaction_obj.payment_status = PAYMENT_STATUS_PAID
         else:
             transaction_obj.payment_status = instance.payment_status
+        if not transaction_obj.card_bin:
+            transaction_obj.card_bin = instance.card_bin
+            transaction_obj.card_last4 = instance.card_last4
         transaction_obj.save()
     except YouPayTransactionData.DoesNotExist:
         logger.error("Unable to find youpay transaction object for {}"

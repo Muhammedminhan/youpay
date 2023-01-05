@@ -24,7 +24,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     search_fields = ('transaction_id', 'customer_email', 'invoice_id',
                      'payment_reference', 'order_reference')
     list_filter = ('created_at', 'payment_status', 'api_client',
-                   'payment_gateway', 'currency', "platform")
+                   'payment_gateway', 'payment_method', 'currency',
+                   "platform")
     raw_id_fields = ('api_client',)
 
     inlines = [
@@ -41,8 +42,9 @@ class AnnouncementAdmin(AdminAbstract):
 
 
 class ClientNotificationAdmin(admin.ModelAdmin):
-    list_display = ('get_transaction', 'api_client', 'is_notified', 'event_type',
-                    'payment_status','created_at', 'updated_at',)
+    list_display = (
+        'get_transaction', 'api_client', 'is_notified', 'event_type',
+        'payment_status', 'created_at', 'updated_at',)
     search_fields = ('transaction__transaction_id', 'api_client__name',)
     list_filter = ('created_at', 'api_client__name', 'is_notified',
                    'payment_status',)
@@ -54,6 +56,7 @@ class ClientNotificationAdmin(admin.ModelAdmin):
 
     get_transaction.admin_order_field = 'transaction'
     get_transaction.short_description = 'youpay transaction id'
+
 
 admin.site.register(YouPayTransactionData, YouPayTransactionDataAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)
