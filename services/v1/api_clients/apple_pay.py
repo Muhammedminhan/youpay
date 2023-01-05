@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +12,8 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import TOKEN_TYPE_APPLEPAY
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
+
+logger = logging.getLogger(__name__)
 
 
 class ApplePayValidateSession(YouPayTransactionCRUD, APIView,
@@ -75,7 +79,7 @@ class ApplePayPayment(APIView, YouPayTransactionCRUD):
                 apple_pay = ApplePayManager()
                 response_data, code = apple_pay.pay(
                     payment_data)
-                print("Response data: ", code, response_data)
+                logger.info("Response data: ", code, response_data)
 
                 if code == YouPayResponse.SUCCESS:
                     data = self.response_obj.get_success_dict(

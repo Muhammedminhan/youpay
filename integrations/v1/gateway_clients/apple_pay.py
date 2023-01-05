@@ -124,7 +124,7 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
             # certificate secret and key
             response_dict = self.configure_certificate(
                 self.transaction_obj.currency)
-            print("Response dict : {}".format(response_dict))
+            logger.info("Response dict : {}".format(response_dict))
             if response_dict['status']:
                 certificate = response_dict['certificate']
                 key = response_dict['key']
