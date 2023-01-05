@@ -44,6 +44,8 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         self.request_type = None
         self.request_method = None
         self.transaction_obj = None
+        self.payment_scheme = None
+        self.name_on_card = None
 
     def get_amazonpg_payment_data(self, data):
         """
@@ -158,6 +160,10 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                             self.payment_reference = response_data.get(
                                 "payment_reference")
                             self.payment_status = PAYMENT_STATUS_PENDING
+                            self.payment_scheme = response_data.get(
+                                "payment_scheme")
+                            self.name_on_card = response_data.get(
+                                "name_on_card")
                             return response.json(), self.SUCCESS
 
                         logger.error("Error in amazonpg payment, {}".format(
@@ -191,6 +197,8 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 "payment_gateway": self.payment_gateway,
                 "channel_code": self.channel_code,
                 "payment_method": self.payment_method,
+                "payment_scheme": self.payment_scheme,
+                "name_on_card": self.name_on_card
             }
             self.update_youpay_transaction_data(data_to_update)
 
