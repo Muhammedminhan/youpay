@@ -100,7 +100,7 @@ jobs:
         env:
           CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
         run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)-${{ env.ENVIRONMENT }}
+          IMAGE_TAG=$(git rev-parse --short HEAD)-${GITHUB_RUN_ID}-${{ env.ENVIRONMENT }}
 
           docker build -f deployment/app/Dockerfile -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:$IMAGE_TAG -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:latest .
           docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:$IMAGE_TAG"
@@ -135,7 +135,7 @@ jobs:
         env:
           CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
         run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)-${{ env.ENVIRONMENT }}
+          IMAGE_TAG=$(git rev-parse --short HEAD)-${GITHUB_RUN_ID}-${{ env.ENVIRONMENT }}
           cd deployment/nginx/${{ env.APPLICATION_NAME }}/${{ env.ENVIRONMENT }}/
           docker build -f Dockerfile -t $CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:$IMAGE_TAG -t $CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:latest-${{ env.ENVIRONMENT }} .
           docker push "$CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:$IMAGE_TAG"
@@ -151,7 +151,7 @@ jobs:
          ref: main
 
      - name: Setup Dynamic env variables
-       run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)-${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
+       run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)-${GITHUB_RUN_ID}-${{ env.ENVIRONMENT }}" >> $GITHUB_ENV
 
      - name: Setup Production env variable
        if: env.ENVIRONMENT  == 'production'
