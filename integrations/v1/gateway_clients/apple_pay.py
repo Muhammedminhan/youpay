@@ -65,7 +65,7 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 status = False
 
 
-        elif environment == 'sandbox':
+        elif environment == 'sandbox' or environment == 'qa':
             if currency == 'AED':
                 certificate = APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH
                 key = APPLE_PAY_AED_KEY_PATH
