@@ -143,4 +143,4 @@ db.json
 #key and certificates
 *.key
 *.pem
-/certs/
+
