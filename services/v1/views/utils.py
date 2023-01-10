@@ -107,7 +107,7 @@ def get_session_id_from_header(request):
 def get_payment_options(gateways):
     """
     used to get gateways from payment gateway serializer
-    # """
+    """
 
     response_payment_options = {}
     for gateway in gateways:
