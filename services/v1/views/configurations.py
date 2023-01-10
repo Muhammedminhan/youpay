@@ -106,11 +106,9 @@ class ConfigViewSet(ViewSet):
                     client = APIClient.objects.get(
                         id=transaction.api_client_id)
                     if client:
-                        serializer = PaymentGatewaySerializer(
-                            client.payment_gateway.filter(is_active=True),
-                            many=True
-                        )
-                        payment_options = get_payment_options(serializer)
+                        gateways = client.payment_gateway.filter(
+                            is_active=True)
+                        payment_options = get_payment_options(gateways)
                         announcements_dict = get_announcements()
                         b2c_payback_obj = B2CPaybackManager()
                         payback_config = b2c_payback_obj.get_configurations(
