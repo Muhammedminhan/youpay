@@ -9,7 +9,6 @@ from integrations.constants import (
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
 from services.constants import YOUPAY_SESSION_KEY
-from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -105,16 +104,14 @@ def get_session_id_from_header(request):
     return session_id
 
 
-def get_payment_options(payment_gateway_serializer):
+def get_payment_options(gateways):
     """
     used to get gateways from payment gateway serializer
     """
-    response_payment_options = PAYMENT_OPTIONS
 
-    payment_gateways = payment_gateway_serializer.data
-
-    for payment_gateway in payment_gateways:
-        code = payment_gateway.get('code')
+    response_payment_options = {}
+    for gateway in gateways:
+        code = gateway.code
         if code == CHECKOUTPG_HUB_CODE:
             response_payment_options['checkoutpg'] = True
             response_payment_options['saved_card'] = True
