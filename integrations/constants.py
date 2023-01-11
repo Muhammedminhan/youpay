@@ -1,4 +1,4 @@
-from youpay.settings.base import CERTIFICATES_BASE_PATH, ENVIRONMENT
+from youpay.settings.base import CERTIFICATES_BASE_PATH
 
 CHECKOUT_UAE_CURRENCY = 'AED'
 CHECKOUT_SAUDI_CURRENCY = 'SAR'
@@ -118,9 +118,9 @@ APPLE_PAY_PRODUCTION_SAR_CERTIFICATE_PATH = "certs/applepay/production/"
 APPLE_PAY_DEVELOPMENT_SAR_CERTIFICATE_PATH = "certs/applepay/development/"
 
 APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH = (
-            CERTIFICATES_BASE_PATH + "applepay/" + ENVIRONMENT + "/certificate_sandbox.pem")
+        CERTIFICATES_BASE_PATH + "applepay/" + "sandbox" + "/certificate_sandbox.pem")
 APPLE_PAY_AED_KEY_PATH = (
-            CERTIFICATES_BASE_PATH + "applepay/" + ENVIRONMENT + "/certificate_sandbox.key")
+        CERTIFICATES_BASE_PATH + "applepay/" + "sandbox" + "/certificate_sandbox.key")
 
 APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH = "certs/applepay/sandbox/certificate_sar_sandbox.pem"
 APPLE_PAY_SAR_KEY_PATH = "certs/applepay/sandbox/sar_sandbox.key"
