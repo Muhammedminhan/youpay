@@ -233,3 +233,10 @@ class WaitLockException(Exception):
     If retry limit exceeds the maximum limit
     """
     pass
+
+
+def get_redirect_url(url, transaction_id):
+    """
+    Method for return redirect urls
+    """
+    return url +'?transaction_id=' + transaction_id
