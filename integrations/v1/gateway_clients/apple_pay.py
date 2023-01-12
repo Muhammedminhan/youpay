@@ -159,9 +159,15 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 "transaction id {} is {}".format(self.transaction_id,
                                                  response))
             if response:
+                logger.info(
+                    "Apple pay response json {} for transaction {}".format(
+                        response.json(), self.transaction_id))
                 self.response_data = {"response_data": response.json()}
                 response_code = self.SUCCESS
             else:
+                logger.error(
+                    "Apple pay response text : '{}' for transaction {}".format(
+                        response.text, self.transaction_id))
                 self.response_data = {"error": str(response),
                                       "response_data": str(response.text)}
                 response_code = self.APPLE_PAY_CONNECTION_ERROR
