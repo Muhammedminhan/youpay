@@ -384,5 +384,3 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
             )
-
-# pip install pyngrok
