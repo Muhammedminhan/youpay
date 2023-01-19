@@ -1,6 +1,7 @@
 import json
 import logging
 
+from decimal import Decimal
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
@@ -64,8 +65,8 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
             request.data)
         if response:
             invoice_amount = transaction_obj.amount
-            selected_amount = float(request.data.get('selected_amount'))
-            checkout_amount = float(request.data.get('checkout_amount'))
+            selected_amount = Decimal(request.data.get('selected_amount'))
+            checkout_amount = Decimal(request.data.get('checkout_amount'))
             update_data = {
                 'transaction_id': transaction_obj.transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
@@ -76,10 +77,11 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 'available_points': transaction_obj.available_points,
                 'is_full_redemption': response.get('is_full_redemption')
             }
+
             if invoice_amount == selected_amount:  # full redemption
                 update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
 
-            elif selected_amount > 0:  # partial redemption
+            elif selected_amount > 0 and checkout_amount > 0:  # partial redemption
                 update_data['payment_method'] = (
                     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
                 update_data['payment_scheme'] = request.data.get('card_type')
