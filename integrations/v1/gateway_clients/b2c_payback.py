@@ -2,6 +2,7 @@ import json
 import logging
 
 import requests
+from django.conf import settings
 from rest_framework.views import APIView
 
 from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
@@ -90,6 +91,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
+                ADCB_HEADERS['X-API-KEY'] = settings.B2CPAYBACK_API_KEY
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
                 self.create_youpay_to_payment_gateways_data(
