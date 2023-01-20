@@ -57,6 +57,8 @@ class WebhookListener(APIView):
                     request_data, 'available_amount')
                 purchase_obj.available_points = get_decimal(
                     request_data, 'available_points')
+                purchase_obj.redemption_amount = get_decimal(
+                    request_data, 'redemption_amount')
                 purchase_obj.is_full_redemption = request_data.get(
                     'is_full_redemption', False)
                 purchase_obj.amount = request_data.get(
