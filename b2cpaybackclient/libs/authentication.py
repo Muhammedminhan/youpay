@@ -6,6 +6,8 @@ from httpsig import HeaderSigner
 
 from django.conf import settings
 
+from integrations.constants import B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY
+from core.utils import get_payment_gateway_config
 
 class SignatureAuthentication(authentication.BaseAuthentication):
     SIGNATURE_RE = re.compile('signature="(.+?)"')
@@ -73,7 +75,9 @@ class SignatureAuthentication(authentication.BaseAuthentication):
     def fetch_user_data(self, api_key):
         """Retuns (User instance, API Secret) or None if api_key is bad."""
         try:
-            api_secret = settings.B2CPAYBACK_API_SECRET
+            b2c_gateway_obj = get_payment_gateway_config(
+                B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+            api_secret = b2c_gateway_obj.api_secret
             return api_secret
         except Exception as e:
             return None

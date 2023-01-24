@@ -91,7 +91,7 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
-                ADCB_HEADERS['X-API-KEY'] = settings.B2CPAYBACK_API_KEY
+                ADCB_HEADERS['X-API-KEY'] = b2c_gateway_obj.api_key
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
                 self.create_youpay_to_payment_gateways_data(
@@ -134,12 +134,12 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 }
                 authenticate_request_data = AuthenticateRequestSerializer(
                     request_dict)
-                update_data = {'cko-card-token':
-                                   request_data.get('cko-card-token')}
+                update_data = {
+                    'cko-card-token': request_data.get('cko-card-token')}
                 update_data.update(authenticate_request_data.data)
                 request_data_json = json.dumps(update_data)
-                b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                             B2CPAYBACK_HUB_CODE)
+                b2c_gateway_obj = get_payment_gateway_config(
+                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_AUTHENTICATE_API
                 response = requests.post(url, data=request_data_json,
@@ -168,8 +168,8 @@ class B2CPaybackManager(APIView, PaymentHandlers):
             except Exception as e:
                 logger.error(
                     "authenticate api call to b2cpayback failed for "
-                    "transaction {}".format(request_transaction_id),
-                    exc_info=e)
+                    "transaction {}".format(
+                        decrypt_string(request_transaction_id)), exc_info=e)
                 return None, None
         else:
             logger.error("Invalid transaction id received for b2cpayback "
@@ -186,8 +186,8 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     request_data, transaction_obj
                 )
                 request_data_json = json.dumps(formatted_data)
-                b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                             B2CPAYBACK_HUB_CODE)
+                b2c_gateway_obj = get_payment_gateway_config(
+                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_REDEMPTION_API
                 response = requests.post(url, data=request_data_json,
@@ -229,8 +229,8 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     decrypt_string(request_transaction_id))
                 formatted_data = format_adcb_verify_data(
                     request_data, transaction_obj)
-                b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                             B2CPAYBACK_HUB_CODE)
+                b2c_gateway_obj = get_payment_gateway_config(
+                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_VERIFY_API
                 formatted_data.pop("transaction_id")

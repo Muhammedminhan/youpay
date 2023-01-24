@@ -94,7 +94,7 @@ ADCB_VERIFY_API = "/payback/api/v1/verify"
 ADCB_HEADERS = {'Content-Type': 'application/json'}
 
 ADCB_CLIENT_CODE = 'ADCBTP'
-ADCB_TOKEN_TYPE =  "card"
+ADCB_TOKEN_TYPE = "card"
 ADCB_REDEMPTION_CURRENCY = "AED"
 
 TABBYPG_CREATE_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/'
