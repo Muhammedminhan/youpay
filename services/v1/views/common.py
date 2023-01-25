@@ -153,6 +153,9 @@ def is_redirect(transaction_id, transaction_message):
 
     response_code = transaction_message.get('response_code', None)
     if response_code in RESPONSE_CODE_LIST or is_fraud:
+        '''We are setting the redirect url to none so in frontend it will 
+        redirect to the payment page, which will give another try to the 
+        customer in the current transaction'''
         redirect_url = None
         response_data = {
             IS_REDIRECT: False,
