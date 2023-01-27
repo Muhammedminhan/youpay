@@ -95,8 +95,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             []) if response.get(
                             'card_bins', None) else []
                         data = {'public_keys': public_keys,
-                                "validation_json": (
-                                    self.checkoutpg_config.validation_json),
                                 'checkout_mada_bins': checkout_mada_bins}
                         return data, self.SUCCESS
 
