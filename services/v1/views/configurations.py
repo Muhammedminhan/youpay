@@ -112,10 +112,9 @@ class ConfigViewSet(ViewSet):
                             is_active=True)
                         payback_config = b2c_payback_obj.get_configurations(
                             transaction.amount, transaction.currency)
-                        if not payback_config:
-                            gateways = gateways.exclude(
-                                code=B2CPAYBACK_HUB_CODE)
-                        payment_options = get_payment_options(gateways)
+                        valid_gateways = check_adcb_config(
+                            payback_config, gateways)
+                        payment_options = get_payment_options(valid_gateways)
                         announcements_dict = get_announcements()
                         api_client = {'color': client.color_code,
                                       'mobile_logo': self.get_mobile_logo_url(
@@ -272,3 +271,10 @@ class ConfigViewSet(ViewSet):
             return client.mobile_logo_file.url
         else:
             return None
+
+
+def check_adcb_config(config, gateways):
+    if not config:
+        gateways = gateways.exclude(
+            code=B2CPAYBACK_HUB_CODE)
+    return gateways
