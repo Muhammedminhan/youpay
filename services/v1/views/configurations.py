@@ -117,7 +117,6 @@ class ConfigViewSet(ViewSet):
                                 code=B2CPAYBACK_HUB_CODE)
                         payment_options = get_payment_options(gateways)
                         announcements_dict = get_announcements()
-                        print("payment options", payment_options)
                         api_client = {'color': client.color_code,
                                       'mobile_logo': self.get_mobile_logo_url(
                                           client),
