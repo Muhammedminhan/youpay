@@ -63,7 +63,7 @@ INSTALLED_APPS = [
     'checkoutpgclient',
     'amazonpgclient',
     'tabbypgclient',
-    'b2cpaybackclient',
+    'adcbpgclient',
 
     # 3rd party apps
     'rest_framework',

@@ -1,9 +1,9 @@
 from django.contrib import admin
 
-from .models import PurchaseRequest
+from .models import ADCBTransactionData
 
 
-class PurchaseRequestAdmin(admin.ModelAdmin):
+class ADCBTransactionDataAdmin(admin.ModelAdmin):
 
     list_display = ('reference_id', 'invoice', 'customer_email',
                     'redemption_status', 'currency',
@@ -14,4 +14,4 @@ class PurchaseRequestAdmin(admin.ModelAdmin):
                    'payment_status', 'redemption_method')
 
 
-admin.site.register(PurchaseRequest, PurchaseRequestAdmin)
+admin.site.register(ADCBTransactionData, ADCBTransactionDataAdmin)

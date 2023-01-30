@@ -6,11 +6,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from b2cpaybackclient.models import PurchaseRequest
-from b2cpaybackclient.libs.authentication import SignatureAuthentication
-from b2cpaybackclient.utils import get_decimal
-from b2cpaybackclient.v1.serializers.purchaserequest_serializer import (
-    PurchaseRequestSerializer)
+from adcbpgclient.models import ADCBTransactionData
+from adcbpgclient.libs.authentication import SignatureAuthentication
+from adcbpgclient.v1.serializers.adcbtransactiondata_serializer import (
+    ADCBTransactionDataSerializer)
 
 
 logger = logging.getLogger(__name__)
@@ -22,9 +21,9 @@ def get_purchase_request_object(reference):
         if reference:
             try:
                 purchase_obj = (
-                    PurchaseRequest.objects.select_for_update().get(
+                    ADCBTransactionData.objects.select_for_update().get(
                        reference_id=reference))
-            except PurchaseRequest.DoesNotExist:
+            except ADCBTransactionData.DoesNotExist:
                 purchase_obj = None
         return purchase_obj
 
@@ -45,10 +44,10 @@ class WebhookListener(APIView):
                 logger.info(
                     "B2cpayback webhook listener updating data for invoice "
                     "{0}".format(invoice))
-                serializer = PurchaseRequestSerializer(
+                serializer = ADCBTransactionDataSerializer(
                     purchase_obj, data=request_data, partial=True)
             else:
-                serializer = PurchaseRequestSerializer(
+                serializer = ADCBTransactionDataSerializer(
                     data=request_data, partial=True)
 
             if serializer.is_valid(raise_exception=True):

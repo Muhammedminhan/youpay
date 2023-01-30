@@ -6,7 +6,7 @@ DECIMAL_MAX_DIGITS = 15
 DECIMAL_PLACES = 2
 
 
-class B2CAbstractDateTime(models.Model):
+class ADCBAbstractDateTime(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
 
@@ -14,7 +14,7 @@ class B2CAbstractDateTime(models.Model):
         abstract = True
 
 
-class PurchaseRequest(B2CAbstractDateTime):
+class ADCBTransactionData(ADCBAbstractDateTime):
     request_id = models.CharField(
         max_length=50, db_index=True, null=True, blank=True)
     invoice = models.CharField(
