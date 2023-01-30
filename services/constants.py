@@ -9,6 +9,8 @@ RESPONSE_CODE_LIST = [
     '050',
     '079',
     '084',
-    '034'
+    '034',
+    '20151',  # Declined - Payment authorization initiated but failed
+    None
 ]
 YOUPAY_SESSION_KEY = "youpay-session-id"
