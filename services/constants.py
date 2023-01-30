@@ -3,6 +3,7 @@ TOKEN_TYPE_CARD = 'card'
 TOKEN_TYPE_PAYPAL = 'paypal'
 RESPONSE_CODE_LIST = [
     '20005',  # Declined - Do not honour
+    '20051',  # Insufficient funds
     '20014',  # Invalid card number
     '012',  # Invalid payment
     '029',

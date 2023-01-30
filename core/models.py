@@ -41,7 +41,7 @@ class CustomerProfile(models.Model):
     customer_phone = models.CharField(max_length=20, null=True, blank=True,
                                       help_text="To store user phone from "
                                                 "outside")
-    customer_name = models.CharField(max_length=20, null=True, blank=True,
+    customer_name = models.CharField(max_length=100, null=True, blank=True,
                                      help_text="To store name")
 
     class Meta:

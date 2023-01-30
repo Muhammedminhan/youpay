@@ -202,7 +202,7 @@ class Announcement(AbstractDateTime, AbstractUserBase):
                                                              'whether the announcement is active or not.')
 
     def __str__(self):
-        return str(self.gateway.gateway_name)
+        return str(self.gateway)
 
 
 class ClientNotification(AbstractDateTime):

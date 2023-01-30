@@ -4,7 +4,7 @@ from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification)
-
+from payments.forms import AnnouncementForm
 
 class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
     readonly_fields = ('created_at', 'updated_at',)
@@ -34,6 +34,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
 
 
 class AnnouncementAdmin(AdminAbstract):
+    form = AnnouncementForm
     list_display = ('gateway', 'offer_message', 'is_active',
                     'created_at', 'updated_at')
     search_fields = ('gateway__gateway_name', 'offer_message')
