@@ -152,7 +152,7 @@ def is_redirect(transaction_id, transaction_message):
     is_fraud = transaction_message.get('is_fraud', False)
 
     response_code = transaction_message.get('response_code', None)
-    if response_code in RESPONSE_CODE_LIST or is_fraud:
+    if response_code in RESPONSE_CODE_LIST:
         '''We are setting the redirect url to none so in frontend it will 
         redirect to the payment page, which will give another try to the 
         customer in the current transaction'''
@@ -164,7 +164,8 @@ def is_redirect(transaction_id, transaction_message):
         }
         return True, response_data
 
-    if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
+    if (youpay_transaction.payment_status == PAYMENT_STATUS_PAID and
+            not is_fraud):
 
         redirect_url = (youpay_transaction.success_url +
                         '?transaction_id=' + transaction_id)
