@@ -47,3 +47,22 @@ REQUEST_METHOD_CHOICES = (
     (REQUEST_METHOD_DELETE, REQUEST_METHOD_DELETE),
     (REQUEST_METHOD_NONE, REQUEST_METHOD_NONE),
 )
+
+YOUPAY_PAYMENT_PATHS = [
+            "/services/api/v1/checkout/saved-card/",  # saved card payment
+
+            "/services/api/v1/checkout/card/",  # card payment
+
+            "/services/api/v1/checkout/paypal/",  # paypal payment
+
+            "/services/api/v1/adcb/point-balance/",  # adcb point balance
+
+            "/services/api/v1/adcb/authenticate/",  # adcb authenticate
+
+            "/services/api/v1/tabbypg/createsession/",  # tabby session
+
+            "/services/api/v1/amazonpg/authentication/",
+            # amazon authentication
+
+            "/services/api/v1/amazonpg/tokenization/",  # amazon tokenization
+        ]

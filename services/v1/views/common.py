@@ -175,13 +175,16 @@ def is_redirect(transaction_id, transaction_message):
     else:
         redirect_url = (youpay_transaction.failure_url +
                         '?transaction_id=' + transaction_id)
-        response_data = {
-            IS_REDIRECT: True,
-            REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
-        }
+        response_data = prepare_response_data(True, redirect_url, transaction_message)
         return False, response_data
 
+def prepare_response_data(is_redirect, redirect_url, transaction_message):
+    response_data = {
+        IS_REDIRECT: is_redirect,
+        REDIRECT_URL: redirect_url,
+        TRANSACTION_MSG: transaction_message
+    }
+    return response_data
 
 def get_api_key_from_payment_gateway(hubcode):
     """Method to get api key from payment gateway"""
