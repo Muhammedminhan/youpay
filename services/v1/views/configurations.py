@@ -26,7 +26,6 @@ from services.v1.serializers.client_registrattion import (
 from services.v1.views.utils import (get_payment_options, get_announcements,
                                      get_session_id_from_header
                                      )
-from integrations.constants import B2CPAYBACK_HUB_CODE
 
 logger = logging.getLogger(__name__)
 
