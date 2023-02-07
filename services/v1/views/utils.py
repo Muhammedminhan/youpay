@@ -113,10 +113,26 @@ def get_payment_options(gateways):
     for gateway in gateways:
         code = gateway.code
         if code == CHECKOUTPG_HUB_CODE:
+            validation_json = gateway.validation_json
+
+            if validation_json:
+                paypal_flag = gateway.validation_json.get("is_paypal_enabled",
+                                                          False)
+                applepay_flag = gateway.validation_json.get(
+                    "is_applepay_enabled", False)
+                saved_card_flag = gateway.validation_json.get(
+                    "is_saved_card_enabled", False)
+
+                # enable or disable based on validation_json
+                response_payment_options['saved_card'] = saved_card_flag
+                response_payment_options['applepay'] = applepay_flag
+                response_payment_options['paypal'] = paypal_flag
+            else:
+                logger.warning("validation_json not setup for {}".format(
+                    gateway.gateway_name))
+
+            # Always active if checkout is active in API client
             response_payment_options['checkoutpg'] = True
-            response_payment_options['saved_card'] = True
-            response_payment_options['applepay'] = True
-            response_payment_options['paypal'] = True
 
         if code == B2CPAYBACK_HUB_CODE:
             response_payment_options['adcb'] = True
