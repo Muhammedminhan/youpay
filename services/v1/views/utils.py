@@ -104,7 +104,7 @@ def get_session_id_from_header(request):
     return session_id
 
 
-def get_payment_options(gateways):
+def get_payment_options(gateways, payback_config):
     """
     used to get gateways from payment gateway serializer
     """
@@ -118,7 +118,7 @@ def get_payment_options(gateways):
             response_payment_options['applepay'] = True
             response_payment_options['paypal'] = True
 
-        if code == B2CPAYBACK_HUB_CODE:
+        if code == B2CPAYBACK_HUB_CODE and payback_config:
             response_payment_options['adcb'] = True
 
         if code == TABBYPG_HUB_CODE:
