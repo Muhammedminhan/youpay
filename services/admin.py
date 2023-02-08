@@ -2,10 +2,11 @@ from django.contrib import admin
 
 from core.admin import AdminAbstract
 from services.models import APIClient, PaymentRequestData
+from services.forms import APIClientForm
 
 
-# Register your models here.
 class APIClientAdmin(AdminAbstract):
+    form = APIClientForm
     list_display = ('name', 'client_domain', 'api_key', 'is_active',
                     'webhook_url', 'client_code', 'created_at', 'updated_at')
     search_fields = ('name', 'api_key', 'webhook_url', 'client_domain')

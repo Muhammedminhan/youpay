@@ -4,3 +4,7 @@ TOKEN_TYPE_PAYPAL = 'paypal'
 RESPONSE_CODE_LIST = ['20005', '20051', '20014', '012', '029', '050', '079',
                       '084', '034']
 YOUPAY_SESSION_KEY = "youpay-session-id"
+
+CLIENT_LOGO_MAX_SIZE = 4194304
+CLIENT_LOGO_MAX_HEIGHT = 60
+ONE_MB = 1048576
