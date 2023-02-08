@@ -25,8 +25,8 @@ class APIClientForm(forms.ModelForm):
                 size_mb = CLIENT_LOGO_MAX_SIZE / ONE_MB
                 raise forms.ValidationError(
                     "The image size is above {} MB".format(size_mb))
-            w, h = get_image_dimensions(picture)
-            if h > CLIENT_LOGO_MAX_HEIGHT:
+            width, height = get_image_dimensions(picture)
+            if height > CLIENT_LOGO_MAX_HEIGHT:
                 raise forms.ValidationError(
                     "The image is {} pixel high. It's supposed to be "
                     "{} px max".format(h, CLIENT_LOGO_MAX_HEIGHT))
