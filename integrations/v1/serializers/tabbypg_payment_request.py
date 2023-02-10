@@ -118,7 +118,11 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("customer_phone")
 
     def get_cancel_url(self, data):
-        return common_response_url(data)
+        transaction_id = data.get('transaction_data').get(
+            "transaction_id")
+        cancel_url = (data.get('transaction_data').get("cancel_url") +
+                      '?transaction_id=' + transaction_id)
+        return cancel_url
 
     def get_failure_url(self, data):
         return common_response_url(data)
