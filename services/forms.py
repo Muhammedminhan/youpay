@@ -1,9 +1,9 @@
+import re
+
 from django import forms
-from django.core.files.images import get_image_dimensions
 
 from services.models import APIClient
-from services.constants import (CLIENT_LOGO_MAX_SIZE, CLIENT_LOGO_MAX_HEIGHT,
-                                ONE_MB)
+from services.utils import api_client_logo_validate
 
 
 class APIClientForm(forms.ModelForm):
@@ -11,6 +11,8 @@ class APIClientForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['name'].required = True
+        self.fields['logo_file'].required = True
+        self.fields['color_code'].required = True
 
     class Meta:
         model = APIClient
@@ -18,16 +20,20 @@ class APIClientForm(forms.ModelForm):
 
     def clean_logo_file(self):
         picture = self.cleaned_data.get("logo_file")
-        if not picture:
-            raise forms.ValidationError("No logo image!")
-        else:
-            if picture.size > CLIENT_LOGO_MAX_SIZE:
-                size_mb = CLIENT_LOGO_MAX_SIZE / ONE_MB
-                raise forms.ValidationError(
-                    "The image size is above {} MB".format(size_mb))
-            width, height = get_image_dimensions(picture)
-            if height > CLIENT_LOGO_MAX_HEIGHT:
-                raise forms.ValidationError(
-                    "The image is {} pixel high. It's supposed to be "
-                    "{} px max".format(h, CLIENT_LOGO_MAX_HEIGHT))
-        return picture
+        return api_client_logo_validate(picture)
+
+    def clean_mobile_logo_file(self):
+        mobile_logo = self.cleaned_data.get("mobile_logo_file")
+        return api_client_logo_validate(mobile_logo)
+
+    def clean_color_code(self):
+        color_code = self.cleaned_data.get("color_code")
+        if color_code is None or color_code == '':
+            raise forms.ValidationError('Color code is required')
+        # validation for color code
+        if color_code and not re.match(r'^#(?:[0-9a-fA-F]{3}){1,2}$',
+                                       color_code):
+            raise forms.ValidationError(
+                'Color code should be in the format '
+                '#XXXXX or #XXX, where X is a hex value')
+        return color_code
