@@ -63,6 +63,7 @@ class ConfigViewSet(ViewSet):
 
         checkout_obj = CheckoutpgManager()
         tabbypg_obj = TabbyPGManager()
+        b2c_payback_obj = B2CPaybackManager()
 
         decrypted_transaction_id = decrypt_string(pk)
         try:
@@ -108,12 +109,11 @@ class ConfigViewSet(ViewSet):
                     if client:
                         gateways = client.payment_gateway.filter(
                             is_active=True)
-                        payment_options = get_payment_options(gateways)
-                        announcements_dict = get_announcements()
-                        b2c_payback_obj = B2CPaybackManager()
                         payback_config = b2c_payback_obj.get_configurations(
                             transaction.amount, transaction.currency)
-
+                        payment_options = get_payment_options(
+                            gateways, payback_config)
+                        announcements_dict = get_announcements()
                         api_client = {'color': client.color_code,
                                       'mobile_logo': self.get_mobile_logo_url(
                                           client),
