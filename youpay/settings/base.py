@@ -227,8 +227,3 @@ CACHES = {
     },
 }
 
-# Environment name config
-ENVIRONMENT = config('ENVIRONMENT')
-
-# Certificates Base path
-CERTIFICATES_BASE_PATH = 'certs/'

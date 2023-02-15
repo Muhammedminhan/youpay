@@ -20,8 +20,8 @@ from payments.constants import (
     PAYMENT_STATUS_PAID
 )
 from payments.models import YouPayTransactionData
-from services.constants import APPLEPAY_SUPPORTED_NETWORKS, \
-    APPLEPAY_MERCHANT_CAPABILITIES, APPLEPAY_LABEL
+from services.constants import (APPLEPAY_SUPPORTED_NETWORKS, 
+    APPLEPAY_MERCHANT_CAPABILITIES, APPLEPAY_LABEL)
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer

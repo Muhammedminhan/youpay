@@ -76,29 +76,47 @@ class ApplePayAuthorizeAPI(YouPayTransactionCRUD, APIView,
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
-                payment_data = {
-                    'transaction_data': transaction_data,
-                    'transaction_obj': transaction_obj,
+                        
+                        
+                verify_response, verify_status = self.verify_transaction(
+                    transaction_data)
 
-                    'request_data': request.data.get('request_data'),
-                    'response_data': request.data.get('response_data')}
-                apple_pay = ApplePayManager()
-                response_data, code = apple_pay.authorize_applepay(
-                    payment_data)
-                if code == YouPayResponse.APPLE_PAY_SUCCESS:
-                    data = self.response_obj.get_success_dict(
-                        code=code,
-                        success_dict=response_data
-                    )
-                    return Response(data,
-                                    status=status.HTTP_200_OK)
+                is_verified = verify_response.get('is_verified', False)
+                if verify_status == status.HTTP_200_OK and is_verified:
+                
+                
+                    payment_data = {
+                        'transaction_data': transaction_data,
+                        'transaction_obj': transaction_obj,
+
+                        'request_data': request.data.get('request_data'),
+                        'response_data': request.data.get('response_data')}
+                    apple_pay = ApplePayManager()
+                    response_data, code = apple_pay.authorize_applepay(
+                        payment_data)
+                    if code == YouPayResponse.APPLE_PAY_SUCCESS:
+                        data = self.response_obj.get_success_dict(
+                            code=code,
+                            success_dict=response_data
+                        )
+                        return Response(data,
+                                        status=status.HTTP_200_OK)
+                    else:
+                        data = self.response_obj.get_success_dict(
+                            code=code,
+                            success_dict=response_data
+                        )
+                        return Response(data,
+                                        status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    data = self.response_obj.get_success_dict(
-                        code=code,
-                        success_dict=response_data
-                    )
-                    return Response(data,
-                                    status=status.HTTP_400_BAD_REQUEST)
+                    msg = (
+                        "Youpay transaction verification failed for "
+                        "transaction id {} response is : {} ".format(
+                            self.transaction_id, verify_response))
+                    logger.error(msg)
+                    return (
+                        verify_response,
+                        self.CLIENT_TRANSACTION_VERIFICATION_FAILED)
             else:
                 data = self.response_obj.get_404_message(
                     message=TRANSACTION_DOESNT_EXIST)

@@ -1,5 +1,3 @@
-from youpay.settings.base import CERTIFICATES_BASE_PATH
-
 CHECKOUT_UAE_CURRENCY = 'AED'
 CHECKOUT_SAUDI_CURRENCY = 'SAR'
 CHECKOUT_USD_CURRENCY = 'USD'
@@ -112,15 +110,3 @@ AMAZONPG_AUTHENTICATE_API = "services/api/v1/authorization/"
 AMAZONPG_VERIFY_API = "services/api/v1/verify/"
 AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"
 AMAZONPG_REFUND_API = "services/api/v1/refund/"
-
-APPLE_PAY_PRODUCTION_AED_CERTIFICATE_PATH = CERTIFICATES_BASE_PATH + "certs/applepay/production/"
-APPLE_PAY_PRODUCTION_SAR_CERTIFICATE_PATH = "certs/applepay/production/"
-APPLE_PAY_DEVELOPMENT_SAR_CERTIFICATE_PATH = "certs/applepay/development/"
-
-APPLE_PAY_SANDBOX_AED_CERTIFICATE_PATH = (
-        CERTIFICATES_BASE_PATH + "applepay/" + "sandbox" + "/certificate_sandbox.pem")
-APPLE_PAY_AED_KEY_PATH = (
-        CERTIFICATES_BASE_PATH + "applepay/" + "sandbox" + "/certificate_sandbox.key")
-
-APPLE_PAY_SANDBOX_SAR_CERTIFICATE_PATH = "certs/applepay/sandbox/certificate_sar_sandbox.pem"
-APPLE_PAY_SAR_KEY_PATH = "certs/applepay/sandbox/sar_sandbox.key"

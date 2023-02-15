@@ -23,11 +23,6 @@ class PaymentHandlers(YouPayTransactionCRUD):
                                       PAYMENT_REQUEST_TYPE_NONE)
             transaction_obj = kwargs.get('transaction_obj', None)
             request_method = kwargs.get('request_method', None)
-
-            
-            print("\n\n")
-            print("payment_request_data ", payment_request_data)
-            print("payment_response_data ", payment_response_data)
             
             if not transaction_obj:
                 """if there is no transaction object passed, then get the 
@@ -46,8 +41,6 @@ class PaymentHandlers(YouPayTransactionCRUD):
                     'request_type': request_type,
                     'request_method': request_method
                 }
-                print("create_object", create_object)
-                print("create_object",  type(create_object))
                 YoupayToPaymentGatewaysData.objects.create(**create_object)
                 logger.info("YoupayToPaymentGateways data created for {}"
                             "".format(transaction_obj))
