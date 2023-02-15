@@ -8,7 +8,8 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
                                                 PaypalPayment)
-from services.v1.views.configurations import ConfigViewSet
+from services.v1.views.configurations import (ConfigViewSet,
+                                              ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
 from .api_clients.apple_pay import ApplePayValidateSession, ApplePayPayment
@@ -56,4 +57,7 @@ urlpatterns = [
     path('applepay/validate-session/', ApplePayValidateSession.as_view()),
     path('applepay/pay/', ApplePayPayment.as_view()),
 
+
+    # API for getting the client logo and color code
+    path('client-static-details/', ClientStaticFilesAPI.as_view()),
 ]

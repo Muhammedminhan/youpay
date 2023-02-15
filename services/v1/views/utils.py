@@ -9,7 +9,6 @@ from integrations.constants import (
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
 from services.constants import YOUPAY_SESSION_KEY
-from services.v1.constants import PAYMENT_OPTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -105,23 +104,37 @@ def get_session_id_from_header(request):
     return session_id
 
 
-def get_payment_options(payment_gateway_serializer):
+def get_payment_options(gateways, payback_config):
     """
     used to get gateways from payment gateway serializer
     """
-    response_payment_options = PAYMENT_OPTIONS
 
-    payment_gateways = payment_gateway_serializer.data
-
-    for payment_gateway in payment_gateways:
-        code = payment_gateway.get('code')
+    response_payment_options = {}
+    for gateway in gateways:
+        code = gateway.code
         if code == CHECKOUTPG_HUB_CODE:
-            response_payment_options['checkoutpg'] = True
-            response_payment_options['saved_card'] = True
-            response_payment_options['applepay'] = True
-            response_payment_options['paypal'] = True
+            validation_json = gateway.validation_json
 
-        if code == B2CPAYBACK_HUB_CODE:
+            if validation_json:
+                paypal_flag = gateway.validation_json.get("is_paypal_enabled",
+                                                          False)
+                applepay_flag = gateway.validation_json.get(
+                    "is_applepay_enabled", False)
+                saved_card_flag = gateway.validation_json.get(
+                    "is_saved_card_enabled", False)
+
+                # enable or disable based on validation_json
+                response_payment_options['saved_card'] = saved_card_flag
+                response_payment_options['applepay'] = applepay_flag
+                response_payment_options['paypal'] = paypal_flag
+            else:
+                logger.warning("validation_json not setup for {}".format(
+                    gateway.gateway_name))
+
+            # Always active if checkout is active in API client
+            response_payment_options['checkoutpg'] = True
+
+        if code == B2CPAYBACK_HUB_CODE and payback_config:
             response_payment_options['adcb'] = True
 
         if code == TABBYPG_HUB_CODE:
