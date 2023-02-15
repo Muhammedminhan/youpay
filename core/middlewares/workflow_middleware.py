@@ -19,6 +19,7 @@ class WorkflowCheckMiddleware(object):
     def __call__(self, request):
         # Code to be executed for each request before
         # the view (and later middleware) are called.
+        print("Middleware worked")
 
         payment_paths = YOUPAY_PAYMENT_PATHS
 
@@ -63,3 +64,22 @@ class WorkflowCheckMiddleware(object):
         # the view is called.
 
         return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        print("Process request ", request)
+        print("Process view_func ", view_func)
+        print("Process view_args ", view_args)
+        print("Process view_kwargs ", view_kwargs)
+        
+        # get view name
+        print("View name ", view_func.__name__)
+        
+        special_marker = getattr(view_func, 'special_marker', False)
+        if special_marker:
+            # Do something
+            print("Special marker found")
+            return JsonResponse({"Status": True, })
+            
+        else:
+            print("Special marker not found")
+

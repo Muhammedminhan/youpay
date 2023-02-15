@@ -13,13 +13,15 @@ from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD, \
-    TOKEN_TYPE_PAYPAL
-from services.v1.views.common import YouPayTransactionCRUD
+from services.constants import (TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD,
+                                TOKEN_TYPE_PAYPAL)
+from services.v1.views.common import (
+    YouPayTransactionCRUD, cancelled_payment_check)
 
 logger = logging.getLogger(__name__)
 
 
+@cancelled_payment_check
 class SavedCardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -122,6 +124,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
+@cancelled_payment_check
 class CardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -172,6 +175,7 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
+@cancelled_payment_check
 class PaypalPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 

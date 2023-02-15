@@ -211,3 +211,30 @@ def get_adcb_saved_fields(saved_fields, data_dict, transaction_obj):
             saved_fields.append(key)
 
     return saved_fields
+
+
+from django.utils.decorators import decorator_from_middleware
+from core.middlewares.workflow_middleware import WorkflowCheckMiddleware
+
+simple_decorator = decorator_from_middleware(WorkflowCheckMiddleware)
+
+
+class SimpleMiddlewareMixin:
+    @simple_decorator
+    def dispatch(*args, **kwargs):
+        print("SimpleMiddlewareMixin ")
+        return super().dispatch(*args, **kwargs)
+
+
+from django.utils.decorators import classonlymethod
+
+
+def cancelled_payment_check(class_view):
+    def as_view(cls, **initkwargs):
+        view = super(cls, cls).as_view(**initkwargs)
+        view.cancelled_payment_check = True
+        return view
+
+    return type(class_view.__name__, (class_view,), {
+        'as_view': classonlymethod(as_view),
+    })

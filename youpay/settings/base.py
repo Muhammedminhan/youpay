@@ -81,7 +81,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     # custom middleware
-    'core.middlewares.workflow-middleware.WorkflowCheckMiddleware',
+    'core.middlewares.workflow_middleware.WorkflowCheckMiddleware',
 
 ]
 
