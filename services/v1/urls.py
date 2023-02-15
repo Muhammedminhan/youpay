@@ -12,7 +12,8 @@ from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
-from .api_clients.apple_pay import ApplePayValidateSession, ApplePayPayment
+from .api_clients.apple_pay import (ApplePayAuthorizeAPI,
+                                    ApplePayInitializeAPI, ApplePayPaymentAPI)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
@@ -54,9 +55,9 @@ urlpatterns = [
     path('amazonpg/verify/', AmazonPGVerification.as_view()),
 
     # ApplePay endpoints
-    path('applepay/validate-session/', ApplePayValidateSession.as_view()),
-    path('applepay/pay/', ApplePayPayment.as_view()),
-
+    path('applepay/initialize/', ApplePayInitializeAPI.as_view()),
+    path('applepay/authorize/', ApplePayAuthorizeAPI.as_view()),
+    path('applepay/payment/', ApplePayPaymentAPI.as_view()),
 
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),

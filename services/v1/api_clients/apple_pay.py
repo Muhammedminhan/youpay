@@ -4,23 +4,26 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.utils import get_site_domain, decrypt_string
+from core.utils import decrypt_string
 from integrations.v1.gateway_clients.apple_pay import ApplePayManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import TOKEN_TYPE_APPLEPAY
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 
 logger = logging.getLogger(__name__)
 
 
-class ApplePayValidateSession(YouPayTransactionCRUD, APIView,
-                              ClientValidator):
+class ApplePayInitializeAPI(YouPayTransactionCRUD, APIView,
+                            ClientValidator):
     response_obj = YouPayResponse()
 
     def post(self, request):
+        '''
+        Applepay initialize API
+        '''
         try:
             transaction_id = request.data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
@@ -32,9 +35,9 @@ class ApplePayValidateSession(YouPayTransactionCRUD, APIView,
                                 'transaction_obj': transaction_obj,
                                 'request_data': request.data}
                 apple_pay = ApplePayManager()
-                response_data, code = apple_pay.validate_session(
+                response_data, code = apple_pay.initialize_applepay(
                     payment_data)
-                if code == YouPayResponse.SUCCESS:
+                if code == YouPayResponse.APPLE_PAY_SUCCESS:
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
@@ -50,7 +53,7 @@ class ApplePayValidateSession(YouPayTransactionCRUD, APIView,
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
-                    message="Transaction doesn't exists")
+                    message=TRANSACTION_DOESNT_EXIST)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
@@ -58,30 +61,31 @@ class ApplePayValidateSession(YouPayTransactionCRUD, APIView,
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-class ApplePayPayment(APIView, YouPayTransactionCRUD):
+class ApplePayAuthorizeAPI(YouPayTransactionCRUD, APIView,
+                           ClientValidator):
     response_obj = YouPayResponse()
 
     def post(self, request):
+        '''
+        Applepay authorize API
+        '''
         try:
-            site_domain = get_site_domain(request)
             transaction_id = request.data.get('transaction_id')
-
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
-                payment_data = {'token_type': TOKEN_TYPE_APPLEPAY,
-                                'transaction_data': transaction_data,
-                                'transaction_obj': transaction_obj,
-                                'request_data': request.data,
-                                'site_domain': site_domain}
-                apple_pay = ApplePayManager()
-                response_data, code = apple_pay.pay(
-                    payment_data)
-                logger.info("Response data: ", code, response_data)
+                payment_data = {
+                    'transaction_data': transaction_data,
+                    'transaction_obj': transaction_obj,
 
-                if code == YouPayResponse.SUCCESS:
+                    'request_data': request.data.get('request_data'),
+                    'response_data': request.data.get('response_data')}
+                apple_pay = ApplePayManager()
+                response_data, code = apple_pay.authorize_applepay(
+                    payment_data)
+                if code == YouPayResponse.APPLE_PAY_SUCCESS:
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
@@ -97,9 +101,63 @@ class ApplePayPayment(APIView, YouPayTransactionCRUD):
                                     status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
-                    message="Transaction doesn't exists")
+                    message=TRANSACTION_DOESNT_EXIST)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class ApplePayPaymentAPI(YouPayTransactionCRUD, APIView,
+                         ClientValidator):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        '''
+        Applepay payment API
+        request body example:
+        {
+            "transaction_id": "transaction_id",
+            "request_data": {...},
+            "response_data": {...}
+        }
+        
+        '''
+        try:
+            transaction_id = request.data.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+                serializer = YouPayTransactionDataSerializer(transaction_obj)
+                transaction_data = serializer.data
+                payment_data = {
+                    'transaction_data': transaction_data,
+                    'transaction_obj': transaction_obj,
+                    'request_data': request.data.get('request_data'),
+                    'response_data': request.data.get('response_data'),
+                }
+                apple_pay = ApplePayManager()
+                response_data, code = apple_pay.applepay_payment(
+                    payment_data)
+
+                if code == YouPayResponse.APPLE_PAY_SUCCESS:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_success_dict(
+                        code=code, success_dict=response_data
+                    )
+                    return Response(data, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_404_message(
+                    message=TRANSACTION_DOESNT_EXIST)
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

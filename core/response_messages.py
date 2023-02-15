@@ -35,7 +35,11 @@ class YouPayResponse(object):
     """Amazonpay related ends"""
 
     """Apple Pay back related begins"""
-    APPLE_PAY_CONNECTION_ERROR = 5002
+    APPLE_PAY_CONNECTION_ERROR = 5000
+    APPLE_PAY_BAD_REQUEST = 5400
+    APPLE_PAY_SUCCESS = 5200
+    APPLE_PAY_CREATED = 5201
+    
     """Apple Pay back related ends"""
 
     """Youpay related begins"""
@@ -54,7 +58,12 @@ class YouPayResponse(object):
             self.UNKNOWN_ERR: "Something went wrong",
             self.SUCCESS: "API request completed successfully",
             self.CHECKOUTPG_CONNECTION_ERROR: "Checkoutpg connection error",
+            
             self.APPLE_PAY_CONNECTION_ERROR: "Applepay connection error",
+            self.APPLE_PAY_BAD_REQUEST: "Applepay bad request",
+            self.APPLE_PAY_SUCCESS: "Applepay request success",
+            self.APPLE_PAY_CREATED: "Applepay request created",
+            
             self.PAYMENT_FAILED: "Payment failed",
             self.TABBYPG_CONNECTION_ERROR: "Tabbypg connection error",
             self.AMAZONPG_CONNECTION_ERROR: "Amzonpg connection error",
