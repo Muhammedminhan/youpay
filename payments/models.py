@@ -188,8 +188,8 @@ def update_client(sender, instance, **kwargs):
     service = ClientService()
     payment_transaction = YouPayTransactionData.objects.get(
         id=instance.id)
-    transaction.on_commit(
-        lambda: service.webhook_service(payment_transaction))
+    # transaction.on_commit(
+    #     lambda: service.webhook_service(payment_transaction))
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):
@@ -204,6 +204,11 @@ class Announcement(AbstractDateTime, AbstractUserBase):
     platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
                                 max_length=200, null=True, blank=True,
                                 help_text="Associated platform")
+    payment_option = models.ForeignKey('integrations.PaymentOptions',
+                                       null=True, blank=True,
+                                       on_delete=models.CASCADE,
+                                       related_name=
+                                       'payment_option_announcement')
 
     def __str__(self):
         return str(self.gateway)

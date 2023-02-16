@@ -21,10 +21,13 @@ class AnnouncementForm(forms.ModelForm):
     def clean(self):
         is_active = self.cleaned_data.get('is_active')
         gateway = self.cleaned_data.get('gateway')
+        payment_option = self.cleaned_data.get('payment_option')
         platform = self.cleaned_data.get('platform')
         if is_active and Announcement.objects.filter(
                 gateway=gateway, platform=platform,
+                payment_option=payment_option,
                 is_active=True).exists():
             raise ValidationError('Another announcement is already active for'
-                                  ' the chosen gateway-platform combination')
+                                  ' the chosen gateway-platform-payment '
+                                  'option combination')
         return self.cleaned_data

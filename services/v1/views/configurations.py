@@ -113,7 +113,8 @@ class ConfigViewSet(ViewSet):
                             transaction.amount, transaction.currency)
                         payment_options = get_payment_options(
                             gateways, payback_config)
-                        announcements_dict = get_announcements()
+                        announcements_dict = get_announcements(
+                            transaction.platform)
                         api_client = {'color': client.color_code,
                                       'mobile_logo': self.get_mobile_logo_url(
                                           client),

@@ -6,6 +6,7 @@ from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE
 )
+from integrations.models import PaymentOptions
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
 from services.constants import YOUPAY_SESSION_KEY
@@ -146,24 +147,36 @@ def get_payment_options(gateways, payback_config):
     return response_payment_options
 
 
-def get_announcements():
+def get_announcements(platform):
     """
     used to fetch the active announcements for payment gateways
     """
     pg_list = [CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                TABBYPG_HUB_CODE, QITAF_HUB_CODE]
     announcements_list = []
+    payment_options_announcements = {}
     for pg in pg_list:
-        announcement_objs = Announcement.objects.filter(gateway__code=pg,
-                                                        is_active=True)
+        announcement_objs = Announcement.objects.filter(
+            gateway__code=pg, platform=platform, is_active=True)
+        po_announcements = get_payment_options_announcements(
+            announcement_objs)
+        for po_tuple in po_announcements:
+            payment_options_announcements[po_tuple[0]] = [po_tuple[1]]
         pg_announcements = []
         for obj in announcement_objs:
             pg_announcements.append(obj.offer_message)
         announcements_list.append(pg_announcements)
     announcements_dict = {
-        "checkoutpg": announcements_list[0],
+        "checkoutpg": payment_options_announcements,
         "b2cpayback": announcements_list[1],
         "tabbypg": announcements_list[2],
         "qitafpg": announcements_list[3]
     }
     return announcements_dict
+
+
+def get_payment_options_announcements(announcement_objs):
+    options_values_list = announcement_objs.exclude(
+        payment_option=None).values_list(
+        'payment_option__name', 'offer_message').distinct()
+    return options_values_list
