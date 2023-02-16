@@ -4,12 +4,10 @@ from payments.models import YouPayTransactionData
 
 
 class ApplepayPaymentDataSerializer(serializers.ModelSerializer):
-    session_id = serializers.CharField(max_length=255, required=True)
 
     class Meta:
         model = YouPayTransactionData
         fields = [
-            'session_id',
             'transaction_id',
             'amount',
             'currency',
