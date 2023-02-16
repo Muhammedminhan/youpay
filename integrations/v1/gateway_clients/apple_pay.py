@@ -1,9 +1,9 @@
 import logging
 
 from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
-from payments.constants import (PAYMENT_METHOD_APPLEPAY, \
+from payments.constants import (PAYMENT_METHOD_APPLEPAY,
                                 PAYMENT_STATUS_AUTHORIZED,
-                                PAYMENT_STATUS_NONE, PAYMENT_STATUS_PAID, \
+                                PAYMENT_STATUS_NONE, PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_PENDING)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -56,8 +56,9 @@ class ApplePayManager(PaymentRequestView, PaymentHandlers):
                 self.payment_status = PAYMENT_STATUS_PAID
                 message = "Apple pay payment updated to paid"
                 redirect_url = (transaction_data['success_url'] +
-                        '?transaction_id=' + transaction_data['transaction_id'])
-                
+                                '?transaction_id=' + transaction_data[
+                                    'transaction_id'])
+
                 self.response_data['redirect_url'] = redirect_url
                 self.response_data['is_redirect'] = True
 
