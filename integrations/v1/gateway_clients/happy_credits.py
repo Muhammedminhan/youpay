@@ -43,8 +43,7 @@ class HappyCreditsManager(PaymentRequestView, PaymentHandlers):
         headers = {
             'Content-Type': 'application/json',
             'Authorization': self.happy_credit_config.api_key,
-            'HTTP-X-API-KEY': self.happy_credit_config.api_key,
-            'HTTP-X-API-SECRET': self.happy_credit_config.api_secret
+            'Api-key': self.happy_credit_config.api_key
         }
         return headers
 
@@ -65,8 +64,6 @@ class HappyCreditsManager(PaymentRequestView, PaymentHandlers):
         Calls happy credits credit balance api.
         """
         try:
-            import pdb
-            pdb.set_trace()
             self.transaction_id = (
                 data.get('transaction_data').get('transaction_id'))
             if self.happy_credit_config:
