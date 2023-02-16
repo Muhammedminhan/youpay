@@ -188,8 +188,8 @@ def update_client(sender, instance, **kwargs):
     service = ClientService()
     payment_transaction = YouPayTransactionData.objects.get(
         id=instance.id)
-    # transaction.on_commit(
-    #     lambda: service.webhook_service(payment_transaction))
+    transaction.on_commit(
+        lambda: service.webhook_service(payment_transaction))
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):
