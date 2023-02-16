@@ -53,5 +53,5 @@ urlpatterns = [
     path('amazonpg/verify/', AmazonPGVerification.as_view()),
 
     # Happy Credits endpoints
-    path('happy-credits/credit-balance/', HappyCreditsCreditBalance.as_view()),
+    path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),
 ]
