@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
-                        encrypt_string, decrypt_string)
+                        encrypt_string, decrypt_string, get_redirect_url)
 from payments.constants import (PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED)
 from services.models import PaymentRequestData
@@ -20,6 +20,8 @@ from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from services.v1.views.utils import (
     reformat_payment_request_data
 )
+
+from payments.constants import PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID
 
 logger = logging.getLogger(__name__)
 
@@ -296,22 +298,36 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
     def post(self, request):
         try:
             logger.info("Triggered PaymentCancelledView")
+            redirect_url = None
             data = self.request.data
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
-            self.update_youpay_transaction_data({
-                'transaction_id': transaction_id,
-                'payment_status': PAYMENT_STATUS_CANCELLED
-            })
+            if transaction_object.payment_status == PAYMENT_STATUS_INITIATED:
+                self.update_youpay_transaction_data({
+                    'transaction_id': transaction_id,
+                    'payment_status': PAYMENT_STATUS_CANCELLED
+                })
 
-            redirect_url = (transaction_object.cancel_url +
-                            '?transaction_id=' + transaction_id)
-            logger.info(
-                "Payment cancelled for transaction_id : {}, order reference :"
-                "{}".format(transaction_id,
-                            transaction_object.order_reference))
+                redirect_url = get_redirect_url(transaction_object.cancel_url,
+                                                transaction_id)
+                logger.info(
+                    "Payment cancelled for transaction_id : {}, "
+                    "order reference :"
+                    "{}".format(transaction_id,
+                                transaction_object.order_reference))
+
+            elif transaction_object.payment_status == PAYMENT_STATUS_PAID:
+                redirect_url = get_redirect_url(
+                    transaction_object.success_url,
+                    transaction_id)
+            else:
+                redirect_url = get_redirect_url(
+                    transaction_object.failure_url,
+                    transaction_id)
+
             return Response({
+                'is_redirect': True,
                 REDIRECT_URL: redirect_url,
             })
         except Exception as e:
@@ -324,22 +340,13 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
 class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
                             YouPayResponse):
 
-
     def __init__(self):
         self.return_data = None
 
     def post(self, request):
         try:
             logger.info("Triggered TransactionExpireView")
-            validate, client_pk = self.validate_client(request)
-            if not validate:
-                logger.info(
-                    "payment expire client validation failed for {0}"
-                    .format("order_reference"))
-                self.return_data = self.get_400_message(
-                    message="Client Does Not Exist")
-                return Response(self.return_data.get('errors'),
-                                status=status.HTTP_400_BAD_REQUEST)
+
             data = self.request.data
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
@@ -351,7 +358,11 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
             logger.info(
                 "Payment status set to expired for transaction_id "
                 ": {}".format(transaction_id))
+            redirect_url = (transaction_object.cancel_url +
+                            '?transaction_id=' + transaction_id)
             response_data = {"status": status.HTTP_200_OK,
+                             "is_redirect": True,
+                             REDIRECT_URL: redirect_url,
                              "message": "Successfully expired transaction"}
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:

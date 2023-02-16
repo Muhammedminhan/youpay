@@ -43,14 +43,17 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 
     def get_customer_name(self, data):
         """
-        Method for getting customer name, take customer name from request data
+        Method for getting customer name, ie Taking card name as customer name
+         if provided else take from transaction data
         """
 
         request_data = data.get('request_data')
 
         customer_name = request_data.get('customer_name', '')
-        if not customer_name:
-            customer_name = "Not provided"
+        if customer_name == "":
+            transaction_data = data.get('transaction_data')
+            customer_name = transaction_data.get("customer_name",
+                                                 "Not Provided")
 
         return customer_name
 
@@ -80,7 +83,10 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('request_data').get("token")
 
     def get_channel_code(self, data):
-        channel_code = CHECKOUTPG_CHANNEL_CONFIGURATIONS.get(
-            data.get('transaction_data').get("currency")).get(
-            data.get('transaction_data').get("platform").upper())
+        if data.get('token_type') == 'paypal':
+            channel_code = ""
+        else:
+            channel_code = CHECKOUTPG_CHANNEL_CONFIGURATIONS.get(
+                data.get('transaction_data').get("currency")).get(
+                data.get('transaction_data').get("platform").upper())
         return channel_code
