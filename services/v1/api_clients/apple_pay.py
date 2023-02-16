@@ -8,10 +8,8 @@ from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.apple_pay import ApplePayManager
-from payments.serializers.youpay_payments import (
-    ApplepayPaymentDataSerializer,
-    YouPayTransactionDataSerializer
-)
+from integrations.v1.serializers.apple_pay_payment_request import \
+    ApplepayPaymentDataSerializer
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 
 logger = logging.getLogger(__name__)
@@ -70,4 +68,3 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
-
