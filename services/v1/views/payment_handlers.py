@@ -14,7 +14,6 @@ class PaymentHandlers(YouPayTransactionCRUD):
     def create_youpay_to_payment_gateways_data(self, **kwargs):
         """method to create the payment request data """
         try:
-            print("Method: create_youpay_to_payment_gateways_data")
             payment_request_data = kwargs.get('request_data', None)
             payment_response_data = kwargs.get('response_data', None)
 
