@@ -145,8 +145,7 @@ class HappyCreditsManager(PaymentRequestView, PaymentHandlers):
         """
         gateway_request_data = None
         gateway_response_data = None
-        gateway_request_type = PAYMENT_REQUEST_REDEMPTION
-        gateway_request_method = REQUEST_METHOD_POST
+        transaction_obj = None
         try:
             self.transaction_id = data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
@@ -163,10 +162,10 @@ class HappyCreditsManager(PaymentRequestView, PaymentHandlers):
                 return None, self.TRANSACTION_NOT_FOUND
             # if transaction is already verified then redirect to
             # corresponding client url
-            if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
+            if transaction_obj.payment_status == PAYMENT_STATUS_PAID:
                 response_data = {
                     "is_redirect": True,
-                    "redirect_url": (self.transaction_obj.success_url +
+                    "redirect_url": (transaction_obj.success_url +
                                         '?transaction_id=' + self.transaction_id),
                     "transaction_message": {
                         "status": 200,
@@ -189,7 +188,52 @@ class HappyCreditsManager(PaymentRequestView, PaymentHandlers):
                 logger.info(
                     "Balance deduct response data {}".format(response_data))
 
+                if response_data.get('is_capture'):
+                    payment_status = PAYMENT_STATUS_PAID
+                    approved = True
+                    response_summary = "Payment successful"
+                    available_balance = response_data.get(
+                        'available_balance_in_payment_currency')
+                else:
+                    payment_status = PAYMENT_STATUS_CANCELLED
+                    approved = False
+                    response_summary = "Payment failed"
+                    available_balance = None
+
+                self.update_youpay_transaction_data(
+                    {
+                        'transaction_id': self.transaction_id,
+                        "payment_status": payment_status,
+                        "approved": approved,
+                        "response_summary": response_summary,
+                        "available_credit_balance": available_balance
+                    }
+                )
+
+                redirect, response_data = is_redirect(self.transaction_id,
+                                                      response_data)
+                if redirect:
+                    gateway_response_data = json.dumps(response_data)
+                    return response_data, self.SUCCESS
+                else:
+                    gateway_response_data = json.dumps(response_data)
+                    return response_data, self.PAYMENT_FAILED
+            else:
+                logger.error("Error while deducting balance from happycredits"
+                             " status: {}, reason {} "
+                             "".format(response.status_code, response.text))
+                return None, self.HAPPY_CREDITS_CONNECTION_ERROR
         except Exception as e:
             logger.error("Exception in happy credits deduct balance session:"
                          " {}".format(str(e)))
             return {"error": e}, self.HAPPY_CREDITS_CONNECTION_ERROR
+        finally:
+            # storing Youpay to payment gateway request and response data
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=gateway_request_data,
+                response_data=gateway_response_data,
+                request_type=PAYMENT_REQUEST_REDEMPTION,
+                request_method=REQUEST_METHOD_POST,
+            )

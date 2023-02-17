@@ -71,6 +71,17 @@ class HappyCreditsDeductBalance(APIView):
             happy_credits = HappyCreditsManager()
             response_data, code = happy_credits.deduct_balance(
                 deduct_request_data)
+            if response_data:
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=response_data
+                )
+                return Response(data,
+                                status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_error_dict(error_code=code)
+                return Response(data,
+                                status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error("Error in HappyCreditsDeductBalance: "
                          "{}".format(str(e)))
