@@ -11,7 +11,7 @@ from services.v1.views.payment_handlers import PaymentHandlers
 logger = logging.getLogger(__name__)
 
 
-class ApplePayManager(PaymentRequestView, PaymentHandlers):
+class ApplePayManagement(PaymentRequestView, PaymentHandlers):
 
     def __init__(self):
         self.transaction_id = None

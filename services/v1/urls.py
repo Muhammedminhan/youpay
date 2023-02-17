@@ -7,12 +7,12 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackVerify)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
-                                                PaypalPayment)
+                                                PaypalPayment,
+                                                ApplePayStatusUpdateAPI)
 from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
-from .api_clients.apple_pay import (ApplePayStatusUpdateAPI)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
