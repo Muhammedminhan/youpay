@@ -52,3 +52,29 @@ class HappyCreditsCreditBalance(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class HappyCreditsDeductBalance(APIView):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        Method for calling credit balance deduction api
+        """
+        try:
+            request_data = request.data
+            deduct_request_data = {
+                "transaction_id": decrypt_string(request_data.get('id')),
+                "payment_reference": request_data.get('payment_reference'),
+                "user_id": request_data.get('user_id')
+            }
+            happy_credits = HappyCreditsManager()
+            response_data, code = happy_credits.deduct_balance(
+                deduct_request_data)
+        except Exception as e:
+            logger.error("Error in HappyCreditsDeductBalance: "
+                         "{}".format(str(e)))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+

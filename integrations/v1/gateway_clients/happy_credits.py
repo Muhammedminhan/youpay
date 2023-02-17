@@ -8,15 +8,16 @@ from core.constants import (PAYMENT_GATEWAY_HAPPYCREDITS, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from integrations.constants import (
     HAPPYCREDITS_HUB_CODE, HAPPYCREDITS_CACHE_KEY, CREDIT_BALANCE_API,
-    CREDIT_REDEMPTION_API, CREDIT_REDEMPTION_API,
-    PAYMENT_REQUEST_CREDIT_BALANCE)
+    CREDIT_REDEMPTION_API, PAYMENT_REQUEST_CREDIT_BALANCE,
+    PAYMENT_REQUEST_REDEMPTION)
 from integrations.v1.serializers.happy_credits_payment_request import (
     CreditBalanceSerializer)
 from integrations.messages import HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from core.utils import get_payment_gateway_config
-from payments.constants import PAYMENT_METHOD_CREDIT_BALANCE
+from payments.constants import (PAYMENT_METHOD_CREDIT_BALANCE,
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_CANCELLED)
 from services.v1.views.common import is_redirect
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ class HappyCreditsManager(PaymentRequestView, PaymentHandlers):
         self.credit_balance = None
         self.payment_gateway = PAYMENT_GATEWAY_HAPPYCREDITS
         self.payment_method = PAYMENT_METHOD_CREDIT_BALANCE
+        self.log_data = dict()
 
     def get_payment_header(self):
         """
@@ -58,6 +60,13 @@ class HappyCreditsManager(PaymentRequestView, PaymentHandlers):
             logger.error("transaction_data is not "
                          "available for happy credits")
             return None
+
+    def create_gateway_log(self):
+        """
+        storing Youpay to payment gateway
+        request and response data
+        """
+        self.create_youpay_to_payment_gateways_data(**self.log_data)
 
     def get_credit_balance(self, data):
         """
@@ -129,3 +138,58 @@ class HappyCreditsManager(PaymentRequestView, PaymentHandlers):
                 "credit_balance_amount": self.credit_balance
             }
             self.update_youpay_transaction_data(data_to_update)
+
+    def deduct_balance(self, data):
+        """
+        Calls happy credits deduct balance api.
+        """
+        gateway_request_data = None
+        gateway_response_data = None
+        gateway_request_type = PAYMENT_REQUEST_REDEMPTION
+        gateway_request_method = REQUEST_METHOD_POST
+        try:
+            self.transaction_id = data.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                self.transaction_id)
+            request_data = {
+                'payment_reference': data.get('payment_reference'),
+                'amount': transaction_obj.amount,
+                'user_id': data.get('user_id')
+            }
+            logger.info("Youpay sending credit redemption request data "
+                        "to happy credits is {}".format(request_data))
+            gateway_request_data = json.dumps(request_data)
+            if transaction_obj is None:
+                return None, self.TRANSACTION_NOT_FOUND
+            # if transaction is already verified then redirect to
+            # corresponding client url
+            if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
+                response_data = {
+                    "is_redirect": True,
+                    "redirect_url": (self.transaction_obj.success_url +
+                                        '?transaction_id=' + self.transaction_id),
+                    "transaction_message": {
+                        "status": 200,
+                        "is_capture": True,
+                        "message": "Duplicate verification"
+                    }
+                }
+                gateway_response_data = json.dumps(response_data)
+                return gateway_response_data, self.SUCCESS
+
+
+            url = (self.happy_credit_config.domain + CREDIT_REDEMPTION_API)
+            headers = self.get_payment_header()
+            response = requests.post(url, data=gateway_request_data,
+                                     headers=headers)
+            logger.info("Response from credit redemption api "
+                        "{}".format(response))
+            if response:
+                response_data = response.json()
+                logger.info(
+                    "Balance deduct response data {}".format(response_data))
+
+        except Exception as e:
+            logger.error("Exception in happy credits deduct balance session:"
+                         " {}".format(str(e)))
+            return {"error": e}, self.HAPPY_CREDITS_CONNECTION_ERROR
