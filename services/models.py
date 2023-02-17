@@ -69,6 +69,8 @@ class PaymentRequestData(AbstractDateTime, CustomerProfile):
                                  help_text="used to store total order amount")
     currency = models.CharField(null=False, blank=False, max_length=15,
                                 help_text="used to store currency details")
+    country_code = models.CharField(null=True, blank=True, max_length=15,
+                                    help_text="used to store country_code")
     api_client = models.ForeignKey('services.APIClient', null=True,
                                    blank=True,
                                    on_delete=models.PROTECT)

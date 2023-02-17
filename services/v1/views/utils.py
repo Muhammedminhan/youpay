@@ -33,6 +33,7 @@ def reformat_payment_request_data(data):
         data['base_amount'] = order.get('base_amount')
         data['VAT_amount'] = order.get('VAT_amount')
         data['currency'] = order.get('currency')
+        data['country_code'] = order.get('country_code')
 
         data['cart_amount'] = order.get('cart_amount')
         data['cart_currency'] = order.get('cart_currency')

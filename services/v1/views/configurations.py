@@ -20,8 +20,9 @@ from payments.constants import (
     PAYMENT_STATUS_PAID
 )
 from payments.models import YouPayTransactionData
-from services.constants import (APPLEPAY_SUPPORTED_NETWORKS, 
-    APPLEPAY_MERCHANT_CAPABILITIES, APPLEPAY_LABEL)
+from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
+                                APPLEPAY_MERCHANT_CAPABILITIES,
+                                APPLEPAY_LABEL)
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -200,6 +201,7 @@ class ConfigViewSet(ViewSet):
         if transaction:
             amount = transaction.amount
             currency = transaction.currency
+            country_code = transaction.country_code
             service_fee = transaction.service_fee
             VAT_amount = transaction.VAT_amount
             base_amount = transaction.base_amount
@@ -235,8 +237,7 @@ class ConfigViewSet(ViewSet):
 
                 "amount": amount,
                 "currency": currency,
-                "country_code": "AE",
-                # TODO : get country code from API client
+                "country_code": country_code + "AE",
                 "service_fee": service_fee,
                 "vat_amount": VAT_amount,
                 "base_amount": base_amount,
@@ -266,7 +267,6 @@ class ConfigViewSet(ViewSet):
             tabbypg_config[
                 "validation_json"] = tabbypg_obj.validation_json
         return tabbypg_config
-
 
     def get_applepay_config(self):
         applepay_config = {}
