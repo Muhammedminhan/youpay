@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 class HappyCreditsCreditBalance(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
-    def post(self, request):
+    def get(self, request, *args, **kwargs):
         """
         Method for fetching credit balance from happy credits
         """
         try:
-            transaction_id = request.data.get('transaction_id')
+            transaction_id = request.query_params.get('id')
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
