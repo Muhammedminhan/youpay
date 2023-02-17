@@ -589,5 +589,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             data_to_update = {
                 'transaction_id': self.transaction_id,
                 "payment_status": self.payment_status,
+                "payment_method": self.payment_method,
+                "payment_gateway": self.payment_gateway,
             }
             self.update_youpay_transaction_data(data_to_update)

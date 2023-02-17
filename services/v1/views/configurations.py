@@ -237,7 +237,7 @@ class ConfigViewSet(ViewSet):
 
                 "amount": amount,
                 "currency": currency,
-                "country_code": country_code + "AE",
+                "country_code": country_code,
                 "service_fee": service_fee,
                 "vat_amount": VAT_amount,
                 "base_amount": base_amount,
