@@ -12,6 +12,7 @@ class APIClientForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['name'].required = True
         self.fields['logo_file'].required = True
+        self.fields['mobile_logo_file'].required = True
         self.fields['color_code'].required = True
 
     class Meta:
@@ -19,12 +20,14 @@ class APIClientForm(forms.ModelForm):
         fields = '__all__'
 
     def clean_logo_file(self):
-        picture = self.cleaned_data.get("logo_file")
-        return api_client_logo_validate(picture)
+        if "logo_file" in self.changed_data:
+            picture = self.cleaned_data.get("logo_file")
+            return api_client_logo_validate(picture)
 
     def clean_mobile_logo_file(self):
-        mobile_logo = self.cleaned_data.get("mobile_logo_file")
-        return api_client_logo_validate(mobile_logo)
+        if "mobile_logo_file" in self.changed_data:
+            mobile_logo = self.cleaned_data.get("mobile_logo_file")
+            return api_client_logo_validate(mobile_logo)
 
     def clean_color_code(self):
         color_code = self.cleaned_data.get("color_code")
