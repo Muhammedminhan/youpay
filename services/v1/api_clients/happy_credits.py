@@ -10,7 +10,8 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.v1.views.common import YouPayTransactionCRUD
-from integrations.v1.gateway_clients.happy_credits import HappyCreditsManager
+from integrations.v1.gateway_clients.happy_credits import (
+    HappyCreditsManagement)
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class HappyCreditsCreditBalance(APIView, YouPayTransactionCRUD):
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
                 request_data = {'transaction_data': transaction_data}
-                happy_credits = HappyCreditsManager()
+                happy_credits = HappyCreditsManagement()
                 response_data, code = happy_credits.get_credit_balance(
                     request_data)
                 if response_data:
@@ -54,7 +55,7 @@ class HappyCreditsCreditBalance(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-class HappyCreditsDeductBalance(APIView):
+class HappyCreditsDebitBalance(APIView):
     response_obj = YouPayResponse()
 
     def post(self, request):
@@ -62,15 +63,9 @@ class HappyCreditsDeductBalance(APIView):
         Method for calling credit balance deduction api
         """
         try:
-            request_data = request.data
-            deduct_request_data = {
-                "transaction_id": decrypt_string(request_data.get('id')),
-                "payment_reference": request_data.get('payment_reference'),
-                "user_id": request_data.get('user_id')
-            }
-            happy_credits = HappyCreditsManager()
-            response_data, code = happy_credits.deduct_balance(
-                deduct_request_data)
+            happy_credits = HappyCreditsManagement()
+            response_data, code = happy_credits.debit_balance(
+                request.data)
             if response_data:
                 data = self.response_obj.get_success_dict(
                     code=code,
@@ -88,4 +83,3 @@ class HappyCreditsDeductBalance(APIView):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
-

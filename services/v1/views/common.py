@@ -83,6 +83,10 @@ class YouPayTransactionCRUD(object):
         data_dict['available_points'] = (data.get('available_points', None)
                                          or 0)
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
+        data_dict['credit_balance_amount'] = data.get('credit_balance_amount',
+                                                      None)
+        data_dict['available_credit_balance'] = data.get(
+            'available_credit_balance', None)
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
