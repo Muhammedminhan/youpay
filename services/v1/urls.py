@@ -12,6 +12,7 @@ from services.v1.views.configurations import ConfigViewSet
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
+from .api_clients.happy_credits import HappyCreditsCreditBalance
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView)
@@ -50,4 +51,7 @@ urlpatterns = [
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view()),
     path('amazonpg/verify/', AmazonPGVerification.as_view()),
+
+    # Happy Credits endpoints
+    path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),
 ]
