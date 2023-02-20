@@ -108,3 +108,13 @@ def get_adcb_redemption_redirect_url(response_data, transaction_obj): #full rede
 
 def get_adcb_response_url(url, transaction_id):
     return url+'?transaction_id=' + str(transaction_id)
+
+
+def get_credit_redemption_data(request_data, transaction_obj):
+    deduct_request_data = dict()
+    deduct_request_data["payment_reference"] = request_data.get(
+        'payment_reference')
+    deduct_request_data["amount_in_payment_currency"] = str(
+        transaction_obj.amount)
+    deduct_request_data["user_id"] = request_data.get('user_id')
+    return deduct_request_data

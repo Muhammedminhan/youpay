@@ -10,7 +10,8 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.v1.views.common import YouPayTransactionCRUD
-from integrations.v1.gateway_clients.happy_credits import HappyCreditsManager
+from integrations.v1.gateway_clients.happy_credits import (
+    HappyCreditsManagement)
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class HappyCreditsCreditBalance(APIView, YouPayTransactionCRUD):
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
                 request_data = {'transaction_data': transaction_data}
-                happy_credits = HappyCreditsManager()
+                happy_credits = HappyCreditsManagement()
                 response_data, code = happy_credits.get_credit_balance(
                     request_data)
                 if response_data:
@@ -49,6 +50,36 @@ class HappyCreditsCreditBalance(APIView, YouPayTransactionCRUD):
                     message="Transaction doesn't exists for happy credits")
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class HappyCreditsDebitBalance(APIView):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        Method for calling credit balance deduction api
+        """
+        try:
+            happy_credits = HappyCreditsManagement()
+            response_data, code = happy_credits.debit_balance(
+                request.data)
+            if response_data:
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=response_data
+                )
+                return Response(data,
+                                status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_error_dict(error_code=code)
+                return Response(data,
+                                status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error("Error in HappyCreditsDeductBalance: "
+                         "{}".format(str(e)))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
