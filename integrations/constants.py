@@ -107,7 +107,7 @@ AMAZONPG_VERIFY_API = "services/api/v1/verify/"
 AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"
 AMAZONPG_REFUND_API = "services/api/v1/refund/"
 
-APPLEPAY_SUCCESS_CODES = [
+APPLEPAY_SUCCESS_CODE_LISTS = [
     5200,
     5101,
     5102,

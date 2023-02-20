@@ -1,3 +1,6 @@
+from integrations.constants import APPLEPAY_SUCCESS_CODE_LISTS
+
+
 class YouPayResponse(object):
     """
     try use error codes as 4-digit numbers, after this onwards, also keep
@@ -47,6 +50,8 @@ class YouPayResponse(object):
     APPLE_PAY_SUCCESS = 5200
     APPLE_PAY_CREATED = 5201
 
+    # This is to provide success http status codes in API response
+    APPLEPAY_SUCCESS_CODES = APPLEPAY_SUCCESS_CODE_LISTS
     """Apple Pay back related ends"""
 
     """Youpay related begins"""
