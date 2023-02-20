@@ -14,7 +14,8 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT,
-                                    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT)
+                                    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT,
+                                    PAYMENT_REQUEST_TYPE_PAYMENT)
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
@@ -22,10 +23,15 @@ from integrations.constants import (
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer)
-from payments.constants import (PAYMENT_STATUS_PENDING,
+from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
+                                PAYMENT_STATUS_NONE, PAYMENT_STATUS_PAID,
+                                PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_ERROR,
                                 PAYMENT_METHOD_SAVED_CARD,
-                                PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL)
+                                PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
+                                PAYMENT_STATUS_DECLINED,
+                                PAYMENT_STATUS_DECLINED_RETRY,
+                                PAYMENT_METHOD_APPLEPAY)
 from services.v1.views.common import (is_redirect)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -473,10 +479,20 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             response_data = response.json()
             logger.info(
                 "Verify payment response data {}".format(response_data))
+            response_code = response_data.get('response_code', None)
+            if (response_code is None and
+                    response_data.get(
+                        "status").lower() == PAYMENT_STATUS_DECLINED):
+                '''This allow customer to go back to frontend and able to 
+                retry payments'''
+                payment_status = PAYMENT_STATUS_DECLINED_RETRY
+            else:
+                payment_status = response_data.get("status").lower()
+
             self.update_youpay_transaction_data(
                 {
                     'transaction_id': transaction_id,
-                    "payment_status": response_data.get("status").lower(),
+                    "payment_status": payment_status,
                     "payment_reference": response_data.get("reference"),
                     "approved": response_data.get("approved"),
                     "response_summary": response_data.get("response_summary"),
@@ -486,7 +502,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     'is_gcc_card': response_data.get("is_gcc_card"),
                     'card_issuer_country': response_data.get(
                         "card_issuer_country"),
-
                 }
             )
             redirect, response_data = is_redirect(transaction_id,
@@ -501,3 +516,82 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 .format(response.status_code, response.json()))
             return ({"error": response.json()},
                     self.CHECKOUTPG_CONNECTION_ERROR)
+
+    def update_status(self, request_data):
+        transaction_data = request_data.get('transaction_data')
+        payment_request_data = request_data.get('payment_request_data')
+        payment_response_data = request_data.get('payment_response_data')
+        self.transaction_id = transaction_data.get('transaction_id')
+        self.payment_method = PAYMENT_METHOD_APPLEPAY
+        self.transaction_obj = request_data.get('transaction_obj')
+
+        # status may be pending, authorized, paid
+        payment_stage = request_data.get('payment_stage')
+
+        logger.info("APPLE PAY Status update for {} to {} ".format(
+            self.transaction_id, payment_stage))
+
+        try:
+
+            response_data = {}
+            if payment_stage == PAYMENT_STATUS_PENDING:
+                self.payment_status = PAYMENT_STATUS_PENDING
+                response_code = self.APPLE_PAY_STATUS_UPDATED_PENDING
+                message = self.MESSAGE.get(response_code)
+
+            elif payment_stage == PAYMENT_STATUS_AUTHORIZED:
+                self.payment_status = PAYMENT_STATUS_AUTHORIZED
+                response_data["data"] = transaction_data
+                response_code = self.APPLE_PAY_STATUS_UPDATED_AUTHORIZED
+                message = self.MESSAGE.get(response_code)
+
+            elif payment_stage == PAYMENT_STATUS_PAID:
+                self.payment_status = PAYMENT_STATUS_PAID
+                response_code = self.APPLE_PAY_STATUS_UPDATED_PAID
+                message = self.MESSAGE.get(response_code)
+                redirect_url = (transaction_data['success_url'] +
+                                '?transaction_id=' + transaction_data[
+                                    'transaction_id'])
+
+                response_data['redirect_url'] = redirect_url
+                response_data['is_redirect'] = True
+
+                # storing Youpay to payment gateway request and response data
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=self.transaction_obj,
+                    transaction_id=self.transaction_id,
+                    request_data=json.dumps(payment_request_data),
+                    response_data=json.dumps(payment_response_data),
+                    request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
+                    request_method=REQUEST_METHOD_POST,
+                )
+
+            else:
+                message = (
+                    "APPLE PAY Invalid payment stage received {} for"
+                    " transaction id {}, status {}".format(
+                        payment_stage,
+                        self.transaction_id,
+                        self.payment_status))
+
+                self.payment_status = PAYMENT_STATUS_NONE
+                response_code = self.APPLE_PAY_BAD_REQUEST
+
+            logger.info(message)
+            return response_data, response_code
+
+
+        except Exception as e:
+            msg = (
+                "Error on processing applepay status update for transaction"
+                "id {}, err : {}".format(self.transaction_id, str(e)))
+            logger.error(msg)
+            return {"error": msg}, self.APPLE_PAY_CONNECTION_ERROR
+        finally:
+            data_to_update = {
+                'transaction_id': self.transaction_id,
+                "payment_status": self.payment_status,
+                "payment_method": self.payment_method,
+                "payment_gateway": self.payment_gateway,
+            }
+            self.update_youpay_transaction_data(data_to_update)

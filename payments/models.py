@@ -28,6 +28,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                  help_text="used to store total order amount")
     currency = models.CharField(null=False, blank=False, max_length=15,
                                 help_text="used to store currency details")
+    country_code = models.CharField(null=True, blank=True, max_length=15,
+                                    help_text="used to store country_code")
     ip = models.CharField(max_length=20, null=True, blank=True)
     invoice_id = models.CharField(max_length=120, null=True, blank=True)
     order_reference = models.CharField(max_length=120, null=True, blank=True)
@@ -198,8 +200,12 @@ class Announcement(AbstractDateTime, AbstractUserBase):
                                 related_name="gateway_announcement")
     offer_message = models.TextField(null=True, blank=True,
                                      help_text='Announcement message')
-    is_active = models.BooleanField(default=False, help_text='Determines '
-                                                             'whether the announcement is active or not.')
+    is_active = models.BooleanField(default=False,
+                                    help_text='Determines whether the '
+                                              'announcement is active or not.')
+    platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
+                                max_length=200, null=True, blank=True,
+                                help_text="Associated platform")
 
     def __str__(self):
         return str(self.gateway)

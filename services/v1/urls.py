@@ -7,8 +7,10 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackVerify)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
-                                                PaypalPayment)
-from services.v1.views.configurations import ConfigViewSet
+                                                PaypalPayment,
+                                                ApplePayStatusUpdateAPI)
+from services.v1.views.configurations import (ConfigViewSet,
+                                              ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
@@ -50,4 +52,10 @@ urlpatterns = [
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view()),
     path('amazonpg/verify/', AmazonPGVerification.as_view()),
+
+    # ApplePay endpoints
+    path('applepay/status-update/', ApplePayStatusUpdateAPI.as_view()),
+
+    # API for getting the client logo and color code
+    path('client-static-details/', ClientStaticFilesAPI.as_view()),
 ]
