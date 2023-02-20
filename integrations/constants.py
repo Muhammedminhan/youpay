@@ -106,3 +106,11 @@ AMAZONPG_AUTHENTICATE_API = "services/api/v1/authorization/"
 AMAZONPG_VERIFY_API = "services/api/v1/verify/"
 AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"
 AMAZONPG_REFUND_API = "services/api/v1/refund/"
+
+APPLEPAY_SUCCESS_CODES = [
+    5200,
+    5101,
+    5102,
+    5103,
+    5201,
+]

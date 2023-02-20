@@ -10,6 +10,7 @@ from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from core.utils import get_site_domain
+from integrations.constants import APPLEPAY_SUCCESS_CODES
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.serializers.checkoutpg_payment_request import (
     ApplepayPaymentDataSerializer
@@ -287,7 +288,8 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.update_status(
                     payment_data)
-                if code == YouPayResponse.APPLE_PAY_SUCCESS:
+
+                if code in APPLEPAY_SUCCESS_CODES:
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
