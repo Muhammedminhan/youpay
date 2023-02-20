@@ -19,7 +19,6 @@ class WorkflowCheckMiddleware(object):
     def __call__(self, request):
         # Code to be executed for each request before
         # the view (and later middleware) are called.
-        print("Middleware worked")
 
         payment_paths = YOUPAY_PAYMENT_PATHS
 
