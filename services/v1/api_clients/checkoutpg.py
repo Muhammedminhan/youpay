@@ -17,8 +17,8 @@ from integrations.v1.serializers.checkoutpg_payment_request import (
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD, \
-    TOKEN_TYPE_PAYPAL
+from services.constants import (TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD,
+                                TOKEN_TYPE_PAYPAL)
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 
 logger = logging.getLogger(__name__)
