@@ -4,7 +4,8 @@ from django.contrib import admin
 from django.core.cache import cache
 
 from core.admin import AdminAbstract
-from integrations.models import PaymentGateway, PaymentGatewayAPI
+from integrations.models import (PaymentGateway, PaymentGatewayAPI,
+                                 PaymentOptions)
 from .constants import (B2CP_CACHE_KEY, CHECKOUTPG_CACHE_KEY,
                         AMAZONPG_CACHE_KEY, TABBYPG_CACHE_KEY)
 
@@ -46,5 +47,12 @@ class PaymentGatewayAPIAdmin(AdminAbstract):
             obj.api_type) + obj.payment_gateway.domain + obj.api_path
 
 
+class PaymentOptionsAdmin(AdminAbstract):
+    list_display = ('name', 'gateway',)
+    search_fields = ('name', 'gateway__gateway_name',)
+    list_filter = ('gateway', 'created_by',)
+
+
 admin.site.register(PaymentGateway, PaymentGatewayAdmin)
 admin.site.register(PaymentGatewayAPI, PaymentGatewayAPIAdmin)
+admin.site.register(PaymentOptions,PaymentOptionsAdmin)
