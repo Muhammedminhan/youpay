@@ -153,30 +153,29 @@ def get_announcements(platform):
     """
     pg_list = [CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                TABBYPG_HUB_CODE, QITAF_HUB_CODE]
-    announcements_list = []
     payment_options_announcements = {}
+    announcements_dict = {}
     for pg in pg_list:
         announcement_objs = Announcement.objects.filter(
             gateway__code=pg, platform=platform, is_active=True)
         po_announcements = get_payment_options_announcements(
             announcement_objs)
-        for po_tuple in po_announcements:
-            payment_options_announcements[po_tuple[0]] = [po_tuple[1]]
-        pg_announcements = []
+        for po_dict in po_announcements:
+            payment_options_announcements[po_dict.get(
+                'payment_option__name')] = [po_dict.get('offer_message')]
         for obj in announcement_objs:
-            pg_announcements.append(obj.offer_message)
-        announcements_list.append(pg_announcements)
-    announcements_dict = {
-        "checkoutpg": payment_options_announcements,
-        "b2cpayback": announcements_list[1],
-        "tabbypg": announcements_list[2],
-        "qitafpg": announcements_list[3]
-    }
+            if obj.gateway.code == B2CPAYBACK_HUB_CODE:
+                announcements_dict['b2cpayback'] = obj.offer_message
+            elif obj.gateway.code == TABBYPG_HUB_CODE:
+                announcements_dict['tabbypg'] = obj.offer_message
+            elif obj.gateway.code == QITAF_HUB_CODE:
+                announcements_dict['qitafpg'] = obj.offer_message
+    announcements_dict['checkoutpg'] = payment_options_announcements
     return announcements_dict
 
 
 def get_payment_options_announcements(announcement_objs):
-    options_values_list = announcement_objs.exclude(
-        payment_option=None).values_list(
+    options_values_dict = announcement_objs.exclude(
+        payment_option=None).values(
         'payment_option__name', 'offer_message').distinct()
-    return options_values_list
+    return options_values_dict
