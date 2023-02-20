@@ -36,6 +36,13 @@ class YouPayResponse(object):
 
     """Apple Pay back related begins"""
     APPLE_PAY_CONNECTION_ERROR = 5000
+
+    # Begin: status update codes with Apple Pay
+    APPLE_PAY_STATUS_UPDATED_PENDING = 5101
+    APPLE_PAY_STATUS_UPDATED_AUTHORIZED = 5102
+    APPLE_PAY_STATUS_UPDATED_PAID = 5103
+    # End: status update codes with Apple Pay
+
     APPLE_PAY_BAD_REQUEST = 5400
     APPLE_PAY_SUCCESS = 5200
     APPLE_PAY_CREATED = 5201
@@ -63,6 +70,9 @@ class YouPayResponse(object):
             self.APPLE_PAY_BAD_REQUEST: "Applepay bad request",
             self.APPLE_PAY_SUCCESS: "Applepay request success",
             self.APPLE_PAY_CREATED: "Applepay request created",
+            self.APPLE_PAY_STATUS_UPDATED_PENDING: "Apple pay payment status updated to pending",
+            self.APPLE_PAY_STATUS_UPDATED_AUTHORIZED: "Apple pay payment status updated to authorized",
+            self.APPLE_PAY_STATUS_UPDATED_PAID: "Apple pay payment status updated to paid",
 
             self.PAYMENT_FAILED: "Payment failed",
             self.TABBYPG_CONNECTION_ERROR: "Tabbypg connection error",

@@ -533,20 +533,22 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         try:
 
-            response_code = self.APPLE_PAY_SUCCESS
             response_data = {}
             if payment_stage == PAYMENT_STATUS_PENDING:
                 self.payment_status = PAYMENT_STATUS_PENDING
-                message = "Apple pay payment updated to pending"
+                response_code = self.APPLE_PAY_STATUS_UPDATED_PENDING
+                message = self.MESSAGE[response_code]
 
             elif payment_stage == PAYMENT_STATUS_AUTHORIZED:
                 self.payment_status = PAYMENT_STATUS_AUTHORIZED
-                message = "Apple pay payment updated to authorized"
                 response_data["data"] = transaction_data
+                response_code = self.APPLE_PAY_STATUS_UPDATED_AUTHORIZED
+                message = self.MESSAGE[response_code]
 
             elif payment_stage == PAYMENT_STATUS_PAID:
                 self.payment_status = PAYMENT_STATUS_PAID
-                message = "Apple pay payment updated to paid"
+                response_code = self.APPLE_PAY_STATUS_UPDATED_PAID
+                message = self.MESSAGE[response_code]
                 redirect_url = (transaction_data['success_url'] +
                                 '?transaction_id=' + transaction_data[
                                     'transaction_id'])
