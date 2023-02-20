@@ -31,9 +31,10 @@ class WorkflowCheckMiddleware(object):
             # check transaction status
             transaction_id = decrypt_string(data.get('transaction_id', None))
 
-            obj = YouPayTransactionCRUD()
+            youpay_obj = YouPayTransactionCRUD()
 
-            transaction_obj = obj.get_youpay_transaction_data(transaction_id)
+            transaction_obj = youpay_obj.get_youpay_transaction_data(
+                transaction_id)
 
             transaction_status = transaction_obj.payment_status
 
@@ -70,16 +71,15 @@ class WorkflowCheckMiddleware(object):
         print("Process view_func ", view_func)
         print("Process view_args ", view_args)
         print("Process view_kwargs ", view_kwargs)
-        
+
         # get view name
         print("View name ", view_func.__name__)
-        
+
         special_marker = getattr(view_func, 'special_marker', False)
         if special_marker:
             # Do something
             print("Special marker found")
             return JsonResponse({"Status": True, })
-            
+
         else:
             print("Special marker not found")
-
