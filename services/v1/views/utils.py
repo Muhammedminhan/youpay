@@ -6,7 +6,6 @@ from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE
 )
-from integrations.models import PaymentOptions
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
 from services.constants import YOUPAY_SESSION_KEY
