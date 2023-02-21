@@ -21,3 +21,5 @@ CLIENT_LOGO_MAX_HEIGHT = 60
 ONE_MB = 1048576
 
 TABBYPG_STORE_CURRENCIES = ["AED", "SAR"]  # tabbypg active stores
+ADCBPG_STORE_CURRENCIES = ["AED", ]  # adcb active stores
+AMAZONPG_STORE_CURRENCIES = ["AED", "SAR"] # amazonpg active stores
