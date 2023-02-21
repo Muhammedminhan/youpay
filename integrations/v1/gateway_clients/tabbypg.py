@@ -276,7 +276,7 @@ class TabbyPaymentCancel(PaymentRequestView):
         redirect_url = get_redirect_url(transaction_object.cancel_url,
                                         transaction_id)
         logger.info(
-            "Payment cancelled for transaction_id : {}, "
+            "Youpay Tabby Payment cancelled for transaction_id : {}, "
             "order reference :"
             "{}".format(transaction_id,
                         transaction_object.order_reference))
