@@ -162,7 +162,7 @@ def get_announcements(platform):
             announcement_objs)
         for po_dict in po_announcements:
             payment_options_announcements[po_dict.get(
-                'payment_option__name')] = [po_dict.get('offer_message')]
+                'payment_option__name')] = po_dict.get('offer_message')
         for obj in announcement_objs:
             if obj.gateway.code == B2CPAYBACK_HUB_CODE:
                 announcements_dict['b2cpayback'] = obj.offer_message
@@ -170,6 +170,8 @@ def get_announcements(platform):
                 announcements_dict['tabbypg'] = obj.offer_message
             elif obj.gateway.code == QITAF_HUB_CODE:
                 announcements_dict['qitafpg'] = obj.offer_message
+            elif obj.gateway.code == AMAZONPG_HUB_CODE:
+                announcements_dict['amazonpg'] = obj.offer_message
     announcements_dict['checkoutpg'] = payment_options_announcements
     return announcements_dict
 
