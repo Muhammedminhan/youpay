@@ -118,5 +118,6 @@ def get_credit_redemption_data(request_data, transaction_obj):
         transaction_obj.amount)
     deduct_request_data["payment_currency"] = str(
         transaction_obj.currency)
+    deduct_request_data["platform"] = transaction_obj.platform
     deduct_request_data["user_id"] = request_data.get('user_id')
     return deduct_request_data
