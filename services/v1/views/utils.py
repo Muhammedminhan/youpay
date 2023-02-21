@@ -9,7 +9,7 @@ from integrations.constants import (
 from integrations.models import PaymentOptions
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
-from services.constants import YOUPAY_SESSION_KEY
+from services.constants import YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES
 
 logger = logging.getLogger(__name__)
 
@@ -105,12 +105,13 @@ def get_session_id_from_header(request):
     return session_id
 
 
-def get_payment_options(gateways, payback_config):
+def get_payment_options(transaction_obj, gateways, payback_config):
     """
     used to get gateways from payment gateway serializer
     """
 
     response_payment_options = {}
+    store_currency = transaction_obj.cart_currency
     for gateway in gateways:
         code = gateway.code
         if code == CHECKOUTPG_HUB_CODE:
@@ -138,7 +139,8 @@ def get_payment_options(gateways, payback_config):
         if code == B2CPAYBACK_HUB_CODE and payback_config:
             response_payment_options['adcb'] = True
 
-        if code == TABBYPG_HUB_CODE:
+        if code == TABBYPG_HUB_CODE and (store_currency in
+                                         TABBYPG_STORE_CURRENCIES) :
             response_payment_options['tabbypg'] = True
 
         if code == AMAZONPG_HUB_CODE:

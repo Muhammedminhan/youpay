@@ -113,7 +113,7 @@ class ConfigViewSet(ViewSet):
                         payback_config = b2c_payback_obj.get_configurations(
                             transaction.amount, transaction.currency)
                         payment_options = get_payment_options(
-                            gateways, payback_config)
+                            transaction, gateways, payback_config)
                         announcements_dict = get_announcements(
                             transaction.platform)
                         api_client = {'color': client.color_code,
