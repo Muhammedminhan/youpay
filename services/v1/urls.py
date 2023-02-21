@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from integrations.v1.gateway_clients.tabbypg import TabbyPaymentCancel
 
 from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
@@ -45,6 +46,7 @@ urlpatterns = [
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view()),
     path('tabbypg/verify/', TabbyPGVerification.as_view()),
+    path('tabbypg/back-to-store/', TabbyPaymentCancel.as_view()),
 
     # Amazonpg endpoints
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
