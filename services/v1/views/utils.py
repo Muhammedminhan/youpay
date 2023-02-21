@@ -9,7 +9,9 @@ from integrations.constants import (
 from integrations.models import PaymentOptions
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
-from services.constants import YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES
+from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
+                                ADCBPG_STORE_CURRENCIES,
+                                AMAZONPG_STORE_CURRENCIES)
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +107,7 @@ def get_session_id_from_header(request):
     return session_id
 
 
-def get_payment_options(transaction_obj, gateways, payback_config):
+def get_payment_options(transaction_obj, gateways):
     """
     used to get gateways from payment gateway serializer
     """
@@ -136,14 +138,16 @@ def get_payment_options(transaction_obj, gateways, payback_config):
             # Always active if checkout is active in API client
             response_payment_options['checkoutpg'] = True
 
-        if code == B2CPAYBACK_HUB_CODE and payback_config:
+        if code == B2CPAYBACK_HUB_CODE and (store_currency in
+                                            ADCBPG_STORE_CURRENCIES):
             response_payment_options['adcb'] = True
 
         if code == TABBYPG_HUB_CODE and (store_currency in
-                                         TABBYPG_STORE_CURRENCIES) :
+                                         TABBYPG_STORE_CURRENCIES):
             response_payment_options['tabbypg'] = True
 
-        if code == AMAZONPG_HUB_CODE:
+        if code == AMAZONPG_HUB_CODE and (store_currency in
+                                          AMAZONPG_STORE_CURRENCIES):
             response_payment_options['amazonpg'] = True
 
     return response_payment_options
