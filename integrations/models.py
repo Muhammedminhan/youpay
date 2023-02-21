@@ -2,6 +2,7 @@ from django.db import models
 
 from core.constants import REQUEST_METHOD_CHOICES, REQUEST_METHOD_NONE
 from core.models import AbstractDateTime, AbstractUserBase
+from core.validators import DecimalValidator
 from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
                                     PAYMENT_REQUEST_TYPE_CHOICES)
 
@@ -112,3 +113,23 @@ class PaymentOptions(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return str(self.name)
+
+
+class AdditionalFee(AbstractDateTime, AbstractUserBase):
+    payment_option = models.ForeignKey(
+        PaymentOptions, null=True, blank=True, on_delete=models.CASCADE,
+        related_name="additional_fee_payment_option"
+    )
+    percentage = models.DecimalField(
+        default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
+        help_text='Percentage value for the processing fee')
+    fixed_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text='Fixed value for the processing fee')
+    fixed_amount_currency = models.CharField(
+        null=True, blank=True, max_length=15,
+        help_text="Fixed amount currency")
+
+    def __str__(self):
+        return str(self.payment_option.id)

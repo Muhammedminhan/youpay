@@ -6,11 +6,12 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string
+from core.utils import decrypt_string, get_gateway_additional_fee
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
+from integrations.constants import PAYMENT_OPTION_PAYPAL
 from payments.constants import (
     PAYMENT_STATUS_ERROR,
     PAYMENT_STATUS_REJECTED,
@@ -121,12 +122,15 @@ class ConfigViewSet(ViewSet):
                                           client),
                                       'logo': get_logo_url(client)}
 
+                        paypal_config = self.get_paypal_config(payment_options)
+
                         response_data = self.retrieve_response(
                             api_client=api_client,
                             payment_options=payment_options,
                             tabbypg_config=tabbypg_config,
                             checkoutpg_config=checkout_config,
                             payback_config=payback_config,
+                            paypal_config=paypal_config,
                             transaction=transaction,
                             announcements_dict=announcements_dict,
                             status_code=status_code
@@ -175,6 +179,7 @@ class ConfigViewSet(ViewSet):
         checkoutpg_config = kwargs.get('checkoutpg_config', None)
         tabbypg_config = kwargs.get('tabbypg_config', None)
         payback_config = kwargs.get('payback_config', None)
+        paypal_config = kwargs.get('paypal_config', None)
         transaction = kwargs.get('transaction', None)
         announcements_dict = kwargs.get('announcements_dict', None)
         status_code = kwargs.get('status_code', None)
@@ -226,6 +231,7 @@ class ConfigViewSet(ViewSet):
                 "checkoutpg_config": checkoutpg_config,
                 "b2cpayback_config": payback_config,
                 "tabbypg_config": tabbypg_config,
+                "paypal_config": paypal_config,
 
                 "amount": amount,
                 "currency": currency,
@@ -258,6 +264,25 @@ class ConfigViewSet(ViewSet):
             tabbypg_config[
                 "validation_json"] = tabbypg_obj.validation_json
         return tabbypg_config
+
+    def get_paypal_config(self, payment_option):
+        """
+        returns paypal process fee config
+        only if paypal is enabled
+        """
+
+        paypal_config = {}
+        paypal_enabled = ("paypal" in payment_option,
+                          payment_option["paypal"])
+        if all(paypal_enabled):
+            additional_fee = get_gateway_additional_fee(PAYMENT_OPTION_PAYPAL)
+            dct_config = {
+                "percentage": additional_fee.percentage,
+                "fixed_amount": additional_fee.fixed_amount,
+                "fixed_amount_curreny": additional_fee.fixed_amount_currency
+            }
+            paypal_config["process_fee"] = dct_config
+        return paypal_config
 
 
 class ClientStaticFilesAPI(APIView):

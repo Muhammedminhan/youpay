@@ -5,7 +5,7 @@ from django.core.cache import cache
 
 from core.admin import AdminAbstract
 from integrations.models import (PaymentGateway, PaymentGatewayAPI,
-                                 PaymentOptions)
+                                 PaymentOptions, AdditionalFee)
 from .constants import (B2CP_CACHE_KEY, CHECKOUTPG_CACHE_KEY,
                         AMAZONPG_CACHE_KEY, TABBYPG_CACHE_KEY)
 
@@ -53,6 +53,14 @@ class PaymentOptionsAdmin(AdminAbstract):
     list_filter = ('gateway', 'created_by',)
 
 
+class AdditionalFeeAdmin(AdminAbstract):
+    list_display = ('payment_option', 'percentage', 'fixed_amount_currency',
+                    'fixed_amount', 'created_at', 'updated_at')
+    search_fields = ('payment_option__name',)
+    list_filter = ('payment_option', 'created_by',)
+
+
 admin.site.register(PaymentGateway, PaymentGatewayAdmin)
 admin.site.register(PaymentGatewayAPI, PaymentGatewayAPIAdmin)
 admin.site.register(PaymentOptions,PaymentOptionsAdmin)
+admin.site.register(AdditionalFee,AdditionalFeeAdmin)

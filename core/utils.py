@@ -17,7 +17,7 @@ from django.conf import settings
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE, TABBYPG_HUB_CODE
-from integrations.models import PaymentGateway
+from integrations.models import PaymentGateway, AdditionalFee
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +148,22 @@ def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
             logging.error('No gateway configuration instance found.')
             return None
     return gateway_config
+
+
+def get_gateway_additional_fee(payment_option):
+    """
+    :param payment option
+    :return:
+    """
+    additional_fee = None
+    if payment_option:
+        try:
+            additional_fee = AdditionalFee.objects.get(
+                payment_option__name=payment_option)
+        except(AdditionalFee.DoesNotExist, Exception):
+            logging.error('No additional fee instance found.')
+            return None
+    return additional_fee
 
 
 def get_site_domain(request):
