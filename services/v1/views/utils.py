@@ -6,7 +6,6 @@ from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE
 )
-from integrations.models import PaymentOptions
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
@@ -159,16 +158,17 @@ def get_announcements(platform):
     """
     pg_list = [CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                TABBYPG_HUB_CODE, QITAF_HUB_CODE]
-    payment_options_announcements = {}
+    payment_options_announcements_dict = {}
     announcements_dict = {}
     for pg in pg_list:
         announcement_objs = Announcement.objects.filter(
             gateway__code=pg, platform=platform, is_active=True)
-        po_announcements = get_payment_options_announcements(
+        payment_options_announcements = get_payment_options_announcements(
             announcement_objs)
-        for po_dict in po_announcements:
-            payment_options_announcements[po_dict.get(
-                'payment_option__name')] = [po_dict.get('offer_message')]
+        for payment_options_dict in payment_options_announcements:
+            payment_options_announcements_dict[payment_options_dict.get(
+                'payment_option__name')] = payment_options_dict.get(
+                'offer_message')
         for obj in announcement_objs:
             if obj.gateway.code == B2CPAYBACK_HUB_CODE:
                 announcements_dict['b2cpayback'] = obj.offer_message
@@ -176,7 +176,9 @@ def get_announcements(platform):
                 announcements_dict['tabbypg'] = obj.offer_message
             elif obj.gateway.code == QITAF_HUB_CODE:
                 announcements_dict['qitafpg'] = obj.offer_message
-    announcements_dict['checkoutpg'] = payment_options_announcements
+            elif obj.gateway.code == AMAZONPG_HUB_CODE:
+                announcements_dict['amazonpg'] = obj.offer_message
+    announcements_dict['checkoutpg'] = payment_options_announcements_dict
     return announcements_dict
 
 
