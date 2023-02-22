@@ -565,6 +565,42 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
                     request_method=REQUEST_METHOD_POST,
                 )
+                test_response_data = payment_response_data
+                print(
+                    "\n\nType Response data : {}".format(
+                        type(test_response_data)))
+                print("\n\nResponse data : {}".format(test_response_data))
+                if (response_code is None and
+                        test_response_data.get(
+                            "status").lower() == PAYMENT_STATUS_DECLINED):
+                    '''This allow customer to go back to frontend and able to 
+                    retry payments'''
+                    payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                else:
+                    payment_status = test_response_data.get("status").lower()
+
+                self.update_youpay_transaction_data(
+                    {
+                        'transaction_id': self.transaction_id,
+                        "payment_status": payment_status,
+                        "payment_reference": response_data.get("reference"),
+                        "approved": response_data.get("approved"),
+                        "response_summary": response_data.get(
+                            "response_summary"),
+                        "card_bin": response_data.get("card_bin"),
+                        "card_last4": response_data.get("card_last4"),
+                        'payment_scheme': response_data.get("payment_scheme"),
+                        'is_gcc_card': response_data.get("is_gcc_card"),
+                        'card_issuer_country': response_data.get(
+                            "card_issuer_country"),
+                    }
+                )
+                redirect, response_data = is_redirect(self.transaction_id,
+                                                      response_data)
+                if redirect:
+                    return response_data, self.SUCCESS
+                else:
+                    return response_data, self.PAYMENT_FAILED
 
             else:
                 message = (
