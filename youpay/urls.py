@@ -36,6 +36,7 @@ urlpatterns = [
     path('checkoutpg/', include('checkoutpgclient.urls')),
     path('amazontpg/', include('amazonpgclient.urls')),
     path('tabbypg/', include('tabbypgclient.urls')),
+    path('happycredits/', include('happycreditsclient.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
