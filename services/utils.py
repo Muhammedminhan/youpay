@@ -27,9 +27,12 @@ def api_client_logo_validate(image_file):
             raise forms.ValidationError(
                 "Choose a logo with size below {} MB".format(size_mb))
         width, height = get_image_dimensions(image_file)
-        if height or width > CLIENT_LOGO_MAX_DIMENSION:
+        if height > CLIENT_LOGO_MAX_DIMENSION:
             raise forms.ValidationError(
-                "The image is {} pixel high and {} pixel wide. It's supposed "
-                "to be {} px max in height and width.".format(
-                    height, width, CLIENT_LOGO_MAX_DIMENSION))
+                "The image is {} pixel high. It's supposed to be "
+                "{} px max".format(height, CLIENT_LOGO_MAX_DIMENSION))
+        if width > CLIENT_LOGO_MAX_DIMENSION:
+            raise forms.ValidationError(
+                "The image is {} pixel wide. It's supposed to be "
+                "{} px max".format(width, CLIENT_LOGO_MAX_DIMENSION))
     return image_file
