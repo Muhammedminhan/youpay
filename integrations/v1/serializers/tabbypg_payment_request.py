@@ -120,7 +120,10 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     def get_cancel_url(self, data):
         transaction_id = data.get('transaction_data').get(
             "transaction_id")
-        cancel_url = (data.get('transaction_data').get("cancel_url") +
+
+        site_domain = data.get('site_domain')
+        back_to_store_path = "/services/api/v1/tabbypg/back-to-store/"
+        cancel_url = (site_domain + back_to_store_path +
                       '?transaction_id=' + transaction_id)
         return cancel_url
 
