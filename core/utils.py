@@ -150,19 +150,25 @@ def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
     return gateway_config
 
 
-def get_gateway_additional_fee(payment_option):
+def get_gateway_additional_fee(payment_option_name):
     """
-    :param payment option
+    :param payment_option_name
     :return:
     """
     additional_fee = None
-    if payment_option:
+    if payment_option_name:
         try:
-            additional_fee = AdditionalFee.objects.get(
-                payment_option__name=payment_option)
+            additional_fee_obj = AdditionalFee.objects.get(
+                payment_option__name=payment_option_name)
         except(AdditionalFee.DoesNotExist, Exception):
             logging.error('No additional fee instance found.')
-            return None
+
+        if additional_fee_obj:
+            additional_fee = {
+                "percentage": additional_fee_obj.percentage,
+                "fixed_amount": additional_fee_obj.fixed_amount,
+                "fixed_amount_currency": (
+                    additional_fee_obj.fixed_amount_currency)}
     return additional_fee
 
 

@@ -270,18 +270,11 @@ class ConfigViewSet(ViewSet):
         returns paypal process fee config
         only if paypal is enabled
         """
-
         paypal_config = {}
-        paypal_enabled = ("paypal" in payment_option,
-                          payment_option["paypal"])
-        if all(paypal_enabled):
+        paypal_enabled = payment_option.get('paypal', False)
+        if paypal_enabled:
             additional_fee = get_gateway_additional_fee(PAYMENT_OPTION_PAYPAL)
-            dct_config = {
-                "percentage": additional_fee.percentage,
-                "fixed_amount": additional_fee.fixed_amount,
-                "fixed_amount_curreny": additional_fee.fixed_amount_currency
-            }
-            paypal_config["process_fee"] = dct_config
+            paypal_config["process_fee"] = additional_fee
         return paypal_config
 
 
