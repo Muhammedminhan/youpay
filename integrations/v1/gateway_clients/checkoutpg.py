@@ -517,7 +517,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             return ({"error": response.json()},
                     self.CHECKOUTPG_CONNECTION_ERROR)
 
-    def update_status(self, request_data):
+    def applepay_update_status(self, request_data):
         transaction_data = request_data.get('transaction_data')
         payment_request_data = request_data.get('payment_request_data')
         payment_response_data = request_data.get('payment_response_data')
@@ -565,7 +565,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
                     request_method=REQUEST_METHOD_POST,
                 )
-                test_response_data = payment_response_data
+                test_response_data = payment_response_data.get("payment")
                 print(
                     "\n\nType Response data : {}".format(
                         type(test_response_data)))
@@ -577,6 +577,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     retry payments'''
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
                 else:
+                    print("Didnt received status ",
+                          test_response_data.get("status"))
                     payment_status = test_response_data.get("status").lower()
 
                 self.update_youpay_transaction_data(

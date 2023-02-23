@@ -285,7 +285,7 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                     'payment_response_data': request.data.get('response_data')
                 }
                 checkout = CheckoutpgManager()
-                response_data, code = checkout.update_status(
+                response_data, code = checkout.applepay_update_status(
                     payment_data)
 
                 if code in self.response_obj.APPLEPAY_SUCCESS_CODES:
