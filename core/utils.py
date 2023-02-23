@@ -1,23 +1,24 @@
 import json
 import logging
-
-import redis
-
-from contextlib import contextmanager
-from time import sleep
 from base64 import b64decode, b64encode
+from contextlib import contextmanager
 from functools import wraps
 from os import urandom
+from time import sleep
 
+import redis
 from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
-from django.core.cache import cache
 from django.conf import settings
+from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
-from integrations.constants import CHECKOUTPG_HUB_CODE, TABBYPG_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway
+from payments.constants import (
+    PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY)
+from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
 
@@ -239,4 +240,47 @@ def get_redirect_url(url, transaction_id):
     """
     Method for return redirect urls
     """
-    return url +'?transaction_id=' + transaction_id
+    return url + '?transaction_id=' + transaction_id
+
+
+def process_checkoutpg_response_verification(transaction_id, response_data):
+    """
+    function to process checkoutpg response verification and update in youpay 
+    transaction table
+    """
+
+    logger.info(
+        "Verify payment response data {}".format(response_data))
+    response_code = response_data.get('response_code', None)
+    if (response_code is None and
+            response_data.get(
+                "status").lower() == PAYMENT_STATUS_DECLINED):
+        '''This allow customer to go back to frontend and able to 
+        retry payments'''
+        payment_status = PAYMENT_STATUS_DECLINED_RETRY
+    else:
+        payment_status = response_data.get("status").lower()
+
+    youpay_obj = YouPayTransactionCRUD()
+
+    youpay_obj.update_youpay_transaction_data(
+        {
+            'transaction_id': transaction_id,
+            "payment_status": payment_status,
+            "payment_reference": response_data.get("reference"),
+            "approved": response_data.get("approved"),
+            "response_summary": response_data.get("response_summary"),
+            "card_bin": response_data.get("card_bin"),
+            "card_last4": response_data.get("card_last4"),
+            'payment_scheme': response_data.get("payment_scheme"),
+            'is_gcc_card': response_data.get("is_gcc_card"),
+            'is_flagged': response_data.get("is_flagged"),
+            'is_fraud': response_data.get("is_fraud"),
+            'card_issuer_country': response_data.get(
+                "card_issuer_country"),
+        }
+    )
+    redirect, response_data = is_redirect(transaction_id,
+                                          response_data)
+    # redirect - boolean, response_data - response data(dict) for frontend
+    return redirect, response_data
