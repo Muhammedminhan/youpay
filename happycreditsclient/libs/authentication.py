@@ -4,7 +4,7 @@ from rest_framework import authentication
 from rest_framework import exceptions
 
 from integrations.constants import HAPPYCREDITS_HUB_CODE
-from services.v1.views.common import get_api_key_from_payment_gateway
+from services.v1.views.common import get_webhook_api_key_from_payment_gateway
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class SignatureAuthentication(authentication.BaseAuthentication):
     def fetch_user_data(self, api_key):
         """Retuns (User instance, API Key) or None if api_key is bad."""
         try:
-            api_secret = get_api_key_from_payment_gateway(
+            api_secret = get_webhook_api_key_from_payment_gateway(
                 HAPPYCREDITS_HUB_CODE)
             return api_secret
         except Exception:

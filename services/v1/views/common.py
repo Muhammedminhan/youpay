@@ -199,6 +199,18 @@ def get_api_key_from_payment_gateway(hubcode):
         return None
 
 
+def get_webhook_api_key_from_payment_gateway(hubcode):
+    """Method to get webhook api key from payment gateway"""
+    try:
+        payment_gateway = PaymentGateway.objects.get(code=hubcode)
+        return payment_gateway.webhook_api_key
+    except PaymentGateway.DoesNotExist:
+        logger.error(
+            "Unable to find payment gateway for hubcode '{}' ".format(
+                hubcode))
+        return None
+
+
 def add_payment_gateway_info_in_url(url, params, code):
     """
     Method to add payment gateway info in url
