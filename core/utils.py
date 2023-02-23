@@ -17,7 +17,8 @@ from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway
 from payments.constants import (
-    PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY)
+    PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
+    PAYMENT_STATUS_PAID, PAYMENT_STATUS_AUTHORIZED)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -259,7 +260,13 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
         retry payments'''
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
     else:
+        source = response_data.get('source', None)
         payment_status = response_data.get("status").lower()
+
+        if (source == 'applepay' and
+                payment_status == PAYMENT_STATUS_AUTHORIZED):
+            # For Applepay only
+            payment_status = PAYMENT_STATUS_PAID
 
     youpay_obj = YouPayTransactionCRUD()
 
