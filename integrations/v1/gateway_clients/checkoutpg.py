@@ -8,7 +8,8 @@ from rest_framework import status
 from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT
-from core.utils import get_checkoutpg_config
+from core.utils import (get_checkoutpg_config,
+                        process_checkoutpg_response_verification)
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
@@ -29,10 +30,7 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_ERROR,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
-                                PAYMENT_STATUS_DECLINED,
-                                PAYMENT_STATUS_DECLINED_RETRY,
                                 PAYMENT_METHOD_APPLEPAY)
-from services.v1.views.common import (is_redirect)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -477,35 +475,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         if response:
             response_data = response.json()
-            logger.info(
-                "Verify payment response data {}".format(response_data))
-            response_code = response_data.get('response_code', None)
-            if (response_code is None and
-                    response_data.get(
-                        "status").lower() == PAYMENT_STATUS_DECLINED):
-                '''This allow customer to go back to frontend and able to 
-                retry payments'''
-                payment_status = PAYMENT_STATUS_DECLINED_RETRY
-            else:
-                payment_status = response_data.get("status").lower()
+            redirect = process_checkoutpg_response_verification(
+                transaction_id, response_data)
 
-            self.update_youpay_transaction_data(
-                {
-                    'transaction_id': transaction_id,
-                    "payment_status": payment_status,
-                    "payment_reference": response_data.get("reference"),
-                    "approved": response_data.get("approved"),
-                    "response_summary": response_data.get("response_summary"),
-                    "card_bin": response_data.get("card_bin"),
-                    "card_last4": response_data.get("card_last4"),
-                    'payment_scheme': response_data.get("payment_scheme"),
-                    'is_gcc_card': response_data.get("is_gcc_card"),
-                    'card_issuer_country': response_data.get(
-                        "card_issuer_country"),
-                }
-            )
-            redirect, response_data = is_redirect(transaction_id,
-                                                  response_data)
             if redirect:
                 return response_data, self.SUCCESS
             else:
@@ -517,7 +489,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             return ({"error": response.json()},
                     self.CHECKOUTPG_CONNECTION_ERROR)
 
-    def update_status(self, request_data):
+    def applepay_update_status(self, request_data):
         transaction_data = request_data.get('transaction_data')
         payment_request_data = request_data.get('payment_request_data')
         payment_response_data = request_data.get('payment_response_data')
@@ -546,15 +518,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 message = self.MESSAGE.get(response_code)
 
             elif payment_stage == PAYMENT_STATUS_PAID:
-                self.payment_status = PAYMENT_STATUS_PAID
-                response_code = self.APPLE_PAY_STATUS_UPDATED_PAID
-                message = self.MESSAGE.get(response_code)
-                redirect_url = (transaction_data['success_url'] +
-                                '?transaction_id=' + transaction_data[
-                                    'transaction_id'])
-
-                response_data['redirect_url'] = redirect_url
-                response_data['is_redirect'] = True
 
                 # storing Youpay to payment gateway request and response data
                 self.create_youpay_to_payment_gateways_data(
@@ -565,6 +528,22 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
                     request_method=REQUEST_METHOD_POST,
                 )
+                test_response_data = payment_response_data.get("payment")
+
+                redirect, response_data = process_checkoutpg_response_verification(
+                    self.transaction_id, test_response_data)
+
+                if redirect:
+                    response_code = self.APPLE_PAY_STATUS_UPDATED_PAID
+                    message = self.MESSAGE.get(response_code)
+                    logger.info(message)
+
+                    return response_data, response_code
+                else:
+                    response_code = self.APPLE_PAY_BAD_REQUEST
+                    message = self.MESSAGE.get(response_code)
+                    logger.info(message)
+                    return response_data, response_code
 
             else:
                 message = (
