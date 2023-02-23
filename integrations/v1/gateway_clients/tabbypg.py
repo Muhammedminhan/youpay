@@ -4,6 +4,7 @@ import logging
 import requests
 from django.shortcuts import redirect
 from rest_framework import status
+from rest_framework.views import APIView
 
 from core.constants import (
     REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
@@ -18,9 +19,9 @@ from integrations.v1.serializers.tabbypg_payment_request import (
     TabbyPGPaymentRequestSerializer
 )
 from payments.constants import (
-    PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED)
-from services.v1.views.common import is_redirect
+from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -263,7 +264,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             )
 
 
-class TabbyPaymentCancel(PaymentRequestView):
+class TabbyPaymentCancel(YouPayTransactionCRUD, APIView):
     """
     This class is used for cancelling payment and redirecting to the
     cancel url in the transaction data
@@ -271,8 +272,16 @@ class TabbyPaymentCancel(PaymentRequestView):
 
     def get(self, request):
         transaction_id = request.GET.get('transaction_id')
+
         transaction_object = self.get_youpay_transaction_data(
             transaction_id)
+
+        # update transaction data with cancelled status
+        self.update_youpay_transaction_data({
+            'transaction_id': transaction_id,
+            'payment_status': PAYMENT_STATUS_CANCELLED
+        })
+
         redirect_url = get_redirect_url(transaction_object.cancel_url,
                                         transaction_id)
         logger.info(
