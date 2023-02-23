@@ -264,7 +264,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             )
 
 
-class TabbyPaymentCancel(APIView):
+class TabbyPaymentCancel(YouPayTransactionCRUD, APIView):
     """
     This class is used for cancelling payment and redirecting to the
     cancel url in the transaction data
@@ -272,12 +272,12 @@ class TabbyPaymentCancel(APIView):
 
     def get(self, request):
         transaction_id = request.GET.get('transaction_id')
-        youpay_obj = YouPayTransactionCRUD()
-        transaction_object = youpay_obj.get_youpay_transaction_data(
+
+        transaction_object = self.get_youpay_transaction_data(
             transaction_id)
 
         # update transaction data with cancelled status
-        youpay_obj.update_youpay_transaction_data({
+        self.update_youpay_transaction_data({
             'transaction_id': transaction_id,
             'payment_status': PAYMENT_STATUS_CANCELLED
         })
