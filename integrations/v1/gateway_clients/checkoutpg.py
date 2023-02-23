@@ -528,10 +528,13 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
                     request_method=REQUEST_METHOD_POST,
                 )
-                test_response_data = payment_response_data.get("payment")
+
+                res_data = payment_response_data.get("payment")
+                res_data['source'] = "applepay"  # to mark status as paid
 
                 redirect, response_data = process_checkoutpg_response_verification(
-                    self.transaction_id, test_response_data)
+                    self.transaction_id, res_data)
+                transaction_message = response_data.get('transaction_message')
 
                 if redirect:
                     response_code = self.APPLE_PAY_STATUS_UPDATED_PAID
