@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from happycreditsclient.models import HappyCreditsClientData
-from amazonpgclient.libs.authentication import SignatureAuthentication
+from happycreditsclient.libs.authentication import SignatureAuthentication
 from django.db import transaction as db_transaction
 from amazonpgclient.utils import wait_redis_lock
 
@@ -19,10 +19,8 @@ class WebhookListener(APIView):
     authentication_classes = (SignatureAuthentication,)
 
     def post(self, request):
-
         request_data = json.loads(request.data)
         try:
-
             payment_reference = request_data.get('payment_reference', None)
             logger.info("Happy credits webhook received for payment {}"
                         "".format(payment_reference))
@@ -34,12 +32,18 @@ class WebhookListener(APIView):
                 if transaction_obj:
                     transaction_obj.status = request_data.get(
                         'status')
-                    transaction_obj.request_data = request_data
+                    transaction_obj.request_data = json.dumps(request_data)
+                    transaction_obj.transaction_id = request_data.get(
+                        'transaction_id')
+                    transaction_obj.customer_email = request_data.get(
+                        'user_email')
                     transaction_obj.save()
                 else:
                     transaction_obj = HappyCreditsClientData.objects.create(
-                        request_data=request_data,
+                        transaction_id=request_data.get('transaction_id'),
+                        request_data=json.dumps(request_data),
                         status=request_data.get('status'),
+                        customer_email=request_data.get('user_email'),
                         payment_reference=request_data.get(
                             'payment_reference')
                     )

@@ -16,7 +16,8 @@ from integrations.v1.gateway_clients.utils import get_credit_redemption_data
 from integrations.messages import HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
-from core.utils import get_payment_gateway_config, decrypt_string
+from core.utils import (get_payment_gateway_config, decrypt_string,
+                        decrypt_payment_data)
 from payments.constants import (PAYMENT_METHOD_CREDIT_BALANCE,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_CANCELLED)
 from services.v1.views.common import is_redirect
@@ -132,7 +133,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                             "{}".format(response))
 
                 if response:
-                    response_data = response.json()
+                    response_decrypted = response.json()
+                    response_data = decrypt_payment_data(response_decrypted)
                     self.gateway_response_data = response_data
                     logger.info("Response from credit balance api: {}"
                                 .format(response_data))
@@ -142,7 +144,7 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                         )
                         self.credit_balance = response_data.get(
                             "credit_balance_in_payment_currency")
-                        return response.json(), self.SUCCESS
+                        return response_data, self.SUCCESS
 
                     logger.error("Error in credit balance api, {}".format(
                         response.text))
@@ -191,7 +193,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
             logger.info("Response from credit redemption api "
                         "{}".format(response))
             if response:
-                response_data = response.json()
+                response_decrypted = response.json()
+                response_data = decrypt_payment_data(response_decrypted)
                 logger.info(
                     "Balance deduct response data {}".format(response_data))
                 self.update_transaction_data(PAYMENT_REQUEST_REDEMPTION,
