@@ -491,6 +491,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     "payment_status": payment_status,
                     "payment_reference": response_data.get("reference"),
                     "approved": response_data.get("approved"),
+                    "is_fraud": response_data.get("is_fraud"),
+                    "is_flagged": response_data.get("is_flagged"),
                     "response_summary": response_data.get("response_summary"),
                     "card_bin": response_data.get("card_bin"),
                     "card_last4": response_data.get("card_last4"),
