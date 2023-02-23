@@ -256,8 +256,10 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
     if (response_code is None and
             response_data.get(
                 "status").lower() == PAYMENT_STATUS_DECLINED):
-        '''This allow customer to go back to frontend and able to 
-        retry payments'''
+        '''
+        This allow customer to go back to frontend and able to 
+        retry payments
+        '''
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
     else:
         source = response_data.get('source', None)
