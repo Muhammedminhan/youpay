@@ -5,6 +5,7 @@ from core.models import AbstractDateTime, AbstractUserBase
 from core.validators import DecimalValidator
 from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
                                     PAYMENT_REQUEST_TYPE_CHOICES)
+from services.constants import PAYMENT_OPTION_NAME_CHOICES
 
 YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
 
@@ -101,7 +102,9 @@ class YoupayToPaymentGatewaysData(AbstractDateTime):
 
 class PaymentOptions(AbstractDateTime, AbstractUserBase):
     name = models.CharField(
-        max_length=255, help_text='Name of the payment option')
+        max_length=255,  null=True, blank=True,
+        choices=PAYMENT_OPTION_NAME_CHOICES,
+        help_text='Name of the payment option')
     gateway = models.ForeignKey(
         'integrations.PaymentGateway', null=True,
         blank=True, on_delete=models.CASCADE,

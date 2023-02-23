@@ -1,4 +1,5 @@
 import logging
+import decimal
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -6,12 +7,13 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string, get_gateway_additional_fee
+from core.utils import (decrypt_string, get_gateway_additional_fee,
+                        decimal_rounded)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
-from integrations.constants import PAYMENT_OPTION_PAYPAL
+from services.constants import TOKEN_TYPE_PAYPAL
 from payments.constants import (
     PAYMENT_STATUS_ERROR,
     PAYMENT_STATUS_REJECTED,
@@ -122,7 +124,8 @@ class ConfigViewSet(ViewSet):
                                           client),
                                       'logo': get_logo_url(client)}
 
-                        paypal_config = self.get_paypal_config(payment_options)
+                        paypal_config = self.get_paypal_config(
+                            payment_options, transaction)
 
                         response_data = self.retrieve_response(
                             api_client=api_client,
@@ -265,7 +268,42 @@ class ConfigViewSet(ViewSet):
                 "validation_json"] = tabbypg_obj.validation_json
         return tabbypg_config
 
-    def get_paypal_config(self, payment_option):
+
+    def calculate_process_fee(self, additional_fee, transaction):
+        """
+        method to calculate new vat amount
+        based on the additional charges for paypal
+        """
+        order_amount = transaction.amount
+        service_fee = transaction.service_fee
+        order_currency = transaction.currency
+        process_fee = 0
+        vat_percent = decimal.Decimal(5)/100
+        fixed_amount = additional_fee.fixed_amount
+        if additional_fee.percentage:
+            process_fee = order_amount * (additional_fee.percentage/100)
+        if fixed_amount:
+            additional_fee_currency = additional_fee.fixed_amount_currency
+            if additional_fee_currency == order_currency:
+                process_fee += fixed_amount
+            # else:
+        process_fee = decimal_rounded(process_fee)
+        vat_amount = decimal_rounded(vat_percent *
+                                     (service_fee + process_fee))
+        total_amount = (order_amount + service_fee +
+                        process_fee + vat_amount)
+        total_amount = decimal_rounded(total_amount)
+
+        dct_process_fee = {
+            "processing_fee": process_fee,
+            "new_vat": vat_amount,
+            "service_fee": service_fee,
+            "total_amount": total_amount
+        }
+        return dct_process_fee
+
+
+    def get_paypal_config(self, payment_option, transaction_obj):
         """
         returns paypal process fee config
         only if paypal is enabled
@@ -273,8 +311,10 @@ class ConfigViewSet(ViewSet):
         paypal_config = {}
         paypal_enabled = payment_option.get('paypal', False)
         if paypal_enabled:
-            additional_fee = get_gateway_additional_fee(PAYMENT_OPTION_PAYPAL)
-            paypal_config["process_fee"] = additional_fee
+            additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
+            paypal_config["process_fee"] = self.calculate_process_fee(
+                additional_fee, transaction_obj
+            )
         return paypal_config
 
 

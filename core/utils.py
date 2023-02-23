@@ -8,6 +8,7 @@ from time import sleep
 from base64 import b64decode, b64encode
 from functools import wraps
 from os import urandom
+from decimal import ROUND_HALF_UP, Decimal
 
 from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
@@ -150,6 +151,19 @@ def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
     return gateway_config
 
 
+def decimal_rounded(amount):
+    if not isinstance(amount, Decimal):
+        amount = Decimal(amount)
+    amount_rounded = Decimal(
+        amount.quantize(Decimal('.0001'), rounding=ROUND_HALF_UP))
+    amount_rounded = (
+        amount_rounded.quantize(Decimal(1))
+        if amount_rounded == amount_rounded.to_integral()
+        else amount_rounded.normalize()
+    )
+    return amount_rounded
+
+
 def get_gateway_additional_fee(payment_option_name):
     """
     :param payment_option_name
@@ -158,17 +172,10 @@ def get_gateway_additional_fee(payment_option_name):
     additional_fee = None
     if payment_option_name:
         try:
-            additional_fee_obj = AdditionalFee.objects.get(
+            additional_fee = AdditionalFee.objects.get(
                 payment_option__name=payment_option_name)
-        except(AdditionalFee.DoesNotExist, Exception):
+        except (AdditionalFee.DoesNotExist, Exception):
             logging.error('No additional fee instance found.')
-
-        if additional_fee_obj:
-            additional_fee = {
-                "percentage": additional_fee_obj.percentage,
-                "fixed_amount": additional_fee_obj.fixed_amount,
-                "fixed_amount_currency": (
-                    additional_fee_obj.fixed_amount_currency)}
     return additional_fee
 
 
