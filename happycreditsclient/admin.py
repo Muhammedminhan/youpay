@@ -9,7 +9,8 @@ class HappyCreditsClientDataAdmin(admin.ModelAdmin):
     model = HappyCreditsClientData
 
     list_display = ('transaction_id', 'payment_reference', 'status',
-                    'customer_email', 'created_at', 'updated_at')
+                    'customer_email', 'available_credit_balance',
+                    'created_at', 'updated_at')
     search_fields = ('transaction_id', 'payment_reference', 'customer_email')
     list_filter = ('status', )
 
