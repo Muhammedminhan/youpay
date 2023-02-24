@@ -22,6 +22,9 @@ def update_youpay_transaction_status(sender, instance, created, **kwargs):
                         transaction_obj.payment_status == PAYMENT_STATUS_PAID)
         if all(check_status):
             transaction_obj.payment_status = PAYMENT_STATUS_PAID
+            transaction_obj.available_credit_balance = (
+                instance.available_credit_balance
+            )
             transaction_obj.save()
     except YouPayTransactionData.DoesNotExist:
         logger.error("Unable to find youpay transaction object for {}"

@@ -120,4 +120,5 @@ def get_credit_redemption_data(request_data, transaction_obj):
     deduct_request_data["platform"] = transaction_obj.platform
     deduct_request_data["user_email"] = request_data.get('customer_email')
     deduct_request_data["user_phone"] = request_data.get('customer_phone')
+    deduct_request_data["user_id"] = request_data.get('user_id')
     return deduct_request_data
