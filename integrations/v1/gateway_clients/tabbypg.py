@@ -237,9 +237,9 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         "response_summary": response_summary,
                     }
                 )
-                redirect, response_data = is_redirect(transaction_id,
-                                                      response_data)
-                if redirect:
+                redirect_flag, response_data = is_redirect(transaction_id,
+                                                           response_data)
+                if redirect_flag:
                     self.response_data = json.dumps(response_data)
                     return response_data, self.SUCCESS
                 else:
