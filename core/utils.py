@@ -246,13 +246,16 @@ def get_redirect_url(url, transaction_id):
 
 def process_checkoutpg_response_verification(transaction_id, response_data):
     """
-    function to process checkoutpg response verification and update in youpay 
+    function to process checkoutpg response verification and update in youpay
     transaction table
     """
 
     logger.info(
         "Verify payment response data {}".format(response_data))
     response_code = response_data.get('response_code', None)
+
+    is_flagged = response_data.get("is_flagged")
+
     if (response_code is None and
             response_data.get(
                 "status").lower() == PAYMENT_STATUS_DECLINED):
@@ -269,7 +272,8 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
                 payment_status == PAYMENT_STATUS_AUTHORIZED):
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID
-
+            is_flagged = response_data.get("risk").get("flagged")
+            print("\n\nis flagged in APple ", is_flagged)
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(
@@ -283,7 +287,7 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
             "card_last4": response_data.get("card_last4"),
             'payment_scheme': response_data.get("payment_scheme"),
             'is_gcc_card': response_data.get("is_gcc_card"),
-            'is_flagged': response_data.get("is_flagged"),
+            'is_flagged': is_flagged,
             'is_fraud': response_data.get("is_fraud"),
             'card_issuer_country': response_data.get(
                 "card_issuer_country"),
