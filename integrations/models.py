@@ -130,9 +130,6 @@ class AdditionalFee(AbstractDateTime, AbstractUserBase):
         decimal_places=4, max_digits=12, null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
         help_text='Fixed value for the processing fee')
-    fixed_amount_currency = models.CharField(
-        null=True, blank=True, max_length=15,
-        help_text="Fixed amount currency")
 
     def __str__(self):
         return str(self.payment_option.id)

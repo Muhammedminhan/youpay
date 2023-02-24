@@ -1,5 +1,5 @@
 import logging
-import decimal
+from decimal import Decimal
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -22,6 +22,7 @@ from payments.constants import (
     PAYMENT_STATUS_FLAGGED,
     PAYMENT_STATUS_PAID
 )
+from services.v1.views.common import YouPayTransactionCRUD
 from payments.models import YouPayTransactionData
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
@@ -268,41 +269,6 @@ class ConfigViewSet(ViewSet):
                 "validation_json"] = tabbypg_obj.validation_json
         return tabbypg_config
 
-
-    def calculate_process_fee(self, additional_fee, transaction):
-        """
-        method to calculate new vat amount
-        based on the additional charges for paypal
-        """
-        order_amount = transaction.amount
-        service_fee = transaction.service_fee
-        order_currency = transaction.currency
-        process_fee = 0
-        vat_percent = decimal.Decimal(5)/100
-        fixed_amount = additional_fee.fixed_amount
-        if additional_fee.percentage:
-            process_fee = order_amount * (additional_fee.percentage/100)
-        if fixed_amount:
-            additional_fee_currency = additional_fee.fixed_amount_currency
-            if additional_fee_currency == order_currency:
-                process_fee += fixed_amount
-            # else:
-        process_fee = decimal_rounded(process_fee)
-        vat_amount = decimal_rounded(vat_percent *
-                                     (service_fee + process_fee))
-        total_amount = (order_amount + service_fee +
-                        process_fee + vat_amount)
-        total_amount = decimal_rounded(total_amount)
-
-        dct_process_fee = {
-            "processing_fee": process_fee,
-            "new_vat": vat_amount,
-            "service_fee": service_fee,
-            "total_amount": total_amount
-        }
-        return dct_process_fee
-
-
     def get_paypal_config(self, payment_option, transaction_obj):
         """
         returns paypal process fee config
@@ -312,10 +278,75 @@ class ConfigViewSet(ViewSet):
         paypal_enabled = payment_option.get('paypal', False)
         if paypal_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
-            paypal_config["process_fee"] = self.calculate_process_fee(
-                additional_fee, transaction_obj
-            )
+            paypal_config["processing_fee_json"] = (
+                self.calculate_additional_charges(
+                    additional_fee, transaction_obj))
         return paypal_config
+
+    def calculate_processing_fee(self, additional_fee, base_amount,
+                                 vat_percent):
+        """
+        Calulate proccessing fee and vat percentage for processing fee
+        """
+        processing_fee = 0
+        if additional_fee:
+            percentage = additional_fee.percentage
+            fixed_amount = additional_fee.fixed_amount
+            if percentage:
+                processing_fee += base_amount * (percentage/100)
+            if fixed_amount:
+                processing_fee += fixed_amount
+
+        processing_fee_vat = vat_percent * processing_fee
+        return processing_fee, processing_fee_vat
+
+    def update_youpay_transaction_data(self, data, transaction_id):
+        """
+        Update transaction table with calculated value
+        """
+        dct_transaction_data = {
+            "transaction_id": transaction_id
+        }
+        dct_transaction_data.update(data)
+        transaction_crud = YouPayTransactionCRUD()
+        transaction_crud.update_youpay_transaction_data(dct_transaction_data)
+
+    def calculate_additional_charges(self, additional_fee, transaction):
+        """
+        method to calculate new vat amount
+        based on the additional charges for paypal
+        """
+        dct_processing_fee = {}
+        try:
+            order_amount = transaction.base_amount
+            service_fee = transaction.service_fee
+            decimal_notation = transaction.paypal_currency_decimal_notation
+            vat_percent = (transaction.paypal_vat_percentage/100)
+            processing_fee, processing_fee_vat = self.calculate_processing_fee(
+                additional_fee, order_amount, vat_percent
+            )
+            processing_fee = decimal_rounded(processing_fee, decimal_notation)
+            processing_fee_vat = decimal_rounded(processing_fee_vat,
+                                                 decimal_notation)
+            vat_amount = vat_percent * (service_fee + processing_fee)
+            vat_amount = decimal_rounded(vat_amount, decimal_notation)
+            total_amount = (order_amount + service_fee +
+                            processing_fee + vat_amount)
+            total_amount = decimal_rounded(total_amount, decimal_notation)
+            dct_processing_fee = {
+                "order_amount": order_amount,
+                "processing_fee": processing_fee,
+                "processing_fee_vat": processing_fee_vat,
+                "new_vat": vat_amount,
+                "service_fee": service_fee,
+                "total_amount": total_amount
+            }
+            self.update_youpay_transaction_data(dct_processing_fee,
+                                                transaction.transaction_id)
+        except Exception as e:
+            logger.error("Exception occurred during paypal "
+                         "processing fee calculation {}".format(str(e)))
+        return dct_processing_fee
 
 
 class ClientStaticFilesAPI(APIView):

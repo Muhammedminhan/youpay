@@ -82,6 +82,14 @@ class YouPayTransactionCRUD(object):
                                          or 0)
         data_dict['available_points'] = (data.get('available_points', None)
                                          or 0)
+        data_dict['paypal_vat'] = (data.get('new_vat', None)
+                                         or 0)
+        data_dict['paypal_processing_fee'] = (data.get('processing_fee',
+                                                       None) or 0)
+        data_dict['paypal_processing_fee_vat'] = (data.get('processing_fee_vat',
+                                                           None) or 0)
+        data_dict['paypal_total_amount'] = (data.get('total_amount', None)
+                                         or 0)
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
         
         data_dict['is_fraud'] = data.get('is_fraud', None)

@@ -54,13 +54,13 @@ class PaymentOptionsAdmin(AdminAbstract):
 
 
 class AdditionalFeeAdmin(AdminAbstract):
-    list_display = ('payment_option', 'percentage', 'fixed_amount_currency',
-                    'fixed_amount', 'created_at', 'updated_at')
+    list_display = ('payment_option', 'percentage', 'fixed_amount',
+                    'created_at', 'updated_at')
     search_fields = ('payment_option__name',)
     list_filter = ('payment_option', 'created_by',)
 
 
 admin.site.register(PaymentGateway, PaymentGatewayAdmin)
 admin.site.register(PaymentGatewayAPI, PaymentGatewayAPIAdmin)
-admin.site.register(PaymentOptions,PaymentOptionsAdmin)
-admin.site.register(AdditionalFee,AdditionalFeeAdmin)
+admin.site.register(PaymentOptions, PaymentOptionsAdmin)
+admin.site.register(AdditionalFee, AdditionalFeeAdmin)

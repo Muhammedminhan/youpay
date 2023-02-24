@@ -151,16 +151,11 @@ def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
     return gateway_config
 
 
-def decimal_rounded(amount):
+def decimal_rounded(amount, decimal_notation):
     if not isinstance(amount, Decimal):
         amount = Decimal(amount)
     amount_rounded = Decimal(
-        amount.quantize(Decimal('.0001'), rounding=ROUND_HALF_UP))
-    amount_rounded = (
-        amount_rounded.quantize(Decimal(1))
-        if amount_rounded == amount_rounded.to_integral()
-        else amount_rounded.normalize()
-    )
+        amount.quantize(decimal_notation))
     return amount_rounded
 
 
