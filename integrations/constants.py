@@ -94,7 +94,7 @@ ADCB_VERIFY_API = "/payback/api/v1/verify"
 ADCB_HEADERS = {'Content-Type': 'application/json'}
 
 ADCB_CLIENT_CODE = 'ADCBTP'
-ADCB_TOKEN_TYPE =  "card"
+ADCB_TOKEN_TYPE = "card"
 ADCB_REDEMPTION_CURRENCY = "AED"
 
 TABBYPG_CREATE_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/'
@@ -104,3 +104,5 @@ AMAZONPG_AUTHENTICATE_API = "services/api/v1/authorization/"
 AMAZONPG_VERIFY_API = "services/api/v1/verify/"
 AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"
 AMAZONPG_REFUND_API = "services/api/v1/refund/"
+
+YOUPAY_TABBY_BACKTOSTORE_PATH = '/services/api/v1/tabbypg/back-to-store/'
