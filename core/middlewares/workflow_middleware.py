@@ -26,12 +26,14 @@ class WorkflowCheckMiddleware(object):
 
         return response
 
-    def process_view(self, request, view_func):
+    def process_view(self, request, view_func, view_args, view_kwargs):
 
         cancelled_payment_check = getattr(view_func,
                                           'cancelled_payment_check', False)
         if cancelled_payment_check:
             # Do something
+            print("Cancell Payment Check \n\n\n")
+
             data = json.loads(request.body)
 
             # check transaction status
@@ -43,6 +45,8 @@ class WorkflowCheckMiddleware(object):
                 transaction_id)
 
             transaction_status = transaction_obj.payment_status
+
+            print("----------------- TRANSACTION STATUS ", transaction_status)
 
             if transaction_status == PAYMENT_STATUS_CANCELLED:
                 """
