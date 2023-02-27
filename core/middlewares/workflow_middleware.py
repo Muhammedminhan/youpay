@@ -3,7 +3,6 @@ import logging
 
 from django.http import JsonResponse
 
-from core.constants import YOUPAY_PAYMENT_PATHS
 from core.utils import decrypt_string
 from payments.constants import PAYMENT_STATUS_CANCELLED
 from services.v1.views.common import (YouPayTransactionCRUD)
@@ -20,11 +19,19 @@ class WorkflowCheckMiddleware(object):
         # Code to be executed for each request before
         # the view (and later middleware) are called.
 
-        payment_paths = YOUPAY_PAYMENT_PATHS
+        response = self.get_response(request)
 
-        if request.path in payment_paths and request.method == "POST":
-            # Middleware check for payment paths with POST method
+        # Code to be executed for each request/response after
+        # the view is called.
 
+        return response
+
+    def process_view(self, request, view_func):
+
+        cancelled_payment_check = getattr(view_func,
+                                          'cancelled_payment_check', False)
+        if cancelled_payment_check:
+            # Do something
             data = json.loads(request.body)
 
             # check transaction status
@@ -38,6 +45,11 @@ class WorkflowCheckMiddleware(object):
             transaction_status = transaction_obj.payment_status
 
             if transaction_status == PAYMENT_STATUS_CANCELLED:
+                """
+                This will redirect to cancel url, so wont able to pay for
+                already canceled transactions
+                """
+
                 transaction_message = (
                     "Transaction Failed : You are trying to pay for a "
                     "cancelled transaction. Please try again.")
@@ -47,7 +59,7 @@ class WorkflowCheckMiddleware(object):
                 redirect_url = (transaction_obj.cancel_url +
                                 '?transaction_id=' + transaction_id)
 
-                # Prepairing response data as per the payment API response
+                # Preparing response data as per the payment API response
                 data = {
                     "status": 200,
                     "is_redirect": True,
@@ -57,28 +69,3 @@ class WorkflowCheckMiddleware(object):
                 }
 
                 return JsonResponse(data, status=200)
-
-        response = self.get_response(request)
-
-        # Code to be executed for each request/response after
-        # the view is called.
-
-        return response
-
-    def process_view(self, request, view_func, view_args, view_kwargs):
-        print("Process request ", request)
-        print("Process view_func ", view_func)
-        print("Process view_args ", view_args)
-        print("Process view_kwargs ", view_kwargs)
-
-        # get view name
-        print("View name ", view_func.__name__)
-
-        special_marker = getattr(view_func, 'special_marker', False)
-        if special_marker:
-            # Do something
-            print("Special marker found")
-            return JsonResponse({"Status": True, })
-
-        else:
-            print("Special marker not found")

@@ -26,18 +26,16 @@ from payments.constants import (PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_ERROR,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL)
-from services.v1.views.common import (is_redirect, SimpleMiddlewareMixin)
+from services.v1.views.common import (is_redirect)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
 
-class CheckoutpgManager(SimpleMiddlewareMixin, PaymentRequestView,
-                        PaymentHandlers):
+class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
     def __init__(self):
-        self.dispatch()  # TODO need to check this case
         self.checkoutpg_config = get_checkoutpg_config()
         self.transaction_id = None
         self.payment_method = None
