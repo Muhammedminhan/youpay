@@ -6,10 +6,11 @@ from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE
 )
-from integrations.models import PaymentOptions
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
-from services.constants import YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES
+from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
+                                ADCBPG_STORE_CURRENCIES,
+                                AMAZONPG_STORE_CURRENCIES)
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +41,9 @@ def reformat_payment_request_data(data):
         data['cart_service_fee'] = order.get('cart_service_fee')
         data['cart_base_amount'] = order.get('cart_base_amount')
         data['cart_VAT_amount'] = order.get('cart_VAT_amount')
-        data['paypal_vat_percentage'] = order.get('paypal_vat_percentage')
-        data['paypal_currency_decimal_notation'] = (
-            order.get('paypal_currency_decimal_notation'))
+        data['additional_vat_percentage'] = order.get('additional_vat_percentage')
+        data['additional_currency_decimal_notation'] = (
+            order.get('additional_currency_decimal_notation'))
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')
@@ -108,7 +109,7 @@ def get_session_id_from_header(request):
     return session_id
 
 
-def get_payment_options(transaction_obj, gateways, payback_config):
+def get_payment_options(transaction_obj, gateways):
     """
     used to get gateways from payment gateway serializer
     """
@@ -139,14 +140,16 @@ def get_payment_options(transaction_obj, gateways, payback_config):
             # Always active if checkout is active in API client
             response_payment_options['checkoutpg'] = True
 
-        if code == B2CPAYBACK_HUB_CODE and payback_config:
+        if code == B2CPAYBACK_HUB_CODE and (store_currency in
+                                            ADCBPG_STORE_CURRENCIES):
             response_payment_options['adcb'] = True
 
         if code == TABBYPG_HUB_CODE and (store_currency in
-                                         TABBYPG_STORE_CURRENCIES) :
+                                         TABBYPG_STORE_CURRENCIES):
             response_payment_options['tabbypg'] = True
 
-        if code == AMAZONPG_HUB_CODE:
+        if code == AMAZONPG_HUB_CODE and (store_currency in
+                                          AMAZONPG_STORE_CURRENCIES):
             response_payment_options['amazonpg'] = True
 
     return response_payment_options
@@ -158,16 +161,17 @@ def get_announcements(platform):
     """
     pg_list = [CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                TABBYPG_HUB_CODE, QITAF_HUB_CODE]
-    payment_options_announcements = {}
+    payment_options_announcements_dict = {}
     announcements_dict = {}
     for pg in pg_list:
         announcement_objs = Announcement.objects.filter(
             gateway__code=pg, platform=platform, is_active=True)
-        po_announcements = get_payment_options_announcements(
+        payment_options_announcements = get_payment_options_announcements(
             announcement_objs)
-        for po_dict in po_announcements:
-            payment_options_announcements[po_dict.get(
-                'payment_option__name')] = [po_dict.get('offer_message')]
+        for payment_options_dict in payment_options_announcements:
+            payment_options_announcements_dict[payment_options_dict.get(
+                'payment_option__name')] = payment_options_dict.get(
+                'offer_message')
         for obj in announcement_objs:
             if obj.gateway.code == B2CPAYBACK_HUB_CODE:
                 announcements_dict['b2cpayback'] = obj.offer_message
@@ -175,7 +179,9 @@ def get_announcements(platform):
                 announcements_dict['tabbypg'] = obj.offer_message
             elif obj.gateway.code == QITAF_HUB_CODE:
                 announcements_dict['qitafpg'] = obj.offer_message
-    announcements_dict['checkoutpg'] = payment_options_announcements
+            elif obj.gateway.code == AMAZONPG_HUB_CODE:
+                announcements_dict['amazonpg'] = obj.offer_message
+    announcements_dict['checkoutpg'] = payment_options_announcements_dict
     return announcements_dict
 
 

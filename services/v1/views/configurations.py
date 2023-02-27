@@ -117,7 +117,7 @@ class ConfigViewSet(ViewSet):
                         payback_config = b2c_payback_obj.get_configurations(
                             transaction.amount, transaction.currency)
                         payment_options = get_payment_options(
-                            transaction, gateways, payback_config)
+                            transaction, gateways)
                         announcements_dict = get_announcements(
                             transaction.platform)
                         api_client = {'color': client.color_code,
@@ -319,8 +319,8 @@ class ConfigViewSet(ViewSet):
         try:
             order_amount = transaction.base_amount
             service_fee = transaction.service_fee
-            decimal_notation = transaction.paypal_currency_decimal_notation
-            vat_percent = (transaction.paypal_vat_percentage/100)
+            decimal_notation = transaction.additional_currency_decimal_notation
+            vat_percent = (transaction.additional_vat_percentage/100)
             processing_fee, processing_fee_vat = self.calculate_processing_fee(
                 additional_fee, order_amount, vat_percent
             )

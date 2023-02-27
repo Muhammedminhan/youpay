@@ -2,6 +2,7 @@ import logging
 
 from rest_framework import status
 
+from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
@@ -82,11 +83,11 @@ class YouPayTransactionCRUD(object):
                                          or 0)
         data_dict['available_points'] = (data.get('available_points', None)
                                          or 0)
-        data_dict['paypal_vat'] = data.get('new_vat', None)
-        data_dict['paypal_processing_fee'] = data.get('processing_fee', None)
-        data_dict['paypal_processing_fee_vat'] = data.get('processing_fee_vat'
+        data_dict['additional_vat'] = data.get('new_vat', None)
+        data_dict['additional_processing_fee'] = data.get('processing_fee', None)
+        data_dict['additional_processing_fee_vat'] = data.get('processing_fee_vat'
                                                           , None)
-        data_dict['paypal_total_amount'] = data.get('total_amount', None)
+        data_dict['additional_total_amount'] = data.get('total_amount', None)
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
         
         data_dict['is_fraud'] = data.get('is_fraud', None)
@@ -158,11 +159,16 @@ def is_redirect(transaction_id, transaction_message):
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
 
     response_code = transaction_message.get('response_code', None)
-    if response_code in RESPONSE_CODE_LIST:
+
+    '''This check is applicable only for checkout payments'''
+    if (response_code in RESPONSE_CODE_LIST and
+            youpay_transaction.payment_gateway == PAYMENT_GATEWAY_CHECKOUTPG):
         '''We are setting the redirect url to none so in frontend it will 
         redirect to the payment page, which will give another try to the 
-        customer in the current transaction'''
+        customer in the current transaction, only for checkoutpg'''
         redirect_url = None
+        logger.info("Checkout Response code checking for"
+                    "transaction id {}".format(transaction_id))
         response_data = {
             IS_REDIRECT: False,
             REDIRECT_URL: redirect_url,

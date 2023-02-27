@@ -177,25 +177,25 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
-    paypal_vat_percentage = models.DecimalField(
+    additional_vat_percentage = models.DecimalField(
         default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
         help_text='Percentage value of VAT')
-    paypal_currency_decimal_notation = models.DecimalField(
+    additional_currency_decimal_notation = models.DecimalField(
         default=0.0, decimal_places=4, null=True, blank=True, max_digits=5,
         help_text="used to store currency decimal notation")
-    paypal_vat = models.DecimalField(
+    additional_vat = models.DecimalField(
         decimal_places=4, max_digits=12,  null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
         help_text="used to store new vat amount")
-    paypal_processing_fee = models.DecimalField(
+    additional_processing_fee = models.DecimalField(
         decimal_places=4, max_digits=12,  null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
-        help_text="used to store vat paypal processing fee")
-    paypal_processing_fee_vat = models.DecimalField(
+        help_text="used to store calculated processing fee")
+    additional_processing_fee_vat = models.DecimalField(
         decimal_places=4, max_digits=12,  null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
-        help_text="used to store vat amount with the paypal processing fee")
-    paypal_total_amount = models.DecimalField(
+        help_text="used to store vat amount of the processing fee")
+    additional_total_amount = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
         help_text="used to store total amount after processing fee "
