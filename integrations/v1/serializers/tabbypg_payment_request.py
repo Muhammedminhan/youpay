@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 from core.utils import (
     get_app_config, encrypt_string, get_payment_gateway_config)
 from core.exceptions import ValidationFailed
-from integrations.constants import TABBYPG_HUB_CODE, TABBYPG_CACHE_KEY, \
-    YOUPAY_TABBY_BACKTOSTORE_PATH
+from integrations.constants import (TABBYPG_HUB_CODE, TABBYPG_CACHE_KEY,
+                                    YOUPAY_TABBY_BACKTOSTORE_PATH)
 from services.v1.views.common import add_payment_gateway_info_in_url
 
 
