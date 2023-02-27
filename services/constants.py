@@ -1,6 +1,25 @@
 TOKEN_TYPE_SAVED_CARD = 'savedcard'
 TOKEN_TYPE_CARD = 'card'
 TOKEN_TYPE_PAYPAL = 'paypal'
-RESPONSE_CODE_LIST = ['20005', '20051', '20014', '012', '029', '050', '079',
-                      '084', '034']
+RESPONSE_CODE_LIST = [
+    '20005',  # Declined - Do not honour
+    '20051',  # Insufficient funds
+    '20014',  # Invalid card number
+    '012',  # Invalid payment
+    '029',
+    '050',
+    '079',
+    '084',
+    '034',
+    '20151',  # Declined - Payment authorization initiated but failed
+    None
+]
 YOUPAY_SESSION_KEY = "youpay-session-id"
+
+CLIENT_LOGO_MAX_SIZE = 4194304
+CLIENT_LOGO_MAX_DIMENSION = 60
+ONE_MB = 1048576
+
+TABBYPG_STORE_CURRENCIES = ["AED", "SAR"]  # tabbypg active stores
+ADCBPG_STORE_CURRENCIES = ["AED", ]  # adcb active stores
+AMAZONPG_STORE_CURRENCIES = ["AED", "SAR"] # amazonpg active stores

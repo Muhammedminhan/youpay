@@ -12,35 +12,44 @@ from core.validators import DecimalValidator, MinLengthValidator, URLValidator
 
 # Create your models here.
 class APIClient(AbstractDateTime, AbstractUserBase):
-    name = models.CharField(null=False, blank=True, max_length=100,
-                            help_text='Name of the API Client')
-    api_key = models.CharField(max_length=100, blank=True,
-                               help_text='API Key',
-                               validators=[MinLengthValidator(20)],
-                               unique=True)
-    api_secret = models.CharField(max_length=100, blank=True,
-                                  validators=[MinLengthValidator(20)])
-    is_active = models.BooleanField(default=False,
-                                    help_text='Denotes whether the API '
-                                              'Client is active or not')
-    webhook_url = models.CharField(max_length=500, blank=True,
-                                   help_text='Webhook URL',
-                                   validators=[URLValidator()])
-    client_domain = models.CharField(null=True, blank=True, max_length=100,
-                                     help_text='Client Domain, example : '
-                                               'https://google.com/')
-    logo_file = models.ImageField(upload_to='logo_files', blank=True,
-                                  null=True, help_text='Logo for the client')
+    name = models.CharField(
+        null=False, blank=True, max_length=100,
+        help_text='Name of the API Client')
+    api_key = models.CharField(
+        max_length=100, blank=True, help_text='Client API Key',
+        validators=[MinLengthValidator(20)], unique=True)
+    api_secret = models.CharField(
+        max_length=100, blank=True, validators=[MinLengthValidator(20)])
+    is_active = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the API Client is active or not')
+    webhook_url = models.CharField(
+        max_length=500, blank=True,
+        help_text='Webhook URL, example https://youpay-api-client-domain.com/'
+                  'youpay/api/v1/webhook/',
+        validators=[URLValidator()])
+    client_domain = models.CharField(
+        null=True, blank=True, max_length=100,
+        help_text='Client Domain, '
+                  'example :  https://youpay-api-client-domain.com/')
+    logo_file = models.ImageField(
+        upload_to='logo_files', blank=True, null=True,
+        help_text='Logo for the client. Note that the max height, width of '
+                  'the logo should be 60px and the file size has to be '
+                  'below 4MB.')
     mobile_logo_file = models.ImageField(
         upload_to='mobile_logo_file', blank=True, null=True,
-        help_text='Mobile logo for the client')
-    color_code = models.CharField(max_length=20, blank=True, null=True,
-                                  validators=[MinLengthValidator(4)],
-                                  help_text='Color code for the client')
-    client_code = models.CharField(max_length=100, blank=True, null=True,
-                                   help_text='Client Code')
-    payment_gateway = models.ManyToManyField('integrations.PaymentGateway',
-                                             blank=True)
+        help_text='Mobile logo for the client. Note that the max height, '
+                  'width of the logo should be 60px and the file size has to '
+                  'be below 4MB.')
+    color_code = models.CharField(
+        max_length=20, blank=True, null=True,
+        validators=[MinLengthValidator(4)],
+        help_text='Color code for the client in hex')
+    client_code = models.CharField(
+        max_length=100, blank=True, null=True, help_text='Client Code')
+    payment_gateway = models.ManyToManyField(
+        'integrations.PaymentGateway', blank=True)
     validate_session = models.BooleanField(
         default=False,
         help_text='Denotes whether the API Client session validation is'

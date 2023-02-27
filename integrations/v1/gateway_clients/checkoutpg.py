@@ -25,7 +25,9 @@ from integrations.v1.serializers.checkoutpg_payment_request import (
 from payments.constants import (PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_ERROR,
                                 PAYMENT_METHOD_SAVED_CARD,
-                                PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL)
+                                PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
+                                PAYMENT_STATUS_DECLINED,
+                                PAYMENT_STATUS_DECLINED_RETRY)
 from services.v1.views.common import (is_redirect)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -473,10 +475,20 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             response_data = response.json()
             logger.info(
                 "Verify payment response data {}".format(response_data))
+            response_code = response_data.get('response_code', None)
+            if (response_code is None and
+                    response_data.get(
+                        "status").lower() == PAYMENT_STATUS_DECLINED):
+                '''This allow customer to go back to frontend and able to 
+                retry payments'''
+                payment_status = PAYMENT_STATUS_DECLINED_RETRY
+            else:
+                payment_status = response_data.get("status").lower()
+
             self.update_youpay_transaction_data(
                 {
                     'transaction_id': transaction_id,
-                    "payment_status": response_data.get("status").lower(),
+                    "payment_status": payment_status,
                     "payment_reference": response_data.get("reference"),
                     "approved": response_data.get("approved"),
                     "is_fraud": response_data.get("is_fraud"),
@@ -488,7 +500,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     'is_gcc_card': response_data.get("is_gcc_card"),
                     'card_issuer_country': response_data.get(
                         "card_issuer_country"),
-
                 }
             )
             redirect, response_data = is_redirect(transaction_id,
