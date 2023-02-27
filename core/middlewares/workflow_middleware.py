@@ -3,6 +3,7 @@ import logging
 
 from django.http import JsonResponse
 
+from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from payments.constants import PAYMENT_STATUS_CANCELLED
 
@@ -46,6 +47,9 @@ class WorkflowCheckMiddleware(object):
 
             youpay_obj = YouPayTransactionCRUD()
 
+            # to import youpay codes
+            youpay_message_obj = YouPayResponse()
+
             if transaction_status == PAYMENT_STATUS_CANCELLED:
                 """
                 This will redirect to cancel url, so wont able to pay for
@@ -63,11 +67,10 @@ class WorkflowCheckMiddleware(object):
 
                 # Preparing response data as per the payment API response
                 data = {
-                    "status": 200,
                     "is_redirect": True,
                     "redirect_url": redirect_url,
                     "message": transaction_message,
-                    "code": 1000,
+                    "code": youpay_message_obj.MIDDLEWARE_REDIRECTED,
                 }
 
                 return JsonResponse(data, status=200)
@@ -93,11 +96,10 @@ class WorkflowCheckMiddleware(object):
 
                 # Preparing response data as per the payment API response
                 data = {
-                    "status": 200,
                     "is_redirect": True,
                     "redirect_url": redirect_url,
                     "message": message,
-                    "code": 1000,
+                    "code": youpay_message_obj.MAX_PAYMENT_ATTEMPT_REACHED,
                 }
 
                 return JsonResponse(data, status=200)
