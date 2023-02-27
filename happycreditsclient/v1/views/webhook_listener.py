@@ -34,18 +34,22 @@ class WebhookListener(APIView):
                         'status')
                     transaction_obj.request_data = json.dumps(request_data)
                     transaction_obj.transaction_id = request_data.get(
-                        'transaction_id')
+                        'reference_id')
                     transaction_obj.customer_email = request_data.get(
                         'user_email')
+                    transaction_obj.available_credit_balance = (
+                        request_data.get('available_credit_balance'))
                     transaction_obj.save()
                 else:
                     transaction_obj = HappyCreditsClientData.objects.create(
-                        transaction_id=request_data.get('transaction_id'),
+                        transaction_id=request_data.get('reference_id'),
                         request_data=json.dumps(request_data),
                         status=request_data.get('status'),
                         customer_email=request_data.get('user_email'),
                         payment_reference=request_data.get(
-                            'payment_reference')
+                            'payment_reference'),
+                        available_credit_balance=request_data.get(
+                            'available_credit_balance')
                     )
                 response_data = {'message': "HappyCredits webhook listener "
                                             "successfully processed data",

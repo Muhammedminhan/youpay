@@ -2,14 +2,12 @@ import json
 import requests
 import logging
 
-from rest_framework import status
-
 from core.constants import (PAYMENT_GATEWAY_HAPPYCREDITS, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from integrations.constants import (
-    HAPPYCREDITS_HUB_CODE, HAPPYCREDITS_CACHE_KEY, CREDIT_BALANCE_API,
-    CREDIT_REDEMPTION_API, PAYMENT_REQUEST_CREDIT_BALANCE,
-    PAYMENT_REQUEST_REDEMPTION)
+    HAPPYCREDITS_HUB_CODE, HAPPYCREDITS_CACHE_KEY,
+    HAPPY_CREDITS_CREDIT_BALANCE_API, HAPPY_CREDITS_REDEMPTION_API,
+    PAYMENT_REQUEST_CREDIT_BALANCE, PAYMENT_REQUEST_REDEMPTION)
 from integrations.v1.serializers.happy_credits_payment_request import (
     CreditBalanceSerializer)
 from integrations.v1.gateway_clients.utils import get_credit_redemption_data
@@ -123,7 +121,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                 request_data = json.dumps(request_data)
                 logger.info("Youpay sending credit balance request data "
                             "to happy credits is {}".format(request_data))
-                url = (self.happy_credit_config.domain + CREDIT_BALANCE_API)
+                url = (self.happy_credit_config.domain +
+                       HAPPY_CREDITS_CREDIT_BALANCE_API)
                 headers = self.get_payment_header()
                 self.transaction_obj = self.get_youpay_transaction_data(
                     self.transaction_id)
@@ -160,9 +159,10 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                 return {None}, self.HAPPY_CREDITS_CONNECTION_ERROR
 
         except Exception as e:
-            error = "Error in happy credits credit balance api: {}".format(e)
+            error = ("Error in happy credits credit balance api: "
+                     "{}".format(str(e)))
             logger.error("Exception in happy credits credit "
-                         "balance api: {}".format(e))
+                         "balance api: {}".format(str(e)))
             return {"error": error}, self.HAPPY_CREDITS_CONNECTION_ERROR
 
         finally:
@@ -186,7 +186,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
             if self.transaction_obj is None:
                 return None, self.TRANSACTION_NOT_FOUND
 
-            url = (self.happy_credit_config.domain + CREDIT_REDEMPTION_API)
+            url = (self.happy_credit_config.domain +
+                   HAPPY_CREDITS_REDEMPTION_API)
             headers = self.get_payment_header()
             response = requests.post(url, data=request_data,
                                      headers=headers)
@@ -208,13 +209,13 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                 else:
                     return response_data, self.PAYMENT_FAILED
             else:
-                logger.error("Error while deducting balance from happycredits"
+                logger.error("Error while deducting amount from happycredits"
                              " status: {}, reason {} "
                              "".format(response.status_code, response.text))
                 return None, self.HAPPY_CREDITS_CONNECTION_ERROR
         except Exception as e:
             logger.error("Exception in happy credits deduct balance session:"
                          " {}".format(str(e)))
-            return {"error": e}, self.HAPPY_CREDITS_CONNECTION_ERROR
+            return {"error": str(e)}, self.HAPPY_CREDITS_CONNECTION_ERROR
         finally:
             self.update_payment_gateway(PAYMENT_REQUEST_REDEMPTION)
