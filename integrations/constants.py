@@ -109,5 +109,5 @@ AMAZONPG_VERIFY_API = "services/api/v1/verify/"
 AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"
 AMAZONPG_REFUND_API = "services/api/v1/refund/"
 
-CREDIT_BALANCE_API = 'payments/api/v2/happycredits/user-balance/'
-CREDIT_REDEMPTION_API = 'payments/api/v2/happycredits/redemption'
+HAPPY_CREDITS_CREDIT_BALANCE_API = 'wallet/api/v1.1/happycredits/user-balance/'
+HAPPY_CREDITS_REDEMPTION_API = 'wallet/api/v1.1/happycredits/redemption/'
