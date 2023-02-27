@@ -5,7 +5,6 @@ from django.http import JsonResponse
 
 from core.utils import decrypt_string
 from payments.constants import PAYMENT_STATUS_CANCELLED
-from services.v1.views.common import (YouPayTransactionCRUD)
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +30,12 @@ class WorkflowCheckMiddleware(object):
         cancelled_payment_check = getattr(view_func,
                                           'cancelled_payment_check', False)
         if cancelled_payment_check:
-            # Do something
-            print("Cancell Payment Check \n\n\n")
-
             data = json.loads(request.body)
 
             # check transaction status
             transaction_id = decrypt_string(data.get('transaction_id', None))
+
+            from services.v1.views.common import (YouPayTransactionCRUD)
 
             youpay_obj = YouPayTransactionCRUD()
 
@@ -46,7 +44,7 @@ class WorkflowCheckMiddleware(object):
 
             transaction_status = transaction_obj.payment_status
 
-            print("----------------- TRANSACTION STATUS ", transaction_status)
+            youpay_obj = YouPayTransactionCRUD()
 
             if transaction_status == PAYMENT_STATUS_CANCELLED:
                 """
@@ -58,7 +56,7 @@ class WorkflowCheckMiddleware(object):
                     "Transaction Failed : You are trying to pay for a "
                     "cancelled transaction. Please try again.")
 
-                logger.error(transaction_message + str(transaction_id))
+                logger.info(transaction_message + str(transaction_id))
 
                 redirect_url = (transaction_obj.cancel_url +
                                 '?transaction_id=' + transaction_id)
@@ -73,3 +71,42 @@ class WorkflowCheckMiddleware(object):
                 }
 
                 return JsonResponse(data, status=200)
+
+            if transaction_obj.retry_count >= 5:
+                """
+                if retry count is more than 5, then cancell the transaction
+                and redirect to cancel url
+                """
+
+                message = ("Payment Cancelled : Maximum retry count reached"
+                           " for transaction id: {} ".format(transaction_id))
+
+                youpay_obj.update_youpay_transaction_data(
+                    {
+                        "transaction_id": transaction_id,
+                        "payment_status": PAYMENT_STATUS_CANCELLED
+                    }
+                )
+
+                redirect_url = (transaction_obj.cancel_url +
+                                '?transaction_id=' + transaction_id)
+
+                # Preparing response data as per the payment API response
+                data = {
+                    "status": 200,
+                    "is_redirect": True,
+                    "redirect_url": redirect_url,
+                    "message": message,
+                    "code": 1000,
+                }
+
+                return JsonResponse(data, status=200)
+            else:
+
+                retry_count = transaction_obj.retry_count + 1
+                youpay_obj.update_youpay_transaction_data(
+                    {
+                        "transaction_id": transaction_id,
+                        "retry_count": retry_count
+                    }
+                )
