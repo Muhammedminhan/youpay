@@ -2,7 +2,7 @@ import logging
 
 from django.contrib import admin
 
-from .models import AppConfig
+from .models import AppConfig, Currency, Country
 from django.core.cache import cache
 
 admin.site.site_header = 'YouPay Administration'
@@ -43,4 +43,21 @@ class AppConfigAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
+class CurrencyAdmin(AdminAbstract):
+    list_display = ('iso_code', 'name', 'decimal_notation',
+                    'created_at', 'updated_at')
+    search_fields = ('iso_code', 'name',)
+    list_filter = ('created_by', )
+
+
+class CountryAdmin(AdminAbstract):
+    list_display = ('name', 'iso_code', 'flag', 'currency',
+                    'is_gcc', 'created_at')
+    search_fields = ('name', 'iso_code', 'currency')
+    list_filter = ('currency', 'is_gcc', 'three_letter_code',)
+    raw_id_fields = ('currency',)
+
+
 admin.site.register(AppConfig, AppConfigAdmin)
+admin.site.register(Currency, CurrencyAdmin)
+admin.site.register(Country, CountryAdmin)
