@@ -280,7 +280,7 @@ class ConfigViewSet(ViewSet):
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
             paypal_config["processing_fee_json"] = (
                 self.calculate_additional_charges(
-                    additional_fee, transaction_obj))
+                    additional_fee, transaction_obj) if additional_fee else {})
         return paypal_config
 
     def calculate_processing_fee(self, additional_fee, base_amount,
@@ -289,13 +289,12 @@ class ConfigViewSet(ViewSet):
         Calulate proccessing fee and vat percentage for processing fee
         """
         processing_fee = 0
-        if additional_fee:
-            percentage = additional_fee.percentage
-            fixed_amount = additional_fee.fixed_amount
-            if percentage:
-                processing_fee += base_amount * (percentage/100)
-            if fixed_amount:
-                processing_fee += fixed_amount
+        percentage = additional_fee.percentage
+        fixed_amount = additional_fee.fixed_amount
+        if percentage:
+            processing_fee += base_amount * (percentage/100)
+        if fixed_amount:
+            processing_fee += fixed_amount
 
         processing_fee_vat = vat_percent * processing_fee
         return processing_fee, processing_fee_vat
