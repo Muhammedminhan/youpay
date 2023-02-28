@@ -177,6 +177,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    retry_count = models.IntegerField(default=0, null=True, blank=True,
+                                      help_text="used to store retry count, "
+                                                "Youpay support 5 retries")
 
 
 @receiver(post_save, sender=YouPayTransactionData)

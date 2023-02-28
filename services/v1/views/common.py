@@ -18,6 +18,12 @@ from services.models import APIClient
 
 logger = logging.getLogger(__name__)
 
+from django.utils.decorators import decorator_from_middleware, classonlymethod
+from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
+
+cancelled_payment_check = decorator_from_middleware(
+    PaymentStatusCheckMiddleware)
+
 
 def get_saved_fields(saved_fields, data_dict, transaction_obj):
     for key, value in data_dict.items():
@@ -84,9 +90,10 @@ class YouPayTransactionCRUD(object):
         data_dict['available_points'] = (data.get('available_points', None)
                                          or 0)
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
-        
+
         data_dict['is_fraud'] = data.get('is_fraud', None)
         data_dict['is_flagged'] = data.get('is_flagged', None)
+        data_dict['retry_count'] = data.get('retry_count', None)
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
@@ -221,3 +228,20 @@ def get_adcb_saved_fields(saved_fields, data_dict, transaction_obj):
             saved_fields.append(key)
 
     return saved_fields
+
+
+class CancellPaymentsMiddlewareMixin:
+    @cancelled_payment_check
+    def dispatch(*args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+
+def cancelled_payment_check(class_view):
+    def as_view(cls, **initkwargs):
+        view = super(cls, cls).as_view(**initkwargs)
+        view.cancelled_payment_check = True
+        return view
+
+    return type(class_view.__name__, (class_view,), {
+        'as_view': classonlymethod(as_view),
+    })
