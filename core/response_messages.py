@@ -39,6 +39,10 @@ class YouPayResponse(object):
     HAPPY_CREDITS_CONNECTION_ERROR = 7002
     """happy credits related ends"""
 
+    """Youpay related begins"""
+    MISSING_CLIENT_INFO = 6000
+    """Youpay related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
@@ -59,6 +63,7 @@ class YouPayResponse(object):
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
             self.TRANSACTION_NOT_FOUND: "Transaction not found",
+            self.MISSING_CLIENT_INFO: "API Client data missing"
         })
 
     def get_400_message(self, message):

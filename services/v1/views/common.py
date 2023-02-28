@@ -2,6 +2,7 @@ import logging
 
 from rest_framework import status
 
+from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
@@ -97,6 +98,10 @@ class YouPayTransactionCRUD(object):
                                                       None)
         data_dict['available_credit_balance'] = data.get(
             'available_credit_balance', None)
+
+        data_dict['is_fraud'] = data.get('is_fraud', None)
+        data_dict['is_flagged'] = data.get('is_flagged', None)
+
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
@@ -163,11 +168,17 @@ def is_redirect(transaction_id, transaction_message):
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
 
-    is_fraud = transaction_message.get('is_fraud', False)
-
     response_code = transaction_message.get('response_code', None)
-    if response_code in RESPONSE_CODE_LIST or is_fraud:
+
+    '''This check is applicable only for checkout payments'''
+    if (response_code in RESPONSE_CODE_LIST and
+            youpay_transaction.payment_gateway == PAYMENT_GATEWAY_CHECKOUTPG):
+        '''We are setting the redirect url to none so in frontend it will 
+        redirect to the payment page, which will give another try to the 
+        customer in the current transaction, only for checkoutpg'''
         redirect_url = None
+        logger.info("Checkout Response code checking for"
+                    "transaction id {}".format(transaction_id))
         response_data = {
             IS_REDIRECT: False,
             REDIRECT_URL: redirect_url,

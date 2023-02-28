@@ -41,8 +41,9 @@ class WebhookListener(APIView):
 
             invoice_pk = self.get_invoice_id(
                 str(request_data.get('payment_reference', None)))
-            logger.info("Checkoutpg webhook received for invoice {}".format(
-                invoice_pk))
+
+            logger.info("Checkoutpg webhook received {} for invoice :{}"
+                        "".format(request_data, invoice_pk))
 
             payment_reference = request_data.get('payment_reference', None)
             transaction_obj = get_transaction_object(payment_reference)
@@ -62,10 +63,8 @@ class WebhookListener(APIView):
                     'api_response_data')
                 transaction_obj.payment_reference = str(
                     request_data.get('payment_reference'))
-                transaction_obj.is_fraud = request_data.get('is_fraud',
-                                                            False)
-                transaction_obj.is_flagged = request_data.get('is_flagged',
-                                                              False)
+                transaction_obj.is_fraud = request_data.get('is_fraud')
+                transaction_obj.is_flagged = request_data.get('is_flagged')
 
                 # Update the card bin & last4 if it is present in data
                 card_bin = request_data.get('card_bin', None)
@@ -109,8 +108,8 @@ class WebhookListener(APIView):
                         request_data.get('response_summary', None)),
                     idempotency_key=str(
                         request_data.get('idempotency_key')),
-                    is_fraud=request_data.get('is_fraud', False),
-                    is_flagged=request_data.get('is_flagged', False),
+                    is_fraud=request_data.get('is_fraud'),
+                    is_flagged=request_data.get('is_flagged'),
                     card_bin=request_data.get('card_bin', None),
                     card_last4=request_data.get('card_last4', None),
                     payment_method=request_data.get('payment_method',
@@ -176,6 +175,8 @@ class WebhookListener(APIView):
                     'is_gcc_card': request_data.get("is_gcc_card"),
                     'card_issuer_country': request_data.get(
                         "card_issuer_country"),
+                    'is_fraud': request_data.get("is_fraud"),
+                    'is_flagged': request_data.get("is_flagged"),
                 }
                 return data_to_update
             else:
