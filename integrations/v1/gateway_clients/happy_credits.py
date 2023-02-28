@@ -85,7 +85,7 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                 approved = True
                 response_summary = "Payment successful"
                 available_balance = response_data.get(
-                    'available_balance_in_payment_currency')
+                    'available_credit_balance')
             else:
                 payment_status = PAYMENT_STATUS_CANCELLED
                 approved = False
@@ -132,7 +132,7 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                             "{}".format(response))
 
                 if response:
-                    response_decrypted = response.json()
+                    response_decrypted = json.loads(response.json())
                     response_data = decrypt_payment_data(response_decrypted)
                     self.gateway_response_data = response_data
                     logger.info("Response from credit balance api: {}"
@@ -174,9 +174,11 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
         Calls happy credits deduct balance api.
         """
         try:
-            self.transaction_id = decrypt_string(data.get('transaction_id'))
-            self.transaction_obj = self.get_youpay_transaction_data(
-                self.transaction_id)
+
+            payment_reference = data.get('payment_reference')
+            self.transaction_obj = self.get_transaction_data_by_reference(
+                payment_reference)
+            self.transaction_id = str(self.transaction_obj.transaction_id)
             request_data = get_credit_redemption_data(data,
                                                       self.transaction_obj)
             self.gateway_request_data = request_data
@@ -194,7 +196,7 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
             logger.info("Response from credit redemption api "
                         "{}".format(response))
             if response:
-                response_decrypted = response.json()
+                response_decrypted = json.loads(response.json())
                 response_data = decrypt_payment_data(response_decrypted)
                 logger.info(
                     "Balance deduct response data {}".format(response_data))

@@ -46,6 +46,16 @@ class YouPayTransactionCRUD(object):
             return {"status": status.HTTP_400_BAD_REQUEST,
                     "data": serializer.errors, "message": message}
 
+    def get_transaction_data_by_reference(self, payment_reference):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=payment_reference)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            logger.error("Unable to find youpay transaction object for {}"
+                         "".format(payment_reference))
+            return None
+
     def get_youpay_transaction_data(self, transaction_id):
         try:
             transaction_obj = YouPayTransactionData.objects.get(
