@@ -19,9 +19,10 @@ from services.models import APIClient
 logger = logging.getLogger(__name__)
 
 from django.utils.decorators import decorator_from_middleware, classonlymethod
-from core.middlewares.workflow_middleware import WorkflowCheckMiddleware
+from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 
-cancelled_payment_check = decorator_from_middleware(WorkflowCheckMiddleware)
+cancelled_payment_check = decorator_from_middleware(
+    PaymentStatusCheckMiddleware)
 
 
 def get_saved_fields(saved_fields, data_dict, transaction_obj):

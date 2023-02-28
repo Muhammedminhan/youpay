@@ -3,6 +3,7 @@ import logging
 
 from django.http import JsonResponse
 
+from core.constants import MAX_PAYMENT_RETRY_COUNT
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from payments.constants import PAYMENT_STATUS_CANCELLED
@@ -10,7 +11,7 @@ from payments.constants import PAYMENT_STATUS_CANCELLED
 logger = logging.getLogger(__name__)
 
 
-class WorkflowCheckMiddleware(object):
+class PaymentStatusCheckMiddleware(object):
     def __init__(self, get_response):
         self.get_response = get_response
         # One-time configuration and initialization.
@@ -75,10 +76,10 @@ class WorkflowCheckMiddleware(object):
 
                 return JsonResponse(data, status=200)
 
-            if transaction_obj.retry_count >= 5:
+            if transaction_obj.retry_count >= MAX_PAYMENT_RETRY_COUNT:
                 """
-                if retry count is more than 5, then cancell the transaction
-                and redirect to cancel url
+                if retry count is more than MAX_RETRY_COUNT, then cancel the 
+                transaction and redirect to cancel url
                 """
 
                 message = ("Payment Cancelled : Maximum retry count reached"
