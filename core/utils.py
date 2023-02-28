@@ -273,7 +273,6 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID
             is_flagged = response_data.get("risk").get("flagged")
-            print("\n\nis flagged in APple ", is_flagged)
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(

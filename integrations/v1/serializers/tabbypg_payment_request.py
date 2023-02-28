@@ -6,7 +6,8 @@ logger = logging.getLogger(__name__)
 from core.utils import (
     get_app_config, encrypt_string, get_payment_gateway_config)
 from core.exceptions import ValidationFailed
-from integrations.constants import TABBYPG_HUB_CODE, TABBYPG_CACHE_KEY
+from integrations.constants import (TABBYPG_HUB_CODE, TABBYPG_CACHE_KEY,
+                                    YOUPAY_TABBY_BACKTOSTORE_PATH)
 from services.v1.views.common import add_payment_gateway_info_in_url
 
 
@@ -120,7 +121,10 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
     def get_cancel_url(self, data):
         transaction_id = data.get('transaction_data').get(
             "transaction_id")
-        cancel_url = (data.get('transaction_data').get("cancel_url") +
+
+        site_domain = data.get('site_domain')
+        back_to_store_path = YOUPAY_TABBY_BACKTOSTORE_PATH
+        cancel_url = (site_domain + back_to_store_path +
                       '?transaction_id=' + transaction_id)
         return cancel_url
 
