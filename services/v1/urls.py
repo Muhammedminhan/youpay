@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from integrations.v1.gateway_clients.tabbypg import TabbyPaymentCancel
 
 from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
@@ -8,7 +9,8 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
                                                 PaypalPayment)
-from services.v1.views.configurations import ConfigViewSet
+from services.v1.views.configurations import (ConfigViewSet,
+                                              ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
@@ -47,6 +49,7 @@ urlpatterns = [
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view()),
     path('tabbypg/verify/', TabbyPGVerification.as_view()),
+    path('tabbypg/back-to-store/', TabbyPaymentCancel.as_view()),
 
     # Amazonpg endpoints
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
@@ -56,4 +59,7 @@ urlpatterns = [
     # Happy Credits endpoints
     path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),
     path('happycredits/redemption/', HappyCreditsDebitBalance.as_view()),
+
+    # API for getting the client logo and color code
+    path('client-static-details/', ClientStaticFilesAPI.as_view()),
 ]

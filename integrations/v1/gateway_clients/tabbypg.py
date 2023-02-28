@@ -2,11 +2,13 @@ import json
 import logging
 
 import requests
+from django.shortcuts import redirect
 from rest_framework import status
+from rest_framework.views import APIView
 
 from core.constants import (
     REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
-from core.utils import get_payment_gateway_config
+from core.utils import get_payment_gateway_config, get_redirect_url
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
     PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE,
@@ -17,9 +19,9 @@ from integrations.v1.serializers.tabbypg_payment_request import (
     TabbyPGPaymentRequestSerializer
 )
 from payments.constants import (
-    PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED)
-from services.v1.views.common import is_redirect
+from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -235,9 +237,9 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         "response_summary": response_summary,
                     }
                 )
-                redirect, response_data = is_redirect(transaction_id,
-                                                      response_data)
-                if redirect:
+                redirect_flag, response_data = is_redirect(transaction_id,
+                                                           response_data)
+                if redirect_flag:
                     self.response_data = json.dumps(response_data)
                     return response_data, self.SUCCESS
                 else:
@@ -260,3 +262,32 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 request_type=self.request_type,
                 request_method=self.request_method,
             )
+
+
+class TabbyPaymentCancel(YouPayTransactionCRUD, APIView):
+    """
+    This class is used for cancelling payment and redirecting to the
+    cancel url in the transaction data
+    """
+
+    def get(self, request):
+        transaction_id = request.GET.get('transaction_id')
+
+        transaction_object = self.get_youpay_transaction_data(
+            transaction_id)
+
+        # update transaction data with cancelled status
+        self.update_youpay_transaction_data({
+            'transaction_id': transaction_id,
+            'payment_status': PAYMENT_STATUS_CANCELLED
+        })
+
+        redirect_url = get_redirect_url(transaction_object.cancel_url,
+                                        transaction_id)
+        logger.info(
+            "Youpay Tabby Payment cancelled for transaction_id : {}, "
+            "order reference :"
+            "{}".format(transaction_id,
+                        transaction_object.order_reference))
+
+        return redirect(redirect_url)

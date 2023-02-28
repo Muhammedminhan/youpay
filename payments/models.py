@@ -208,8 +208,17 @@ class Announcement(AbstractDateTime, AbstractUserBase):
                                 related_name="gateway_announcement")
     offer_message = models.TextField(null=True, blank=True,
                                      help_text='Announcement message')
-    is_active = models.BooleanField(default=False, help_text='Determines '
-                                                             'whether the announcement is active or not.')
+    is_active = models.BooleanField(default=False,
+                                    help_text='Determines whether the '
+                                              'announcement is active or not.')
+    platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
+                                max_length=200, null=True, blank=True,
+                                help_text="Associated platform")
+    payment_option = models.ForeignKey('integrations.PaymentOptions',
+                                       null=True, blank=True,
+                                       on_delete=models.CASCADE,
+                                       related_name=
+                                       'payment_option_announcement')
 
     def __str__(self):
         return str(self.gateway)
