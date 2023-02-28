@@ -98,10 +98,10 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             payload = card_details
 
             response = requests.post(url, data=payload)
-            logger.info("Response from AmazonPG tokenization api "
-                        "{}".format(response))
             if response:
                 response_data = response.json()
+                logger.info("Response from AmazonPG tokenization api "
+                            "{}".format(response_data))
                 return response_data, self.SUCCESS
         except Exception as e:
             error = "Error in amazonpg tokenization api: {}".format(e)

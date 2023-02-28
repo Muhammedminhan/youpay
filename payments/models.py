@@ -177,6 +177,29 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    additional_vat_percentage = models.DecimalField(
+        default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
+        help_text='Percentage value of VAT')
+    additional_currency_decimal_notation = models.FloatField(
+        default=0, null=True, blank=True,
+        help_text="used to store currency decimal notation")
+    additional_vat = models.DecimalField(
+        decimal_places=4, max_digits=12,  null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store new vat amount")
+    additional_processing_fee = models.DecimalField(
+        decimal_places=4, max_digits=12,  null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store calculated processing fee")
+    additional_processing_fee_vat = models.DecimalField(
+        decimal_places=4, max_digits=12,  null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store vat amount of the processing fee")
+    additional_total_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store total amount after processing fee "
+                  "calculation")
 
 
 @receiver(post_save, sender=YouPayTransactionData)

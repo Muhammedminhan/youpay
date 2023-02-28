@@ -2,8 +2,10 @@ from django.db import models
 
 from core.constants import REQUEST_METHOD_CHOICES, REQUEST_METHOD_NONE
 from core.models import AbstractDateTime, AbstractUserBase
+from core.validators import DecimalValidator
 from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
                                     PAYMENT_REQUEST_TYPE_CHOICES)
+from services.constants import PAYMENT_OPTION_NAME_CHOICES
 
 YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
 
@@ -100,7 +102,9 @@ class YoupayToPaymentGatewaysData(AbstractDateTime):
 
 class PaymentOptions(AbstractDateTime, AbstractUserBase):
     name = models.CharField(
-        max_length=255, help_text='Name of the payment option')
+        max_length=255,  null=True, blank=True,
+        choices=PAYMENT_OPTION_NAME_CHOICES,
+        help_text='Name of the payment option')
     gateway = models.ForeignKey(
         'integrations.PaymentGateway', null=True,
         blank=True, on_delete=models.CASCADE,
@@ -112,3 +116,20 @@ class PaymentOptions(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return str(self.name)
+
+
+class AdditionalFee(AbstractDateTime, AbstractUserBase):
+    payment_option = models.ForeignKey(
+        PaymentOptions, null=True, blank=True, on_delete=models.CASCADE,
+        related_name="additional_fee_payment_option"
+    )
+    percentage = models.DecimalField(
+        default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
+        help_text='Percentage value for the processing fee')
+    fixed_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text='Fixed value for the processing fee')
+
+    def __str__(self):
+        return str(self.payment_option.id)

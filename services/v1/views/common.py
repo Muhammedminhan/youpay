@@ -83,7 +83,15 @@ class YouPayTransactionCRUD(object):
                                          or 0)
         data_dict['available_points'] = (data.get('available_points', None)
                                          or 0)
+        data_dict['additional_vat'] = data.get('new_vat', None)
+        data_dict['additional_processing_fee'] = data.get('processing_fee', None)
+        data_dict['additional_processing_fee_vat'] = data.get('processing_fee_vat'
+                                                          , None)
+        data_dict['additional_total_amount'] = data.get('total_amount', None)
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
+        
+        data_dict['is_fraud'] = data.get('is_fraud', None)
+        data_dict['is_flagged'] = data.get('is_flagged', None)
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
