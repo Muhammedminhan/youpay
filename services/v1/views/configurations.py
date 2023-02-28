@@ -295,9 +295,13 @@ class ConfigViewSet(ViewSet):
             processing_fee += base_amount * (percentage/100)
         if fixed_amount:
             processing_fee += fixed_amount
+        additional_config = {
+            "additional_percentage": percentage,
+            "additional_fixed_amount": fixed_amount
+        }
 
         processing_fee_vat = vat_percent * processing_fee
-        return processing_fee, processing_fee_vat
+        return processing_fee, processing_fee_vat, additional_config
 
     def update_youpay_transaction_data(self, data, transaction_id):
         """
@@ -321,9 +325,10 @@ class ConfigViewSet(ViewSet):
             service_fee = transaction.service_fee
             decimal_notation = transaction.additional_currency_decimal_notation
             vat_percent = (transaction.additional_vat_percentage/100)
-            processing_fee, processing_fee_vat = self.calculate_processing_fee(
-                additional_fee, order_amount, vat_percent
-            )
+            processing_fee, processing_fee_vat, additional_config = (
+                self.calculate_processing_fee(
+                    additional_fee, order_amount, vat_percent
+                ))
             processing_fee = decimal_rounded(processing_fee, decimal_notation)
             processing_fee_vat = decimal_rounded(processing_fee_vat,
                                                  decimal_notation)
@@ -340,6 +345,7 @@ class ConfigViewSet(ViewSet):
                 "service_fee": service_fee,
                 "total_amount": total_amount
             }
+            dct_processing_fee.update(additional_config)
             self.update_youpay_transaction_data(dct_processing_fee,
                                                 transaction.transaction_id)
         except Exception as e:
