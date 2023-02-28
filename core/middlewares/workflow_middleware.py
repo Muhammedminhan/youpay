@@ -46,8 +46,6 @@ class PaymentStatusCheckMiddleware(object):
 
             transaction_status = transaction_obj.payment_status
 
-            youpay_obj = YouPayTransactionCRUD()
-
             # to import youpay codes
             youpay_message_obj = YouPayResponse()
 
