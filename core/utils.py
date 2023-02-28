@@ -155,7 +155,7 @@ def decimal_rounded(amount, decimal_notation):
     if not isinstance(amount, Decimal):
         amount = Decimal(amount)
     amount_rounded = Decimal(
-        amount.quantize(decimal_notation))
+        amount.quantize(Decimal(str(decimal_notation))))
     return amount_rounded
 
 
