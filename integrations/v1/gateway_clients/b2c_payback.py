@@ -27,18 +27,21 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
     PointBalanceRequestSerializer,
     AuthenticateRequestSerializer
 )
+from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
+                                PAYMENT_STATUS_PAID)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                    B2C_PAYBACK_CONFIG_ENDPOINT
                                    )
+from services.v1.views.common import YouPayTransactionCRUD
 from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
 
-class B2CPaybackManager(APIView, PaymentHandlers):
+class B2CPaybackManager(APIView, PaymentHandlers, YouPayTransactionCRUD):
     """
     Class to manage b2cpayback related operations
     """
@@ -238,6 +241,12 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 response_data["is_redirect"] = True
                 response_data["redirect_url"] = get_adcb_verify_redirect_url(
                     response_data, transaction_obj)
+                approved_status = transaction_obj.approved
+                if response_data.get("redirect_url") is None:
+                    payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                else:
+                    payment_status = PAYMENT_STATUS_PAID
+                    approved_status = True
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(
@@ -248,7 +257,30 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     request_method=REQUEST_METHOD_GET,
                     request_type=PAYMENT_REQUEST_VERIFY
                 )
-                if response:
+                if response_data:
+                    update_data = {
+                        'transaction_id': transaction_obj.transaction_id,
+                        'payment_status': payment_status,
+                        'payment_reference': (
+                            response_data.get('payment_reference')
+                            if response_data.get('payment_reference')
+                            else response_data.get(
+                                'results', {}).get('reference_id')),
+                        'is_flagged': response_data.get('is_flagged', False),
+                        'approved': approved_status,
+                        'redeemed_amount': response_data.get(
+                            'results', {}).get('redeemed_amount'),
+                        'redeemed_points': response_data.get(
+                            'results', {}).get('redeemed_points'),
+                        'is_gcc_card': True,
+                        'available_amount': response_data.get(
+                            'results', {}).get('available_amount'),
+                        'available_points': transaction_obj.available_points,
+                        'payable_amount': transaction_obj.payable_amount,
+                        'is_full_redemption':
+                            transaction_obj.is_full_redemption
+                    }
+                    self.update_youpay_transaction_data(update_data)
                     return response_data, transaction_obj
                 else:
                     logger.error(
