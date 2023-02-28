@@ -106,3 +106,5 @@ AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"
 AMAZONPG_REFUND_API = "services/api/v1/refund/"
 
 ADCB_CHECKOUTPG_PAYMENT_NOT_PAID = 1012
+
+YOUPAY_TABBY_BACKTOSTORE_PATH = '/services/api/v1/tabbypg/back-to-store/'
