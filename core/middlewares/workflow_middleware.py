@@ -33,12 +33,9 @@ class PaymentStatusCheckMiddleware(object):
                                           'cancelled_payment_check', False)
         if cancelled_payment_check:
             data = json.loads(request.body)
-
-            # check transaction status
             transaction_id = decrypt_string(data.get('transaction_id', None))
 
             from services.v1.views.common import (YouPayTransactionCRUD)
-
             youpay_obj = YouPayTransactionCRUD()
 
             transaction_obj = youpay_obj.get_youpay_transaction_data(
