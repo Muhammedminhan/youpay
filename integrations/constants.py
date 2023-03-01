@@ -109,7 +109,7 @@ AMAZONPG_VERIFY_API = "services/api/v1/verify/"
 AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"
 AMAZONPG_REFUND_API = "services/api/v1/refund/"
 
-HAPPY_CREDITS_CREDIT_BALANCE_API = 'wallet/api/v1.1/happycredits/user-balance/'
-HAPPY_CREDITS_REDEMPTION_API = 'wallet/api/v1.1/happycredits/redemption/'
+HAPPY_CREDITS_CREDIT_BALANCE_API = 'wallet/api/v1.1/happycredits/user/balance/'
+HAPPY_CREDITS_REDEMPTION_API = 'wallet/api/v1.1/happycredits/user/redemption/'
 
 YOUPAY_TABBY_BACKTOSTORE_PATH = '/services/api/v1/tabbypg/back-to-store/'
