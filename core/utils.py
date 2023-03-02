@@ -18,7 +18,7 @@ from django.conf import settings
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE, TABBYPG_HUB_CODE
-from integrations.models import PaymentGateway, AdditionalFee
+from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -167,9 +167,9 @@ def get_gateway_additional_fee(payment_option_name):
     additional_fee = None
     if payment_option_name:
         try:
-            additional_fee = AdditionalFee.objects.get(
+            additional_fee = AdditionalChargeConfiguration.objects.get(
                 payment_option__name=payment_option_name)
-        except (AdditionalFee.DoesNotExist, Exception):
+        except (AdditionalChargeConfiguration.DoesNotExist, Exception):
             logging.error('No additional fee instance found.')
     return additional_fee
 

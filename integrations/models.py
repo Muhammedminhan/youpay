@@ -118,7 +118,7 @@ class PaymentOptions(AbstractDateTime, AbstractUserBase):
         return str(self.name)
 
 
-class AdditionalFee(AbstractDateTime, AbstractUserBase):
+class AdditionalChargeConfiguration(AbstractDateTime, AbstractUserBase):
     payment_option = models.ForeignKey(
         PaymentOptions, null=True, blank=True, on_delete=models.CASCADE,
         related_name="additional_fee_payment_option"
@@ -130,6 +130,9 @@ class AdditionalFee(AbstractDateTime, AbstractUserBase):
         decimal_places=4, max_digits=12, null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
         help_text='Fixed value for the processing fee')
+    is_active = models.BooleanField(
+        default=False, help_text='Denotes whether the configuration '
+                                 'is active or not.')
 
     def __str__(self):
-        return str(self.payment_option.id)
+        return str(self.payment_option)
