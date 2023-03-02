@@ -4,7 +4,7 @@ import logging
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
-    QITAF_HUB_CODE, AMAZONPG_HUB_CODE
+    QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
 )
 from payments.constants import PAYMENT_STATUS_INITIATED
 from payments.models import Announcement
@@ -148,6 +148,9 @@ def get_payment_options(transaction_obj, gateways):
         if code == AMAZONPG_HUB_CODE and (store_currency in
                                           AMAZONPG_STORE_CURRENCIES):
             response_payment_options['amazonpg'] = True
+
+        if code == HAPPYCREDITS_HUB_CODE:
+            response_payment_options['happy_credits'] = True
 
     return response_payment_options
 
