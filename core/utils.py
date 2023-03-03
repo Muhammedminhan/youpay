@@ -168,9 +168,9 @@ def get_gateway_additional_fee(payment_option_name):
     if payment_option_name:
         try:
             additional_fee = AdditionalChargeConfiguration.objects.get(
-                payment_option__name=payment_option_name)
+                payment_option__name=payment_option_name, is_active=True)
         except (AdditionalChargeConfiguration.DoesNotExist, Exception):
-            logging.error('No additional fee instance found.')
+            logging.info('No additional fee instance found.')
     return additional_fee
 
 

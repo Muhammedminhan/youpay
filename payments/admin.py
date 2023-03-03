@@ -62,12 +62,13 @@ class ClientNotificationAdmin(admin.ModelAdmin):
 
 class AdditionalChargeAdmin(admin.ModelAdmin):
     list_display = (
-        'get_transaction', 'additional_vat', 'additional_processing_fee',
-        'additional_total_amount', 'created_at', 'updated_at',)
-    search_fields = ('transaction__transaction_id',)
+        'get_transaction', 'payment_option', 'additional_vat',
+        'additional_processing_fee', 'additional_total_amount',
+        'created_at', 'updated_at',)
+    search_fields = ('transaction__transaction_id', 'payment_option')
     list_filter = ('created_at',)
     raw_id_fields = ('transaction',)
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('payment_option', 'created_at', 'updated_at')
 
     def get_transaction(self, obj):
         return obj.transaction.transaction_id
