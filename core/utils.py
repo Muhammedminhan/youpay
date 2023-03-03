@@ -18,7 +18,7 @@ from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
-    PAYMENT_STATUS_PAID, PAYMENT_STATUS_AUTHORIZED)
+    PAYMENT_STATUS_PAID)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -267,12 +267,13 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
     else:
         source = response_data.get('source', None)
         payment_status = response_data.get("status").lower()
+        approved = response_data.get('approved', False)
 
-        if (source == 'applepay' and
-                payment_status == PAYMENT_STATUS_AUTHORIZED):
+        if source == 'applepay' and approved:
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID
             is_flagged = response_data.get("risk").get("flagged")
+
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(
@@ -288,11 +289,11 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
             'is_gcc_card': response_data.get("is_gcc_card"),
             'is_flagged': is_flagged,
             'is_fraud': response_data.get("is_fraud"),
-            'card_issuer_country': response_data.get(
-                "card_issuer_country"),
+            'card_issuer_country': response_data.get("card_issuer_country"),
         }
     )
     redirect, response_data = is_redirect(transaction_id,
                                           response_data)
+
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
