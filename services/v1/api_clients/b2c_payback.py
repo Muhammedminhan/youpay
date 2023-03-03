@@ -174,28 +174,9 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
         transaction_id = (transaction_obj.transaction_id if transaction_obj
                           else None)
         if response:
-            if response.get('results', {}).get('payment_status') == True:
-                update_data = {
-                    'transaction_id': transaction_obj.transaction_id,
-                    'payment_status': PAYMENT_STATUS_PAID,
-                    'payment_reference': (response.get('payment_reference')
-                                          if response.get('payment_reference')
-                                          else response.get(
-                        'results', {}).get('reference_id')),
-                    'is_flagged': response.get('is_flagged', False),
-                    'approved': True,
-                    'redeemed_amount': response.get(
-                        'results', {}).get('redeemed_amount'),
-                    'redeemed_points': response.get(
-                        'results', {}).get('redeemed_points'),
-                    'is_gcc_card': True,
-                    'available_amount': response.get(
-                        'results', {}).get('available_amount'),
-                    'available_points': transaction_obj.available_points,
-                    'payable_amount': transaction_obj.payable_amount,
-                    'is_full_redemption': transaction_obj.is_full_redemption
-                }
-                self.update_youpay_transaction_data(update_data)
+            if response.get('results', {}).get('payment_status'):
+                logger.info("Verification successful, payment status true for"
+                            "transaction {}".format(transaction_id))
             else:
                 logger.info("Verification unsuccessful for transaction"
                             " id {}".format(transaction_id))
