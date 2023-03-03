@@ -17,8 +17,12 @@ from integrations.v1.serializers.checkoutpg_payment_request import (
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import (TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD,
-                                TOKEN_TYPE_PAYPAL)
+from services.constants import (
+    TOKEN_TYPE_APPLEPAY,
+    TOKEN_TYPE_SAVED_CARD,
+    TOKEN_TYPE_CARD,
+    TOKEN_TYPE_PAYPAL
+)
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 
 logger = logging.getLogger(__name__)
@@ -265,9 +269,9 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
     response_obj = YouPayResponse()
 
     def post(self, request):
-        '''
-        Applepay authorize API
-        '''
+        """
+        Applepay update status API
+        """
         try:
             transaction_id = request.data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
@@ -281,13 +285,13 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                     'transaction_obj': transaction_obj,
                     'payment_stage': request.data.get('payment_stage'),
                     'status': request.data.get('status'),
-                    'payment_request_data': request.data.get('request_data'),
-                    'payment_response_data': request.data.get('response_data')
+                    'token_type': TOKEN_TYPE_APPLEPAY,
+                    'request_data': request.data.get('request_data'),
+                    'response_data': request.data.get('response_data')
                 }
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.applepay_update_status(
                     payment_data)
-
                 if code in self.response_obj.APPLEPAY_SUCCESS_CODES:
                     data = self.response_obj.get_success_dict(
                         code=code,

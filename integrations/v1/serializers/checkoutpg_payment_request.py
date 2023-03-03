@@ -110,4 +110,6 @@ class ApplepayPaymentDataSerializer(serializers.ModelSerializer):
             'ip',
             'customer_email',
             'customer_name',
+            'platform',
+            'payment_reference',
         ]

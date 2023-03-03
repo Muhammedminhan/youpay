@@ -16,7 +16,9 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT,
-                                    PAYMENT_REQUEST_TYPE_PAYMENT)
+                                    PAYMENT_REQUEST_TYPE_PAYMENT,
+                                    CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT,
+                                    PAYMENT_REQUEST_CREATE_TRANSACTION)
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
@@ -489,15 +491,80 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             return ({"error": response.json()},
                     self.CHECKOUTPG_CONNECTION_ERROR)
 
+    def handle_applepay_pending(self, request_data):
+        checkoutpg_config = get_checkoutpg_config()
+        if checkoutpg_config:
+            payment_data = self.get_checkout_payment_data(
+                request_data)
+
+            logger.info(
+                "Youpay sending Applepay payment data is {}".format(
+                    payment_data))
+            payment_data_to_send = json.dumps(payment_data)
+
+            url = (self.checkoutpg_config.domain +
+                   CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT)
+
+            headers = self.get_payment_header()
+
+            transaction_obj = self.get_youpay_transaction_data(
+                self.transaction_id)
+
+            checkoutpg_response = requests.post(
+                url, data=payment_data_to_send, headers=headers)
+
+            # storing Youpay to payment gateway request and response data
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=transaction_obj,
+                transaction_id=request_data.get(
+                    'transaction_data').get(
+                    'transaction_id'),
+                request_data=payment_data_to_send,
+                response_data=checkoutpg_response.text,
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_CREATE_TRANSACTION,
+            )
+
+            logger.info(
+                "Checkoutpg Applepay request response for "
+                "transaction id {} is {}".format(
+                    self.transaction_id, checkoutpg_response.json()))
+
+            if checkoutpg_response:
+                checkoutpg_response_data = checkoutpg_response.json()
+                if checkoutpg_response_data.get('status') == 200:
+                    self.payment_reference = checkoutpg_response_data.get(
+                        "data").get("reference")
+
+                    self.payment_status = PAYMENT_STATUS_PENDING
+                    response_code = (
+                        self.APPLE_PAY_STATUS_UPDATED_PENDING)
+
+                    return None, response_code
+
+                logger.error("Error in paypal payment, {}".format(
+                    checkoutpg_response.text))
+
+                self.payment_status = PAYMENT_STATUS_ERROR
+
+                return ({"error": checkoutpg_response.json()},
+                        self.CHECKOUTPG_CONNECTION_ERROR)
+            return None, self.CHECKOUTPG_CONNECTION_ERROR
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, self.CHECKOUTPG_CONNECTION_ERROR
+
     def applepay_update_status(self, request_data):
         transaction_data = request_data.get('transaction_data')
-        payment_request_data = request_data.get('payment_request_data')
-        payment_response_data = request_data.get('payment_response_data')
+        payment_request_data = request_data.get('request_data')
+        payment_response_data = request_data.get('response_data')
         self.transaction_id = transaction_data.get('transaction_id')
         self.payment_method = PAYMENT_METHOD_APPLEPAY
+        self.payment_reference = transaction_data.get('payment_reference')
         self.transaction_obj = request_data.get('transaction_obj')
+        response_data = {}
 
-        # status may be pending, authorized, paid
+        # payment_stage may be pending, authorized, paid
         payment_stage = request_data.get('payment_stage')
 
         logger.info("APPLE PAY Status update for {} to {} ".format(
@@ -505,11 +572,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         try:
 
-            response_data = {}
             if payment_stage == PAYMENT_STATUS_PENDING:
-                self.payment_status = PAYMENT_STATUS_PENDING
-                response_code = self.APPLE_PAY_STATUS_UPDATED_PENDING
-                message = self.MESSAGE.get(response_code)
+                data, code = self.handle_applepay_pending(request_data)
+                return data, code
+
 
             elif payment_stage == PAYMENT_STATUS_AUTHORIZED:
                 self.payment_status = PAYMENT_STATUS_AUTHORIZED
@@ -518,7 +584,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 message = self.MESSAGE.get(response_code)
 
             elif payment_stage == PAYMENT_STATUS_PAID:
-
                 # storing Youpay to payment gateway request and response data
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=self.transaction_obj,
@@ -534,7 +599,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                 redirect, response_data = process_checkoutpg_response_verification(
                     self.transaction_id, res_data)
-                transaction_message = response_data.get('transaction_message')
 
                 if redirect:
                     response_code = self.APPLE_PAY_STATUS_UPDATED_PAID
@@ -562,7 +626,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.info(message)
             return response_data, response_code
 
-
         except Exception as e:
             msg = (
                 "Error on processing applepay status update for transaction"
@@ -575,5 +638,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "payment_status": self.payment_status,
                 "payment_method": self.payment_method,
                 "payment_gateway": self.payment_gateway,
+                "payment_reference": self.payment_reference,
+
             }
             self.update_youpay_transaction_data(data_to_update)
