@@ -51,7 +51,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.channel_code = None
 
     def get_checkout_payment_data(self, data):
-        print("\n\n\nCHECKOUTPAYMENT DATA ", data)
         if (data.get('transaction_data') and data.get('request_data')
                 and data.get('token_type')):
             payment_data = CheckoutPaymentRequestSerializer(data)
@@ -555,11 +554,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
                 return None, self.CHECKOUTPG_CONNECTION_ERROR
         except Exception as e:
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Exception in payment request : {} {} {}"
-                         .format(exc_type, fname, exc_tb.tb_lineno))
             logger.error("Exception in payment request : {} "
                          .format(e))
             logger.error("Excepction occured : {} ".format(e))
@@ -568,7 +562,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
     def applepay_update_status(self, request_data):
         transaction_data = request_data.get('transaction_data')
         payment_request_data = request_data.get('request_data')
-        payment_response_data = request_data.get('response_data')
+        payment_response_data = request_data.get('response_data').get(
+            'response_data')
         self.transaction_id = transaction_data.get('transaction_id')
         self.payment_method = PAYMENT_METHOD_APPLEPAY
         self.payment_reference = transaction_data.get('payment_reference')
@@ -605,7 +600,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     request_method=REQUEST_METHOD_POST,
                 )
 
-                res_data = payment_response_data.get("payment")
+                res_data = payment_response_data.get(
+                    'payment')
                 res_data['source'] = "applepay"  # to mark status as paid
 
                 redirect, response_data = process_checkoutpg_response_verification(

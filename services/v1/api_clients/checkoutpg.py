@@ -286,8 +286,8 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                     'payment_stage': request.data.get('payment_stage'),
                     'status': request.data.get('status'),
                     'token_type': TOKEN_TYPE_APPLEPAY,
-                    'request_data': request.data.get('request_data', None),
-                    'response_data': request.data.get('response_data', None)
+                    'request_data': request.data,
+                    'response_data': request.data
                 }
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.applepay_update_status(
