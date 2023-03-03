@@ -51,7 +51,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.channel_code = None
 
     def get_checkout_payment_data(self, data):
-
+        print("\n\n\nCHECKOUTPAYMENT DATA ", data)
         if (data.get('transaction_data') and data.get('request_data')
                 and data.get('token_type')):
             payment_data = CheckoutPaymentRequestSerializer(data)
@@ -492,66 +492,77 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     self.CHECKOUTPG_CONNECTION_ERROR)
 
     def handle_applepay_pending(self, request_data):
-        checkoutpg_config = get_checkoutpg_config()
-        if checkoutpg_config:
-            payment_data = self.get_checkout_payment_data(
-                request_data)
+        try:
+            checkoutpg_config = get_checkoutpg_config()
+            if checkoutpg_config:
+                payment_data = self.get_checkout_payment_data(
+                    request_data)
 
-            logger.info(
-                "Youpay sending Applepay payment data is {}".format(
-                    payment_data))
-            payment_data_to_send = json.dumps(payment_data)
+                logger.info(
+                    "Youpay sending Applepay payment data is {}".format(
+                        payment_data))
+                payment_data_to_send = json.dumps(payment_data)
 
-            url = (self.checkoutpg_config.domain +
-                   CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT)
+                url = (self.checkoutpg_config.domain +
+                       CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT)
 
-            headers = self.get_payment_header()
+                headers = self.get_payment_header()
 
-            transaction_obj = self.get_youpay_transaction_data(
-                self.transaction_id)
+                transaction_obj = self.get_youpay_transaction_data(
+                    self.transaction_id)
 
-            checkoutpg_response = requests.post(
-                url, data=payment_data_to_send, headers=headers)
+                checkoutpg_response = requests.post(
+                    url, data=payment_data_to_send, headers=headers)
 
-            # storing Youpay to payment gateway request and response data
-            self.create_youpay_to_payment_gateways_data(
-                transaction_obj=transaction_obj,
-                transaction_id=request_data.get(
-                    'transaction_data').get(
-                    'transaction_id'),
-                request_data=payment_data_to_send,
-                response_data=checkoutpg_response.text,
-                request_method=REQUEST_METHOD_POST,
-                request_type=PAYMENT_REQUEST_CREATE_TRANSACTION,
-            )
+                # storing Youpay to payment gateway request and response data
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=request_data.get(
+                        'transaction_data').get(
+                        'transaction_id'),
+                    request_data=payment_data_to_send,
+                    response_data=checkoutpg_response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_CREATE_TRANSACTION,
+                )
 
-            logger.info(
-                "Checkoutpg Applepay request response for "
-                "transaction id {} is {}".format(
-                    self.transaction_id, checkoutpg_response.json()))
+                logger.info(
+                    "Checkoutpg Applepay request response for "
+                    "transaction id {} is {}".format(
+                        self.transaction_id, checkoutpg_response.text))
 
-            if checkoutpg_response:
-                checkoutpg_response_data = checkoutpg_response.json()
-                if checkoutpg_response_data.get('status') == 200:
-                    self.payment_reference = checkoutpg_response_data.get(
-                        "data").get("reference")
+                if checkoutpg_response:
+                    checkoutpg_response_data = checkoutpg_response.json()
+                    if checkoutpg_response_data.get('status') == 200:
+                        self.payment_reference = checkoutpg_response_data.get(
+                            "data").get("reference")
 
-                    self.payment_status = PAYMENT_STATUS_PENDING
-                    response_code = (
-                        self.APPLE_PAY_STATUS_UPDATED_PENDING)
+                        self.payment_status = PAYMENT_STATUS_PENDING
+                        response_code = (
+                            self.APPLE_PAY_STATUS_UPDATED_PENDING)
 
-                    return None, response_code
+                        return None, response_code
 
-                logger.error("Error in paypal payment, {}".format(
-                    checkoutpg_response.text))
+                    logger.error("Error in paypal payment, {}".format(
+                        checkoutpg_response.text))
 
-                self.payment_status = PAYMENT_STATUS_ERROR
+                    self.payment_status = PAYMENT_STATUS_ERROR
 
-                return ({"error": checkoutpg_response.json()},
-                        self.CHECKOUTPG_CONNECTION_ERROR)
-            return None, self.CHECKOUTPG_CONNECTION_ERROR
-        else:
-            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+                    return ({"error": checkoutpg_response.json()},
+                            self.CHECKOUTPG_CONNECTION_ERROR)
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
+            else:
+                logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
+        except Exception as e:
+            import sys, os
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            logger.error("Exception in payment request : {} {} {}"
+                         .format(exc_type, fname, exc_tb.tb_lineno))
+            logger.error("Exception in payment request : {} "
+                         .format(e))
+            logger.error("Excepction occured : {} ".format(e))
             return None, self.CHECKOUTPG_CONNECTION_ERROR
 
     def applepay_update_status(self, request_data):
@@ -573,9 +584,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         try:
 
             if payment_stage == PAYMENT_STATUS_PENDING:
-                data, code = self.handle_applepay_pending(request_data)
+                data, code = self.handle_applepay_pending(
+                    request_data)
                 return data, code
-
 
             elif payment_stage == PAYMENT_STATUS_AUTHORIZED:
                 self.payment_status = PAYMENT_STATUS_AUTHORIZED
@@ -627,6 +638,13 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             return response_data, response_code
 
         except Exception as e:
+            import sys, os
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            logger.error("Exception in payment request : {} {} {}"
+                         .format(exc_type, fname, exc_tb.tb_lineno))
+            logger.error("Exception in payment request : {} "
+                         .format(e))
             msg = (
                 "Error on processing applepay status update for transaction"
                 "id {}, err : {}".format(self.transaction_id, str(e)))
