@@ -120,7 +120,7 @@ class PaymentOptions(AbstractDateTime, AbstractUserBase):
 
 class AdditionalChargeConfiguration(AbstractDateTime, AbstractUserBase):
     payment_option = models.ForeignKey(
-        PaymentOptions, null=True, blank=True, on_delete=models.CASCADE,
+        PaymentOptions, on_delete=models.CASCADE,
         related_name="additional_fee_payment_option"
     )
     percentage = models.DecimalField(
