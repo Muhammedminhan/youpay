@@ -187,10 +187,33 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         validators=[DecimalValidator(12, 4)],
         help_text="used to store happy credits user balance amount "
                   "after deduction in amount currency")
+    additional_vat_percentage = models.DecimalField(
+        default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
+        help_text='Percentage value of VAT')
+    additional_currency_decimal_notation = models.FloatField(
+        default=0, null=True, blank=True,
+        help_text="used to store currency decimal notation")
+    additional_vat = models.DecimalField(
+        decimal_places=4, max_digits=12,  null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store new vat amount")
+    additional_processing_fee = models.DecimalField(
+        decimal_places=4, max_digits=12,  null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store calculated processing fee")
+    additional_processing_fee_vat = models.DecimalField(
+        decimal_places=4, max_digits=12,  null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store vat amount of the processing fee")
+    additional_total_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store total amount after processing fee "
+                  "calculation")
 
 
 @receiver(post_save, sender=YouPayTransactionData)
-def update_client(sender, instance, **kwargs):
+def update_client(sender, instance, created, **kwargs):
     """
     Signal to send webhook for client on each transaction
     """
@@ -256,3 +279,32 @@ class ClientNotification(AbstractDateTime):
 
     def __str__(self):
         return str(self.transaction.transaction_id)
+
+
+class AdditionalCharge(AbstractDateTime):
+    transaction = models.ForeignKey(
+        'payments.YouPayTransactionData', null=True, blank=True,
+        on_delete=models.CASCADE, related_name="payment_transaction"
+    )
+    payment_option = models.CharField(max_length=255,  null=True, blank=True,
+                                      help_text='Name of the payment option')
+    additional_vat = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store new vat amount")
+    additional_processing_fee = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store calculated processing fee")
+    additional_processing_fee_vat = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store vat amount of the processing fee")
+    additional_total_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store total amount after processing fee "
+                  "calculation")
+
+    def __str__(self):
+        return str(self.transaction_id)
