@@ -28,7 +28,7 @@ from payments.constants import (PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
                                 PAYMENT_STATUS_DECLINED,
                                 PAYMENT_STATUS_DECLINED_RETRY)
-from services.v1.views.common import (is_redirect)
+from services.v1.views.common import (is_redirect, AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -439,7 +439,29 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "payment_gateway": self.payment_gateway,
                 "payment_method": self.payment_method,
             }
+            additional_charges = (
+                self.get_additional_charges())
+            data_to_update.update(additional_charges)
             self.update_youpay_transaction_data(data_to_update)
+
+    def get_additional_charges(self):
+        additional_charge_updation = AdditionalChargesUpdation()
+        additional_charge_obj = (
+            additional_charge_updation.get_additional_charges(
+                self.transaction_id, self.payment_method)
+        )
+        dct_additional_charges = {}
+        if additional_charge_obj:
+            dct_additional_charges = {
+                "additional_vat": additional_charge_obj.additional_vat,
+                "additional_processing_fee": (
+                    additional_charge_obj.additional_processing_fee),
+                "additional_processing_fee_vat": (
+                    additional_charge_obj.additional_processing_fee_vat),
+                "additional_total_amount": (
+                    additional_charge_obj.additional_total_amount)
+            }
+        return dct_additional_charges
 
     def verify_payment(self, data):
         url = (self.checkoutpg_config.domain +
