@@ -377,16 +377,7 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
     response_obj = YouPayResponse()
     transaction = None
     payment_option = None
-    additional_charges = {
-        "order_amount": None,
-        "processing_fee": None,
-        "service_fee": None,
-        "processing_fee_vat": None,
-        "new_vat": None,
-        "total_amount": None,
-        "additional_percentage": None,
-        "additional_fixed_amount": None
-    }
+    additional_charges = {}
 
     def get_400_message(self):
         """
@@ -437,10 +428,12 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
                             processing_fee + vat_amount)
             total_amount = decimal_rounded(total_amount, decimal_notation)
 
-            self.additional_charges["processing_fee"] = processing_fee
-            self.additional_charges["processing_fee_vat"] = processing_fee_vat
-            self.additional_charges["new_vat"] = vat_amount
-            self.additional_charges["total_amount"] = total_amount
+            self.additional_charges = {
+                "processing_fee": processing_fee,
+                "processing_fee_vat": processing_fee_vat,
+                "new_vat": vat_amount,
+                "total_amount": total_amount
+            }
 
             """ Saving to additional charges table"""
             dct_update_data = {
@@ -451,7 +444,8 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
             self.create_additional_charges(dct_update_data)
         except Exception as e:
             logger.error("Exception occurred during payment gateway "
-                         "processing fee calculation of {}".format(str(e)))
+                         "processing fee calculation of {} {}"
+                         "".format(self.transaction.transaction_id, str(e)))
             raise e
 
     def get(self, request, *args, **kwargs):
@@ -480,23 +474,24 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
                 if not additional_charge_obj:
                     self.calculate_additional_charges(additional_fee)
                 else:
-                    self.additional_charges["processing_fee"] = (
-                        additional_charge_obj.additional_processing_fee)
-                    self.additional_charges["processing_fee_vat"] = (
-                        additional_charge_obj.additional_processing_fee_vat)
-                    self.additional_charges["new_vat"] = (
-                        additional_charge_obj.additional_vat)
-                    self.additional_charges["total_amount"] = (
+                    self.additional_charges = {
+                        "processing_fee": (
+                            additional_charge_obj.additional_processing_fee),
+                        "processing_fee_vat": (
+                        additional_charge_obj.additional_processing_fee_vat),
+                        "new_vat": (
+                        additional_charge_obj.additional_vat),
+                        "total_amount": (
                         additional_charge_obj.additional_total_amount)
+                    }
 
-                self.additional_charges["order_amount"] = (
-                    self.transaction.base_amount)
-                self.additional_charges["service_fee"] = (
-                    self.transaction.service_fee)
-                self.additional_charges["additional_percentage"] = (
-                    additional_fee.percentage)
-                self.additional_charges["additional_fixed_amount"] = (
-                    additional_fee.fixed_amount)
+                additional_charge_update = {
+                    "order_amount": self.transaction.base_amount,
+                    "service_fee": self.transaction.service_fee,
+                    "additional_percentage": additional_fee.percentage,
+                    "additional_fixed_amount": additional_fee.fixed_amount
+                }
+                self.additional_charges.update(additional_charge_update)
 
                 data = self.response_obj.get_success_dict(
                     code=1000,
@@ -513,8 +508,8 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
                 return Response(data,
                                 status=status.HTTP_200_OK)
         except Exception as e:
-            logger.error("Error in fetching additional charges:"
-                         " {}".format(str(e)))
+            logger.error("Error in fetching additional charges for :"
+                         " {} {}".format(transaction_id, str(e)))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
