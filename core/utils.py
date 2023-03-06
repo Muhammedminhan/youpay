@@ -1,10 +1,10 @@
 import json
 import logging
-from contextlib import contextmanager
 from base64 import b64decode, b64encode
+from contextlib import contextmanager
+from decimal import Decimal
 from functools import wraps
 from os import urandom
-from decimal import ROUND_HALF_UP, Decimal
 from time import sleep
 
 import redis
@@ -15,12 +15,11 @@ from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
-from integrations.constants import CHECKOUTPG_HUB_CODE, TABBYPG_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
-
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
-    PAYMENT_STATUS_PAID)
+    PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -295,7 +294,7 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
         payment_status = response_data.get("status").lower()
         approved = response_data.get('approved', False)
 
-        if source == 'applepay' and approved:
+        if source == PAYMENT_METHOD_APPLEPAY and approved:
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID
             is_flagged = response_data.get("risk").get("flagged")
