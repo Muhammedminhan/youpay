@@ -96,3 +96,19 @@ class YoupayToPaymentGatewaysData(AbstractDateTime):
                                     default=REQUEST_METHOD_NONE,
                                     db_index=True,
                                     help_text='Payment status')
+
+
+class PaymentOptions(AbstractDateTime, AbstractUserBase):
+    name = models.CharField(
+        max_length=255, help_text='Name of the payment option')
+    gateway = models.ForeignKey(
+        'integrations.PaymentGateway', null=True,
+        blank=True, on_delete=models.CASCADE,
+        related_name="gateway_payment_option")
+
+    class Meta:
+        verbose_name = "Payment Option"
+        verbose_name_plural = "Payment Options"
+
+    def __str__(self):
+        return str(self.name)
