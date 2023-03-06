@@ -607,17 +607,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 redirect, response_data = process_checkoutpg_response_verification(
                     self.transaction_id, res_data)
 
-                if redirect:
-                    response_code = self.APPLE_PAY_STATUS_UPDATED_PAID
-                    message = self.MESSAGE.get(response_code)
-                    logger.info(message)
+                response_code = self.APPLE_PAY_REDIRECT
+                message = self.MESSAGE.get(response_code)
+                logger.info(message)
 
-                    return response_data, response_code
-                else:
-                    response_code = self.APPLE_PAY_BAD_REQUEST
-                    message = self.MESSAGE.get(response_code)
-                    logger.info(message)
-                    return response_data, response_code
+                return response_data, response_code
 
             else:
                 message = (

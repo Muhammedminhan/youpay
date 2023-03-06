@@ -49,6 +49,7 @@ class YouPayResponse(object):
     APPLE_PAY_BAD_REQUEST = 5400
     APPLE_PAY_SUCCESS = 5200
     APPLE_PAY_CREATED = 5201
+    APPLE_PAY_REDIRECT = 5308
 
     # This is to provide success http status codes in API response
     APPLEPAY_SUCCESS_CODES = APPLEPAY_SUCCESS_CODE_LISTS
@@ -75,9 +76,15 @@ class YouPayResponse(object):
             self.APPLE_PAY_BAD_REQUEST: "Applepay bad request",
             self.APPLE_PAY_SUCCESS: "Applepay request success",
             self.APPLE_PAY_CREATED: "Applepay request created",
-            self.APPLE_PAY_STATUS_UPDATED_PENDING: "Apple pay payment status updated to pending",
-            self.APPLE_PAY_STATUS_UPDATED_AUTHORIZED: "Apple pay payment status updated to authorized",
-            self.APPLE_PAY_STATUS_UPDATED_PAID: "Apple pay payment status updated to paid",
+            self.APPLE_PAY_STATUS_UPDATED_PENDING: "Apple pay payment "
+                                                   "status updated to "
+                                                   "pending",
+            self.APPLE_PAY_STATUS_UPDATED_AUTHORIZED: "Apple pay payment "
+                                                      "status updated to "
+                                                      "authorized",
+            self.APPLE_PAY_STATUS_UPDATED_PAID: "Apple pay payment status "
+                                                "updated to paid",
+            self.APPLE_PAY_REDIRECT: "Apple pay redirect",
 
             self.PAYMENT_FAILED: "Payment failed",
             self.TABBYPG_CONNECTION_ERROR: "Tabbypg connection error",

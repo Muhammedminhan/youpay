@@ -117,6 +117,7 @@ APPLEPAY_SUCCESS_CODE_LISTS = [
     5102,
     5103,
     5201,
+    5308,  # redirect
 ]
 
 YOUPAY_TABBY_BACKTOSTORE_PATH = '/services/api/v1/tabbypg/back-to-store/'
