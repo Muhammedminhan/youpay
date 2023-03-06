@@ -120,4 +120,6 @@ APPLEPAY_SUCCESS_CODE_LISTS = [
     5308,  # redirect
 ]
 
+ADCB_CHECKOUTPG_PAYMENT_NOT_PAID = 1012
+
 YOUPAY_TABBY_BACKTOSTORE_PATH = '/services/api/v1/tabbypg/back-to-store/'

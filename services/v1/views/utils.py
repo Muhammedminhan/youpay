@@ -42,6 +42,9 @@ def reformat_payment_request_data(data):
         data['cart_service_fee'] = order.get('cart_service_fee')
         data['cart_base_amount'] = order.get('cart_base_amount')
         data['cart_VAT_amount'] = order.get('cart_VAT_amount')
+        data['additional_vat_percentage'] = order.get('additional_vat_percentage')
+        data['additional_currency_decimal_notation'] = (
+            order.get('additional_currency_decimal_notation'))
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')
