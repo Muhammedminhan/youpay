@@ -3,7 +3,7 @@ from django.contrib import admin
 from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
 from payments.models import (YouPayTransactionData, Announcement,
-                             ClientNotification)
+                             ClientNotification, AdditionalCharge)
 from payments.forms import AnnouncementForm
 
 class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
@@ -60,6 +60,24 @@ class ClientNotificationAdmin(admin.ModelAdmin):
     get_transaction.short_description = 'youpay transaction id'
 
 
+class AdditionalChargeAdmin(admin.ModelAdmin):
+    list_display = (
+        'get_transaction', 'payment_option', 'additional_vat',
+        'additional_processing_fee', 'additional_total_amount',
+        'created_at', 'updated_at',)
+    search_fields = ('transaction__transaction_id', 'payment_option')
+    list_filter = ('created_at',)
+    raw_id_fields = ('transaction',)
+    readonly_fields = ('payment_option', 'created_at', 'updated_at')
+
+    def get_transaction(self, obj):
+        return obj.transaction.transaction_id
+
+    get_transaction.admin_order_field = 'transaction'
+    get_transaction.short_description = 'youpay transaction id'
+
+
 admin.site.register(YouPayTransactionData, YouPayTransactionDataAdmin)
 admin.site.register(Announcement, AnnouncementAdmin)
 admin.site.register(ClientNotification, ClientNotificationAdmin)
+admin.site.register(AdditionalCharge, AdditionalChargeAdmin)

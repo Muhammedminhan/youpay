@@ -1,9 +1,10 @@
 import json
 import logging
-from base64 import b64decode, b64encode
 from contextlib import contextmanager
+from base64 import b64decode, b64encode
 from functools import wraps
 from os import urandom
+from decimal import ROUND_HALF_UP, Decimal
 from time import sleep
 
 import redis
@@ -14,8 +15,9 @@ from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.models import AppConfig
-from integrations.constants import CHECKOUTPG_HUB_CODE
-from integrations.models import PaymentGateway
+from integrations.constants import CHECKOUTPG_HUB_CODE, TABBYPG_HUB_CODE
+from integrations.models import PaymentGateway, AdditionalChargeConfiguration
+
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID)
@@ -150,6 +152,30 @@ def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
             logging.error('No gateway configuration instance found.')
             return None
     return gateway_config
+
+
+def decimal_rounded(amount, decimal_notation):
+    if not isinstance(amount, Decimal):
+        amount = Decimal(amount)
+    amount_rounded = Decimal(
+        amount.quantize(Decimal(str(decimal_notation))))
+    return amount_rounded
+
+
+def get_gateway_additional_fee(payment_option_name):
+    """
+    :param payment_option_name
+    :return:
+    """
+    additional_fee = None
+    if payment_option_name:
+        try:
+            additional_fee = AdditionalChargeConfiguration.objects.get(
+                payment_option__name=payment_option_name, is_active=True)
+        except (AdditionalChargeConfiguration.DoesNotExist, Exception):
+            logging.info('No additional fee instance found for '
+                         '{}.'.format(payment_option_name))
+    return additional_fee
 
 
 def get_site_domain(request):
