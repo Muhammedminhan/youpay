@@ -1,14 +1,13 @@
 import json
 import logging
-
 from decimal import Decimal
-from rest_framework.views import APIView
+
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from services.v1.views.common import YouPayTransactionCRUD
-from core.response_messages import YouPayResponse
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
+from core.response_messages import YouPayResponse
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_TOUCHPOINTS,
@@ -16,6 +15,8 @@ from payments.constants import (
     PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING
 )
 from services.v1.constants import B2C_PAYBACK_NO_RESPONSE_MESSAGE
+from services.v1.views.common import (
+    YouPayTransactionCRUD, cancelled_payment_check)
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,7 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
+@cancelled_payment_check
 class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -108,6 +110,7 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
+@cancelled_payment_check
 class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
