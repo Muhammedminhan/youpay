@@ -25,7 +25,8 @@ class WebhookListener(APIView):
             logger.info("Happy credits webhook received for payment {}"
                         "".format(payment_reference))
 
-            lock_name = 'lock:HappyCreditsWebhookListener:invoice_%d' % (1,)
+            lock_name = ('lock:HappyCreditsWebhookListener:'
+                         'payment_reference_%s' % (payment_reference,))
             with wait_redis_lock(lock_name=lock_name):
                 transaction_obj = self.get_transaction_object(
                     payment_reference)
@@ -71,7 +72,11 @@ class WebhookListener(APIView):
                     transaction = (
                         HappyCreditsClientData.objects.select_for_update(
                         ).get(payment_reference=payment_reference))
+                    logger.info("Happy credits client data found for "
+                                "{}.".format(payment_reference))
                 except HappyCreditsClientData.DoesNotExist:
+                    logger.info("Happy credits client data not found for "
+                                "{}.".format(payment_reference))
                     transaction = None
             return transaction
 

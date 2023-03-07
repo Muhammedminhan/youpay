@@ -115,9 +115,6 @@ class YouPayTransactionCRUD(object):
 
         data_dict['is_fraud'] = data.get('is_fraud', None)
         data_dict['is_flagged'] = data.get('is_flagged', None)
-
-        data_dict['is_fraud'] = data.get('is_fraud', None)
-        data_dict['is_flagged'] = data.get('is_flagged', None)
         data_dict['retry_count'] = data.get('retry_count', None)
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
