@@ -31,7 +31,9 @@ class PaymentStatusCheckMiddleware(object):
         from core.utils import decrypt_string
         cancelled_payment_check = getattr(view_func,
                                           'cancelled_payment_check', False)
-        if cancelled_payment_check:
+        
+        # this will check for only post requests
+        if cancelled_payment_check and request.method == 'POST':
             data = json.loads(request.body)
             transaction_id = decrypt_string(data.get('transaction_id', None))
 
