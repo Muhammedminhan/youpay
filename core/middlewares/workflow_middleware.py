@@ -4,6 +4,7 @@ import logging
 from django.http import JsonResponse
 
 from core.constants import MAX_PAYMENT_RETRY_COUNT
+from core.messages import MIDDLEWARE_STATUS_CHECK_MESSAGE
 from core.response_messages import YouPayResponse
 from payments.constants import PAYMENT_STATUS_CANCELLED
 
@@ -52,9 +53,7 @@ class PaymentStatusCheckMiddleware(object):
                 already canceled transactions
                 """
 
-                transaction_message = (
-                    "Transaction Failed : You are trying to pay for a "
-                    "cancelled transaction. Please try again.")
+                transaction_message = MIDDLEWARE_STATUS_CHECK_MESSAGE
 
                 logger.info(transaction_message + str(transaction_id))
 
