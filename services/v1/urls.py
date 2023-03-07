@@ -26,8 +26,8 @@ router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
     path("", include(router.urls)),
-    path('payment/', PaymentRequestView.as_view()),
     path('additional-charges/', AdditionalChargeCalculation.as_view()),
+    path('payment/', PaymentRequestView.as_view(), name='PaymentRequestView'),
     # For testing purpose
     # input will be the request data, output will be encrypted data and this
     # will be the input for the payment API

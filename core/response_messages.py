@@ -19,7 +19,11 @@ class YouPayResponse(object):
 
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
+
+    MIDDLEWARE_REDIRECTED = 1307
+
     TRANSACTION_NOT_FOUND = 1404
+    MAX_PAYMENT_ATTEMPT_REACHED = 1416
 
     """checkoutpg related begins"""
     CHECKOUTPG_CONNECTION_ERROR = 2003
@@ -92,7 +96,9 @@ class YouPayResponse(object):
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
             self.TRANSACTION_NOT_FOUND: "Transaction not found",
-            self.MISSING_CLIENT_INFO: "API Client data missing"
+            self.MISSING_CLIENT_INFO: "API Client data missing",
+            self.MAX_PAYMENT_ATTEMPT_REACHED: "Max payment attempt reached",
+            self.MIDDLEWARE_REDIRECTED: "Request redirected",
         })
 
     def get_400_message(self, message):

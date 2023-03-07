@@ -179,6 +179,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    retry_count = models.IntegerField(default=0, null=True, blank=True,
+                                      help_text="used to store retry count")
     additional_vat_percentage = models.DecimalField(
         default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
         help_text='Percentage value of VAT')

@@ -8,8 +8,7 @@ from rest_framework.views import APIView
 from core.messages import REDIRECT_URL, IS_REDIRECT
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string
-from core.utils import get_site_domain
+from core.utils import get_site_domain, decrypt_string
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.serializers.checkoutpg_payment_request import (
     ApplepayPaymentDataSerializer
@@ -23,11 +22,16 @@ from services.constants import (
     TOKEN_TYPE_CARD,
     TOKEN_TYPE_PAYPAL
 )
-from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
+from services.v1.views.common import (
+    YouPayTransactionCRUD,
+    cancelled_payment_check,
+    ClientValidator
+)
 
 logger = logging.getLogger(__name__)
 
 
+@cancelled_payment_check
 class SavedCardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -130,6 +134,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
+@cancelled_payment_check
 class CardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -180,6 +185,7 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
+@cancelled_payment_check
 class PaypalPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -263,7 +269,7 @@ class CheckoutVerification(APIView):
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 
-
+@cancelled_payment_check
 class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                               ClientValidator):
     response_obj = YouPayResponse()
