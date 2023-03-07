@@ -8,14 +8,22 @@ from rest_framework.views import APIView
 from core.messages import REDIRECT_URL, IS_REDIRECT
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.utils import get_site_domain, decrypt_string
+from core.utils import decrypt_string
+from core.utils import get_site_domain
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from integrations.v1.serializers.checkoutpg_payment_request import (
+    ApplepayPaymentDataSerializer
+)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import TOKEN_TYPE_SAVED_CARD, TOKEN_TYPE_CARD, \
+from services.constants import (
+    TOKEN_TYPE_APPLEPAY,
+    TOKEN_TYPE_SAVED_CARD,
+    TOKEN_TYPE_CARD,
     TOKEN_TYPE_PAYPAL
-from services.v1.views.common import YouPayTransactionCRUD
+)
+from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 
 logger = logging.getLogger(__name__)
 
@@ -251,6 +259,59 @@ class CheckoutVerification(APIView):
                                 status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error("Error in CheckoutVerification: {}".format(str(e)))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
+                              ClientValidator):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        Applepay update status API
+        """
+        try:
+            transaction_id = request.data.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+                serializer = ApplepayPaymentDataSerializer(transaction_obj)
+                transaction_data = serializer.data
+
+                payment_data = {
+                    'transaction_data': transaction_data,
+                    'transaction_obj': transaction_obj,
+                    'payment_stage': request.data.get('payment_stage'),
+                    'status': request.data.get('status'),
+                    'token_type': TOKEN_TYPE_APPLEPAY,
+                    'request_data': request.data,
+                    'response_data': request.data
+                }
+                checkout = CheckoutpgManager()
+                response_data, code = checkout.applepay_update_status(
+                    payment_data)
+                if code in self.response_obj.APPLEPAY_SUCCESS_CODES:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+            else:
+                data = self.response_obj.get_404_message(
+                    message=TRANSACTION_DOESNT_EXIST)
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

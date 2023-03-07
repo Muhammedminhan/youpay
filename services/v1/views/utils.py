@@ -35,6 +35,7 @@ def reformat_payment_request_data(data):
         data['base_amount'] = order.get('base_amount')
         data['VAT_amount'] = order.get('VAT_amount')
         data['currency'] = order.get('currency')
+        data['country_code'] = order.get('country_code')
 
         data['cart_amount'] = order.get('cart_amount')
         data['cart_currency'] = order.get('cart_currency')
@@ -118,42 +119,84 @@ def get_payment_options(transaction_obj, gateways):
     store_currency = transaction_obj.cart_currency
     for gateway in gateways:
         code = gateway.code
-        if code == CHECKOUTPG_HUB_CODE:
-            validation_json = gateway.validation_json
 
-            if validation_json:
-                paypal_flag = gateway.validation_json.get("is_paypal_enabled",
-                                                          False)
-                applepay_flag = gateway.validation_json.get(
-                    "is_applepay_enabled", False)
-                saved_card_flag = gateway.validation_json.get(
-                    "is_saved_card_enabled", False)
+        # get checkoutpg payment options
+        response_payment_options = get_checkoutpg_payment_options(
+            code, gateway, response_payment_options)
 
-                # enable or disable based on validation_json
-                response_payment_options['saved_card'] = saved_card_flag
-                response_payment_options['applepay'] = applepay_flag
-                response_payment_options['paypal'] = paypal_flag
-            else:
-                logger.warning("validation_json not setup for {}".format(
-                    gateway.gateway_name))
+        # get b2cpayback payment options
+        response_payment_options = get_b2cpayback_payment_options(
+            code, store_currency, response_payment_options)
 
-            # Always active if checkout is active in API client
-            response_payment_options['checkoutpg'] = True
+        # get tabbypg payment options
+        response_payment_options = get_tabbypg_payment_options(
+            code, store_currency, response_payment_options)
 
-        if code == B2CPAYBACK_HUB_CODE and (store_currency in
-                                            ADCBPG_STORE_CURRENCIES):
-            response_payment_options['adcb'] = True
+        # get amazonpg payment options
+        response_payment_options = get_amazonpg_payment_options(
+            code, store_currency, response_payment_options)
 
-        if code == TABBYPG_HUB_CODE and (store_currency in
-                                         TABBYPG_STORE_CURRENCIES):
-            response_payment_options['tabbypg'] = True
+        # get happycredits payment options
+        response_payment_options = get_haapycredits_payment_options(
+            code, store_currency, response_payment_options
+        )
 
-        if code == AMAZONPG_HUB_CODE and (store_currency in
-                                          AMAZONPG_STORE_CURRENCIES):
-            response_payment_options['amazonpg'] = True
+    return response_payment_options
 
-        if code == HAPPYCREDITS_HUB_CODE:
-            response_payment_options['happy_credits'] = True
+
+def get_checkoutpg_payment_options(code, gateway, response_payment_options):
+    if code == CHECKOUTPG_HUB_CODE:
+        validation_json = gateway.validation_json
+
+        if validation_json:
+            paypal_flag = gateway.validation_json.get("is_paypal_enabled",
+                                                      False)
+            applepay_flag = gateway.validation_json.get(
+                "is_applepay_enabled", False)
+            saved_card_flag = gateway.validation_json.get(
+                "is_saved_card_enabled", False)
+
+            # enable or disable based on validation_json
+            response_payment_options['saved_card'] = saved_card_flag
+            response_payment_options['applepay'] = applepay_flag
+            response_payment_options['paypal'] = paypal_flag
+        else:
+            logger.warning("validation_json not setup for {}".format(
+                gateway.gateway_name))
+
+        # Always active if checkout is active in API client
+        response_payment_options['checkoutpg'] = True
+    return response_payment_options
+
+
+def get_b2cpayback_payment_options(code, store_currency,
+                                   response_payment_options):
+    if code == B2CPAYBACK_HUB_CODE and (store_currency in
+                                        ADCBPG_STORE_CURRENCIES):
+        response_payment_options['adcb'] = True
+    return response_payment_options
+
+
+def get_tabbypg_payment_options(code, store_currency,
+                                response_payment_options):
+    if code == TABBYPG_HUB_CODE and (store_currency in
+                                     TABBYPG_STORE_CURRENCIES):
+        response_payment_options['tabbypg'] = True
+    return response_payment_options
+
+
+def get_amazonpg_payment_options(code, store_currency,
+                                 response_payment_options):
+    if code == AMAZONPG_HUB_CODE and (store_currency in
+                                      AMAZONPG_STORE_CURRENCIES):
+        response_payment_options['amazonpg'] = True
+    return response_payment_options
+
+
+def get_haapycredits_payment_options(code, store_currency,
+                                 response_payment_options):
+    if code == HAPPYCREDITS_HUB_CODE:
+        response_payment_options['happy_credits'] = True
 
     return response_payment_options
 

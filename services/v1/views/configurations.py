@@ -22,6 +22,9 @@ from payments.constants import (
     PAYMENT_STATUS_PAID
 )
 from payments.models import YouPayTransactionData
+from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
+                                APPLEPAY_MERCHANT_CAPABILITIES,
+                                APPLEPAY_LABEL)
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -132,11 +135,11 @@ class ConfigViewSet(ViewSet):
                             tabbypg_config=tabbypg_config,
                             checkoutpg_config=checkout_config,
                             payback_config=payback_config,
+                            applepay_config=applepay_config,
                             transaction=transaction,
                             announcements_dict=announcements_dict,
                             status_code=status_code,
                             paypal_config = paypal_config,
-                            applepay_config= applepay_config
                         )
 
                         data = self.response_obj.get_success_dict(
@@ -204,6 +207,7 @@ class ConfigViewSet(ViewSet):
         if transaction:
             amount = transaction.amount
             currency = transaction.currency
+            country_code = transaction.country_code
             service_fee = transaction.service_fee
             VAT_amount = transaction.VAT_amount
             base_amount = transaction.base_amount
@@ -240,6 +244,7 @@ class ConfigViewSet(ViewSet):
 
                 "amount": amount,
                 "currency": currency,
+                "country_code": country_code,
                 "service_fee": service_fee,
                 "vat_amount": VAT_amount,
                 "base_amount": base_amount,
@@ -275,6 +280,12 @@ class ConfigViewSet(ViewSet):
         returns applepay additional fee config
         only if applepay is enabled
         """
+        applepay_config = {}
+        applepay_config["supportedNetworks"] = APPLEPAY_SUPPORTED_NETWORKS
+        applepay_config[
+            "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
+        applepay_config["label"] = APPLEPAY_LABEL
+
         applepay_config = {}
         applepay_enabled = payment_option.get('applepay', False)
         if applepay_enabled:
