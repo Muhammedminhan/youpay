@@ -1,17 +1,17 @@
 import logging
 
-from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
-from core.utils import get_site_domain, decrypt_string
+from core.utils import decrypt_string
 from integrations.v1.gateway_clients.amazonpg import AmazonPGManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.v1.views.common import YouPayTransactionCRUD
+from services.v1.views.common import (
+    YouPayTransactionCRUD, cancelled_payment_check)
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,7 @@ class AmazonPGTokenization(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
+@cancelled_payment_check
 class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
