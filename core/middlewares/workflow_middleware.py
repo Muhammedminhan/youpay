@@ -5,7 +5,6 @@ from django.http import JsonResponse
 
 from core.constants import MAX_PAYMENT_RETRY_COUNT
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string
 from payments.constants import PAYMENT_STATUS_CANCELLED
 
 logger = logging.getLogger(__name__)
@@ -29,6 +28,7 @@ class PaymentStatusCheckMiddleware(object):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
 
+        from core.utils import decrypt_string
         cancelled_payment_check = getattr(view_func,
                                           'cancelled_payment_check', False)
         if cancelled_payment_check:
