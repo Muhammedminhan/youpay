@@ -7,6 +7,7 @@ from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
 )
+from core.utils import wait_redis_lock
 from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import YouPayTransactionData
@@ -61,53 +62,56 @@ class YouPayTransactionCRUD(object):
         """Method to update youpay transaction data"""
         data_dict = {}
         transaction_id = data.get('transaction_id')
-        data_dict['payment_reference'] = data.get('payment_reference', None)
-        data_dict['payment_status'] = data.get('payment_status', None)
-        data_dict['payment_gateway'] = data.get('payment_gateway', None)
-        data_dict['channel_code'] = data.get('channel_code', None)
-        data_dict['payment_method'] = data.get('payment_method', None)
-        data_dict['payment_scheme'] = data.get('payment_scheme', None)
-        data_dict['is_gcc_card'] = data.get('is_gcc_card', False)
-        data_dict['card_bin'] = data.get('card_bin', None)
-        data_dict['card_last4'] = data.get('card_last4', None)
-        data_dict['card_issuer_country'] = data.get('card_issuer_country',
-                                                    None)
-        data_dict['approved'] = data.get('approved', None)
-        data_dict['response_summary'] = data.get('response_summary', None)
-        data_dict['name_on_card'] = data.get('name_on_card', None)
+        lock_name = 'lock:YoupayTransactionDataUpdation:transaction_%s' % (
+            transaction_id,)
+        with wait_redis_lock(lock_name=lock_name):
+            data_dict['payment_reference'] = data.get('payment_reference', None)
+            data_dict['payment_status'] = data.get('payment_status', None)
+            data_dict['payment_gateway'] = data.get('payment_gateway', None)
+            data_dict['channel_code'] = data.get('channel_code', None)
+            data_dict['payment_method'] = data.get('payment_method', None)
+            data_dict['payment_scheme'] = data.get('payment_scheme', None)
+            data_dict['is_gcc_card'] = data.get('is_gcc_card', False)
+            data_dict['card_bin'] = data.get('card_bin', None)
+            data_dict['card_last4'] = data.get('card_last4', None)
+            data_dict['card_issuer_country'] = data.get('card_issuer_country',
+                                                        None)
+            data_dict['approved'] = data.get('approved', None)
+            data_dict['response_summary'] = data.get('response_summary', None)
+            data_dict['name_on_card'] = data.get('name_on_card', None)
 
-        data_dict['redeemed_amount'] = data.get('redeemed_amount', None) or 0
-        data_dict['redeemed_points'] = data.get('redeemed_points', None) or 0
-        data_dict['payable_amount'] = data.get('payable_amount', None) or 0
-        data_dict['available_amount'] = (data.get('available_amount', None)
-                                         or 0)
-        data_dict['available_points'] = (data.get('available_points', None)
-                                         or 0)
-        data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
-        
-        data_dict['is_fraud'] = data.get('is_fraud', None)
-        data_dict['is_flagged'] = data.get('is_flagged', None)
-        try:
-            transaction_obj = self.get_youpay_transaction_data(transaction_id)
-            if transaction_obj:
-                saved_fields = [
-                    'updated_at'
-                ]
-                saved_fields = get_saved_fields(saved_fields,
-                                                data_dict,
-                                                transaction_obj)
-                """
-                below data update condition specific for adcb transactions
-                """
-                saved_fields = get_adcb_saved_fields(
-                    saved_fields, data_dict, transaction_obj)
-                transaction_obj.save(update_fields=saved_fields)
-            else:
-                logger.error("unable to find the transaction object for {}"
-                             "".format(transaction_id))
-        except Exception as e:
-            logger.error("Unable to update the transaction object, {0}"
-                         "".format(str(e)))
+            data_dict['redeemed_amount'] = data.get('redeemed_amount', None) or 0
+            data_dict['redeemed_points'] = data.get('redeemed_points', None) or 0
+            data_dict['payable_amount'] = data.get('payable_amount', None) or 0
+            data_dict['available_amount'] = (data.get('available_amount', None)
+                                             or 0)
+            data_dict['available_points'] = (data.get('available_points', None)
+                                             or 0)
+            data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
+
+            data_dict['is_fraud'] = data.get('is_fraud', None)
+            data_dict['is_flagged'] = data.get('is_flagged', None)
+            try:
+                transaction_obj = self.get_youpay_transaction_data(transaction_id)
+                if transaction_obj:
+                    saved_fields = [
+                        'updated_at'
+                    ]
+                    saved_fields = get_saved_fields(saved_fields,
+                                                    data_dict,
+                                                    transaction_obj)
+                    """
+                    below data update condition specific for adcb transactions
+                    """
+                    saved_fields = get_adcb_saved_fields(
+                        saved_fields, data_dict, transaction_obj)
+                    transaction_obj.save(update_fields=saved_fields)
+                else:
+                    logger.error("unable to find the transaction object for {}"
+                                 "".format(transaction_id))
+            except Exception as e:
+                logger.error("Unable to update the transaction object, {0}"
+                             "".format(str(e)))
 
 
 class ClientValidator(object):
