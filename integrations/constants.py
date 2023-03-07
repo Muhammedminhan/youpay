@@ -20,7 +20,7 @@ CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT = '/gateway/checkout/api/v1/create-transa
 
 CHECKOUTPG_CONFIG_ENDPOINT = '/gateway/checkout/api/v1/configuration/'
 CHECKOUTPG_CONFIG_ENDPOINT_V2 = '/gateway/checkout/api/v2/configuration/'
-CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2 = '/gateway/checkout/api/v2/get-key-and-secret/'
+CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2 = '/gateway/checkout/api/v2/secret/'
 
 CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT = (
     '/gateway/checkout/api/v1/payment/verify/')
