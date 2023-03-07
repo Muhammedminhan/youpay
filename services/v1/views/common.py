@@ -9,7 +9,7 @@ from core.messages import (
 )
 from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
-from payments.models import YouPayTransactionData
+from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -89,11 +89,13 @@ class YouPayTransactionCRUD(object):
                                          or 0)
         data_dict['available_points'] = (data.get('available_points', None)
                                          or 0)
-        data_dict['additional_vat'] = data.get('new_vat', None)
-        data_dict['additional_processing_fee'] = data.get('processing_fee', None)
-        data_dict['additional_processing_fee_vat'] = data.get('processing_fee_vat'
-                                                          , None)
-        data_dict['additional_total_amount'] = data.get('total_amount', None)
+        data_dict['additional_vat'] = data.get('additional_vat', None)
+        data_dict['additional_processing_fee'] = (
+            data.get('additional_processing_fee', None))
+        data_dict['additional_processing_fee_vat'] = (
+            data.get('additional_processing_fee_vat', None))
+        data_dict['additional_total_amount'] = (
+            data.get('additional_total_amount', None))
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
 
         data_dict['is_fraud'] = data.get('is_fraud', None)
@@ -233,6 +235,37 @@ def get_adcb_saved_fields(saved_fields, data_dict, transaction_obj):
             saved_fields.append(key)
 
     return saved_fields
+
+
+class AdditionalChargesUpdation(object):
+    """
+    YouPay Additional Charges CRUD Operations will be here
+    """
+    def get_additional_charges(self, transaction_id, payment_option):
+        additional_charges = None
+        try:
+            additional_charges = AdditionalCharge.objects.get(
+                payment_option=payment_option,
+                transaction__transaction_id=transaction_id)
+        except (AdditionalCharge.DoesNotExist, Exception):
+            logger.info("No additional charge instance "
+                        "found for {}".format(transaction_id))
+        return additional_charges
+
+    def create_additional_charges(self, data):
+        try:
+            AdditionalCharge.objects.create(
+                transaction=data.get('transaction'),
+                payment_option=data.get('payment_option'),
+                additional_vat=data.get('new_vat'),
+                additional_processing_fee=data.get('processing_fee'),
+                additional_processing_fee_vat=data.get('processing_fee_vat'),
+                additional_total_amount=data.get('total_amount')
+            )
+        except Exception as e:
+            logger.error("Error in creating additional charge object for {} "
+                         "{}".format(data.get('transaction').transaction_id,
+                                     str(e)))
 
 
 class CancellPaymentsMiddlewareMixin:

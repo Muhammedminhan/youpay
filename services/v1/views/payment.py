@@ -9,14 +9,16 @@ from rest_framework.views import APIView
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
-                        encrypt_string, decrypt_string, get_redirect_url)
+                        encrypt_string, decrypt_string, get_redirect_url,
+                        get_gateway_additional_fee, decimal_rounded)
 from payments.constants import (PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
-from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
+from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
+                                      AdditionalChargesUpdation)
 from services.v1.views.utils import (
     reformat_payment_request_data
 )
@@ -368,3 +370,146 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
         except Exception as e:
             logger.error("Error in transaction expire api ", exc_info=e)
             return Response({"error": str(e), })
+
+
+class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
+                                  YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+    transaction = None
+    payment_option = None
+    additional_charges = {}
+
+    def get_400_message(self):
+        """
+        400 error handling method
+        """
+        message = ('Request data is not in proper format. '
+                   'Required data is missing or incorrect.')
+        return_data = self.response_obj.get_400_message(
+            message=message)
+        return return_data
+
+    def calculate_processing_fee(self, additional_fee, base_amount,
+                                 vat_percent):
+        """
+        Calulate proccessing fee and vat percentage for processing fee
+        """
+        processing_fee = 0
+        percentage = additional_fee.percentage
+        fixed_amount = additional_fee.fixed_amount
+        if percentage:
+            processing_fee += (base_amount * (percentage/100))
+        if fixed_amount:
+            processing_fee += fixed_amount
+        processing_fee_vat = vat_percent * processing_fee
+        return processing_fee, processing_fee_vat
+
+    def calculate_additional_charges(self, additional_fee):
+        """
+        method to calculate new vat amount
+        based on the additional charges for paypal
+        """
+        try:
+            order_amount = self.transaction.base_amount
+            service_fee = self.transaction.service_fee
+            decimal_notation = (
+                self.transaction.additional_currency_decimal_notation)
+            vat_percent = (self.transaction.additional_vat_percentage/100)
+            processing_fee, processing_fee_vat = (
+                self.calculate_processing_fee(
+                    additional_fee, order_amount, vat_percent
+                ))
+            processing_fee = decimal_rounded(processing_fee, decimal_notation)
+            processing_fee_vat = decimal_rounded(processing_fee_vat,
+                                                 decimal_notation)
+            vat_amount = vat_percent * (service_fee + processing_fee)
+            vat_amount = decimal_rounded(vat_amount, decimal_notation)
+            total_amount = (order_amount + service_fee +
+                            processing_fee + vat_amount)
+            total_amount = decimal_rounded(total_amount, decimal_notation)
+
+            self.additional_charges = {
+                "processing_fee": processing_fee,
+                "processing_fee_vat": processing_fee_vat,
+                "new_vat": vat_amount,
+                "total_amount": total_amount
+            }
+
+            """ Saving to additional charges table"""
+            dct_update_data = {
+                "transaction": self.transaction,
+                "payment_option": self.payment_option
+            }
+            dct_update_data.update(self.additional_charges)
+            self.create_additional_charges(dct_update_data)
+        except Exception as e:
+            logger.error("Exception occurred during payment gateway "
+                         "processing fee calculation of {} {}"
+                         "".format(self.transaction.transaction_id, str(e)))
+            raise e
+
+    def get(self, request, *args, **kwargs):
+        """
+        Calculates processing fees based on the
+        additional charges configured for each payment options.
+        """
+        try:
+            query_params = request.query_params
+            logger.info("Additional charge calculating api "
+                        "is executing {}".format(query_params))
+            transaction_id = decrypt_string(query_params.get('id'))
+            self.payment_option = query_params.get('payment_option')
+            if (not query_params or
+                    any([not transaction_id, not self.payment_option])):
+                return_data = self.get_400_message()
+                return Response(return_data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            additional_fee = get_gateway_additional_fee(self.payment_option)
+            if additional_fee:
+                self.transaction = (
+                    self.get_youpay_transaction_data(transaction_id))
+                additional_charge_obj = self.get_additional_charges(
+                    transaction_id, self.payment_option)
+                if not additional_charge_obj:
+                    self.calculate_additional_charges(additional_fee)
+                else:
+                    self.additional_charges = {
+                        "processing_fee": (
+                            additional_charge_obj.additional_processing_fee),
+                        "processing_fee_vat": (
+                        additional_charge_obj.additional_processing_fee_vat),
+                        "new_vat": (
+                        additional_charge_obj.additional_vat),
+                        "total_amount": (
+                        additional_charge_obj.additional_total_amount)
+                    }
+
+                additional_charge_update = {
+                    "order_amount": self.transaction.base_amount,
+                    "service_fee": self.transaction.service_fee,
+                    "additional_percentage": additional_fee.percentage,
+                    "additional_fixed_amount": additional_fee.fixed_amount
+                }
+                self.additional_charges.update(additional_charge_update)
+
+                data = self.response_obj.get_success_dict(
+                    code=1000,
+                    success_dict=(
+                        {"additional_charges": self.additional_charges})
+                )
+                return Response(data,
+                                status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_success_dict(
+                    code=1000,
+                    success_dict={"additional_charges": {}}
+                )
+                return Response(data,
+                                status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error("Error in fetching additional charges for :"
+                         " {} {}".format(transaction_id, str(e)))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)

@@ -16,7 +16,8 @@ from .api_clients.amazonpg import (AmazonPGAuthentication,
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
-                            PaymentCancelledView, TransactionExpireView)
+                            PaymentCancelledView, TransactionExpireView,
+                            AdditionalChargeCalculation)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -24,6 +25,7 @@ router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
     path("", include(router.urls)),
+    path('additional-charges/', AdditionalChargeCalculation.as_view()),
     path('payment/', PaymentRequestView.as_view(), name='PaymentRequestView'),
     # For testing purpose
     # input will be the request data, output will be encrypted data and this
