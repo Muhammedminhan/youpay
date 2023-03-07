@@ -487,9 +487,7 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
 
                 additional_charge_update = {
                     "order_amount": self.transaction.base_amount,
-                    "service_fee": self.transaction.service_fee,
-                    "additional_percentage": additional_fee.percentage,
-                    "additional_fixed_amount": additional_fee.fixed_amount
+                    "service_fee": self.transaction.service_fee
                 }
                 self.additional_charges.update(additional_charge_update)
 
