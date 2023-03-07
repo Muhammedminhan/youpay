@@ -18,7 +18,8 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT,
                                     PAYMENT_REQUEST_TYPE_PAYMENT,
                                     CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT,
-                                    PAYMENT_REQUEST_CREATE_TRANSACTION)
+                                    PAYMENT_REQUEST_CREATE_TRANSACTION,
+                                    CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2)
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
@@ -106,6 +107,43 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         return data, self.SUCCESS
 
                     return message, resp_status
+                logger.error("Unable to fetch Checkoutpg configurations.")
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
+            except Exception as e:
+                logger.error(
+                    "Failed to fetch the checkoutpg v2 configuration "
+                    "data {}".format(e))
+                return None, self.CHECKOUTPG_CONNECTION_ERROR
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, self.CHECKOUTPG_CONNECTION_ERROR
+
+    def get_key_and_secret(self, currency):
+        """
+        Method for getting key and secret
+        """
+        if self.checkoutpg_config:
+            channel_codes = []
+            channel_code = CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
+                currency.upper())
+            channel_codes.append(channel_code)
+
+            params = {'channel_code': channel_codes}
+            headers = {'Api-key': self.checkoutpg_config.api_key}
+            try:
+                URL = (self.checkoutpg_config.domain +
+                       CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2)
+
+                key_and_secret_response = requests.get(url=URL, params=params,
+                                                       headers=headers)
+                if key_and_secret_response:
+                    response = json.loads(key_and_secret_response.text)
+                    resp_status = response.get('status', False)
+                    if response and resp_status == status.HTTP_200_OK:
+                        key_and_secret = response.get('key_and_secret', None)
+
+                        data = key_and_secret
+                        return data, self.SUCCESS
                 logger.error("Unable to fetch Checkoutpg configurations.")
                 return None, self.CHECKOUTPG_CONNECTION_ERROR
             except Exception as e:
@@ -608,8 +646,21 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 return data, code
 
             elif payment_stage == PAYMENT_STATUS_AUTHORIZED:
+
+                key_and_secret_data, code = self.get_key_and_secret(
+                    transaction_data.get('currency', None))
+                if key_and_secret_data:
+                    response_data['key_and_secret_data'] = (
+                        key_and_secret_data[0])
+                else:
+                    logger.error(
+                        "Error in getting key and secret data for apple pay on transaction id {} ".format(
+                            self.transaction_id))
+                    return None, self.CHECKOUTPG_RESPONSE_FAILED
+
                 self.payment_status = PAYMENT_STATUS_AUTHORIZED
                 response_data["data"] = transaction_data
+
                 response_code = self.APPLE_PAY_STATUS_UPDATED_AUTHORIZED
                 message = self.MESSAGE.get(response_code)
 
