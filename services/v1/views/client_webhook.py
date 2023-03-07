@@ -48,8 +48,8 @@ class ClientService(object):
                     'date': str(datetime.datetime.utcnow()),
                 }
                 logger.info(
-                    "Sending webhook to client for transaction id: {}\nURL: {}"
-                    "\nHeaders: {}\nData: {}".format(
+                    "Sending webhook to client for transaction id: {} URL: {}"
+                    " Headers: {} Data: {}".format(
                         self.transaction_id, url, headers, request_data_json))
                 response_status = self.sent_webhook_to_client(
                     url,
@@ -79,7 +79,7 @@ class ClientService(object):
 
     @retry(ClientWebhookException, tries=3, logger=logger)
     def sent_webhook_to_client(self, url, request_data_json, auth, headers):
-        logger.info("Sending webhooks to {} started \n data : {}"
+        logger.info("Sending webhooks to {} started data : {}"
                     "".format(url, request_data_json))
         try:
             response = requests.post(url, json=request_data_json,
