@@ -8,7 +8,8 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackVerify)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
-                                                PaypalPayment)
+                                                PaypalPayment,
+                                                ApplePayStatusUpdateAPI)
 from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
@@ -61,6 +62,9 @@ urlpatterns = [
     # Happy Credits endpoints
     path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),
     path('happycredits/redemption/', HappyCreditsDebitBalance.as_view()),
+
+    # ApplePay endpoints
+    path('applepay/status-update/', ApplePayStatusUpdateAPI.as_view()),
 
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),

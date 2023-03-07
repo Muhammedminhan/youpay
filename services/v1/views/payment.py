@@ -13,6 +13,7 @@ from core.utils import (encrypt_payment_data, decrypt_payment_data,
                         get_gateway_additional_fee, decimal_rounded)
 from payments.constants import (PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED)
+from payments.constants import PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -22,8 +23,6 @@ from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
 from services.v1.views.utils import (
     reformat_payment_request_data
 )
-
-from payments.constants import PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID
 
 logger = logging.getLogger(__name__)
 
