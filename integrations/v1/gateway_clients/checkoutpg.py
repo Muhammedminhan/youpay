@@ -133,7 +133,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             try:
                 URL = (self.checkoutpg_config.domain +
                        CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2)
-
+                print("\n\nURL : ", URL)
                 key_and_secret_response = requests.get(url=URL, params=params,
                                                        headers=headers)
                 if key_and_secret_response:
@@ -654,7 +654,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         key_and_secret_data[0])
                 else:
                     logger.error(
-                        "Error in getting key and secret data for apple pay on transaction id {} ".format(
+                        "Error in getting key and secret data for apple pay "
+                        "on transaction id {} ".format(
                             self.transaction_id))
                     return None, self.CHECKOUTPG_RESPONSE_FAILED
 
