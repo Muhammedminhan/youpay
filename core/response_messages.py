@@ -1,3 +1,4 @@
+from core.messages import GATEWAY_ERROR_OCCURRED
 from integrations.constants import APPLEPAY_SUCCESS_CODE_LISTS
 
 
@@ -27,6 +28,7 @@ class YouPayResponse(object):
 
     """checkoutpg related begins"""
     CHECKOUTPG_CONNECTION_ERROR = 2003
+    CHECKOUTPG_RESPONSE_FAILED = 2400
     """checkoutpg related ends"""
 
     """tabbypg related begins"""
@@ -74,9 +76,10 @@ class YouPayResponse(object):
         self.MESSAGE.update({
             self.UNKNOWN_ERR: "Something went wrong",
             self.SUCCESS: "API request completed successfully",
-            self.CHECKOUTPG_CONNECTION_ERROR: "Checkoutpg connection error",
+            self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
 
-            self.APPLE_PAY_CONNECTION_ERROR: "Gateway error occurred",
+            self.APPLE_PAY_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.APPLE_PAY_BAD_REQUEST: "Applepay bad request",
             self.APPLE_PAY_SUCCESS: "Applepay request success",
             self.APPLE_PAY_CREATED: "Applepay request created",
@@ -91,8 +94,8 @@ class YouPayResponse(object):
             self.APPLE_PAY_REDIRECT: "Apple pay redirect",
 
             self.PAYMENT_FAILED: "Payment failed",
-            self.TABBYPG_CONNECTION_ERROR: "Tabbypg connection error",
-            self.AMAZONPG_CONNECTION_ERROR: "Amzonpg connection error",
+            self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
             self.TRANSACTION_NOT_FOUND: "Transaction not found",
