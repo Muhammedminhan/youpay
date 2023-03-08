@@ -20,7 +20,7 @@ from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
                                       AdditionalChargesUpdation,
-                                      cancelled_payment_check)
+                                      payment_status_check)
 from services.v1.views.utils import (
     reformat_payment_request_data
 )
@@ -296,7 +296,7 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
         })
 
 
-@cancelled_payment_check
+@payment_status_check
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
     def post(self, request):
         try:
