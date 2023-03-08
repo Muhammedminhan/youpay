@@ -637,71 +637,86 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         logger.info("APPLE PAY Status update for {} to {} ".format(
             self.transaction_id, payment_stage))
 
+        verify_response, verify_status = self.verify_transaction(
+            transaction_data)
+        logger.info(
+            "Verify response: {} - {}".format(verify_status,
+                                              verify_response))
+
+        is_verified = verify_response.get('is_verified', False)
+
         try:
+            if verify_status == status.HTTP_200_OK and is_verified:
 
-            if payment_stage == PAYMENT_STATUS_PENDING:
-                data, code = self.handle_applepay_pending(
-                    request_data)
-                return data, code
+                if payment_stage == PAYMENT_STATUS_PENDING:
+                    data, code = self.handle_applepay_pending(
+                        request_data)
+                    return data, code
 
-            elif payment_stage == PAYMENT_STATUS_AUTHORIZED:
+                elif payment_stage == PAYMENT_STATUS_AUTHORIZED:
 
-                key_and_secret_data, code = self.get_key_and_secret(
-                    transaction_data.get('currency', None))
-                if key_and_secret_data:
-                    response_data['key_and_secret_data'] = (
-                        key_and_secret_data[0])
+                    key_and_secret_data, code = self.get_key_and_secret(
+                        transaction_data.get('currency', None))
+                    if key_and_secret_data:
+                        response_data['key_and_secret_data'] = (
+                            key_and_secret_data[0])
+                    else:
+                        logger.error(
+                            "Error in getting key and secret data for apple pay "
+                            "on transaction id {} ".format(
+                                self.transaction_id))
+                        return None, self.CHECKOUTPG_RESPONSE_FAILED
+
+                    self.payment_status = PAYMENT_STATUS_AUTHORIZED
+                    response_data["data"] = transaction_data
+
+                    response_code = self.APPLE_PAY_STATUS_UPDATED_AUTHORIZED
+                    message = self.MESSAGE.get(response_code)
+
+                elif payment_stage == PAYMENT_STATUS_PAID:
+                    # storing Youpay to payment gateway request and response data
+                    self.create_youpay_to_payment_gateways_data(
+                        transaction_obj=self.transaction_obj,
+                        transaction_id=self.transaction_id,
+                        request_data=json.dumps(payment_request_data),
+                        response_data=json.dumps(payment_response_data),
+                        request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
+                        request_method=REQUEST_METHOD_POST,
+                    )
+
+                    res_data = payment_response_data.get(
+                        'payment')
+                    res_data['source'] = "applepay"  # to mark status as paid
+
+                    redirect, response_data = process_checkoutpg_response_verification(
+                        self.transaction_id, res_data)
+
+                    response_code = self.APPLE_PAY_REDIRECT
+                    message = self.MESSAGE.get(response_code)
+                    logger.info(message)
+
+                    return response_data, response_code
+
                 else:
-                    logger.error(
-                        "Error in getting key and secret data for apple pay "
-                        "on transaction id {} ".format(
-                            self.transaction_id))
-                    return None, self.CHECKOUTPG_RESPONSE_FAILED
+                    message = (
+                        "APPLE PAY Invalid payment stage received {} for"
+                        " transaction id {}, status {}".format(
+                            payment_stage,
+                            self.transaction_id,
+                            self.payment_status))
 
-                self.payment_status = PAYMENT_STATUS_AUTHORIZED
-                response_data["data"] = transaction_data
+                    self.payment_status = PAYMENT_STATUS_NONE
+                    response_code = self.APPLE_PAY_BAD_REQUEST
 
-                response_code = self.APPLE_PAY_STATUS_UPDATED_AUTHORIZED
-                message = self.MESSAGE.get(response_code)
-
-            elif payment_stage == PAYMENT_STATUS_PAID:
-                # storing Youpay to payment gateway request and response data
-                self.create_youpay_to_payment_gateways_data(
-                    transaction_obj=self.transaction_obj,
-                    transaction_id=self.transaction_id,
-                    request_data=json.dumps(payment_request_data),
-                    response_data=json.dumps(payment_response_data),
-                    request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
-                    request_method=REQUEST_METHOD_POST,
-                )
-
-                res_data = payment_response_data.get(
-                    'payment')
-                res_data['source'] = "applepay"  # to mark status as paid
-
-                redirect, response_data = process_checkoutpg_response_verification(
-                    self.transaction_id, res_data)
-
-                response_code = self.APPLE_PAY_REDIRECT
-                message = self.MESSAGE.get(response_code)
                 logger.info(message)
-
                 return response_data, response_code
-
             else:
-                message = (
-                    "APPLE PAY Invalid payment stage received {} for"
-                    " transaction id {}, status {}".format(
-                        payment_stage,
-                        self.transaction_id,
-                        self.payment_status))
-
-                self.payment_status = PAYMENT_STATUS_NONE
-                response_code = self.APPLE_PAY_BAD_REQUEST
-
-            logger.info(message)
-            return response_data, response_code
-
+                msg = (
+                    "Youpay transaction verification failed for transaction "
+                    "id {} response is : {} ".format(self.transaction_id,
+                                                     verify_response))
+                logger.error(msg)
+                return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             logger.error("Exception in payment request : {} "
                          .format(e))
