@@ -686,10 +686,12 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     res_data = payment_response_data.get(
                         'payment')
-                    res_data['source'] = "applepay"  # to mark status as paid
+                    # to mark status as paid
+                    res_data['source'] = PAYMENT_METHOD_APPLEPAY
 
-                    redirect, response_data = process_checkoutpg_response_verification(
-                        self.transaction_id, res_data)
+                    redirect, response_data = (
+                        process_checkoutpg_response_verification(
+                            self.transaction_id, res_data))
 
                     response_code = self.APPLE_PAY_REDIRECT
                     message = self.MESSAGE.get(response_code)
