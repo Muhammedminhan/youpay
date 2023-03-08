@@ -15,13 +15,12 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
-
-logger = logging.getLogger(__name__)
-
 from django.utils.decorators import decorator_from_middleware, classonlymethod
 from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 
-cancelled_payment_check = decorator_from_middleware(
+logger = logging.getLogger(__name__)
+
+payment_status_check = decorator_from_middleware(
     PaymentStatusCheckMiddleware)
 
 
@@ -241,6 +240,7 @@ class AdditionalChargesUpdation(object):
     """
     YouPay Additional Charges CRUD Operations will be here
     """
+
     def get_additional_charges(self, transaction_id, payment_option):
         additional_charges = None
         try:
@@ -268,16 +268,16 @@ class AdditionalChargesUpdation(object):
                                      str(e)))
 
 
-class CancellPaymentsMiddlewareMixin:
-    @cancelled_payment_check
+class PaymentStatusCheckMiddlewareMixin:
+    @payment_status_check
     def dispatch(*args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
 
-def cancelled_payment_check(class_view):
+def payment_status_check(class_view):
     def as_view(cls, **initkwargs):
         view = super(cls, cls).as_view(**initkwargs)
-        view.cancelled_payment_check = True
+        view.payment_status_check = True
         return view
 
     return type(class_view.__name__, (class_view,), {
