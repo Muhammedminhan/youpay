@@ -646,6 +646,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         is_verified = verify_response.get('is_verified', False)
 
         try:
+
+            # client verify check
             if verify_status == status.HTTP_200_OK and is_verified:
 
                 if payment_stage == PAYMENT_STATUS_PENDING:
