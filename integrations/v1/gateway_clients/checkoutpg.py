@@ -133,7 +133,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             try:
                 URL = (self.checkoutpg_config.domain +
                        CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2)
-                print("\n\nURL : ", URL)
                 key_and_secret_response = requests.get(url=URL, params=params,
                                                        headers=headers)
                 if key_and_secret_response:
@@ -704,11 +703,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             return response_data, response_code
 
         except Exception as e:
-            import sys, os
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            logger.error("Exception in payment request : {} {} {}"
-                         .format(exc_type, fname, exc_tb.tb_lineno))
             logger.error("Exception in payment request : {} "
                          .format(e))
             msg = (
