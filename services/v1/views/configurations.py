@@ -286,14 +286,13 @@ class ConfigViewSet(ViewSet):
             "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
         applepay_config["label"] = APPLEPAY_LABEL
 
-        applepay_config = {}
         applepay_enabled = payment_option.get('applepay', False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
-            applepay_config = {
-                "additional_charges": True if additional_fee else False,
-                "payment_option": TOKEN_TYPE_APPLEPAY
-            }
+            applepay_config[
+                "additional_charges"] = True if additional_fee else False
+            applepay_config["payment_option"] = TOKEN_TYPE_APPLEPAY
+
         return applepay_config
 
     def get_paypal_config(self, payment_option):
