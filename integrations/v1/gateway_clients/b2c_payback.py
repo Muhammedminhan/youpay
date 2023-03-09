@@ -96,7 +96,6 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 url = b2c_payback_domain + ADCB_POINT_BALANCE_API
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
-                print("========", request_data_json)
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_obj.transaction_id,

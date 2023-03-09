@@ -8,7 +8,6 @@ from rest_framework.views import APIView
 
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from core.response_messages import YouPayResponse
-from core.utils import get_site_domain
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_TOUCHPOINTS,
