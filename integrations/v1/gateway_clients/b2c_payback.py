@@ -176,6 +176,13 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                             transaction_obj.transaction_id,
                             response.text))
                     return response, None
+            else:
+                msg = (
+                    "Youpay transaction verification failed for transaction"
+                    " id {} response is : {} ".format(
+                        transaction_obj.transaction_id, verify_response))
+                logger.error(msg)
+                return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             logger.error(
                 "authenticate api call to b2cpayback failed for "
