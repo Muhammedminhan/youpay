@@ -567,7 +567,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         if response:
             response_data = response.json()
-            redirect = process_checkoutpg_response_verification(
+            redirect, response_data = process_checkoutpg_response_verification(
                 transaction_id, response_data)
 
             if redirect:
