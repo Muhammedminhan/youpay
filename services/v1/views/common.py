@@ -116,7 +116,7 @@ class YouPayTransactionCRUD(object):
                     saved_fields, data_dict, transaction_obj)
                 transaction_obj.save(update_fields=saved_fields)
                 logger.info(
-                    "\n\nTransaction object updated successfully for {}"
+                    "\Transaction object updated successfully for {}"
                     "".format(transaction_id))
             else:
                 logger.error("unable to find the transaction object for {}"
