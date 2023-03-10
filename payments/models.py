@@ -179,6 +179,16 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    credit_balance_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store happy credits user balance amount "
+                  "in amount currency")
+    available_credit_balance = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="used to store happy credits user balance amount "
+                  "after deduction in amount currency")
     retry_count = models.IntegerField(default=0, null=True, blank=True,
                                       help_text="used to store retry count")
     additional_vat_percentage = models.DecimalField(

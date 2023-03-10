@@ -49,6 +49,8 @@ class PaymentGateway(AbstractDateTime, AbstractUserBase):
     validation_json = models.JSONField(
         null=True, blank=True,
         help_text="used to store amount validation json data")
+    webhook_api_key = models.CharField(max_length=255, blank=True, null=True,
+                                       help_text='API Key String for webhook')
 
     def __str__(self):
         return self.gateway_name

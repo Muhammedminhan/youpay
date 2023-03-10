@@ -13,6 +13,7 @@ class YouPayResponse(object):
     4XXX - for Amazon Pay
     5XXX - for b2c
     6XXX - for youpay
+    7xxx - for happy credits
     """
 
     SUCCESS = 1000
@@ -42,6 +43,10 @@ class YouPayResponse(object):
     """Amazonpay related begins"""
     AMAZONPG_CONNECTION_ERROR = 4002
     """Amazonpay related ends"""
+
+    """happy credits related begins"""
+    HAPPY_CREDITS_CONNECTION_ERROR = 7002
+    """happy credits related ends"""
 
     """Apple Pay back related begins"""
     APPLE_PAY_CONNECTION_ERROR = 5000
@@ -96,6 +101,7 @@ class YouPayResponse(object):
             self.PAYMENT_FAILED: "Payment failed",
             self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
             self.TRANSACTION_NOT_FOUND: "Transaction not found",

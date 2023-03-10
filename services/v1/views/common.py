@@ -52,6 +52,16 @@ class YouPayTransactionCRUD(object):
             return {"status": status.HTTP_400_BAD_REQUEST,
                     "data": serializer.errors, "message": message}
 
+    def get_transaction_data_by_reference(self, payment_reference):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=payment_reference)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            logger.error("Unable to find youpay transaction object for {}"
+                         "".format(payment_reference))
+            return None
+
     def get_youpay_transaction_data(self, transaction_id):
         try:
             transaction_obj = YouPayTransactionData.objects.get(
@@ -96,6 +106,11 @@ class YouPayTransactionCRUD(object):
         data_dict['additional_total_amount'] = (
             data.get('additional_total_amount', None))
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
+
+        data_dict['credit_balance_amount'] = data.get('credit_balance_amount',
+                                                      None)
+        data_dict['available_credit_balance'] = data.get(
+            'available_credit_balance', None)
 
         data_dict['is_fraud'] = data.get('is_fraud', None)
         data_dict['is_flagged'] = data.get('is_flagged', None)
@@ -214,6 +229,18 @@ def get_api_key_from_payment_gateway(hubcode):
     try:
         payment_gateway = PaymentGateway.objects.get(code=hubcode)
         return payment_gateway.api_key
+    except PaymentGateway.DoesNotExist:
+        logger.error(
+            "Unable to find payment gateway for hubcode '{}' ".format(
+                hubcode))
+        return None
+
+
+def get_webhook_api_key_from_payment_gateway(hubcode):
+    """Method to get webhook api key from payment gateway"""
+    try:
+        payment_gateway = PaymentGateway.objects.get(code=hubcode)
+        return payment_gateway.webhook_api_key
     except PaymentGateway.DoesNotExist:
         logger.error(
             "Unable to find payment gateway for hubcode '{}' ".format(
