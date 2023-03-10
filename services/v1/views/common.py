@@ -1,5 +1,6 @@
 import logging
 
+from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
 
 from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
@@ -7,6 +8,7 @@ from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
 )
+from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import (YouPayTransactionData, AdditionalCharge)
@@ -18,10 +20,7 @@ from services.models import APIClient
 
 logger = logging.getLogger(__name__)
 
-from django.utils.decorators import decorator_from_middleware, classonlymethod
-from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
-
-cancelled_payment_check = decorator_from_middleware(
+payment_status_check = decorator_from_middleware(
     PaymentStatusCheckMiddleware)
 
 
@@ -131,6 +130,9 @@ class YouPayTransactionCRUD(object):
                 saved_fields = get_adcb_saved_fields(
                     saved_fields, data_dict, transaction_obj)
                 transaction_obj.save(update_fields=saved_fields)
+                logger.info(
+                    "Transaction object updated successfully for {}"
+                    "".format(transaction_id))
             else:
                 logger.error("unable to find the transaction object for {}"
                              "".format(transaction_id))
@@ -268,6 +270,7 @@ class AdditionalChargesUpdation(object):
     """
     YouPay Additional Charges CRUD Operations will be here
     """
+
     def get_additional_charges(self, transaction_id, payment_option):
         additional_charges = None
         try:
@@ -295,16 +298,16 @@ class AdditionalChargesUpdation(object):
                                      str(e)))
 
 
-class CancellPaymentsMiddlewareMixin:
-    @cancelled_payment_check
+class PaymentStatusCheckMiddlewareMixin:
+    @payment_status_check
     def dispatch(*args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
 
-def cancelled_payment_check(class_view):
+def payment_status_check(class_view):
     def as_view(cls, **initkwargs):
         view = super(cls, cls).as_view(**initkwargs)
-        view.cancelled_payment_check = True
+        view.payment_status_check = True
         return view
 
     return type(class_view.__name__, (class_view,), {

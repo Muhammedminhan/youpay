@@ -24,14 +24,14 @@ from services.constants import (
 )
 from services.v1.views.common import (
     YouPayTransactionCRUD,
-    cancelled_payment_check,
+    payment_status_check,
     ClientValidator
 )
 
 logger = logging.getLogger(__name__)
 
 
-@cancelled_payment_check
+@payment_status_check
 class SavedCardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -134,7 +134,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-@cancelled_payment_check
+@payment_status_check
 class CardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -185,7 +185,7 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-@cancelled_payment_check
+@payment_status_check
 class PaypalPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -269,7 +269,7 @@ class CheckoutVerification(APIView):
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 
-@cancelled_payment_check
+@payment_status_check
 class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                               ClientValidator):
     response_obj = YouPayResponse()

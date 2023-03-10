@@ -19,7 +19,8 @@ from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
-                                      AdditionalChargesUpdation)
+                                      AdditionalChargesUpdation,
+                                      payment_status_check)
 from services.v1.views.utils import (
     reformat_payment_request_data
 )
@@ -295,6 +296,7 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
         })
 
 
+@payment_status_check
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
     def post(self, request):
         try:
@@ -397,7 +399,7 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
         percentage = additional_fee.percentage
         fixed_amount = additional_fee.fixed_amount
         if percentage:
-            processing_fee += (base_amount * (percentage/100))
+            processing_fee += (base_amount * (percentage / 100))
         if fixed_amount:
             processing_fee += fixed_amount
         processing_fee_vat = vat_percent * processing_fee
@@ -413,7 +415,7 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
             service_fee = self.transaction.service_fee
             decimal_notation = (
                 self.transaction.additional_currency_decimal_notation)
-            vat_percent = (self.transaction.additional_vat_percentage/100)
+            vat_percent = (self.transaction.additional_vat_percentage / 100)
             processing_fee, processing_fee_vat = (
                 self.calculate_processing_fee(
                     additional_fee, order_amount, vat_percent
@@ -477,11 +479,11 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
                         "processing_fee": (
                             additional_charge_obj.additional_processing_fee),
                         "processing_fee_vat": (
-                        additional_charge_obj.additional_processing_fee_vat),
+                            additional_charge_obj.additional_processing_fee_vat),
                         "new_vat": (
-                        additional_charge_obj.additional_vat),
+                            additional_charge_obj.additional_vat),
                         "total_amount": (
-                        additional_charge_obj.additional_total_amount)
+                            additional_charge_obj.additional_total_amount)
                     }
 
                 additional_charge_update = {
