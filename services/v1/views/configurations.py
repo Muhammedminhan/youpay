@@ -2,10 +2,11 @@ import logging
 
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string
+from core.utils import decrypt_string, get_gateway_additional_fee
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
@@ -19,6 +20,10 @@ from payments.constants import (
     PAYMENT_STATUS_PAID
 )
 from payments.models import YouPayTransactionData
+from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
+                                APPLEPAY_MERCHANT_CAPABILITIES,
+                                APPLEPAY_LABEL)
+from services.constants import TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -63,6 +68,7 @@ class ConfigViewSet(ViewSet):
 
         checkout_obj = CheckoutpgManager()
         tabbypg_obj = TabbyPGManager()
+        b2c_payback_obj = B2CPaybackManager()
 
         decrypted_transaction_id = decrypt_string(pk)
         try:
@@ -108,16 +114,20 @@ class ConfigViewSet(ViewSet):
                     if client:
                         gateways = client.payment_gateway.filter(
                             is_active=True)
-                        payment_options = get_payment_options(gateways)
-                        announcements_dict = get_announcements()
-                        b2c_payback_obj = B2CPaybackManager()
                         payback_config = b2c_payback_obj.get_configurations(
                             transaction.amount, transaction.currency)
-
+                        payment_options = get_payment_options(
+                            transaction, gateways)
+                        announcements_dict = get_announcements(
+                            transaction.platform)
                         api_client = {'color': client.color_code,
-                                      'mobile_logo': self.get_mobile_logo_url(
+                                      'mobile_logo': get_mobile_logo_url(
                                           client),
-                                      'logo': self.get_logo_url(client)}
+                                      'logo': get_logo_url(client)}
+                        paypal_config = self.get_paypal_config(
+                            payment_options)
+                        applepay_config = (
+                            self.get_applepay_config(payment_options))
 
                         response_data = self.retrieve_response(
                             api_client=api_client,
@@ -125,9 +135,11 @@ class ConfigViewSet(ViewSet):
                             tabbypg_config=tabbypg_config,
                             checkoutpg_config=checkout_config,
                             payback_config=payback_config,
+                            applepay_config=applepay_config,
                             transaction=transaction,
                             announcements_dict=announcements_dict,
-                            status_code=status_code
+                            status_code=status_code,
+                            paypal_config=paypal_config,
                         )
 
                         data = self.response_obj.get_success_dict(
@@ -176,6 +188,8 @@ class ConfigViewSet(ViewSet):
         transaction = kwargs.get('transaction', None)
         announcements_dict = kwargs.get('announcements_dict', None)
         status_code = kwargs.get('status_code', None)
+        applepay_config = kwargs.get('applepay_config', None)
+        paypal_config = kwargs.get('paypal_config', None)
 
         amount = None
         currency = None
@@ -193,6 +207,7 @@ class ConfigViewSet(ViewSet):
         if transaction:
             amount = transaction.amount
             currency = transaction.currency
+            country_code = transaction.country_code
             service_fee = transaction.service_fee
             VAT_amount = transaction.VAT_amount
             base_amount = transaction.base_amount
@@ -224,9 +239,12 @@ class ConfigViewSet(ViewSet):
                 "checkoutpg_config": checkoutpg_config,
                 "b2cpayback_config": payback_config,
                 "tabbypg_config": tabbypg_config,
+                "applepay_config": applepay_config,
+                "paypal_config": paypal_config,
 
                 "amount": amount,
                 "currency": currency,
+                "country_code": country_code,
                 "service_fee": service_fee,
                 "vat_amount": VAT_amount,
                 "base_amount": base_amount,
@@ -257,15 +275,116 @@ class ConfigViewSet(ViewSet):
                 "validation_json"] = tabbypg_obj.validation_json
         return tabbypg_config
 
-    def get_logo_url(self, client):
-        if client.logo_file and hasattr(client.logo_file, 'url'):
-            return client.logo_file.url
-        else:
-            return None
+    def get_additional_config(self, additional_fee, payment_type):
+        """
+        returns additional charge configured dict
+        """
+        additional_charges = False
+        additional_percentage = 0
+        additional_fixed_amount = 0
+        if additional_fee:
+            additional_charges = True
+            additional_percentage = additional_fee.percentage
+            additional_fixed_amount = additional_fee.fixed_amount
+        return {"additional_charges": additional_charges,
+                "payment_option": payment_type,
+                "additional_percentage": additional_percentage,
+                "additional_fixed_amount": additional_fixed_amount}
 
-    def get_mobile_logo_url(self, client):
-        if client.mobile_logo_file and hasattr(client.mobile_logo_file,
-                                               'url'):
-            return client.mobile_logo_file.url
-        else:
-            return None
+    def get_applepay_config(self, payment_option):
+        """
+        returns applepay additional fee config
+        only if applepay is enabled
+        """
+        applepay_config = {}
+        applepay_config["supportedNetworks"] = APPLEPAY_SUPPORTED_NETWORKS
+        applepay_config[
+            "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
+        applepay_config["label"] = APPLEPAY_LABEL
+
+        applepay_enabled = payment_option.get('applepay', False)
+        if applepay_enabled:
+            additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
+            applepay_config.update(self.get_additional_config(additional_fee,
+                                                         TOKEN_TYPE_APPLEPAY))
+        return applepay_config
+
+    def get_paypal_config(self, payment_option):
+        """
+        returns paypal process fee config
+        only if paypal is enabled
+        """
+        paypal_config = {}
+        paypal_enabled = payment_option.get('paypal', False)
+        if paypal_enabled:
+            additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
+            paypal_config = self.get_additional_config(additional_fee,
+                                                       TOKEN_TYPE_PAYPAL)
+        return paypal_config
+
+
+class ClientStaticFilesAPI(APIView):
+    """
+    Static files view
+    """
+
+    def get(self, request):
+        """
+        Get static files
+        """
+        response_obj = YouPayResponse()
+
+        transaction_id = decrypt_string(request.GET.get('id', None))
+
+        try:
+
+            transaction_obj = YouPayTransactionData.objects.get(
+                transaction_id=transaction_id)
+
+            client = transaction_obj.api_client
+            if client:
+                api_client_data = {
+                    'color': client.color_code,
+                    'mobile_logo': get_mobile_logo_url(client),
+                    'logo': get_logo_url(client)
+                }
+
+                data = response_obj.get_success_dict(
+                    code=response_obj.SUCCESS,
+                    success_dict=api_client_data
+                )
+
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                logger.error("Client not found for transaction id : {}"
+                             "".format(transaction_id))
+
+                data = response_obj.get_error_dict(
+                    error_code=response_obj.MISSING_CLIENT_INFO)
+                return Response(data.get('errors'),
+                                status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            message = str(e)
+            logger.error("Exception occurred while retrieving static files "
+                         "for transaction {} : {}  ".format(transaction_id,
+                                                            message))
+            data = response_obj.get_404_message(message=str(e))
+            return Response(
+                data,
+                status=status.HTTP_404_NOT_FOUND)
+
+
+def get_logo_url(client):
+    if client.logo_file and hasattr(client.logo_file, 'url'):
+        return client.logo_file.url
+    else:
+        return None
+
+
+def get_mobile_logo_url(client):
+    if client.mobile_logo_file and hasattr(client.mobile_logo_file,
+                                           'url'):
+        return client.mobile_logo_file.url
+    else:
+        return None

@@ -34,9 +34,10 @@ urlpatterns = [
     path('health/', HealthCheck.as_view(), name='health'),
     path('sentry-debug/', trigger_error),
     path('checkoutpg/', include('checkoutpgclient.urls')),
-    path('amazontpg/', include('amazonpgclient.urls')),
+    path('amazonpg/', include('amazonpgclient.urls')),
     path('tabbypg/', include('tabbypgclient.urls')),
     path('adcbpg/', include('adcbpgclient.urls')),
+    path('happycredits/', include('happycreditsclient.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

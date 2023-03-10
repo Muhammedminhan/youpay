@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from integrations.v1.gateway_clients.tabbypg import TabbyPaymentCancel
 
 from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
@@ -7,14 +8,19 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackVerify)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
-                                                PaypalPayment)
-from services.v1.views.configurations import ConfigViewSet
+                                                PaypalPayment,
+                                                ApplePayStatusUpdateAPI)
+from services.v1.views.configurations import (ConfigViewSet,
+                                              ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
+from .api_clients.happy_credits import (HappyCreditsCreditBalance,
+                                        HappyCreditsDebitBalance)
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
-                            PaymentCancelledView, TransactionExpireView)
+                            PaymentCancelledView, TransactionExpireView,
+                            AdditionalChargeCalculation)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -22,7 +28,8 @@ router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
     path("", include(router.urls)),
-    path('payment/', PaymentRequestView.as_view()),
+    path('additional-charges/', AdditionalChargeCalculation.as_view()),
+    path('payment/', PaymentRequestView.as_view(), name='PaymentRequestView'),
     # For testing purpose
     # input will be the request data, output will be encrypted data and this
     # will be the input for the payment API
@@ -45,9 +52,20 @@ urlpatterns = [
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view()),
     path('tabbypg/verify/', TabbyPGVerification.as_view()),
+    path('tabbypg/back-to-store/', TabbyPaymentCancel.as_view()),
 
     # Amazonpg endpoints
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view()),
     path('amazonpg/verify/', AmazonPGVerification.as_view()),
+
+    # Happy Credits endpoints
+    path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),
+    path('happycredits/redemption/', HappyCreditsDebitBalance.as_view()),
+
+    # ApplePay endpoints
+    path('applepay/status-update/', ApplePayStatusUpdateAPI.as_view()),
+
+    # API for getting the client logo and color code
+    path('client-static-details/', ClientStaticFilesAPI.as_view()),
 ]

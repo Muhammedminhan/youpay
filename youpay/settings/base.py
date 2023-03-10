@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'amazonpgclient',
     'tabbypgclient',
     'adcbpgclient',
+    'happycreditsclient',
 
     # 3rd party apps
     'rest_framework',
@@ -80,6 +81,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # custom middleware
+    'core.middlewares.workflow_middleware.PaymentStatusCheckMiddleware',
+
 ]
 
 ROOT_URLCONF = 'youpay.urls'

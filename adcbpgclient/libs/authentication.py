@@ -4,10 +4,10 @@ from rest_framework import authentication
 from rest_framework import exceptions
 from httpsig import HeaderSigner
 
-from django.conf import settings
 
 from integrations.constants import B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY
 from core.utils import get_payment_gateway_config
+
 
 class SignatureAuthentication(authentication.BaseAuthentication):
     SIGNATURE_RE = re.compile('signature="(.+?)"')

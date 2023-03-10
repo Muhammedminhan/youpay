@@ -1,9 +1,8 @@
 import json
 import logging
-
 import requests
-from django.conf import settings
-from rest_framework.views import APIView
+
+from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
 from core.utils import (get_payment_gateway_config,
@@ -28,18 +27,21 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
     PointBalanceRequestSerializer,
     AuthenticateRequestSerializer
 )
+from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
+                                PAYMENT_STATUS_PAID)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                    B2C_PAYBACK_CONFIG_ENDPOINT
                                    )
+from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
 
-class B2CPaybackManager(APIView, PaymentHandlers):
+class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     """
     Class to manage b2cpayback related operations
     """
@@ -122,12 +124,19 @@ class B2CPaybackManager(APIView, PaymentHandlers):
 
     def authenticate_redemption(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
-        if request_transaction_id:
-            try:
-                transaction_obj = self.get_youpay_transaction_data(
-                    decrypt_string(request_transaction_id))
-                transaction_data = YouPayTransactionDataSerializer(
-                    transaction_obj)
+        try:
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(request_transaction_id))
+            transaction_data = YouPayTransactionDataSerializer(
+                transaction_obj)
+            verify_response, verify_status = self.verify_transaction(
+                transaction_data.data)
+            logger.info(
+                "Verify response: {} - {}".format(verify_status,
+                                                  verify_response))
+
+            is_verified = verify_response.get('is_verified', False)
+            if verify_status == status.HTTP_200_OK and is_verified:
                 request_dict = {
                     'data': request_data,
                     'transaction_data': transaction_data.data
@@ -139,7 +148,8 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 update_data.update(authenticate_request_data.data)
                 request_data_json = json.dumps(update_data)
                 b2c_gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                    B2CP_CACHE_KEY,
+                    B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_AUTHENTICATE_API
                 response = requests.post(url, data=request_data_json,
@@ -163,17 +173,21 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     logger.error(
                         "Error response received from authenticate api call "
                         "to b2cpayback for transaction {0}, {1}".format(
-                            transaction_obj.transaction_id, response.text))
+                            transaction_obj.transaction_id,
+                            response.text))
                     return response, None
-            except Exception as e:
-                logger.error(
-                    "authenticate api call to b2cpayback failed for "
-                    "transaction {}".format(
-                        decrypt_string(request_transaction_id)), exc_info=e)
-                return None, None
-        else:
-            logger.error("Invalid transaction id received for b2cpayback "
-                         "authentication api")
+            else:
+                msg = (
+                    "Youpay transaction verification failed for transaction"
+                    " id {} response is : {} ".format(
+                        transaction_obj.transaction_id, verify_response))
+                logger.error(msg)
+                return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+        except Exception as e:
+            logger.error(
+                "authenticate api call to b2cpayback failed for "
+                "transaction {}".format(request_transaction_id),
+                exc_info=e)
             return None, None
 
     def point_redemption(self, request_data):
@@ -240,6 +254,12 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                 response_data["is_redirect"] = True
                 response_data["redirect_url"] = get_adcb_verify_redirect_url(
                     response_data, transaction_obj)
+                approved_status = transaction_obj.approved
+                if response_data.get("redirect_url") is None:
+                    payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                else:
+                    payment_status = PAYMENT_STATUS_PAID
+                    approved_status = True
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(
@@ -250,7 +270,30 @@ class B2CPaybackManager(APIView, PaymentHandlers):
                     request_method=REQUEST_METHOD_GET,
                     request_type=PAYMENT_REQUEST_VERIFY
                 )
-                if response:
+                if response_data:
+                    update_data = {
+                        'transaction_id': transaction_obj.transaction_id,
+                        'payment_status': payment_status,
+                        'payment_reference': (
+                            response_data.get('payment_reference')
+                            if response_data.get('payment_reference')
+                            else response_data.get(
+                                'results', {}).get('reference_id')),
+                        'is_flagged': response_data.get('is_flagged', False),
+                        'approved': approved_status,
+                        'redeemed_amount': response_data.get(
+                            'results', {}).get('redeemed_amount'),
+                        'redeemed_points': response_data.get(
+                            'results', {}).get('redeemed_points'),
+                        'is_gcc_card': True,
+                        'available_amount': response_data.get(
+                            'results', {}).get('available_amount'),
+                        'available_points': transaction_obj.available_points,
+                        'payable_amount': transaction_obj.payable_amount,
+                        'is_full_redemption':
+                            transaction_obj.is_full_redemption
+                    }
+                    self.update_youpay_transaction_data(update_data)
                     return response_data, transaction_obj
                 else:
                     logger.error(

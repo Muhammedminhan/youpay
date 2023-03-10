@@ -84,11 +84,9 @@ class AmazonPGTokenizationSerializer(serializers.Serializer):
         return data.get('request_data').get("card_holder_name")
 
     def get_order_reference(self, data):
-        reference_string = ''.join(random.choices(string.ascii_uppercase +
-                                                  string.digits, k=10))
-        order_reference = (data.get('transaction_data').get('order_reference')
-                           + '-' + reference_string)
-        return order_reference
+        order_reference = data.get('transaction_data').get('order_reference')
+        merchant_reference = order_reference.replace('|', '-')
+        return merchant_reference
 
     def get_language(self, data):
         return data.get('transaction_data').get("language")

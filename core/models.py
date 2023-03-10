@@ -58,3 +58,51 @@ class AppConfig(AbstractDateTime, AbstractUserBase):
         blank=True,
         help_text="front-end url for the"
                   " redirection from the gateway")
+
+
+class Currency(AbstractDateTime, AbstractUserBase):
+    iso_code = models.CharField(
+        max_length=3, unique=True, help_text='ISO 4217 code of the currency')
+    name = models.CharField(
+        max_length=63)
+    decimal_notation = models.PositiveIntegerField(
+        null=True, blank=True, default=2,
+        help_text='This field denotes the number of decimal points in amount '
+                  'for currency displayed. for eg. For AED, the amount is '
+                  'always displayed in 3 decimal points. AED 20.456')
+
+    def __str__(self):
+        return self.iso_code
+
+
+class Country(AbstractDateTime, AbstractUserBase):
+    name = models.CharField(
+        max_length=255, unique=True)
+    slug = models.SlugField(
+        blank=True)
+    pretty_name = models.CharField(
+        max_length=255, default='')
+    iso_code = models.CharField(
+        max_length=6, unique=True, help_text='ISO 3166-1 alpha-2 code for '
+                                             'country')
+    three_letter_code = models.CharField(
+        max_length=3, unique=True, blank=True, null=True,
+        help_text='The field is used to defined Countries 3 letter code e.g '
+                  'UAE is ARE and etc. You can get the codes from '
+                  'http://www.worldatlas.com/aatlas/ctycodes.htm')
+    flag = models.ImageField(
+        max_length=1024, null=True, blank=True, default=None,
+        help_text='Flag of the country')
+    timezone = models.CharField(
+        max_length=200, help_text='Timezone of the country')
+    currency = models.ForeignKey(
+        Currency, on_delete=models.CASCADE, blank=False, null=True,
+        related_name='country_currency')
+    order_number = models.IntegerField(
+        default=0)
+    is_gcc = models.BooleanField(
+        default=False, help_text='This flag determines if the country belongs'
+                                 ' to GCC or not')
+
+    def __str__(self):
+        return self.iso_code

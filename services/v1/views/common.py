@@ -1,14 +1,17 @@
 import logging
 
+from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
 
+from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
 )
+from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
-from payments.models import YouPayTransactionData
+from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -16,6 +19,9 @@ from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
 
 logger = logging.getLogger(__name__)
+
+payment_status_check = decorator_from_middleware(
+    PaymentStatusCheckMiddleware)
 
 
 def get_saved_fields(saved_fields, data_dict, transaction_obj):
@@ -45,6 +51,16 @@ class YouPayTransactionCRUD(object):
             message = "{}{}".format(ERROR_MISSING_FIELDS, missing_fields)
             return {"status": status.HTTP_400_BAD_REQUEST,
                     "data": serializer.errors, "message": message}
+
+    def get_transaction_data_by_reference(self, payment_reference):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=payment_reference)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            logger.error("Unable to find youpay transaction object for {}"
+                         "".format(payment_reference))
+            return None
 
     def get_youpay_transaction_data(self, transaction_id):
         try:
@@ -82,7 +98,23 @@ class YouPayTransactionCRUD(object):
                                          or 0)
         data_dict['available_points'] = (data.get('available_points', None)
                                          or 0)
+        data_dict['additional_vat'] = data.get('additional_vat', None)
+        data_dict['additional_processing_fee'] = (
+            data.get('additional_processing_fee', None))
+        data_dict['additional_processing_fee_vat'] = (
+            data.get('additional_processing_fee_vat', None))
+        data_dict['additional_total_amount'] = (
+            data.get('additional_total_amount', None))
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
+
+        data_dict['credit_balance_amount'] = data.get('credit_balance_amount',
+                                                      None)
+        data_dict['available_credit_balance'] = data.get(
+            'available_credit_balance', None)
+
+        data_dict['is_fraud'] = data.get('is_fraud', None)
+        data_dict['is_flagged'] = data.get('is_flagged', None)
+        data_dict['retry_count'] = data.get('retry_count', None)
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
@@ -98,6 +130,9 @@ class YouPayTransactionCRUD(object):
                 saved_fields = get_adcb_saved_fields(
                     saved_fields, data_dict, transaction_obj)
                 transaction_obj.save(update_fields=saved_fields)
+                logger.info(
+                    "Transaction object updated successfully for {}"
+                    "".format(transaction_id))
             else:
                 logger.error("unable to find the transaction object for {}"
                              "".format(transaction_id))
@@ -149,11 +184,17 @@ def is_redirect(transaction_id, transaction_message):
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
 
-    is_fraud = transaction_message.get('is_fraud', False)
-
     response_code = transaction_message.get('response_code', None)
-    if response_code in RESPONSE_CODE_LIST or is_fraud:
+
+    '''This check is applicable only for checkout payments'''
+    if (response_code in RESPONSE_CODE_LIST and
+            youpay_transaction.payment_gateway == PAYMENT_GATEWAY_CHECKOUTPG):
+        '''We are setting the redirect url to none so in frontend it will 
+        redirect to the payment page, which will give another try to the 
+        customer in the current transaction, only for checkoutpg'''
         redirect_url = None
+        logger.info("Checkout Response code checking for"
+                    "transaction id {}".format(transaction_id))
         response_data = {
             IS_REDIRECT: False,
             REDIRECT_URL: redirect_url,
@@ -195,6 +236,18 @@ def get_api_key_from_payment_gateway(hubcode):
         return None
 
 
+def get_webhook_api_key_from_payment_gateway(hubcode):
+    """Method to get webhook api key from payment gateway"""
+    try:
+        payment_gateway = PaymentGateway.objects.get(code=hubcode)
+        return payment_gateway.webhook_api_key
+    except PaymentGateway.DoesNotExist:
+        logger.error(
+            "Unable to find payment gateway for hubcode '{}' ".format(
+                hubcode))
+        return None
+
+
 def add_payment_gateway_info_in_url(url, params, code):
     """
     Method to add payment gateway info in url
@@ -211,3 +264,52 @@ def get_adcb_saved_fields(saved_fields, data_dict, transaction_obj):
             saved_fields.append(key)
 
     return saved_fields
+
+
+class AdditionalChargesUpdation(object):
+    """
+    YouPay Additional Charges CRUD Operations will be here
+    """
+
+    def get_additional_charges(self, transaction_id, payment_option):
+        additional_charges = None
+        try:
+            additional_charges = AdditionalCharge.objects.get(
+                payment_option=payment_option,
+                transaction__transaction_id=transaction_id)
+        except (AdditionalCharge.DoesNotExist, Exception):
+            logger.info("No additional charge instance "
+                        "found for {}".format(transaction_id))
+        return additional_charges
+
+    def create_additional_charges(self, data):
+        try:
+            AdditionalCharge.objects.create(
+                transaction=data.get('transaction'),
+                payment_option=data.get('payment_option'),
+                additional_vat=data.get('new_vat'),
+                additional_processing_fee=data.get('processing_fee'),
+                additional_processing_fee_vat=data.get('processing_fee_vat'),
+                additional_total_amount=data.get('total_amount')
+            )
+        except Exception as e:
+            logger.error("Error in creating additional charge object for {} "
+                         "{}".format(data.get('transaction').transaction_id,
+                                     str(e)))
+
+
+class PaymentStatusCheckMiddlewareMixin:
+    @payment_status_check
+    def dispatch(*args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+
+def payment_status_check(class_view):
+    def as_view(cls, **initkwargs):
+        view = super(cls, cls).as_view(**initkwargs)
+        view.payment_status_check = True
+        return view
+
+    return type(class_view.__name__, (class_view,), {
+        'as_view': classonlymethod(as_view),
+    })
