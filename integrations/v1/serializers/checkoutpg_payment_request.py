@@ -4,6 +4,7 @@ from core.utils import encrypt_string
 from core.utils import get_app_config
 from integrations.constants import (CHECKOUTPG_CHANNEL_CONFIGURATIONS,
                                     CHECKOUTPG_HUB_CODE)
+from payments.models import YouPayTransactionData
 from services.v1.views.common import add_payment_gateway_info_in_url
 
 
@@ -90,3 +91,25 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
                 data.get('transaction_data').get("currency")).get(
                 data.get('transaction_data').get("platform").upper())
         return channel_code
+
+
+class ApplepayPaymentDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = YouPayTransactionData
+        fields = [
+            'transaction_id',
+            'amount',
+            'currency',
+            'invoice_id',
+            'order_reference',
+            'success_url',
+            'failure_url',
+            'cancel_url',
+            'verify_url',
+            'amount',
+            'ip',
+            'customer_email',
+            'customer_name',
+            'platform',
+            'payment_reference',
+        ]

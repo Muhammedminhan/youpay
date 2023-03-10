@@ -1,8 +1,8 @@
 import logging
 
 from payments.models import YouPayTransactionData
-from integrations.models import PaymentGateway
-from integrations.constants import ADCB_CLIENT_CODE
+from integrations.constants import (ADCB_CLIENT_CODE,
+                                    ADCB_CHECKOUTPG_PAYMENT_NOT_PAID)
 
 logger = logging.getLogger(__name__)
 
@@ -78,17 +78,27 @@ def format_adcb_verify_data(request_data, transaction_obj):
 
 def get_adcb_verify_redirect_url(response_data, transaction_obj): # partial redemption
     if (response_data.get("results", {}).get("payment_status") and
-            response_data.get("results", {}).get("redemption_status")) :
+            response_data.get("results", {}).get("redemption_status")):
         logger.info("Partial payment through card and touchpoints for id "
                     "{}".format(transaction_obj.transaction_id))
         return get_adcb_response_url(
             transaction_obj.success_url, transaction_obj.transaction_id)
     elif (response_data.get("results", {}).get("payment_status") and not
-            response_data.get("results", {}).get("redemption_status")) :
+            response_data.get("results", {}).get("redemption_status")):
         logger.info("Full amount paid through card for id {}".format(
             transaction_obj.transaction_id))
         return get_adcb_response_url(
             transaction_obj.success_url, transaction_obj.transaction_id)
+    elif ("results" not in response_data or
+          response_data.get("code", {}) == ADCB_CHECKOUTPG_PAYMENT_NOT_PAID):
+        logger.info(
+            "Transaction failed at checkout for transaction id {}, failure "
+            "url {}".format(transaction_obj.transaction_id,
+                            transaction_obj.failure_url))
+        response_data["is_redirect"] = False
+        redirect_url = None
+        return get_adcb_response_url(redirect_url,
+                                     transaction_obj.transaction_id)
     else:
         logger.info("Transaction failed for transaction id {}, failure url "
                     "{}".format(transaction_obj.transaction_id,
@@ -107,4 +117,22 @@ def get_adcb_redemption_redirect_url(response_data, transaction_obj): #full rede
 
 
 def get_adcb_response_url(url, transaction_id):
-    return url+'?transaction_id=' + str(transaction_id)
+    if url:
+        return_url = url + '?transaction_id=' + str(transaction_id)
+    else:
+        return_url = None
+    return return_url
+
+
+def get_credit_redemption_data(request_data, transaction_obj):
+    deduct_request_data = dict()
+    deduct_request_data["payment_reference"] = request_data.get(
+        'payment_reference')
+    deduct_request_data["amount_in_payment_currency"] = str(
+        transaction_obj.amount)
+    deduct_request_data["payment_currency"] = transaction_obj.currency
+    deduct_request_data["platform"] = transaction_obj.platform
+    deduct_request_data["user_email"] = transaction_obj.customer_email
+    deduct_request_data["user_phone"] = transaction_obj.customer_phone
+    deduct_request_data["user_id"] = request_data.get('user_id')
+    return deduct_request_data
