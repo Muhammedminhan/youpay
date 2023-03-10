@@ -133,6 +133,16 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                                 "payment_ref_no")
 
                             self.payment_status = PAYMENT_STATUS_PENDING
+                            data_to_update = {
+                                'transaction_id': self.transaction_id,
+                                "payment_status": self.payment_status,
+                                "payment_reference": self.payment_reference,
+                                "payment_gateway": self.payment_gateway,
+                                "channel_code": self.channel_code,
+                                "payment_method": self.payment_method,
+                            }
+                            self.update_youpay_transaction_data(
+                                data_to_update)
                             return response.json(), self.SUCCESS
 
                         logger.error("Error in tabbypg payment, {}".format(
@@ -143,6 +153,15 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         self.payment_status = response_data.get(
                             "payment_status")
 
+                        data_to_update = {
+                            'transaction_id': self.transaction_id,
+                            "payment_status": self.payment_status,
+                            "payment_reference": self.payment_reference,
+                            "payment_gateway": self.payment_gateway,
+                            "channel_code": self.channel_code,
+                            "payment_method": self.payment_method,
+                        }
+                        self.update_youpay_transaction_data(data_to_update)
                         return ({"error": response.json()}
                                 , self.TABBYPG_CONNECTION_ERROR)
 
@@ -162,16 +181,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             error = "Error in creating session with Tabbypg: {}".format(e)
             logger.error("Exception in tabbypg payment: {}".format(e))
             return {"error": error}, self.TABBYPG_CONNECTION_ERROR
-        finally:
-            data_to_update = {
-                'transaction_id': self.transaction_id,
-                "payment_status": self.payment_status,
-                "payment_reference": self.payment_reference,
-                "payment_gateway": self.payment_gateway,
-                "channel_code": self.channel_code,
-                "payment_method": self.payment_method,
-            }
-            self.update_youpay_transaction_data(data_to_update)
 
     def verify_session(self, data):
         """

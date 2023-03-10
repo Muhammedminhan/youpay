@@ -14,11 +14,12 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.v1.views.common import (
-    YouPayTransactionCRUD, ClientValidator)
+    YouPayTransactionCRUD, ClientValidator, payment_status_check)
 
 logger = logging.getLogger(__name__)
 
 
+@payment_status_check
 class CreateSession(YouPayTransactionCRUD, APIView, ClientValidator):
     response_obj = YouPayResponse()
 

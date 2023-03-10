@@ -28,6 +28,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                  help_text="used to store total order amount")
     currency = models.CharField(null=False, blank=False, max_length=15,
                                 help_text="used to store currency details")
+    country_code = models.CharField(null=True, blank=True, max_length=15,
+                                    help_text="used to store country_code")
     ip = models.CharField(max_length=20, null=True, blank=True)
     invoice_id = models.CharField(max_length=120, null=True, blank=True)
     order_reference = models.CharField(max_length=120, null=True, blank=True)
@@ -177,6 +179,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    retry_count = models.IntegerField(default=0, null=True, blank=True,
+                                      help_text="used to store retry count")
     additional_vat_percentage = models.DecimalField(
         default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
         help_text='Percentage value of VAT')
