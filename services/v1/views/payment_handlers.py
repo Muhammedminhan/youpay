@@ -24,6 +24,8 @@ class PaymentHandlers(YouPayTransactionCRUD):
             request_method = kwargs.get('request_method', None)
 
             if not transaction_obj:
+                """if there is no transaction object passed, then get the 
+                data from database"""
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
 
