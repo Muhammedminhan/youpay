@@ -162,8 +162,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                         self.credit_balance = response_data.get(
                             "credit_balance_in_payment_currency")
 
-                        """Updating payment transaction table and 
-                        payment gateway logs"""
+                        """Updating payment transaction table
+                         and payment gateway logs"""
                         self.update_transaction_data(
                             PAYMENT_REQUEST_CREDIT_BALANCE)
 
@@ -199,6 +199,9 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                 payment_reference)
             if self.transaction_obj is None:
                 return None, self.TRANSACTION_NOT_FOUND
+            if (self.transaction_obj.amount >
+                    self.transaction_obj.credit_balance_amount):
+                return None, self.HAPPY_CREDITS_INSUFFICIENT_FUND
 
             if self.transaction_obj.payment_status != PAYMENT_STATUS_PAID:
                 self.transaction_id = str(self.transaction_obj.transaction_id)
@@ -221,8 +224,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                     response_decrypted = json.loads(response.json())
                     response_data = decrypt_payment_data(response_decrypted)
                     self.gateway_response_data = response_data
-                    logger.info(
-                        "Balance deduct response data {}".format(response_data))
+                    logger.info("Balance deduct "
+                                "response data {}".format(response_data))
                     self.update_transaction_data(PAYMENT_REQUEST_REDEMPTION,
                                                  response_data)
                     self.update_payment_gateway(PAYMENT_REQUEST_REDEMPTION)
@@ -234,9 +237,10 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                         return response_data, self.PAYMENT_FAILED
                 else:
                     self.update_payment_gateway(PAYMENT_REQUEST_REDEMPTION)
-                    logger.error("Error while deducting amount from happycredits"
-                                 " status: {}, reason {} "
-                                 "".format(response.status_code, response.text))
+                    logger.error("Error while deducting amount from "
+                                 "happycredits status: {}, "
+                                 "reason {} ".format(response.status_code,
+                                                     response.text))
                     return None, self.HAPPY_CREDITS_CONNECTION_ERROR
             response_data = {
                 'transaction_message': {
@@ -246,6 +250,6 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
             }
             return response_data, self.SUCCESS
         except Exception as e:
-            logger.error("Exception in happy credits deduct balance session:"
-                            " {}".format(str(e)))
+            logger.error("Exception in happy credits "
+                         "deduct balance session: {}".format(str(e)))
             return {"error": str(e)}, self.HAPPY_CREDITS_CONNECTION_ERROR
