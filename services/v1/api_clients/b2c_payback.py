@@ -16,7 +16,7 @@ from payments.constants import (
 )
 from services.v1.constants import B2C_PAYBACK_NO_RESPONSE_MESSAGE
 from services.v1.views.common import (
-    YouPayTransactionCRUD, cancelled_payment_check)
+    YouPayTransactionCRUD, payment_status_check)
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +28,8 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
         payback = B2CPaybackManager()
         response, transaction_id = payback.get_point_balance(request.data)
         request_data = request.data
-        response_data = response.json()
         if response and response.status_code == 200:
+            response_data = response.json()
             self.update_youpay_transaction_data({
                 'transaction_id': transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
@@ -57,7 +57,7 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
-@cancelled_payment_check
+@payment_status_check
 class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -110,7 +110,7 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
-@cancelled_payment_check
+@payment_status_check
 class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
