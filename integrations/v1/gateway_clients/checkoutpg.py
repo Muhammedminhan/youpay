@@ -428,6 +428,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             if verify_status == status.HTTP_200_OK and is_verified:
                 checkoutpg_config = get_checkoutpg_config()
                 if checkoutpg_config:
+                    additional_charges = (
+                        self.get_additional_charges())
+                    data.update(additional_charges)
                     payment_data = self.get_checkout_payment_data(data)
                     logger.info(
                         "Youpay sending paypal payment data is {}".format(
@@ -472,8 +475,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                                 "payment_gateway": self.payment_gateway,
                                 "payment_method": self.payment_method,
                             }
-                            additional_charges = (
-                                self.get_additional_charges())
                             data_to_update.update(additional_charges)
                             self.update_youpay_transaction_data(
                                 data_to_update)
@@ -489,8 +490,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             "payment_gateway": self.payment_gateway,
                             "payment_method": self.payment_method,
                         }
-                        additional_charges = (
-                            self.get_additional_charges())
+
                         data_to_update.update(additional_charges)
                         self.update_youpay_transaction_data(data_to_update)
                         return ({"error": response.json()},
