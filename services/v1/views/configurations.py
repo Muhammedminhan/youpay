@@ -1,5 +1,4 @@
 import logging
-from decimal import Decimal
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -12,7 +11,6 @@ from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
-from services.constants import TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY
 from payments.constants import (
     PAYMENT_STATUS_ERROR,
     PAYMENT_STATUS_REJECTED,
@@ -22,6 +20,10 @@ from payments.constants import (
     PAYMENT_STATUS_PAID
 )
 from payments.models import YouPayTransactionData
+from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
+                                APPLEPAY_MERCHANT_CAPABILITIES,
+                                APPLEPAY_LABEL)
+from services.constants import TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY
 from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -122,7 +124,8 @@ class ConfigViewSet(ViewSet):
                                       'mobile_logo': get_mobile_logo_url(
                                           client),
                                       'logo': get_logo_url(client)}
-                        paypal_config = self.get_paypal_config(payment_options)
+                        paypal_config = self.get_paypal_config(
+                            payment_options)
                         applepay_config = (
                             self.get_applepay_config(payment_options))
 
@@ -132,11 +135,11 @@ class ConfigViewSet(ViewSet):
                             tabbypg_config=tabbypg_config,
                             checkoutpg_config=checkout_config,
                             payback_config=payback_config,
+                            applepay_config=applepay_config,
                             transaction=transaction,
                             announcements_dict=announcements_dict,
                             status_code=status_code,
-                            paypal_config = paypal_config,
-                            applepay_config= applepay_config
+                            paypal_config=paypal_config,
                         )
 
                         data = self.response_obj.get_success_dict(
@@ -204,6 +207,7 @@ class ConfigViewSet(ViewSet):
         if transaction:
             amount = transaction.amount
             currency = transaction.currency
+            country_code = transaction.country_code
             service_fee = transaction.service_fee
             VAT_amount = transaction.VAT_amount
             base_amount = transaction.base_amount
@@ -240,6 +244,7 @@ class ConfigViewSet(ViewSet):
 
                 "amount": amount,
                 "currency": currency,
+                "country_code": country_code,
                 "service_fee": service_fee,
                 "vat_amount": VAT_amount,
                 "base_amount": base_amount,
@@ -292,13 +297,17 @@ class ConfigViewSet(ViewSet):
         only if applepay is enabled
         """
         applepay_config = {}
+        applepay_config["supportedNetworks"] = APPLEPAY_SUPPORTED_NETWORKS
+        applepay_config[
+            "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
+        applepay_config["label"] = APPLEPAY_LABEL
+
         applepay_enabled = payment_option.get('applepay', False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
-            applepay_config = self.get_additional_config(additional_fee,
-                                                         TOKEN_TYPE_APPLEPAY)
+            applepay_config.update(self.get_additional_config(additional_fee,
+                                                         TOKEN_TYPE_APPLEPAY))
         return applepay_config
-
 
     def get_paypal_config(self, payment_option):
         """
