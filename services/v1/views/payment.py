@@ -252,6 +252,9 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     )
                     return return_data, status.HTTP_200_OK
                 else:
+                    logger.info(
+                        "Client verify url {} not "
+                        "responding".format(client_verify_url))
                     """Client verify url not responding"""
                     return_data = self.get_400_message(
                         message="Client verify url not working")
@@ -276,7 +279,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         url = kwargs.get('url')
         body = kwargs.get('body')
         headers = kwargs.get('headers')
-
         response = requests.post(url, json=body, headers=headers)
         logger.info("Verify client with data {} ,Response {}".format(
             body, response.text))
