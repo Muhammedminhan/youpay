@@ -108,14 +108,14 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                 "payment_status": payment_status,
                 "approved": approved,
                 "response_summary": response_summary,
+                "payment_method": PAYMENT_METHOD_CREDIT_BALANCE,
+                "payment_gateway": PAYMENT_GATEWAY_HAPPYCREDITS,
                 "available_credit_balance": available_balance
             }
         else:
             data_to_update = {
                 "transaction_id": self.transaction_id,
                 "payment_reference": self.payment_reference,
-                "payment_gateway": PAYMENT_GATEWAY_HAPPYCREDITS,
-                "payment_method": PAYMENT_METHOD_CREDIT_BALANCE,
                 "credit_balance_amount": self.credit_balance
             }
         self.update_youpay_transaction_data(data_to_update)
