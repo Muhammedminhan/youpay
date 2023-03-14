@@ -269,6 +269,7 @@ class CheckoutVerification(APIView):
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 
+
 @payment_status_check
 class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                               ClientValidator):
