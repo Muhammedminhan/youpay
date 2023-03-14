@@ -581,7 +581,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             return ({"error": response.json()},
                     self.CHECKOUTPG_CONNECTION_ERROR)
 
-    def handle_applepay_pending(self, request_data):
+    def create_transaction_in_checkoutpg(self, request_data):
         try:
             checkoutpg_config = get_checkoutpg_config()
             if checkoutpg_config:
@@ -681,7 +681,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             if verify_status == status.HTTP_200_OK and is_verified:
 
                 if payment_stage == PAYMENT_STATUS_PENDING:
-                    data, code = self.handle_applepay_pending(
+                    data, code = self.create_transaction_in_checkoutpg(
                         request_data)
                     data_to_update = {
                         'transaction_id': self.transaction_id,
