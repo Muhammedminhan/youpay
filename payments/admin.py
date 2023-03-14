@@ -32,6 +32,17 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         YoupayToPaymentGatewaysDataInline,
     ]
 
+    fieldsets = (
+        ('Customer details', {
+            'fields': ('customer_name', 'customer_email', 'customer_phone',
+                       'ip',)
+        }),
+        ('Card details', {
+            'fields': ('customer_name', 'customer_email', 'customer_phone',
+                       'ip',)
+        }),
+    )
+
 
 class AnnouncementAdmin(AdminAbstract):
     form = AnnouncementForm
