@@ -1,8 +1,7 @@
+from django.conf.urls import include
 from django.urls import path
 
-from amazonpgclient.v1.views.amazonpg_webhook_listener import WebhookListener
 
 urlpatterns = [
-    path('webhook/', WebhookListener.as_view(),
-         name='payment'),
+    path('api/v1/', include('amazonpgclient.v1.urls')),
 ]

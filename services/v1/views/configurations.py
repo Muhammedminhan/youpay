@@ -275,6 +275,22 @@ class ConfigViewSet(ViewSet):
                 "validation_json"] = tabbypg_obj.validation_json
         return tabbypg_config
 
+    def get_additional_config(self, additional_fee, payment_type):
+        """
+        returns additional charge configured dict
+        """
+        additional_charges = False
+        additional_percentage = 0
+        additional_fixed_amount = 0
+        if additional_fee:
+            additional_charges = True
+            additional_percentage = additional_fee.percentage
+            additional_fixed_amount = additional_fee.fixed_amount
+        return {"additional_charges": additional_charges,
+                "payment_option": payment_type,
+                "additional_percentage": additional_percentage,
+                "additional_fixed_amount": additional_fixed_amount}
+
     def get_applepay_config(self, payment_option):
         """
         returns applepay additional fee config
@@ -289,10 +305,8 @@ class ConfigViewSet(ViewSet):
         applepay_enabled = payment_option.get('applepay', False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
-            applepay_config[
-                "additional_charges"] = True if additional_fee else False
-            applepay_config["payment_option"] = TOKEN_TYPE_APPLEPAY
-
+            applepay_config.update(self.get_additional_config(additional_fee,
+                                                         TOKEN_TYPE_APPLEPAY))
         return applepay_config
 
     def get_paypal_config(self, payment_option):
@@ -304,10 +318,8 @@ class ConfigViewSet(ViewSet):
         paypal_enabled = payment_option.get('paypal', False)
         if paypal_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
-            paypal_config = {
-                "additional_charges": True if additional_fee else False,
-                "payment_option": TOKEN_TYPE_PAYPAL
-            }
+            paypal_config = self.get_additional_config(additional_fee,
+                                                       TOKEN_TYPE_PAYPAL)
         return paypal_config
 
 

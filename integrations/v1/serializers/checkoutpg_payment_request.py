@@ -31,7 +31,10 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("customer_email")
 
     def get_amount(self, data):
-        return str(data.get('transaction_data').get("amount"))
+        amount = (str(data.get('additional_total_amount')) if
+                  data.get('additional_total_amount') else
+                  str(data.get('transaction_data').get("amount")))
+        return amount
 
     def get_order_reference(self, data):
         return data.get('transaction_data').get("order_reference")
