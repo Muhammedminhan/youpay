@@ -3,7 +3,8 @@ import logging
 from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
 
-from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
+from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG,
+                            UPDATE_SOURCE_MIDDLEWARE)
 from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
@@ -75,6 +76,7 @@ class YouPayTransactionCRUD(object):
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
         data_dict = {}
+        update_source = data.get("update_source")
         transaction_id = data.get('transaction_id')
         data_dict['payment_reference'] = data.get('payment_reference', None)
         data_dict['payment_status'] = data.get('payment_status', None)
@@ -91,13 +93,21 @@ class YouPayTransactionCRUD(object):
         data_dict['response_summary'] = data.get('response_summary', None)
         data_dict['name_on_card'] = data.get('name_on_card', None)
 
-        data_dict['redeemed_amount'] = data.get('redeemed_amount', None) or 0
-        data_dict['redeemed_points'] = data.get('redeemed_points', None) or 0
-        data_dict['payable_amount'] = data.get('payable_amount', None) or 0
-        data_dict['available_amount'] = (data.get('available_amount', None)
-                                         or 0)
-        data_dict['available_points'] = (data.get('available_points', None)
-                                         or 0)
+        if update_source != UPDATE_SOURCE_MIDDLEWARE:
+            # check given to prevent middleware update setting fields to 0
+            data_dict['redeemed_amount'] = data.get(
+                'redeemed_amount', 0)
+            data_dict['redeemed_points'] = data.get(
+                'redeemed_points', 0)
+            data_dict['payable_amount'] = data.get(
+                'payable_amount', 0)
+            data_dict['available_amount'] = data.get(
+                'available_amount', 0)
+            data_dict['available_points'] = data.get(
+                'available_points', 0)
+            data_dict['is_full_redemption'] = data.get(
+                'is_full_redemption', None)
+
         data_dict['additional_vat'] = data.get('additional_vat', None)
         data_dict['additional_processing_fee'] = (
             data.get('additional_processing_fee', None))
@@ -105,7 +115,6 @@ class YouPayTransactionCRUD(object):
             data.get('additional_processing_fee_vat', None))
         data_dict['additional_total_amount'] = (
             data.get('additional_total_amount', None))
-        data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
 
         data_dict['credit_balance_amount'] = data.get('credit_balance_amount',
                                                       None)

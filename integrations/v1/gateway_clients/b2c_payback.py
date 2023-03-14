@@ -186,8 +186,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
         except Exception as e:
             logger.error(
                 "authenticate api call to b2cpayback failed for "
-                "transaction {}".format(request_transaction_id),
-                exc_info=e)
+                "transaction {}".format(
+                    decrypt_string(request_transaction_id)), exc_info=e)
             return None, None
 
     def point_redemption(self, request_data):
