@@ -31,7 +31,10 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("customer_email")
 
     def get_amount(self, data):
-        return str(data.get('transaction_data').get("amount"))
+        amount = (str(data.get('additional_total_amount')) if
+                  data.get('additional_total_amount') else
+                  str(data.get('transaction_data').get("amount")))
+        return amount
 
     def get_order_reference(self, data):
         return data.get('transaction_data').get("order_reference")
@@ -96,20 +99,4 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 class ApplepayPaymentDataSerializer(serializers.ModelSerializer):
     class Meta:
         model = YouPayTransactionData
-        fields = [
-            'transaction_id',
-            'amount',
-            'currency',
-            'invoice_id',
-            'order_reference',
-            'success_url',
-            'failure_url',
-            'cancel_url',
-            'verify_url',
-            'amount',
-            'ip',
-            'customer_email',
-            'customer_name',
-            'platform',
-            'payment_reference',
-        ]
+        fields = '__all__'

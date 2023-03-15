@@ -120,13 +120,22 @@ class PaymentStatusCheckMiddleware(object):
                 return JsonResponse(data, status=200)
             else:
 
-                retry_count = transaction_obj.retry_count + 1
-                youpay_obj.update_youpay_transaction_data(
-                    {
-                        "transaction_id": transaction_id,
-                        "retry_count": retry_count
-                    }
-                )
+                # avoid retry count increment for applepay authorize and paid
+                # transactions
+                payment_stage = data.get('payment_stage', None)
+
+                if not (payment_stage == 'authorized' or
+                        payment_stage == 'paid'
+                        and transaction_obj.payment_method == 'applepay'):
+
+                    retry_count = transaction_obj.retry_count + 1
+
+                    youpay_obj.update_youpay_transaction_data(
+                        {
+                            "transaction_id": transaction_id,
+                            "retry_count": retry_count
+                        }
+                    )
 
     def get_payment_response(
             self, redirect_url, transaction_message, youpay_message_obj):
