@@ -150,8 +150,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                         serializer_error=serializer.errors,
                     )
                     logger.error(
-                        "Validation failed for PaymentRequestDataSerializer : {}"
-                        .format(self.return_data))
+                        "Validation failed for PaymentRequestDataSerializer"
+                        " : {}".format(self.return_data))
 
                     return Response(self.return_data.get('errors'),
                                     status=status.HTTP_400_BAD_REQUEST)

@@ -1,6 +1,7 @@
 import logging
 
 from rest_framework import status
+from django.db import transaction
 
 from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from core.messages import ERROR_MISSING_FIELDS
@@ -49,14 +50,16 @@ class YouPayTransactionCRUD(object):
                     "data": serializer.errors, "message": message}
 
     def get_youpay_transaction_data(self, transaction_id):
-        try:
-            transaction_obj = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
-            return transaction_obj
-        except YouPayTransactionData.DoesNotExist:
-            logger.error("Unable to find youpay transaction object for {}"
-                         "".format(transaction_id))
-            return None
+        with transaction.atomic():
+            try:
+                transaction_obj = (
+                    YouPayTransactionData.objects.select_for_update().get(
+                    transaction_id=transaction_id))
+                return transaction_obj
+            except YouPayTransactionData.DoesNotExist:
+                logger.error("Unable to find youpay transaction object for {}"
+                             "".format(transaction_id))
+                return None
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
