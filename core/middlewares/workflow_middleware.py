@@ -3,7 +3,7 @@ import logging
 
 from django.http import JsonResponse
 
-from core.constants import MAX_PAYMENT_RETRY_COUNT, UPDATE_SOURCE_MIDDLEWARE
+from core.constants import MAX_PAYMENT_RETRY_COUNT
 from core.messages import MIDDLEWARE_STATUS_CHECK_MESSAGE
 from core.response_messages import YouPayResponse
 from payments.constants import PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID
@@ -102,8 +102,7 @@ class PaymentStatusCheckMiddleware(object):
                 youpay_obj.update_youpay_transaction_data(
                     {
                         "transaction_id": transaction_id,
-                        "payment_status": PAYMENT_STATUS_CANCELLED,
-                        "update_source": UPDATE_SOURCE_MIDDLEWARE
+                        "payment_status": PAYMENT_STATUS_CANCELLED
                     }
                 )
 
@@ -122,12 +121,10 @@ class PaymentStatusCheckMiddleware(object):
             else:
 
                 retry_count = transaction_obj.retry_count + 1
-                print("=======1======", transaction_obj.available_amount)
                 youpay_obj.update_youpay_transaction_data(
                     {
                         "transaction_id": transaction_id,
-                        "retry_count": retry_count,
-                        "update_source": UPDATE_SOURCE_MIDDLEWARE
+                        "retry_count": retry_count
                     }
                 )
 
