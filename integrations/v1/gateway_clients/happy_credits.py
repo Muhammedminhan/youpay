@@ -110,12 +110,13 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                 "response_summary": response_summary,
                 "payment_method": PAYMENT_METHOD_CREDIT_BALANCE,
                 "payment_gateway": PAYMENT_GATEWAY_HAPPYCREDITS,
+                "payment_reference": self.payment_reference,
                 "available_credit_balance": available_balance
             }
         else:
             data_to_update = {
                 "transaction_id": self.transaction_id,
-                "payment_reference": self.payment_reference,
+                "happy_credit_reference": self.payment_reference,
                 "credit_balance_amount": self.credit_balance
             }
         self.update_youpay_transaction_data(data_to_update)
@@ -194,9 +195,9 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
         """
         try:
 
-            payment_reference = data.get('payment_reference')
+            self.payment_reference = data.get('payment_reference')
             self.transaction_obj = self.get_transaction_data_by_reference(
-                payment_reference)
+                self.payment_reference)
             if self.transaction_obj is None:
                 return None, self.TRANSACTION_NOT_FOUND
             if (self.transaction_obj.amount >

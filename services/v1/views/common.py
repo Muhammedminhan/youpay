@@ -55,7 +55,7 @@ class YouPayTransactionCRUD(object):
     def get_transaction_data_by_reference(self, payment_reference):
         try:
             transaction_obj = YouPayTransactionData.objects.get(
-                payment_reference=payment_reference)
+                happy_credit_reference=payment_reference)
             return transaction_obj
         except YouPayTransactionData.DoesNotExist:
             logger.error("Unable to find youpay transaction object for {}"
@@ -77,6 +77,8 @@ class YouPayTransactionCRUD(object):
         data_dict = {}
         transaction_id = data.get('transaction_id')
         data_dict['payment_reference'] = data.get('payment_reference', None)
+        data_dict['happy_credit_reference'] = (
+            data.get('happy_credit_reference', None))
         data_dict['payment_status'] = data.get('payment_status', None)
         data_dict['payment_gateway'] = data.get('payment_gateway', None)
         data_dict['channel_code'] = data.get('channel_code', None)
