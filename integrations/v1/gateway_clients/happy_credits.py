@@ -196,8 +196,9 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
         try:
 
             self.payment_reference = data.get('payment_reference')
-            self.transaction_obj = self.get_transaction_data_by_reference(
-                self.payment_reference)
+            self.transaction_obj = (
+                self.get_transaction_data_by_credit_reference(
+                    self.payment_reference))
             if self.transaction_obj is None:
                 return None, self.TRANSACTION_NOT_FOUND
             if (self.transaction_obj.amount >

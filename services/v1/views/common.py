@@ -52,7 +52,11 @@ class YouPayTransactionCRUD(object):
             return {"status": status.HTTP_400_BAD_REQUEST,
                     "data": serializer.errors, "message": message}
 
-    def get_transaction_data_by_reference(self, payment_reference):
+    def get_transaction_data_by_credit_reference(self, payment_reference):
+        """
+        Method used to return transaction object for selected happy credits
+        reference
+        """
         try:
             transaction_obj = YouPayTransactionData.objects.get(
                 happy_credit_reference=payment_reference)
