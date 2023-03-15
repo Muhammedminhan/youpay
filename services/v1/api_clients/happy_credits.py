@@ -76,7 +76,7 @@ class HappyCreditsDebitBalance(APIView):
             else:
                 data = self.response_obj.get_error_dict(error_code=code)
                 return Response(data,
-                                status=status.HTTP_404_NOT_FOUND)
+                                status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error("Error in HappyCreditsDeductBalance: "
                          "{}".format(str(e)))
