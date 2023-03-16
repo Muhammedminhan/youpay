@@ -1,12 +1,14 @@
 import logging
 
 from rest_framework import status
+from django.db import transaction
 
 from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
 )
+from core.utils import wait_redis_lock
 from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import YouPayTransactionData
@@ -48,14 +50,16 @@ class YouPayTransactionCRUD(object):
                     "data": serializer.errors, "message": message}
 
     def get_youpay_transaction_data(self, transaction_id):
-        try:
-            transaction_obj = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
-            return transaction_obj
-        except YouPayTransactionData.DoesNotExist:
-            logger.error("Unable to find youpay transaction object for {}"
-                         "".format(transaction_id))
-            return None
+        with transaction.atomic():
+            try:
+                transaction_obj = (
+                    YouPayTransactionData.objects.select_for_update().get(
+                    transaction_id=transaction_id))
+                return transaction_obj
+            except YouPayTransactionData.DoesNotExist:
+                logger.error("Unable to find youpay transaction object for {}"
+                             "".format(transaction_id))
+                return None
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
@@ -71,7 +75,7 @@ class YouPayTransactionCRUD(object):
         data_dict['card_bin'] = data.get('card_bin', None)
         data_dict['card_last4'] = data.get('card_last4', None)
         data_dict['card_issuer_country'] = data.get('card_issuer_country',
-                                                    None)
+                                                        None)
         data_dict['approved'] = data.get('approved', None)
         data_dict['response_summary'] = data.get('response_summary', None)
         data_dict['name_on_card'] = data.get('name_on_card', None)
@@ -84,7 +88,7 @@ class YouPayTransactionCRUD(object):
         data_dict['available_points'] = (data.get('available_points', None)
                                          or 0)
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
-        
+
         data_dict['is_fraud'] = data.get('is_fraud', None)
         data_dict['is_flagged'] = data.get('is_flagged', None)
         try:
