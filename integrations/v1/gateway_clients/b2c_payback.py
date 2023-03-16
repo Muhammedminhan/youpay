@@ -16,7 +16,8 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    PAYMENT_REQUEST_VERIFY)
+                                    PAYMENT_REQUEST_VERIFY,
+                                    ADCB_CHECKOUTPG_ERROR)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -28,7 +29,7 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
     AuthenticateRequestSerializer
 )
 from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
-                                PAYMENT_STATUS_PAID)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -257,6 +258,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 approved_status = transaction_obj.approved
                 if response_data.get("redirect_url") is None:
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                elif response_data.get("code") == ADCB_CHECKOUTPG_ERROR:
+                    payment_status = PAYMENT_STATUS_FAILED
+                    approved_status = False
                 else:
                     payment_status = PAYMENT_STATUS_PAID
                     approved_status = True
