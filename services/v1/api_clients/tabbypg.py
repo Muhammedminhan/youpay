@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.exceptions import ValidationFailed
+from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string, get_site_domain
 from integrations.constants import TABBYPG_HUB_CODE
@@ -75,6 +76,7 @@ class CreateSession(YouPayTransactionCRUD, APIView, ClientValidator):
 
 
 class TabbyPGVerification(APIView):
+
     response_obj = YouPayResponse()
 
     def get(self, request, *args, **kwargs):
@@ -89,20 +91,54 @@ class TabbyPGVerification(APIView):
             }
             tabbypg = TabbyPGManager()
             response_data, code = tabbypg.verify_session(payment_data)
-
+            print("\n\nresponse_data", response_data)
+            print("code", code)
             if response_data:
                 data = self.response_obj.get_success_dict(
                     code=code,
                     success_dict=response_data
                 )
+
+                # format the response data
+                data = self.format_tabby_response(
+                    data, code)
+
                 return Response(data,
                                 status=status.HTTP_200_OK)
             else:
                 data = self.response_obj.get_error_dict(error_code=code)
+
+                data = self.format_tabby_response(
+                    data, code)
                 return Response(data,
                                 status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error("Error in CheckoutVerification: {}".format(str(e)))
             data = self.response_obj.get_400_message(message=str(e))
-            return Response(data.get('errors'),
+            code = self.response_obj.TABBYPG_VERIFICATION_EXCEPTION
+            data = self.format_tabby_response(
+                data, code)
+            return Response(data,
                             status=status.HTTP_400_BAD_REQUEST)
+
+    def format_tabby_response(self, data, code):
+        """
+        method to format the response from tabbypg
+        """
+
+        transaction_message = data.get('transaction_message')
+        errors = data.get('errors')
+
+        if transaction_message:
+            is_capture = transaction_message.get('is_capture')
+            if is_capture:
+                data['code'] = code
+            else:
+                data['code'] = self.response_obj.TABBYPG_VERIFICATION_FAILED
+            data.pop('transaction_message', None)
+
+        if errors:
+            errors['message'] = COMMON_ERROR_MESSAGE_EN
+            errors['code'] = code
+
+        return data

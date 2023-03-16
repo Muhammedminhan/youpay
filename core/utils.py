@@ -14,9 +14,7 @@ from django.conf import settings
 from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
-from core.messages import COMMON_ERROR_MESSAGE_EN, COMMON_ERROR_MESSAGE_AR
 from core.models import AppConfig
-from core.response_messages import YouPayResponse
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
@@ -324,66 +322,3 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
 
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
-
-
-def youpay_payments_verification(**kwargs):
-    """
-
-    sample success response
-
-    {
-    "is_redirect": True,
-    "redirect_url": "redirect url", #success or cancel or failure url
-    "message": "message",
-    "code": "Youpay code",
-    "is_success": True, # based on various payment gateway
-    }
-
-    sample failure response
-
-    {
-    "is_redirect": False,
-    "redirect_url": "None or empty", #success or cancel or failure url
-    "message": "message",
-    "code": "Youpay code",
-    "is_success": False,
-    }
-
-    """
-
-    transaction_id = kwargs.get('transaction_id', None)
-    transaction_obj = kwargs.get('transaction_obj', None)
-
-    response_messages = YouPayResponse()
-
-    transaction_check = check_transaction(transaction_obj)
-
-    if transaction_check:
-
-        # TODO : check if transaction is already closed
-
-        # TODO : process response from payment gateways
-
-        # TODO : update transaction status
-
-        # TODO : Provide a common response to FE
-        
-        pass
-    else:
-        return {
-            "is_redirect": False,
-            "redirect_url": "",
-            "message_en": COMMON_ERROR_MESSAGE_EN,
-            "message_ar": COMMON_ERROR_MESSAGE_AR,
-            "code": response_messages.TRANSACTION_NOT_FOUND,
-            "is_success": False,
-        }
-
-    pass
-
-
-def check_transaction(transaction_obj):
-    if transaction_obj is None:
-        return False
-    else:
-        return True
