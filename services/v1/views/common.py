@@ -108,10 +108,10 @@ class YouPayTransactionCRUD(object):
                 transaction_obj.save(update_fields=saved_fields)
             else:
                 logger.error("unable to find the transaction object for {}"
-                                "".format(transaction_id))
+                             "".format(transaction_id))
         except Exception as e:
             logger.error("Unable to update the transaction object, {0}"
-                            "".format(str(e)))
+                         "".format(str(e)))
 
 
 class ClientValidator(object):
