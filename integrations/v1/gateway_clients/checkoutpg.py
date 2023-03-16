@@ -542,10 +542,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         youpay_transaction = self.get_youpay_transaction_data(transaction_id)
 
         if youpay_transaction is None:
-            response = {
-                "error": "Invalid transaction id provided"
-            }
-            return response, self.PAYMENT_FAILED
+            return None, self.TRANSACTION_NOT_FOUND
 
         params = {
             'cko-session-id': data.get('cko_session_id'),
@@ -569,7 +566,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             response_data = response.json()
             redirect, response_data = process_checkoutpg_response_verification(
                 transaction_id, response_data)
-
+            print("\n\nredirect", redirect, response_data)
             if redirect:
                 return response_data, self.SUCCESS
             else:
@@ -578,7 +575,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(
                 "Error while verifying_payment status: {}, reason {} "
                 .format(response.status_code, response.json()))
-            return ({"error": response.json()},
+            return (None,
                     self.CHECKOUTPG_CONNECTION_ERROR)
 
     def handle_applepay_pending(self, request_data):

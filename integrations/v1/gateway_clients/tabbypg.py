@@ -47,7 +47,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
     def get_tabbypg_payment_data(self, data):
 
-        if (data.get('transaction_data') and data.get('request_data')):
+        if data.get('transaction_data') and data.get('request_data'):
             payment_data = TabbyPGPaymentRequestSerializer(data)
             return payment_data.data
         else:
@@ -248,13 +248,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 )
                 redirect_flag, response_data = is_redirect(transaction_id,
                                                            response_data)
-                print("redirect_flag", redirect_flag)
-                print("response_data", response_data)
                 if redirect_flag:
                     self.response_data = json.dumps(response_data)
                     return response_data, self.SUCCESS
                 else:
-                    print("Else case worked")
                     self.response_data = json.dumps(response_data)
                     return response_data, self.PAYMENT_FAILED
             else:

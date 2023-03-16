@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.messages import REDIRECT_URL, IS_REDIRECT
+from core.messages import REDIRECT_URL, IS_REDIRECT, COMMON_ERROR_MESSAGE_EN
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import get_site_domain, decrypt_string
@@ -251,23 +251,58 @@ class CheckoutVerification(APIView):
                     'cko-session-id')}
             checkout = CheckoutpgManager()
             response_data, code = checkout.verify_payment(payment_data)
-
+            print("response_data: ", response_data)
+            print("code: ", code)
             if response_data:
+                print("\n\n if")
                 data = self.response_obj.get_success_dict(
                     code=code,
                     success_dict=response_data
                 )
-                return Response(data,
+                formatted_data = self.format_checkoutpg_response(data, code)
+                return Response(formatted_data,
                                 status=status.HTTP_200_OK)
             else:
+                print("\n\n Else")
                 data = self.response_obj.get_error_dict(error_code=code)
-                return Response(data,
+                formatted_data = self.format_checkoutpg_response(data, code)
+                return Response(formatted_data,
                                 status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error("Error in CheckoutVerification: {}".format(str(e)))
+            print("\n\n Exception")
+            import sys
+            print("line number : ", sys.exc_info()[-1].tb_lineno)
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+    def format_checkoutpg_response(self, data, code):
+
+        transaction_message = data.get('transaction_message')
+        errors = data.get('errors')
+
+        print("data : ", data)
+
+        if transaction_message:
+
+            print("Checkoutpg response code {} : summary : {} ".format(
+                code, transaction_message.get('response_summary', None)))
+
+            response_code = transaction_message.get('response_code', None)
+
+            data['code'] = code
+            data['message'] = transaction_message.get('response_summary',
+                                                      None)
+
+            data.pop('transaction_message', None)
+
+        if errors:
+            errors['message'] = COMMON_ERROR_MESSAGE_EN
+            errors['code'] = code
+
+        return data
+
 
 @payment_status_check
 class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
@@ -303,14 +338,18 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                         code=code,
                         success_dict=response_data
                     )
-                    return Response(data,
-                                    status=status.HTTP_200_OK)
+
+                    formatted_data = self.format_applepay_response(data, code)
+
+                    return Response(formatted_data, status=status.HTTP_200_OK)
                 else:
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
                     )
-                    return Response(data,
+                    formatted_data = self.format_applepay_response(data, code)
+
+                    return Response(formatted_data,
                                     status=status.HTTP_400_BAD_REQUEST)
 
             else:
@@ -321,3 +360,29 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+    def format_applepay_response(self, data, code):
+
+        transaction_message = data.get('transaction_message')
+        errors = data.get('errors')
+
+        print("data : ", data)
+
+        if transaction_message:
+
+            print("Checkoutpg response code {} : summary : {} ".format(
+                code, transaction_message.get('response_summary', None)))
+
+            response_code = transaction_message.get('response_code', None)
+
+            data['code'] = code
+            data['message'] = transaction_message.get('response_summary',
+                                                      None)
+
+            data.pop('transaction_message', None)
+
+        if errors:
+            errors['message'] = COMMON_ERROR_MESSAGE_EN
+            errors['code'] = code
+
+        return data

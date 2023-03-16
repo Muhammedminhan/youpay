@@ -91,8 +91,6 @@ class TabbyPGVerification(APIView):
             }
             tabbypg = TabbyPGManager()
             response_data, code = tabbypg.verify_session(payment_data)
-            print("\n\nresponse_data", response_data)
-            print("code", code)
             if response_data:
                 data = self.response_obj.get_success_dict(
                     code=code,
