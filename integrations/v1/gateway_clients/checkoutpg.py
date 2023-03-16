@@ -279,7 +279,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             self.payment_status = PAYMENT_STATUS_PENDING
 
                             self.update_youpay_transaction_data(
-                                self.prepair_data_to_update())
+                                self.prepare_data_to_update())
                             return response.json(), self.SUCCESS
 
                     logger.error("Error in savedcard payment, {}".format(
@@ -287,7 +287,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     self.payment_status = PAYMENT_STATUS_ERROR
 
                     self.update_youpay_transaction_data(
-                        self.prepair_data_to_update())
+                        self.prepare_data_to_update())
 
                     return ({"error": response.json()},
                             self.CHECKOUTPG_CONNECTION_ERROR)
@@ -368,7 +368,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             self.payment_status = PAYMENT_STATUS_PENDING
 
                             self.update_youpay_transaction_data(
-                                self.prepair_data_to_update(
+                                self.prepare_data_to_update(
                                     name_on_card=name_on_card))
                             return response.json(), self.SUCCESS
 
@@ -376,7 +376,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             response.text))
                         self.payment_status = PAYMENT_STATUS_ERROR
                         self.update_youpay_transaction_data(
-                            self.prepair_data_to_update(
+                            self.prepare_data_to_update(
                                 name_on_card=name_on_card))
                         return ({"error": response.json()},
                                 self.CHECKOUTPG_CONNECTION_ERROR)
@@ -455,7 +455,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             self.payment_reference = response_data.get(
                                 "reference_id")
                             self.payment_status = PAYMENT_STATUS_PENDING
-                            data_to_update = self.prepair_data_to_update()
+                            data_to_update = self.prepare_data_to_update()
                             data_to_update.update(additional_charges)
                             self.update_youpay_transaction_data(
                                 data_to_update)
@@ -464,7 +464,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         logger.error("Error in paypal payment, {}".format(
                             response.text))
                         self.payment_status = PAYMENT_STATUS_ERROR
-                        data_to_update = self.prepair_data_to_update()
+                        data_to_update = self.prepare_data_to_update()
 
                         data_to_update.update(additional_charges)
                         self.update_youpay_transaction_data(data_to_update)
@@ -659,7 +659,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         request_data)
 
                     self.update_youpay_transaction_data(
-                        self.prepair_data_to_update())
+                        self.prepare_data_to_update())
                     return data, code
 
                 elif payment_stage == PAYMENT_STATUS_AUTHORIZED:
@@ -683,7 +683,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     message = self.MESSAGE.get(response_code)
 
                     self.update_youpay_transaction_data(
-                        self.prepair_data_to_update())
+                        self.prepare_data_to_update())
 
                 elif payment_stage == PAYMENT_STATUS_PAID:
                     # storing Youpay to payment gateway request and response data
@@ -710,7 +710,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     logger.info(message)
 
                     self.update_youpay_transaction_data(
-                        self.prepair_data_to_update())
+                        self.prepare_data_to_update())
 
                 else:
                     message = (
