@@ -1,27 +1,27 @@
 import json
-import requests
 import logging
 
+import requests
 from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_AMAZONPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
-from services.v1.views.payment import PaymentRequestView
-from services.v1.views.payment_handlers import PaymentHandlers
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     AMAZONPG_AUTHENTICATE_API, AMAZONPG_VERIFY_API, AMAZONPG_CACHE_KEY,
     AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API,
     AMAZONPG_REFUND_API, PAYMENT_REQUEST_AUTHENTICATE, PAYMENT_REQUEST_REFUND
 )
+from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.amazonpg_payment_request import (
     AmazonPGPaymentRequestSerializer, AmazonPGTokenizationSerializer)
-from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON,
     PAYMENT_STATUS_REFUNDED)
 from services.v1.views.common import is_redirect
+from services.v1.views.payment import PaymentRequestView
+from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,19 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         self.transaction_obj = None
         self.payment_scheme = None
         self.name_on_card = None
+
+    def prepare_data_to_update(self):
+        data_to_update = {
+            'transaction_id': self.transaction_id,
+            "payment_status": self.payment_status,
+            "payment_reference": self.payment_reference,
+            "payment_gateway": self.payment_gateway,
+            "channel_code": self.channel_code,
+            "payment_method": self.payment_method,
+            "payment_scheme": self.payment_scheme,
+            "name_on_card": self.name_on_card
+        }
+        return data_to_update
 
     def get_amazonpg_payment_data(self, data):
         """
@@ -164,12 +177,18 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                                 "payment_scheme")
                             self.name_on_card = response_data.get(
                                 "name_on_card")
+
+                            self.update_youpay_transaction_data(
+                                self.prepare_data_to_update())
                             return response.json(), self.SUCCESS
 
                         logger.error("Error in amazonpg payment, {}".format(
                             response.text))
                         self.payment_reference = response_data.get(
                             "payment_reference")
+
+                        self.update_youpay_transaction_data(
+                            self.prepare_data_to_update())
                         return ({"error": response.json()},
                                 self.AMAZONPG_CONNECTION_ERROR)
 
@@ -189,18 +208,6 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             error = "Error in amazonpg authentication api: {}".format(e)
             logger.error("Exception in amazonpg payment: {}".format(e))
             return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
-        finally:
-            data_to_update = {
-                'transaction_id': self.transaction_id,
-                "payment_status": self.payment_status,
-                "payment_reference": self.payment_reference,
-                "payment_gateway": self.payment_gateway,
-                "channel_code": self.channel_code,
-                "payment_method": self.payment_method,
-                "payment_scheme": self.payment_scheme,
-                "name_on_card": self.name_on_card
-            }
-            self.update_youpay_transaction_data(data_to_update)
 
     def verify_payment(self, data):
         """
