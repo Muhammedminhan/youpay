@@ -121,25 +121,20 @@ def get_payment_options(transaction_obj, gateways):
     for gateway in gateways:
         code = gateway.code
 
-        # get checkoutpg payment options
         response_payment_options = get_checkoutpg_payment_options(
             code, gateway, response_payment_options)
 
-        # get b2cpayback payment options
         response_payment_options = get_b2cpayback_payment_options(
             code, store_currency, response_payment_options)
 
-        # get tabbypg payment options
         response_payment_options = get_tabbypg_payment_options(
             code, store_currency, response_payment_options)
 
-        # get amazonpg payment options
         response_payment_options = get_amazonpg_payment_options(
             code, store_currency, response_payment_options)
 
-        # get happycredits payment options
         response_payment_options = get_haapycredits_payment_options(
-            code, store_currency, response_payment_options
+            code, response_payment_options
         )
 
     return response_payment_options
@@ -194,8 +189,7 @@ def get_amazonpg_payment_options(code, store_currency,
     return response_payment_options
 
 
-def get_haapycredits_payment_options(code, store_currency,
-                                 response_payment_options):
+def get_haapycredits_payment_options(code, response_payment_options):
     if code == HAPPYCREDITS_HUB_CODE:
         response_payment_options['happy_credits'] = True
 
