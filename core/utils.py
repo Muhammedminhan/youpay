@@ -297,7 +297,7 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
         if source == PAYMENT_METHOD_APPLEPAY and approved:
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID
-            is_flagged = response_data.get("risk").get("flagged")
+            is_flagged = response_data.get("risk", {}).get("flagged")
 
     youpay_obj = YouPayTransactionCRUD()
 
