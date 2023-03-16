@@ -6,8 +6,9 @@ from django.http import JsonResponse
 from core.constants import MAX_PAYMENT_RETRY_COUNT
 from core.messages import MIDDLEWARE_STATUS_CHECK_MESSAGE
 from core.response_messages import YouPayResponse
-from payments.constants import PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID, \
-    PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY
+from payments.constants import (
+    PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY)
 
 logger = logging.getLogger(__name__)
 
