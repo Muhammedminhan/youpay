@@ -5,7 +5,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.messages import REDIRECT_URL, IS_REDIRECT, COMMON_ERROR_MESSAGE_EN
+from core.messages import (
+    REDIRECT_URL,
+    IS_REDIRECT,
+    COMMON_ERROR_MESSAGE_EN
+)
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import get_site_domain, decrypt_string

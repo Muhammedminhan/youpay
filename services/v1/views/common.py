@@ -60,10 +60,14 @@ class YouPayTransactionCRUD(object):
             return {"status": status.HTTP_400_BAD_REQUEST,
                     "data": serializer.errors, "message": message}
 
-    def get_transaction_data_by_reference(self, payment_reference):
+    def get_transaction_data_by_credit_reference(self, payment_reference):
+        """
+        Method used to return transaction object for selected happy credits
+        reference
+        """
         try:
             transaction_obj = YouPayTransactionData.objects.get(
-                payment_reference=payment_reference)
+                happy_credit_reference=payment_reference)
             return transaction_obj
         except YouPayTransactionData.DoesNotExist:
             logger.error("Unable to find youpay transaction object for {}"
@@ -85,6 +89,8 @@ class YouPayTransactionCRUD(object):
         data_dict = {}
         transaction_id = data.get('transaction_id')
         data_dict['payment_reference'] = data.get('payment_reference', None)
+        data_dict['happy_credit_reference'] = (
+            data.get('happy_credit_reference', None))
         data_dict['payment_status'] = data.get('payment_status', None)
         data_dict['payment_gateway'] = data.get('payment_gateway', None)
         data_dict['channel_code'] = data.get('channel_code', None)
@@ -99,13 +105,12 @@ class YouPayTransactionCRUD(object):
         data_dict['response_summary'] = data.get('response_summary', None)
         data_dict['name_on_card'] = data.get('name_on_card', None)
 
-        data_dict['redeemed_amount'] = data.get('redeemed_amount', None) or 0
-        data_dict['redeemed_points'] = data.get('redeemed_points', None) or 0
-        data_dict['payable_amount'] = data.get('payable_amount', None) or 0
-        data_dict['available_amount'] = (data.get('available_amount', None)
-                                         or 0)
-        data_dict['available_points'] = (data.get('available_points', None)
-                                         or 0)
+        data_dict['redeemed_amount'] = data.get('redeemed_amount', None)
+        data_dict['redeemed_points'] = data.get('redeemed_points', None)
+        data_dict['payable_amount'] = data.get('payable_amount', None)
+        data_dict['available_amount'] = data.get('available_amount', None)
+        data_dict['available_points'] = data.get('available_points', None)
+
         data_dict['additional_vat'] = data.get('additional_vat', None)
         data_dict['additional_processing_fee'] = (
             data.get('additional_processing_fee', None))
@@ -113,7 +118,8 @@ class YouPayTransactionCRUD(object):
             data.get('additional_processing_fee_vat', None))
         data_dict['additional_total_amount'] = (
             data.get('additional_total_amount', None))
-        data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
+        data_dict['is_full_redemption'] = data.get('is_full_redemption',
+                                                   None)
 
         data_dict['credit_balance_amount'] = data.get('credit_balance_amount',
                                                       None)
@@ -132,11 +138,9 @@ class YouPayTransactionCRUD(object):
                 saved_fields = get_saved_fields(saved_fields,
                                                 data_dict,
                                                 transaction_obj)
-                """
-                below data update condition specific for adcb transactions
-                """
-                saved_fields = get_adcb_saved_fields(
-                    saved_fields, data_dict, transaction_obj)
+                if data_dict.get('is_full_redemption') == False:
+                    transaction_obj.is_full_redemption = False
+                    saved_fields.append('is_full_redemption')
                 transaction_obj.save(update_fields=saved_fields)
                 logger.info(
                     "Transaction object updated successfully for {}"

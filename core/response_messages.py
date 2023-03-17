@@ -55,6 +55,7 @@ class YouPayResponse(object):
 
     """happy credits related begins"""
     HAPPY_CREDITS_CONNECTION_ERROR = 7002
+    HAPPY_CREDITS_INSUFFICIENT_FUND = 7701
     """happy credits related ends"""
 
     """Apple Pay back related begins"""
@@ -114,6 +115,7 @@ class YouPayResponse(object):
 
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
             self.TRANSACTION_NOT_FOUND: "Transaction not found",
