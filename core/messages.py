@@ -9,6 +9,9 @@ PAYMENT_REQUEST_KEYS_ERROR = (
     " ie order or payment or customer or urls")
 MIDDLEWARE_STATUS_CHECK_MESSAGE = ("Seems like this transaction is already "
                                    "closed")
+MIDDLEWARE_ALREADY_PAID_MESSAGE = (
+    "Transaction Unsuccessful : You are trying to pay again "
+    "for a successful transaction. ")
 GATEWAY_ERROR_OCCURRED = "Gateway error occurred"
 
 REDIRECT_URL = 'redirect_url'

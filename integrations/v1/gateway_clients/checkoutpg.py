@@ -692,8 +692,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         request_method=REQUEST_METHOD_POST,
                     )
 
-                    res_data = payment_response_data.get(
-                        'payment')
+                    res_data = payment_response_data.get('payment')
                     # to mark status as paid
                     res_data['source'] = PAYMENT_METHOD_APPLEPAY
 
@@ -735,4 +734,4 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "Error on processing applepay status update for transaction"
                 "id {}, err : {}".format(self.transaction_id, str(e)))
             logger.error(msg)
-            return {"error": msg}, self.APPLE_PAY_CONNECTION_ERROR
+            return None, self.APPLE_PAY_CONNECTION_ERROR
