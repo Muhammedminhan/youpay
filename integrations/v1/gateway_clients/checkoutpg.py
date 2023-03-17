@@ -566,7 +566,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             response_data = response.json()
             redirect, response_data = process_checkoutpg_response_verification(
                 transaction_id, response_data)
-            print("\n\nredirect", redirect, response_data)
             if redirect:
                 return response_data, self.SUCCESS
             else:
