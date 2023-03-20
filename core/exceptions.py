@@ -19,16 +19,16 @@ class ValidationFailed(Exception):
     pass
 
 
-class TransactionNotFoundException(Exception):
+class TransactionNotFound(Exception):
     """Exception to be raised when transaction not found."""
     pass
 
 
-class TransactionAlreadyPaidException(Exception):
+class TransactionAlreadyPaid(Exception):
     """Exception to be raised when transaction already processed."""
     pass
 
 
-class TransactionAlreadyCancelledException(Exception):
+class TransactionAlreadyCancelled(Exception):
     """Exception to be raised when transaction already processed."""
     pass

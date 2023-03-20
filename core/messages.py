@@ -19,4 +19,3 @@ TRANSACTION_MSG = 'transaction_message'
 IS_REDIRECT = 'is_redirect'
 
 COMMON_ERROR_MESSAGE_EN = "Oops! Something went wrong with the system."
-COMMON_ERROR_MESSAGE_AR = "أُووبس! حدث خطأ في النظام"

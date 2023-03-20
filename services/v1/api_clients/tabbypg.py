@@ -111,7 +111,7 @@ class TabbyPGVerification(APIView):
                 return Response(data,
                                 status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error("Error in CheckoutVerification: {}".format(str(e)))
+            logger.error("Error in Tabbypg Verification: {}".format(str(e)))
             data = self.response_obj.get_400_message(message=str(e))
             code = self.response_obj.TABBYPG_VERIFICATION_EXCEPTION
             data = self.format_tabby_response(
