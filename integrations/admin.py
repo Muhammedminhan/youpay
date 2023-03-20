@@ -5,9 +5,11 @@ from django.core.cache import cache
 
 from core.admin import AdminAbstract
 from integrations.models import (PaymentGateway, PaymentGatewayAPI,
-                                 PaymentOptions)
+                                 PaymentOptions, AdditionalChargeConfiguration)
+from integrations.forms import AdditionalChargeConfigurationAdminForm
 from .constants import (B2CP_CACHE_KEY, CHECKOUTPG_CACHE_KEY,
-                        AMAZONPG_CACHE_KEY, TABBYPG_CACHE_KEY)
+                        AMAZONPG_CACHE_KEY, TABBYPG_CACHE_KEY,
+                        HAPPYCREDITS_CACHE_KEY)
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,7 @@ class PaymentGatewayAdmin(AdminAbstract):
                 cache.delete(B2CP_CACHE_KEY)
                 cache.delete(AMAZONPG_CACHE_KEY)
                 cache.delete(TABBYPG_CACHE_KEY)
+                cache.delete(HAPPYCREDITS_CACHE_KEY)
             except (TypeError, AttributeError):
                 logging.error(
                     'Error while clearing bulk gateway config cache')
@@ -53,6 +56,16 @@ class PaymentOptionsAdmin(AdminAbstract):
     list_filter = ('gateway', 'created_by',)
 
 
+class AdditionalChargeConfigurationAdmin(AdminAbstract):
+    form = AdditionalChargeConfigurationAdminForm
+    list_display = ('payment_option', 'percentage', 'fixed_amount',
+                    'is_active', 'created_at', 'updated_at')
+    search_fields = ('payment_option__name',)
+    list_filter = ('payment_option', 'created_by',)
+
+
 admin.site.register(PaymentGateway, PaymentGatewayAdmin)
 admin.site.register(PaymentGatewayAPI, PaymentGatewayAPIAdmin)
-admin.site.register(PaymentOptions,PaymentOptionsAdmin)
+admin.site.register(PaymentOptions, PaymentOptionsAdmin)
+admin.site.register(AdditionalChargeConfiguration,
+                    AdditionalChargeConfigurationAdmin)
