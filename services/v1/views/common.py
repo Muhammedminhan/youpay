@@ -3,14 +3,22 @@ import logging
 from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
 
-from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
-from core.messages import ERROR_MISSING_FIELDS
+from core.constants import (
+    PAYMENT_GATEWAY_CHECKOUTPG
+)
 from core.messages import (
-    REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
+    ERROR_MISSING_FIELDS
+)
+from core.messages import (
+    REDIRECT_URL,
+    TRANSACTION_MSG,
+    IS_REDIRECT
 )
 from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 from integrations.models import PaymentGateway
-from payments.constants import PAYMENT_STATUS_PAID
+from payments.constants import (
+    PAYMENT_STATUS_PAID
+)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer

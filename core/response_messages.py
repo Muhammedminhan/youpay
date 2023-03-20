@@ -27,6 +27,9 @@ class YouPayResponse(object):
     TRANSACTION_NOT_FOUND = 1404
     MAX_PAYMENT_ATTEMPT_REACHED = 1416
 
+    TRANSACTION_ALREADY_CLOSED = 1600
+    REQUIRED_DATA_MISSING = 1601
+
     """checkoutpg related begins"""
     CHECKOUTPG_CONNECTION_ERROR = 2003
     CHECKOUTPG_RESPONSE_FAILED = 2400
@@ -34,10 +37,16 @@ class YouPayResponse(object):
 
     """tabbypg related begins"""
     TABBYPG_CONNECTION_ERROR = 1006
+    TABBYPG_VERIFICATION_FAILED = 1600
+    TABBYPG_VERIFICATION_SUCCESS = 1601
+    TABBYPG_VERIFICATION_ERROR = 1603
+    TABBYPG_VERIFICATION_EXCEPTION = 1604
+    TABBYPG_DUPLICATE_VERIFICATION = 1605
+
     """tabbypg related ends"""
 
     """b2cpayback related begins"""
-    TRANSACTION_NOT_FOUND = 6404
+
     """b2cpayback related ends"""
 
     """Amazonpay related begins"""
@@ -100,7 +109,10 @@ class YouPayResponse(object):
             self.APPLE_PAY_REDIRECT: "Apple pay redirect",
 
             self.PAYMENT_FAILED: "Payment failed",
+
             self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.TABBYPG_VERIFICATION_FAILED: "Tabbypg verification failed",
+
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",

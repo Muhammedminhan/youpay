@@ -516,10 +516,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         youpay_transaction = self.get_youpay_transaction_data(transaction_id)
 
         if youpay_transaction is None:
-            response = {
-                "error": "Invalid transaction id provided"
-            }
-            return response, self.PAYMENT_FAILED
+            return None, self.TRANSACTION_NOT_FOUND
 
         params = {
             'cko-session-id': data.get('cko_session_id'),
@@ -543,7 +540,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             response_data = response.json()
             redirect, response_data = process_checkoutpg_response_verification(
                 transaction_id, response_data)
-
             if redirect:
                 return response_data, self.SUCCESS
             else:
@@ -552,7 +548,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(
                 "Error while verifying_payment status: {}, reason {} "
                 .format(response.status_code, response.json()))
-            return ({"error": response.json()},
+            return (None,
                     self.CHECKOUTPG_CONNECTION_ERROR)
 
     def create_transaction_in_checkoutpg(self, request_data):
@@ -696,8 +692,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         request_method=REQUEST_METHOD_POST,
                     )
 
-                    res_data = payment_response_data.get(
-                        'payment')
+                    res_data = payment_response_data.get('payment')
                     # to mark status as paid
                     res_data['source'] = PAYMENT_METHOD_APPLEPAY
 
@@ -739,4 +734,4 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "Error on processing applepay status update for transaction"
                 "id {}, err : {}".format(self.transaction_id, str(e)))
             logger.error(msg)
-            return {"error": msg}, self.APPLE_PAY_CONNECTION_ERROR
+            return None, self.APPLE_PAY_CONNECTION_ERROR

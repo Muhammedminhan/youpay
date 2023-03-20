@@ -61,7 +61,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
     def get_tabbypg_payment_data(self, data):
 
-        if (data.get('transaction_data') and data.get('request_data')):
+        if data.get('transaction_data') and data.get('request_data'):
             payment_data = TabbyPGPaymentRequestSerializer(data)
             return payment_data.data
         else:
