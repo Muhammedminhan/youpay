@@ -5,9 +5,9 @@ from django.http import JsonResponse
 
 from core.constants import MAX_PAYMENT_RETRY_COUNT
 from core.exceptions import (
-    TransactionNotFoundException,
-    TransactionAlreadyPaidException,
-    TransactionAlreadyCancelledException)
+    TransactionNotFound,
+    TransactionAlreadyPaid,
+    TransactionAlreadyCancelled)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
     MIDDLEWARE_ALREADY_PAID_MESSAGE)
@@ -115,14 +115,14 @@ class PaymentStatusCheckMiddleware(object):
                             }
                         )
                         
-        except TransactionAlreadyCancelledException:
+        except TransactionAlreadyCancelled:
             return JsonResponse(self.response, status=200)
 
-        except TransactionAlreadyPaidException:
+        except TransactionAlreadyPaid:
             return JsonResponse(self.response, status=200)
 
-        except TransactionNotFoundException:
-            log_message = "TransactionNotFoundException"
+        except TransactionNotFound:
+            log_message = "TransactionNotFound"
             code = youpay_message_obj.UNKNOWN_ERR
             logger.error(log_message)
             self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
@@ -149,7 +149,7 @@ class PaymentStatusCheckMiddleware(object):
 
     def check_transaction_obj(self, transaction_obj, youpay_message_obj):
         if transaction_obj is None:
-            raise TransactionNotFoundException(
+            raise TransactionNotFound(
                 youpay_message_obj.TRANSACTION_NOT_FOUND)
 
     def check_transaction_already_paid(self, transaction_obj,
@@ -171,7 +171,7 @@ class PaymentStatusCheckMiddleware(object):
             # Preparing response data as per the payment API response
             self.response = self.get_payment_response(
                 redirect_url, transaction_message, youpay_message_obj)
-            raise TransactionAlreadyPaidException
+            raise TransactionAlreadyPaid
 
     def check_transaction_already_cancelled(self, transaction_obj,
                                             youpay_message_obj):
@@ -193,7 +193,7 @@ class PaymentStatusCheckMiddleware(object):
             # Preparing response data as per the payment API response
             self.response = self.get_payment_response(
                 redirect_url, transaction_message, youpay_message_obj)
-            raise TransactionAlreadyCancelledException
+            raise TransactionAlreadyCancelled
 
     def common_error_response(self, message, code):
         return JsonResponse(
