@@ -4,6 +4,7 @@ from core.utils import encrypt_string
 from core.utils import get_app_config
 from integrations.constants import (CHECKOUTPG_CHANNEL_CONFIGURATIONS,
                                     CHECKOUTPG_HUB_CODE)
+from payments.models import YouPayTransactionData
 from services.v1.views.common import add_payment_gateway_info_in_url
 
 
@@ -30,7 +31,10 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("customer_email")
 
     def get_amount(self, data):
-        return str(data.get('transaction_data').get("amount"))
+        amount = (str(data.get('additional_total_amount')) if
+                  data.get('additional_total_amount') else
+                  str(data.get('transaction_data').get("amount")))
+        return amount
 
     def get_order_reference(self, data):
         return data.get('transaction_data').get("order_reference")
@@ -90,3 +94,9 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
                 data.get('transaction_data').get("currency")).get(
                 data.get('transaction_data').get("platform").upper())
         return channel_code
+
+
+class ApplepayPaymentDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = YouPayTransactionData
+        fields = '__all__'

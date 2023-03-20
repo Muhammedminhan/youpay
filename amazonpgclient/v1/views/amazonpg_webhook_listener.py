@@ -27,7 +27,8 @@ class WebhookListener(APIView):
             logger.info("Amazonpg webhook received for payment {}".format(
                 payment_reference))
 
-            lock_name = 'lock:AmazonPGWebhookListener:invoice_%d' % (1,)
+            lock_name = ('lock:AmazonPGWebhookListener:'
+                         'payment_reference_%s' % (payment_reference,))
             with wait_redis_lock(lock_name=lock_name):
                 transaction_obj = self.get_transaction_object(
                     payment_reference)

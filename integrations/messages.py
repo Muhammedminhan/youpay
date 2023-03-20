@@ -6,3 +6,7 @@ TABBYPG_CONNECTION_ERROR_MESSAGE = (
 AMAZONPG_CONNECTION_ERROR_MESSAGE = (
     "Unable to fetch Amazonpg configurations. "
     "Amazonpg configurations not set")
+HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE = (
+    "Unable to fetch Happy Credits configurations. "
+    "Happy Credits configurations not set"
+)
