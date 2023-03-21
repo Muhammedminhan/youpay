@@ -179,6 +179,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    happy_credit_reference = models.CharField(max_length=120, null=True,
+                                         blank=True)
     credit_balance_amount = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
