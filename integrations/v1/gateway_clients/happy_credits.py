@@ -173,11 +173,11 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
 
                     logger.error("Error in credit balance api, {}".format(
                         response_data))
-                    return ({"error": response_data},
+                    return ({"errors": response_data},
                             self.HAPPY_CREDITS_CONNECTION_ERROR)
 
                 self.update_payment_gateway(PAYMENT_REQUEST_CREDIT_BALANCE)
-                return ({"error": response.text},
+                return ({"errors": response.text},
                         self.HAPPY_CREDITS_CONNECTION_ERROR)
             else:
                 logger.error(HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE)
@@ -188,7 +188,7 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                      "{}".format(str(e)))
             logger.error("Exception in happy credits credit "
                          "balance api: {}".format(str(e)))
-            return {"error": error}, self.HAPPY_CREDITS_CONNECTION_ERROR
+            return {"errors": error}, self.HAPPY_CREDITS_CONNECTION_ERROR
 
     def debit_balance(self, data):
         """
@@ -255,4 +255,4 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
         except Exception as e:
             logger.error("Exception in happy credits "
                          "deduct balance session: {}".format(str(e)))
-            return {"error": str(e)}, self.HAPPY_CREDITS_CONNECTION_ERROR
+            return {"errors": str(e)}, self.HAPPY_CREDITS_CONNECTION_ERROR
