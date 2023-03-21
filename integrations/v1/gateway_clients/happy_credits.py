@@ -7,10 +7,10 @@ from core.constants import (PAYMENT_GATEWAY_HAPPYCREDITS, REQUEST_METHOD_POST,
 from integrations.constants import (
     HAPPYCREDITS_HUB_CODE, HAPPYCREDITS_CACHE_KEY,
     HAPPY_CREDITS_CREDIT_BALANCE_API, HAPPY_CREDITS_REDEMPTION_API,
-    PAYMENT_REQUEST_CREDIT_BALANCE, PAYMENT_REQUEST_REDEMPTION)
+    PAYMENT_REQUEST_CREDIT_BALANCE, PAYMENT_REQUEST_REDEMPTION,
+    HAPPY_CREDITS_SUCCESS_CODES)
 from integrations.v1.serializers.happy_credits_payment_request import (
     CreditBalanceSerializer, CreditRedemptionSerializer)
-from integrations.v1.gateway_clients.utils import get_credit_redemption_data
 from integrations.messages import HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -157,21 +157,22 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                     self.update_payment_gateway(
                         PAYMENT_REQUEST_CREDIT_BALANCE)
                     if response_data.get('status') == 200:
-                        self.payment_reference = (
-                            response_data.get("payment_reference")
-                        )
-                        self.credit_balance = response_data.get(
-                            "credit_balance_in_payment_currency")
+                        if (response_data.get('code') in
+                                HAPPY_CREDITS_SUCCESS_CODES):
+                            self.payment_reference = (
+                                response_data.get("payment_reference")
+                            )
+                            self.credit_balance = response_data.get(
+                                "credit_balance_in_payment_currency")
 
-                        """Updating payment transaction table
-                         and payment gateway logs"""
-                        self.update_transaction_data(
-                            PAYMENT_REQUEST_CREDIT_BALANCE)
-
-                        return response_data, self.SUCCESS
+                            """Updating payment transaction table
+                             and payment gateway logs"""
+                            self.update_transaction_data(
+                                PAYMENT_REQUEST_CREDIT_BALANCE)
+                            return response_data, self.SUCCESS
 
                     logger.error("Error in credit balance api, {}".format(
-                        response.text))
+                        response_data))
                     return ({"error": response_data},
                             self.HAPPY_CREDITS_CONNECTION_ERROR)
 
@@ -194,13 +195,13 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
         Calls happy credits deduct balance api.
         """
         try:
-
             self.payment_reference = data.get('payment_reference')
             self.transaction_obj = (
                 self.get_transaction_data_by_credit_reference(
                     self.payment_reference))
             if self.transaction_obj is None:
                 return None, self.TRANSACTION_NOT_FOUND
+
             if (self.transaction_obj.amount >
                     self.transaction_obj.credit_balance_amount):
                 return None, self.HAPPY_CREDITS_INSUFFICIENT_FUND
