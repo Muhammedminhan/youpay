@@ -11,7 +11,6 @@ from integrations.constants import (
     HAPPY_CREDITS_SUCCESS_CODES)
 from integrations.v1.serializers.happy_credits_payment_request import (
     CreditBalanceSerializer, CreditRedemptionSerializer)
-from integrations.v1.gateway_clients.utils import get_credit_redemption_data
 from integrations.messages import HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
