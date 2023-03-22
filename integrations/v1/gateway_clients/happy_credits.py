@@ -177,6 +177,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                             self.HAPPY_CREDITS_CONNECTION_ERROR)
 
                 self.update_payment_gateway(PAYMENT_REQUEST_CREDIT_BALANCE)
+                logger.error("Error in credit balance api, {}".format(
+                    response.text))
                 return ({"errors": response.text},
                         self.HAPPY_CREDITS_CONNECTION_ERROR)
             else:
