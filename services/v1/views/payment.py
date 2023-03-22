@@ -10,10 +10,11 @@ from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
-                        get_gateway_additional_fee, decimal_rounded)
+                        wait_redis_lock, get_gateway_additional_fee,
+                        decimal_rounded)
 from payments.constants import (PAYMENT_STATUS_CANCELLED,
-                                PAYMENT_STATUS_EXPIRED)
-from payments.constants import PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID
+                                PAYMENT_STATUS_EXPIRED,
+                                PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -79,9 +80,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            data_formatted['api_client'] = client_pk
-            serializer = PaymentRequestDataSerializer(data=data_formatted)
-
             PAYMENT_REDIRECT_URL = get_payment_redirect_url()
             if PAYMENT_REDIRECT_URL is None or PAYMENT_REDIRECT_URL == "":
                 """
@@ -93,65 +91,72 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            if serializer.is_valid():
-                self.payment_request_obj = serializer.save()
-                transaction_response = self.create_youpay_transaction_data(
-                    data_formatted)
-                if transaction_response['status'] == status.HTTP_201_CREATED:
+            order_reference = data_formatted.get('order_reference')
+            lock_name = ('lock:PaymentRequestView:order_reference_%s'
+                         % (order_reference,))
+            with wait_redis_lock(lock_name=lock_name):
+                data_formatted['api_client'] = client_pk
+                serializer = PaymentRequestDataSerializer(data=data_formatted)
 
-                    encrypted_transaction_id = encrypt_string(
-                        transaction_response['data'][
-                            'transaction_id'])
+                if serializer.is_valid():
+                    self.payment_request_obj = serializer.save()
+                    transaction_response = self.create_youpay_transaction_data(
+                        data_formatted)
+                    if transaction_response['status'] == status.HTTP_201_CREATED:
 
-                    language = data_formatted.get('language')
+                        encrypted_transaction_id = encrypt_string(
+                            transaction_response['data'][
+                                'transaction_id'])
 
-                    redirect_url = PAYMENT_REDIRECT_URL + "/{}/{}".format(
-                        language, encrypted_transaction_id)
+                        language = data_formatted.get('language')
 
-                    response_data = {
-                        "status": status.HTTP_201_CREATED,
-                        "message": "created",
-                        "url": redirect_url
-                    }
-                    self.return_data = self.get_success_dict(
-                        code=self.SUCCESS,
-                        success_dict=response_data
-                    )
-                    self.save_response_data(self.payment_request_obj,
-                                            self.return_data)
-                    return Response(self.return_data,
-                                    status=status.HTTP_201_CREATED)
+                        redirect_url = PAYMENT_REDIRECT_URL + "/{}/{}".format(
+                            language, encrypted_transaction_id)
 
+                        response_data = {
+                            "status": status.HTTP_201_CREATED,
+                            "message": "created",
+                            "url": redirect_url
+                        }
+                        self.return_data = self.get_success_dict(
+                            code=self.SUCCESS,
+                            success_dict=response_data
+                        )
+                        self.save_response_data(self.payment_request_obj,
+                                                self.return_data)
+                        return Response(self.return_data,
+                                        status=status.HTTP_201_CREATED)
+
+                    else:
+                        """
+                        Transaction not created 
+                        """
+                        self.return_data = self.get_400_message(
+                            message=transaction_response["message"],
+                        )
+                        logger.error(
+                            "Error in creating transaction : {}".format(
+                                transaction_response["message"]))
+
+                        self.save_response_data(self.payment_request_obj,
+                                                self.return_data)
+
+                        return Response(self.return_data.get('errors'),
+                                        status=status.HTTP_400_BAD_REQUEST)
                 else:
                     """
-                    Transaction not created 
+                    PaymentRequestDataSerializer validation failed
                     """
-                    self.return_data = self.get_400_message(
-                        message=transaction_response["message"],
+                    self.return_data = self.get_error_dict(
+                        error_code=self.UNKNOWN_ERR,
+                        serializer_error=serializer.errors,
                     )
                     logger.error(
-                        "Error in creating transaction : {}".format(
-                            transaction_response["message"]))
-
-                    self.save_response_data(self.payment_request_obj,
-                                            self.return_data)
+                        "Validation failed for PaymentRequestDataSerializer"
+                        " : {}".format(self.return_data))
 
                     return Response(self.return_data.get('errors'),
                                     status=status.HTTP_400_BAD_REQUEST)
-            else:
-                """
-                PaymentRequestDataSerializer validation failed
-                """
-                self.return_data = self.get_error_dict(
-                    error_code=self.UNKNOWN_ERR,
-                    serializer_error=serializer.errors,
-                )
-                logger.error(
-                    "Validation failed for PaymentRequestDataSerializer : {}"
-                    .format(self.return_data))
-
-                return Response(self.return_data.get('errors'),
-                                status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             import sys, os
