@@ -1,5 +1,6 @@
 import logging
 
+from django.db import transaction
 from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
 
@@ -65,24 +66,27 @@ class YouPayTransactionCRUD(object):
         Method used to return transaction object for selected happy credits
         reference
         """
-        try:
-            transaction_obj = YouPayTransactionData.objects.get(
-                happy_credit_reference=payment_reference)
-            return transaction_obj
-        except YouPayTransactionData.DoesNotExist:
-            logger.error("Unable to find youpay transaction object for {}"
-                         "".format(payment_reference))
-            return None
+        with transaction.atomic():
+            try:
+                transaction_obj = YouPayTransactionData.objects.get(
+                    happy_credit_reference=payment_reference)
+                return transaction_obj
+            except YouPayTransactionData.DoesNotExist:
+                logger.error("Unable to find youpay transaction object for {}"
+                             "".format(payment_reference))
+                return None
 
     def get_youpay_transaction_data(self, transaction_id):
-        try:
-            transaction_obj = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
-            return transaction_obj
-        except YouPayTransactionData.DoesNotExist:
-            logger.error("Unable to find youpay transaction object for {}"
-                         "".format(transaction_id))
-            return None
+        with transaction.atomic():
+            try:
+                transaction_obj = (
+                    YouPayTransactionData.objects.select_for_update().get(
+                        transaction_id=transaction_id))
+                return transaction_obj
+            except YouPayTransactionData.DoesNotExist:
+                logger.error("Unable to find youpay transaction object for {}"
+                             "".format(transaction_id))
+                return None
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
