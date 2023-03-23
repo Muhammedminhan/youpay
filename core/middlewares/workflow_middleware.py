@@ -6,7 +6,9 @@ from django.http import JsonResponse
 from core.constants import MAX_PAYMENT_RETRY_COUNT
 from core.messages import MIDDLEWARE_STATUS_CHECK_MESSAGE
 from core.response_messages import YouPayResponse
-from payments.constants import PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID
+from payments.constants import (
+    PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY)
 
 logger = logging.getLogger(__name__)
 
@@ -121,13 +123,23 @@ class PaymentStatusCheckMiddleware(object):
                 return JsonResponse(data, status=200)
             else:
 
-                retry_count = transaction_obj.retry_count + 1
-                youpay_obj.update_youpay_transaction_data(
-                    {
-                        "transaction_id": transaction_id,
-                        "retry_count": retry_count
-                    }
-                )
+                # avoid retry count increment for applepay authorize and paid
+                # transactions
+                payment_stage = data.get('payment_stage', None)
+
+                if not (payment_stage == PAYMENT_STATUS_AUTHORIZED or
+                        payment_stage == PAYMENT_STATUS_PAID
+                        and transaction_obj.payment_method ==
+                        PAYMENT_METHOD_APPLEPAY):
+
+                    retry_count = transaction_obj.retry_count + 1
+
+                    youpay_obj.update_youpay_transaction_data(
+                        {
+                            "transaction_id": transaction_id,
+                            "retry_count": retry_count
+                        }
+                    )
 
     def get_payment_response(
             self, redirect_url, transaction_message, youpay_message_obj):

@@ -47,6 +47,19 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         self.payment_scheme = None
         self.name_on_card = None
 
+    def prepare_data_to_update(self):
+        data_to_update = {
+            'transaction_id': self.transaction_id,
+            "payment_status": self.payment_status,
+            "payment_reference": self.payment_reference,
+            "payment_gateway": self.payment_gateway,
+            "channel_code": self.channel_code,
+            "payment_method": self.payment_method,
+            "payment_scheme": self.payment_scheme,
+            "name_on_card": self.name_on_card
+        }
+        return data_to_update
+
     def get_amazonpg_payment_data(self, data):
         """
         Returns amazonpg payment request data
@@ -164,35 +177,18 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                                 "payment_scheme")
                             self.name_on_card = response_data.get(
                                 "name_on_card")
-                            data_to_update = {
-                                'transaction_id': self.transaction_id,
-                                "payment_status": self.payment_status,
-                                "payment_reference": self.payment_reference,
-                                "payment_gateway": self.payment_gateway,
-                                "channel_code": self.channel_code,
-                                "payment_method": self.payment_method,
-                                "payment_scheme": self.payment_scheme,
-                                "name_on_card": self.name_on_card
-                            }
+
                             self.update_youpay_transaction_data(
-                                data_to_update)
+                                self.prepare_data_to_update())
                             return response.json(), self.SUCCESS
 
                         logger.error("Error in amazonpg payment, {}".format(
                             response.text))
                         self.payment_reference = response_data.get(
                             "payment_reference")
-                        data_to_update = {
-                            'transaction_id': self.transaction_id,
-                            "payment_status": self.payment_status,
-                            "payment_reference": self.payment_reference,
-                            "payment_gateway": self.payment_gateway,
-                            "channel_code": self.channel_code,
-                            "payment_method": self.payment_method,
-                            "payment_scheme": self.payment_scheme,
-                            "name_on_card": self.name_on_card
-                        }
-                        self.update_youpay_transaction_data(data_to_update)
+
+                        self.update_youpay_transaction_data(
+                            self.prepare_data_to_update())
                         return ({"error": response.json()},
                                 self.AMAZONPG_CONNECTION_ERROR)
 
