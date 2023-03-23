@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from core.constants import (
     REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
+from core.messages import IS_REDIRECT
 from core.utils import get_payment_gateway_config, get_redirect_url
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
@@ -44,6 +45,19 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         self.request_type = None
         self.request_method = None
         self.transaction_obj = None
+
+    def prepare_data_to_update(self):
+
+        data_to_update = {
+            'transaction_id': self.transaction_id,
+            "payment_status": self.payment_status,
+            "payment_reference": self.payment_reference,
+            "payment_gateway": self.payment_gateway,
+            "channel_code": self.channel_code,
+            "payment_method": self.payment_method,
+        }
+
+        return data_to_update
 
     def get_tabbypg_payment_data(self, data):
 
@@ -126,23 +140,15 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         response_data = response.json()
                         logger.info("tabbypg payment response: {}"
                                     .format(response_data))
-                        if response_data.get(
-                                'status') == 200 and response_data.get(
-                            'is_redirect') is True:
+                        if (response_data.get('status') == 200 and
+                                response_data.get(IS_REDIRECT) is True):
                             self.payment_reference = response_data.get(
                                 "payment_ref_no")
 
                             self.payment_status = PAYMENT_STATUS_PENDING
-                            data_to_update = {
-                                'transaction_id': self.transaction_id,
-                                "payment_status": self.payment_status,
-                                "payment_reference": self.payment_reference,
-                                "payment_gateway": self.payment_gateway,
-                                "channel_code": self.channel_code,
-                                "payment_method": self.payment_method,
-                            }
+
                             self.update_youpay_transaction_data(
-                                data_to_update)
+                                self.prepare_data_to_update())
                             return response.json(), self.SUCCESS
 
                         logger.error("Error in tabbypg payment, {}".format(
@@ -153,15 +159,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         self.payment_status = response_data.get(
                             "payment_status")
 
-                        data_to_update = {
-                            'transaction_id': self.transaction_id,
-                            "payment_status": self.payment_status,
-                            "payment_reference": self.payment_reference,
-                            "payment_gateway": self.payment_gateway,
-                            "channel_code": self.channel_code,
-                            "payment_method": self.payment_method,
-                        }
-                        self.update_youpay_transaction_data(data_to_update)
+                        self.update_youpay_transaction_data(
+                            self.prepare_data_to_update())
                         return ({"error": response.json()}
                                 , self.TABBYPG_CONNECTION_ERROR)
 
