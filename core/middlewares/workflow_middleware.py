@@ -65,10 +65,14 @@ class PaymentStatusCheckMiddleware(object):
                 self.check_transaction_already_paid(transaction_obj,
                                                     youpay_message_obj)
 
+                self.check_transaction_already_cancelled(
+                    transaction_obj,
+                    youpay_message_obj)
+
                 if transaction_obj.retry_count >= MAX_PAYMENT_RETRY_COUNT:
                     """
-                    if retry count is more than MAX_RETRY_COUNT, then cancel the 
-                    transaction and redirect to cancel url
+                    if retry count is more than MAX_RETRY_COUNT, then cancel 
+                    the transaction and redirect to cancel url
                     """
 
                     message = (
@@ -114,7 +118,7 @@ class PaymentStatusCheckMiddleware(object):
                                 "retry_count": retry_count
                             }
                         )
-                        
+
         except TransactionAlreadyCancelled:
             return JsonResponse(self.response, status=200)
 
