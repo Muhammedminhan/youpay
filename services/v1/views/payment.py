@@ -515,7 +515,7 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
                                 status=status.HTTP_200_OK)
         except Exception as e:
             logger.error("Error in fetching additional charges :"
-                         " {}".format(str(e)))
+                         "{}".format(str(e)))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
