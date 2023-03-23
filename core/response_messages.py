@@ -46,6 +46,10 @@ class YouPayResponse(object):
     """tabbypg related ends"""
 
     """b2cpayback related begins"""
+    B2CPAYBACK_VERIFICATION_FAILED = 5600
+    B2CPAYBACK_VERIFICATION_SUCCESS = 5601
+    B2CPAYBACK_VERIFICATION_FAILED_TO_PROCESS = 5603
+    B2CPAYBACK_VERIFICATION_EXCEPTION = 5604
 
     """b2cpayback related ends"""
 
@@ -112,7 +116,6 @@ class YouPayResponse(object):
 
             self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.TABBYPG_VERIFICATION_FAILED: "Tabbypg verification failed",
-
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
@@ -122,6 +125,13 @@ class YouPayResponse(object):
             self.MISSING_CLIENT_INFO: "API Client data missing",
             self.MAX_PAYMENT_ATTEMPT_REACHED: "Max payment attempt reached",
             self.MIDDLEWARE_REDIRECTED: "Request redirected",
+
+            self.B2CPAYBACK_VERIFICATION_SUCCESS: "Payment verified",
+            self.B2CPAYBACK_VERIFICATION_FAILED_TO_PROCESS: "verification "
+                                                            "failed",
+            self.B2CPAYBACK_VERIFICATION_EXCEPTION: "Exception occurred ",
+            self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
+                                                 " verification"
         })
 
     def get_400_message(self, message):
