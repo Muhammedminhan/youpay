@@ -25,7 +25,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                      'payment_reference', 'order_reference')
     list_filter = ('created_at', 'payment_status', 'api_client',
                    'payment_gateway', 'payment_method', 'currency',
-                   "platform")
+                   "platform", "is_gcc_card", "is_flagged", "is_fraud",)
     raw_id_fields = ('api_client',)
 
     inlines = [
