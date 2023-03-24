@@ -1,21 +1,20 @@
 import logging
 
-from django.utils.decorators import decorator_from_middleware, classonlymethod
-from rest_framework import status
-from django.db import transaction
-
 from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 from core.messages import ERROR_MISSING_FIELDS
 from core.messages import (
     REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
 )
 from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
+from django.db import transaction
+from django.utils.decorators import decorator_from_middleware, classonlymethod
 from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
+from rest_framework import status
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
 
@@ -60,8 +59,9 @@ class YouPayTransactionCRUD(object):
         """
         with transaction.atomic():
             try:
-                transaction_obj = YouPayTransactionData.objects.get(
-                    happy_credit_reference=payment_reference)
+                transaction_obj = (
+                    YouPayTransactionData.objects.select_for_update().get(
+                        happy_credit_reference=payment_reference))
                 return transaction_obj
             except YouPayTransactionData.DoesNotExist:
                 logger.error("Unable to find youpay transaction object for {}"
@@ -73,7 +73,7 @@ class YouPayTransactionCRUD(object):
             try:
                 transaction_obj = (
                     YouPayTransactionData.objects.select_for_update().get(
-                    transaction_id=transaction_id))
+                        transaction_id=transaction_id))
                 return transaction_obj
             except YouPayTransactionData.DoesNotExist:
                 logger.error("Unable to find youpay transaction object for {}"
@@ -96,7 +96,7 @@ class YouPayTransactionCRUD(object):
         data_dict['card_bin'] = data.get('card_bin', None)
         data_dict['card_last4'] = data.get('card_last4', None)
         data_dict['card_issuer_country'] = data.get('card_issuer_country',
-                                                        None)
+                                                    None)
         data_dict['approved'] = data.get('approved', None)
         data_dict['response_summary'] = data.get('response_summary', None)
         data_dict['name_on_card'] = data.get('name_on_card', None)
