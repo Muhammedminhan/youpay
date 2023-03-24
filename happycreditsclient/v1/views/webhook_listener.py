@@ -44,7 +44,7 @@ class WebhookListener(APIView):
                 else:
                     transaction_obj = HappyCreditsClientData.objects.create(
                         transaction_id=request_data.get('reference_id'),
-                        request_data=json.dumps(request_data),
+                        request_data=request_data,
                         status=request_data.get('status'),
                         customer_email=request_data.get('user_email'),
                         payment_reference=request_data.get(
