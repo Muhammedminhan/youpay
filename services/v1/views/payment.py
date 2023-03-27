@@ -2,10 +2,6 @@ import json
 import logging
 
 import requests
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
@@ -15,6 +11,9 @@ from core.utils import (encrypt_payment_data, decrypt_payment_data,
 from payments.constants import (PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
                                 PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID)
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -102,7 +101,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     self.payment_request_obj = serializer.save()
                     transaction_response = self.create_youpay_transaction_data(
                         data_formatted)
-                    if transaction_response['status'] == status.HTTP_201_CREATED:
+                    if transaction_response[
+                        'status'] == status.HTTP_201_CREATED:
 
                         encrypted_transaction_id = encrypt_string(
                             transaction_response['data'][
@@ -514,8 +514,8 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
                 return Response(data,
                                 status=status.HTTP_200_OK)
         except Exception as e:
-            logger.error("Error in fetching additional charges for :"
-                         " {} {}".format(transaction_id, str(e)))
+            logger.error("Error in fetching additional charges :"
+                         "{}".format(str(e)))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
