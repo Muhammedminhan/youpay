@@ -237,7 +237,6 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                                      headers=headers)
             logger.info("Response from credit redemption api "
                         "{}".format(response))
-            response = None
             if response:
                 response_decrypted = json.loads(response.json())
                 response_data = decrypt_payment_data(response_decrypted)
