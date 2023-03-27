@@ -17,9 +17,7 @@ from core.messages import (
 )
 from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 from integrations.models import PaymentGateway
-from payments.constants import (
-    PAYMENT_STATUS_PAID
-)
+from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -68,8 +66,9 @@ class YouPayTransactionCRUD(object):
         """
         with transaction.atomic():
             try:
-                transaction_obj = YouPayTransactionData.objects.get(
-                    happy_credit_reference=payment_reference)
+                transaction_obj = (
+                    YouPayTransactionData.objects.select_for_update().get(
+                        happy_credit_reference=payment_reference))
                 return transaction_obj
             except YouPayTransactionData.DoesNotExist:
                 logger.error("Unable to find youpay transaction object for {}"

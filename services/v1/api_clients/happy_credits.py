@@ -4,14 +4,15 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
-from core.utils import get_site_domain, decrypt_string
+from core.utils import decrypt_string
+from integrations.v1.gateway_clients.happy_credits import (
+    HappyCreditsManagement)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.v1.views.common import YouPayTransactionCRUD
-from integrations.v1.gateway_clients.happy_credits import (
-    HappyCreditsManagement)
 
 logger = logging.getLogger(__name__)
 
@@ -71,15 +72,45 @@ class HappyCreditsDebitBalance(APIView):
                     code=code,
                     success_dict=response_data
                 )
-                return Response(data,
+                formatted_data = self.format_happy_credit_response(
+                    data, code)
+                return Response(formatted_data,
                                 status=status.HTTP_200_OK)
             else:
                 data = self.response_obj.get_error_dict(error_code=code)
-                return Response(data,
-                                status=status.HTTP_400_BAD_REQUEST)
+                formatted_data = self.format_happy_credit_response(
+                    data, code)
+                return Response(formatted_data,
+                                status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error("Error in HappyCreditsDeductBalance: "
                          "{}".format(str(e)))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+    def format_happy_credit_response(self, data, code):
+        """
+        Method for formatting happy credits response
+        """
+        transaction_message = data.get('transaction_message')
+        errors = data.get('errors')
+
+        if transaction_message:
+            is_capture = transaction_message.get('is_capture')
+
+            if is_capture:
+                data['code'] = self.response_obj.HAPPY_REDEMPTION_SUCCESS
+                data['message'] = "Happy credits redeemed successfully"
+
+            else:
+                data['message'] = transaction_message.get('message', None)
+                data['code'] = (
+                    self.response_obj.HAPPY_CREDITS_VERIFICATION_FAILED)
+            data.pop('transaction_message', None)
+
+        if errors:
+            errors['message'] = COMMON_ERROR_MESSAGE_EN
+            errors['code'] = code
+
+        return data
