@@ -2,6 +2,7 @@ import json
 import logging
 
 import requests
+
 from core.constants import (PAYMENT_GATEWAY_HAPPYCREDITS, REQUEST_METHOD_POST)
 from core.utils import (get_payment_gateway_config, decrypt_payment_data)
 from integrations.constants import (
@@ -236,6 +237,7 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                                      headers=headers)
             logger.info("Response from credit redemption api "
                         "{}".format(response))
+            response = None
             if response:
                 response_decrypted = json.loads(response.json())
                 response_data = decrypt_payment_data(response_decrypted)
@@ -253,10 +255,10 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                     return response_data, self.PAYMENT_FAILED
             else:
                 self.update_payment_gateway(PAYMENT_REQUEST_REDEMPTION)
-                logger.error("Error while deducting amount from "
-                             "happycredits status: {}, "
-                             "reason {} ".format(response.status_code,
-                                                 response.text))
+                logger.error(
+                    "Error while deducting amount from happycredits for "
+                    "transaction {} reason {} ".format(self.transaction_id,
+                                                       response))
                 return None, self.HAPPY_CREDITS_CONNECTION_ERROR
         except Exception as e:
             logger.error("Exception in happy credits "

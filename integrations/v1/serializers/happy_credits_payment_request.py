@@ -1,5 +1,5 @@
-import string
 import random
+import string
 
 from rest_framework import serializers
 
