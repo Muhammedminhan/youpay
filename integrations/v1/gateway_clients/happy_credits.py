@@ -8,10 +8,15 @@ from core.utils import (get_payment_gateway_config, decrypt_payment_data)
 from integrations.constants import (
     HAPPYCREDITS_HUB_CODE, HAPPYCREDITS_CACHE_KEY,
     HAPPY_CREDITS_CREDIT_BALANCE_API, HAPPY_CREDITS_REDEMPTION_API,
-    PAYMENT_REQUEST_CREDIT_BALANCE, PAYMENT_REQUEST_REDEMPTION)
-from integrations.messages import HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE
+    PAYMENT_REQUEST_CREDIT_BALANCE, PAYMENT_REQUEST_REDEMPTION,
+    HAPPY_CREDITS_SUCCESS_CODES)
 from integrations.v1.serializers.happy_credits_payment_request import (
     CreditBalanceSerializer, CreditRedemptionSerializer)
+from integrations.messages import HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE
+from services.v1.views.payment import PaymentRequestView
+from services.v1.views.payment_handlers import PaymentHandlers
+from core.utils import (get_payment_gateway_config, decrypt_string,
+                        decrypt_payment_data)
 from payments.constants import (PAYMENT_METHOD_CREDIT_BALANCE,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_CANCELLED)
 from services.v1.views.common import is_redirect
@@ -155,26 +160,27 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                     self.update_payment_gateway(
                         PAYMENT_REQUEST_CREDIT_BALANCE)
                     if response_data.get('status') == 200:
-                        self.payment_reference = (
-                            response_data.get("payment_reference")
-                        )
-                        self.credit_balance = response_data.get(
-                            "credit_balance_in_payment_currency")
+                        if (response_data.get('code') in
+                                HAPPY_CREDITS_SUCCESS_CODES):
+                            self.payment_reference = (
+                                response_data.get("payment_reference")
+                            )
+                            self.credit_balance = response_data.get(
+                                "credit_balance_in_payment_currency")
 
-                        """Updating payment transaction table
-                         and payment gateway logs"""
-                        self.update_transaction_data(
-                            PAYMENT_REQUEST_CREDIT_BALANCE)
-
-                        return response_data, self.SUCCESS
+                            """Updating payment transaction table
+                             and payment gateway logs"""
+                            self.update_transaction_data(
+                                PAYMENT_REQUEST_CREDIT_BALANCE)
+                            return response_data, self.SUCCESS
 
                     logger.error("Error in credit balance api, {}".format(
-                        response.text))
-                    return ({"error": response_data},
+                        response_data))
+                    return ({"errors": response_data},
                             self.HAPPY_CREDITS_CONNECTION_ERROR)
 
                 self.update_payment_gateway(PAYMENT_REQUEST_CREDIT_BALANCE)
-                return ({"error": response.text},
+                return ({"errors": response.text},
                         self.HAPPY_CREDITS_CONNECTION_ERROR)
             else:
                 logger.error(HAPPY_CREDITS_CONNECTION_ERROR_MESSAGE)
@@ -185,14 +191,13 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                      "{}".format(str(e)))
             logger.error("Exception in happy credits credit "
                          "balance api: {}".format(str(e)))
-            return {"error": error}, self.HAPPY_CREDITS_CONNECTION_ERROR
+            return {"errors": error}, self.HAPPY_CREDITS_CONNECTION_ERROR
 
     def debit_balance(self, data):
         """
         Calls happy credits deduct balance api.
         """
         try:
-
             self.payment_reference = data.get('payment_reference')
             self.transaction_obj = (
                 self.get_transaction_data_by_credit_reference(
@@ -200,13 +205,12 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
             if self.transaction_obj is None:
                 return None, self.TRANSACTION_NOT_FOUND
 
-            self.transaction_id = str(self.transaction_obj.transaction_id)
-
             if (self.transaction_obj.amount >
                     self.transaction_obj.credit_balance_amount):
                 return None, self.HAPPY_CREDITS_INSUFFICIENT_FUND
 
             if self.transaction_obj.payment_status != PAYMENT_STATUS_PAID:
+                self.transaction_id = str(self.transaction_obj.transaction_id)
                 data.update({"transaction_data": self.transaction_obj})
 
                 request_data = self.get_credit_redemption_request_data(data)
@@ -244,23 +248,14 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                                  "reason {} ".format(response.status_code,
                                                      response.text))
                     return None, self.HAPPY_CREDITS_CONNECTION_ERROR
-
-            if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
-                response_data = {
-                    'status': 200,
-                    "is_capture": True,
-                    'message': 'Amount already redeemed'
-                }
-                redirect, response_data = is_redirect(self.transaction_id,
-                                                      response_data)
-                if redirect:
-                    return response_data, self.SUCCESS
-                else:
-                    return response_data, self.PAYMENT_FAILED
-
-            return None, self.HAPPY_CREDITS_CONNECTION_ERROR
-
+            response_data = {
+                'transaction_message': {
+                                        'status': 200,
+                                        'message': 'Amount already redeemed'
+                                        }
+            }
+            return response_data, self.SUCCESS
         except Exception as e:
             logger.error("Exception in happy credits "
                          "deduct balance session: {}".format(str(e)))
-            return None, self.HAPPY_VERIFICATION_EXCEPTION
+            return {"errors": str(e)}, self.HAPPY_CREDITS_CONNECTION_ERROR
