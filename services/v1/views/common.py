@@ -1,8 +1,8 @@
 import logging
 
+from django.db import transaction
 from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
-from django.db import transaction
 
 from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG
@@ -22,7 +22,6 @@ from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from rest_framework import status
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
 
