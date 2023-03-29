@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from core.messages import (
     REDIRECT_URL,
     IS_REDIRECT,
-    COMMON_ERROR_MESSAGE_EN
+    COMMON_ERROR_MESSAGE_EN, IS_SUCCESS
 )
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
@@ -278,11 +278,13 @@ class CheckoutVerification(APIView):
 
         transaction_message = data.get('transaction_message')
         errors = data.get('errors')
+        is_success = data.get(IS_SUCCESS)
 
         if transaction_message:
             data['code'] = code
             data['message'] = transaction_message.get('response_summary',
                                                       None)
+            data[IS_SUCCESS] = is_success
             data.pop('transaction_message', None)
         if errors:
             errors['message'] = COMMON_ERROR_MESSAGE_EN
