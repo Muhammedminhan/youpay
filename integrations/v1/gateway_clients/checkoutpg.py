@@ -9,8 +9,7 @@ from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT
 from core.utils import (get_checkoutpg_config,
-                        process_checkoutpg_response_verification,
-                        get_redirect_url)
+                        process_checkoutpg_response_verification)
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
@@ -297,24 +296,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     return None, self.CHECKOUTPG_CONNECTION_ERROR
             else:
                 msg = (
-                    "Youpay transaction verification failed for transaction id "
-                    "{} response is : {} ".format(self.transaction_id,
-                                                  verify_response))
+                    "Youpay Saved Card transaction verification failed for"
+                    " transaction id {} response is : {} ".format(
+                        self.transaction_id, verify_response))
                 logger.error(msg)
-
-                redirect_url = get_redirect_url(
-                    transaction_data.get("cancel_url"), self.transaction_id)
-
-                # Preparing response data as per the payment API response
-                data = {
-                    "is_redirect": True,
-                    "redirect_url": redirect_url,
-                    "message": self.MESSAGE.get(
-                        self.CLIENT_TRANSACTION_VERIFICATION_FAILED),
-                    "code": self.CLIENT_TRANSACTION_VERIFICATION_FAILED,
-                }
-
-                return data, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             logger.error(
                 "Error while processing saved card payment for transaction id"
@@ -400,9 +386,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     return None, self.CHECKOUTPG_CONNECTION_ERROR
             else:
                 msg = (
-                    "Youpay transaction verification failed, transaction id "
-                    "{} response is : {} ".format(self.transaction_id,
-                                                  verify_response))
+                    "Youpay Card transaction verification failed, transaction"
+                    " id {} response is : {} ".format(self.transaction_id,
+                                                      verify_response))
                 logger.error(msg)
                 return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
@@ -490,7 +476,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     return None, self.CHECKOUTPG_CONNECTION_ERROR
             else:
                 msg = (
-                    "Youpay transaction verification failed for "
+                    "Youpay Paypal transaction verification failed for "
                     "transaction id {} response is : {} ".format(
                         self.transaction_id, verify_response))
                 logger.error(msg)
@@ -741,11 +727,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 return response_data, response_code
             else:
                 msg = (
-                    "Youpay transaction verification failed for transaction "
-                    "id {} response is : {} ".format(self.transaction_id,
-                                                     verify_response))
+                    "Youpay Applepay transaction verification failed for "
+                    "transaction id {} response is : {} ".format(
+                        self.transaction_id, verify_response))
                 logger.error(msg)
-                return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             logger.error("Exception in payment request : {} "
                          .format(e))
