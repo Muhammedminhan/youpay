@@ -35,7 +35,6 @@ from payments.serializers.youpay_payments import (
 from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                    B2C_PAYBACK_CONFIG_ENDPOINT
                                    )
-from services.v1.views.common import YouPayTransactionCRUD
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -182,7 +181,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     " id {} response is : {} ".format(
                         transaction_obj.transaction_id, verify_response))
                 logger.error(msg)
-                return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             logger.error(
                 "authenticate api call to b2cpayback failed for "
