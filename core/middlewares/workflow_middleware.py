@@ -92,6 +92,7 @@ class PaymentStatusCheckMiddleware(object):
                     # Preparing response data as per the payment API response
                     data = {
                         "is_redirect": True,
+                        "is_success": False,
                         "redirect_url": redirect_url,
                         "message": message,
                         "code": youpay_message_obj.MAX_PAYMENT_ATTEMPT_REACHED,
@@ -138,9 +139,11 @@ class PaymentStatusCheckMiddleware(object):
             self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
 
     def get_payment_response(
-            self, redirect_url, transaction_message, youpay_message_obj):
+            self, redirect_url, transaction_message, youpay_message_obj,
+            is_success=True):
         data = {
             "is_redirect": True,
+            "is_success": is_success,
             "redirect_url": redirect_url,
             "message": transaction_message,
             "code": youpay_message_obj.MIDDLEWARE_REDIRECTED,
@@ -171,10 +174,12 @@ class PaymentStatusCheckMiddleware(object):
 
             redirect_url = self.get_redirect_url(
                 transaction_obj.success_url, transaction_id)
+            is_success = True
 
             # Preparing response data as per the payment API response
             self.response = self.get_payment_response(
-                redirect_url, transaction_message, youpay_message_obj)
+                redirect_url, transaction_message, youpay_message_obj,
+                is_success)
             raise TransactionAlreadyPaid
 
     def check_transaction_already_cancelled(self, transaction_obj,
@@ -193,10 +198,12 @@ class PaymentStatusCheckMiddleware(object):
 
             redirect_url = self.get_redirect_url(
                 transaction_obj.cancel_url, transaction_id)
+            is_success = False
 
             # Preparing response data as per the payment API response
             self.response = self.get_payment_response(
-                redirect_url, transaction_message, youpay_message_obj)
+                redirect_url, transaction_message, youpay_message_obj,
+                is_success)
             raise TransactionAlreadyCancelled
 
     def common_error_response(self, message, code):
