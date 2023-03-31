@@ -223,14 +223,12 @@ class PaypalPayment(APIView, YouPayTransactionCRUD):
                                     status=status.HTTP_200_OK)
                 else:
                     data = self.response_obj.get_error_dict(error_code=code)
-                    data[IS_REDIRECT] = True
-                    data[REDIRECT_URL] = transaction_data.get('failure_url')
                     return Response(data,
-                                    status=status.HTTP_404_NOT_FOUND)
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
                     message=TRANSACTION_DOESNT_EXIST)
-                return Response(data, status=status.HTTP_404_NOT_FOUND)
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
         except ObjectDoesNotExist as e:
             data = self.response_obj.get_404_message(message=str(e))
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
