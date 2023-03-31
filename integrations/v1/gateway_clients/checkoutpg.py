@@ -468,7 +468,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                         data_to_update.update(additional_charges)
                         self.update_youpay_transaction_data(data_to_update)
-                        return ({"error": response.json()},
+                        return (None,
                                 self.CHECKOUTPG_CONNECTION_ERROR)
                     return None, self.CHECKOUTPG_CONNECTION_ERROR
                 else:
