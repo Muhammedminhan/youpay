@@ -8,7 +8,7 @@ from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG
 )
 from core.messages import (
-    ERROR_MISSING_FIELDS
+    ERROR_MISSING_FIELDS, IS_SUCCESS
 )
 from core.messages import (
     REDIRECT_URL,
@@ -213,7 +213,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: False,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
         }
         return True, response_data
 
@@ -225,7 +226,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: True
         }
         return True, response_data
     else:
@@ -234,7 +236,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
         }
         return False, response_data
 
