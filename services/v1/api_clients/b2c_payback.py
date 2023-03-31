@@ -27,9 +27,14 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
 
     def post(self, request):
         payback = B2CPaybackManager()
-        response, transaction_id = payback.get_point_balance(request.data)
+        response, transaction_id, response_code = payback.get_point_balance(
+            request.data)
         request_data = request.data
         try:
+            if response_code == (
+                    self.response_obj.CLIENT_TRANSACTION_VERIFICATION_FAILED):
+                return Response(response, status=status.HTTP_200_OK)
+
             if response and response.status_code == 200:
                 response_data = response.json()
                 self.update_youpay_transaction_data({
