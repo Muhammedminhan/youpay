@@ -287,6 +287,12 @@ class CheckoutVerification(APIView):
         if errors:
             errors['message'] = COMMON_ERROR_MESSAGE_EN
             errors['code'] = code
+
+        if data['message'] is None:
+            data['message'] = COMMON_ERROR_MESSAGE_EN
+            data['code'] = (
+                self.response_obj.CHECKOUTPG_RESPONSE_MESSAGE_NULL
+            )
         return data
 
 

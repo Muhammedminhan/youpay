@@ -33,6 +33,7 @@ class YouPayResponse(object):
     """checkoutpg related begins"""
     CHECKOUTPG_CONNECTION_ERROR = 2003
     CHECKOUTPG_RESPONSE_FAILED = 2400
+    CHECKOUTPG_RESPONSE_MESSAGE_NULL = 2404
     """checkoutpg related ends"""
 
     """tabbypg related begins"""
