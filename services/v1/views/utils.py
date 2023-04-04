@@ -6,8 +6,9 @@ from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
 )
-from payments.constants import PAYMENT_STATUS_INITIATED, LANGUAGE_CODE_EN, \
-    LANGUAGE_CODE_AR
+from payments.constants import (PAYMENT_STATUS_INITIATED,
+                                LANGUAGE_CODE_EN,
+                                LANGUAGE_CODE_AR)
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
