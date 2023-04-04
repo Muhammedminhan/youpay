@@ -108,6 +108,42 @@ def process_notification_data(transaction_obj, payment_status, status):
         )
 
 
+@shared_task(name='calculate_checkoutpg_gateway_charge')
+def calculate_checkoutpg_gateway_charge(**kwargs):
+    """
+    task to calculate gateway charge based on the
+    financial response from checkout pg
+    """
+    logger.info("checkoutpg gateway charge calculation "
+                "started {}".format(kwargs))
+    payment_reference = kwargs.get('payment_reference', None)
+    financial_action_data = kwargs.get('financial_action_data', None)
+    gateway_charge = 0
+    try:
+        breakdown_types = ["Authorization Fixed Fee",
+                           "Authentication Fixed Fee",
+                           "Authentication Variable Fee",
+                           "Void Fixed Fee",
+                           "Gateway Fixed Fee",
+                           "Card Verification Fixed Fee"]
+
+        for financial_action in financial_action_data:
+            for break_downs in financial_action.get('breakdown'):
+                if break_downs.get('breakdown_type') in breakdown_types:
+                    gateway_charge += Decimal(
+                        break_downs.get('fx_rate_applied', '0.00'))
+
+        transaction_obj = YouPayTransactionData.objects.get(
+            payment_reference=payment_reference)
+        if transaction_obj:
+            transaction_obj.gateway_charge = gateway_charge
+            transaction_obj.save()
+    except Exception as e:
+        logger.error(
+            "Unable to store checkoutpg gateway charges for transaction "
+            "{} with error {}".format(payment_reference, str(e)))
+
+
 @shared_task(name='update_calculated_gateway_charges')
 def update_calculated_gateway_charges(transaction_id):
     logger.info("storing gateway charge for id {} started"
