@@ -164,8 +164,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                         return response, code
 
-                    return ({"error": response_data},
-                            self.TABBYPG_CONNECTION_ERROR)
+                    return (
+                    {"error": response_data}, self.TABBYPG_CONNECTION_ERROR)
                 else:
                     logger.error(TABBYPG_CONNECTION_ERROR_MESSAGE)
                     return {None}, self.TABBYPG_CONNECTION_ERROR
