@@ -2,6 +2,10 @@ import json
 import logging
 
 import requests
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
@@ -11,9 +15,6 @@ from core.utils import (encrypt_payment_data, decrypt_payment_data,
 from payments.constants import (PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
                                 PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID)
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -228,9 +229,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 Verify transaction with client by calling verify url
                 """
 
-                api_key, api_secret = self.get_api_client_keys(
-                    transaction_obj)
-
                 verify_headers = {
                     'Accept': 'application/json',
                     "API-KEY": transaction_obj.api_client.api_key,
@@ -261,9 +259,18 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                         "Client verify url {} not "
                         "responding".format(client_verify_url))
                     """Client verify url not responding"""
-                    return_data = self.get_400_message(
-                        message="Client verify url not working")
-                    return return_data, status.HTTP_400_BAD_REQUEST
+                    redirect_url = get_redirect_url(
+                        transaction_obj.cancel_url, transaction_id)
+
+                    # Preparing response data as per the payment API response
+                    data = {
+                        "is_redirect": True,
+                        "redirect_url": redirect_url,
+                        "message": self.MESSAGE.get(
+                            self.CLIENT_TRANSACTION_VERIFICATION_FAILED),
+                        "code": self.CLIENT_TRANSACTION_VERIFICATION_FAILED,
+                    }
+                    return data, status.HTTP_400_BAD_REQUEST
 
         else:
             response_data = self.get_error_dict(

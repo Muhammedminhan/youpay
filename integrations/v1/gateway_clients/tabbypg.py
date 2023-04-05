@@ -104,9 +104,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         """if transaction is verified then proceed with payment"""
         try:
             if verify_status == status.HTTP_200_OK and is_verified:
-
                 tabbypg_conf = self.tabbypg_config
-
                 if tabbypg_conf:
                     payment_data = self.get_tabbypg_payment_data(data)
                     logger.info(
@@ -171,11 +169,11 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     return {None}, self.TABBYPG_CONNECTION_ERROR
             else:
                 msg = (
-                    "Youpay transaction verification failed, transaction id"
-                    "{} response is : {} ".format(self.transaction_id,
-                                                  verify_response))
+                    "Youpay tabby transaction verification failed, "
+                    "transaction id {} response is : {} ".format(
+                        self.transaction_id, verify_response))
                 logger.error(msg)
-                return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             error = "Error in creating session with Tabbypg: {}".format(e)
             logger.error("Exception in tabbypg payment: {}".format(e))
