@@ -21,7 +21,7 @@ from integrations.v1.serializers.tabbypg_payment_request import (
 )
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED)
+    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -272,7 +272,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             )
 
     def process_tabby_failure_response(self):
-        if self.payment_status == "rejected":
+        if self.payment_status == PAYMENT_STATUS_REJECTED:
             code = self.TABBYPG_PAYMENT_REJECTED
             response = {
                 IS_REDIRECT: False,
