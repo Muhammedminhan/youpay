@@ -284,6 +284,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         else:
             return None, self.TABBYPG_CONNECTION_ERROR
 
+
 class TabbyPaymentCancel(YouPayTransactionCRUD, APIView):
     """
     This class is used for cancelling payment and redirecting to the

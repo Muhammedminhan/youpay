@@ -4,6 +4,7 @@ import logging
 import requests
 
 from core.constants import (PAYMENT_GATEWAY_HAPPYCREDITS, REQUEST_METHOD_POST)
+from core.messages import IS_REDIRECT, IS_SUCCESS, REDIRECT_URL
 from core.utils import (get_payment_gateway_config, decrypt_payment_data)
 from integrations.constants import (
     HAPPYCREDITS_HUB_CODE, HAPPYCREDITS_CACHE_KEY,
@@ -206,7 +207,13 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
 
             if (self.transaction_obj.amount >
                     self.transaction_obj.credit_balance_amount):
-                return None, self.HAPPY_CREDITS_INSUFFICIENT_FUND
+                response = {
+                    IS_REDIRECT: False,
+                    IS_SUCCESS: False,
+                    REDIRECT_URL: None,
+                }
+
+                return response, self.HAPPY_CREDITS_INSUFFICIENT_FUND
 
             self.transaction_id = str(self.transaction_obj.transaction_id)
             if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
