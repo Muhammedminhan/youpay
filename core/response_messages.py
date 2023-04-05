@@ -43,6 +43,7 @@ class YouPayResponse(object):
     TABBYPG_VERIFICATION_ERROR = 1603
     TABBYPG_VERIFICATION_EXCEPTION = 1604
     TABBYPG_DUPLICATE_VERIFICATION = 1605
+    TABBYPG_PAYMENT_REJECTED = 1606
 
     """tabbypg related ends"""
 
@@ -121,6 +122,8 @@ class YouPayResponse(object):
 
             self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.TABBYPG_VERIFICATION_FAILED: "Tabbypg verification failed",
+            self.TABBYPG_PAYMENT_REJECTED: (
+                "Your Tabby payment has been rejected"),
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",

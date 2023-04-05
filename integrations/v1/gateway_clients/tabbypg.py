@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from core.constants import (
     REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
-from core.messages import IS_REDIRECT
+from core.messages import IS_REDIRECT, IS_SUCCESS, REDIRECT_URL
 from core.utils import get_payment_gateway_config, get_redirect_url
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
@@ -159,8 +159,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                         self.update_youpay_transaction_data(
                             self.prepare_data_to_update())
-                        return ({"error": response.json()}
-                                , self.TABBYPG_CONNECTION_ERROR)
+
+                        response, code = self.process_tabby_failure_response()
+
+                        return response, code
 
                     return ({"error": response_data},
                             self.TABBYPG_CONNECTION_ERROR)
@@ -269,6 +271,18 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 request_method=self.request_method,
             )
 
+    def process_tabby_failure_response(self):
+        if self.payment_status == "rejected":
+            code = self.TABBYPG_PAYMENT_REJECTED
+            response = {
+                IS_REDIRECT: False,
+                IS_SUCCESS: False,
+                REDIRECT_URL: None,
+                "message": self.MESSAGE.get(code)
+            }
+            return response, self.TABBYPG_PAYMENT_REJECTED
+        else:
+            return None, self.TABBYPG_CONNECTION_ERROR
 
 class TabbyPaymentCancel(YouPayTransactionCRUD, APIView):
     """
