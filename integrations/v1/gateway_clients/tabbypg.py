@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from core.constants import (
     REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
-from core.messages import IS_REDIRECT
+from core.messages import IS_REDIRECT, IS_SUCCESS, REDIRECT_URL
 from core.utils import get_payment_gateway_config, get_redirect_url
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
@@ -21,7 +21,7 @@ from integrations.v1.serializers.tabbypg_payment_request import (
 )
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED)
+    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -159,8 +159,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                         self.update_youpay_transaction_data(
                             self.prepare_data_to_update())
-                        return ({"error": response.json()}
-                                , self.TABBYPG_CONNECTION_ERROR)
+
+                        response, code = self.process_tabby_failure_response()
+
+                        return response, code
 
                     return ({"error": response_data},
                             self.TABBYPG_CONNECTION_ERROR)
@@ -268,6 +270,19 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 request_type=self.request_type,
                 request_method=self.request_method,
             )
+
+    def process_tabby_failure_response(self):
+        if self.payment_status == PAYMENT_STATUS_REJECTED:
+            code = self.TABBYPG_PAYMENT_REJECTED
+            response = {
+                IS_REDIRECT: False,
+                IS_SUCCESS: False,
+                REDIRECT_URL: None,
+                "message": self.MESSAGE.get(code)
+            }
+            return response, self.TABBYPG_PAYMENT_REJECTED
+        else:
+            return None, self.TABBYPG_CONNECTION_ERROR
 
 
 class TabbyPaymentCancel(YouPayTransactionCRUD, APIView):
