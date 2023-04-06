@@ -179,6 +179,7 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
         response, transaction_obj = payback.verification(payment_data)
         transaction_id = (transaction_obj.transaction_id if transaction_obj
                           else None)
+        print("\n\nResponse : ", response)
         if response:
             if response.get('results', {}).get('payment_status'):
                 logger.info("Verification successful, payment status true for"
@@ -192,7 +193,6 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
 
                 logger.error(message)
 
-                response = {'errors': {'message': message}}
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_FAILED_TO_PROCESS
                 response = self.format_b2c_response(response, code)
             return Response(response, status=status.HTTP_200_OK)
