@@ -179,7 +179,6 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
         response, transaction_obj = payback.verification(payment_data)
         transaction_id = (transaction_obj.transaction_id if transaction_obj
                           else None)
-        print("\n\nResponse : ", response)
         if response:
             if response.get('results', {}).get('payment_status'):
                 logger.info("Verification successful, payment status true for"
