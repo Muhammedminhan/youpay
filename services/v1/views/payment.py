@@ -265,6 +265,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     # Preparing response data as per the payment API response
                     data = {
                         "is_redirect": True,
+                        "is_success": False,
                         "redirect_url": redirect_url,
                         "message": self.MESSAGE.get(
                             self.CLIENT_TRANSACTION_VERIFICATION_FAILED),
