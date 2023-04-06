@@ -1,20 +1,27 @@
 import logging
 
-from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
-from core.messages import ERROR_MISSING_FIELDS
-from core.messages import (
-    REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
-)
-from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 from django.db import transaction
 from django.utils.decorators import decorator_from_middleware, classonlymethod
+from rest_framework import status
+
+from core.constants import (
+    PAYMENT_GATEWAY_CHECKOUTPG
+)
+from core.messages import (
+    ERROR_MISSING_FIELDS, IS_SUCCESS
+)
+from core.messages import (
+    REDIRECT_URL,
+    TRANSACTION_MSG,
+    IS_REDIRECT
+)
+from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 from integrations.models import PaymentGateway
 from payments.constants import PAYMENT_STATUS_PAID
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from rest_framework import status
 from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
 
@@ -206,7 +213,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: False,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
         }
         return True, response_data
 
@@ -218,7 +226,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: True
         }
         return True, response_data
     else:
@@ -227,7 +236,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
         }
         return False, response_data
 

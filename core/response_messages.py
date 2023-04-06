@@ -27,17 +27,32 @@ class YouPayResponse(object):
     TRANSACTION_NOT_FOUND = 1404
     MAX_PAYMENT_ATTEMPT_REACHED = 1416
 
+    TRANSACTION_ALREADY_CLOSED = 1600
+    REQUIRED_DATA_MISSING = 1601
+
     """checkoutpg related begins"""
     CHECKOUTPG_CONNECTION_ERROR = 2003
     CHECKOUTPG_RESPONSE_FAILED = 2400
+    CHECKOUTPG_RESPONSE_MESSAGE_NULL = 2404
     """checkoutpg related ends"""
 
     """tabbypg related begins"""
     TABBYPG_CONNECTION_ERROR = 1006
+    TABBYPG_VERIFICATION_FAILED = 1600
+    TABBYPG_VERIFICATION_SUCCESS = 1601
+    TABBYPG_VERIFICATION_ERROR = 1603
+    TABBYPG_VERIFICATION_EXCEPTION = 1604
+    TABBYPG_DUPLICATE_VERIFICATION = 1605
+    TABBYPG_PAYMENT_REJECTED = 1606
+
     """tabbypg related ends"""
 
     """b2cpayback related begins"""
-    TRANSACTION_NOT_FOUND = 6404
+    B2CPAYBACK_VERIFICATION_FAILED = 5600
+    B2CPAYBACK_VERIFICATION_SUCCESS = 5601
+    B2CPAYBACK_VERIFICATION_FAILED_TO_PROCESS = 5603
+    B2CPAYBACK_VERIFICATION_EXCEPTION = 5604
+
     """b2cpayback related ends"""
 
     """Amazonpay related begins"""
@@ -46,7 +61,11 @@ class YouPayResponse(object):
 
     """happy credits related begins"""
     HAPPY_CREDITS_CONNECTION_ERROR = 7002
+    HAPPY_CREDITS_VERIFICATION_FAILED = 7600
+    HAPPY_REDEMPTION_SUCCESS = 7601
+    HAPPY_VERIFICATION_EXCEPTION = 7604
     HAPPY_CREDITS_INSUFFICIENT_FUND = 7701
+
     """happy credits related ends"""
 
     """Apple Pay back related begins"""
@@ -100,16 +119,29 @@ class YouPayResponse(object):
             self.APPLE_PAY_REDIRECT: "Apple pay redirect",
 
             self.PAYMENT_FAILED: "Payment failed",
+
             self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.TABBYPG_VERIFICATION_FAILED: "Tabbypg verification failed",
+            self.TABBYPG_PAYMENT_REJECTED: (
+                "Your Tabby payment has been rejected"),
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
+            self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
+
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
             self.TRANSACTION_NOT_FOUND: "Transaction not found",
             self.MISSING_CLIENT_INFO: "API Client data missing",
             self.MAX_PAYMENT_ATTEMPT_REACHED: "Max payment attempt reached",
             self.MIDDLEWARE_REDIRECTED: "Request redirected",
+
+            self.B2CPAYBACK_VERIFICATION_SUCCESS: "Payment verified",
+            self.B2CPAYBACK_VERIFICATION_FAILED_TO_PROCESS: "verification "
+                                                            "failed",
+            self.B2CPAYBACK_VERIFICATION_EXCEPTION: "Exception occurred ",
+            self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
+                                                 " verification"
         })
 
     def get_400_message(self, message):

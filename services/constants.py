@@ -23,6 +23,7 @@ RESPONSE_CODE_LIST = [
     '20151',  # Declined - Payment authorization initiated but failed
     None
 ]
+
 YOUPAY_SESSION_KEY = "youpay-session-id"
 
 APPLEPAY_MERCHANT_IDENTIFIER = "merchant.com.yougotagift.web.test"
