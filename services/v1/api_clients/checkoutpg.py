@@ -171,15 +171,9 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                     return Response(data,
                                     status=status.HTTP_200_OK)
                 else:
-                    data = self.response_obj.get_success_dict(
-                        code=code,
-                        success_dict=response_data
-                    )
-                    data[IS_REDIRECT] = False
-                    data[IS_SUCCESS] = False
-                    data[REDIRECT_URL] = None
+                    data = self.response_obj.get_error_dict(error_code=code)
                     return Response(data,
-                                    status=status.HTTP_200_OK)
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
                     message=TRANSACTION_DOESNT_EXIST)
