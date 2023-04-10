@@ -380,6 +380,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                                 name_on_card=name_on_card))
                         return ({"error": response.json()},
                                 self.CHECKOUTPG_CONNECTION_ERROR)
+                    logger.error(
+                        "Error occurred on checkout card payments for "
+                        "transaction id {} is".format(self.transaction_id))
                     return None, self.CHECKOUTPG_CONNECTION_ERROR
                 else:
                     logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
@@ -445,7 +448,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     logger.info(
                         "Checkoutpg paypal request response, transaction id "
-                        "{} is {}".format(self.transaction_id, response.text))
+                        "{} ".format(self.transaction_id))
 
                     if response:
                         response_data = response.json()
