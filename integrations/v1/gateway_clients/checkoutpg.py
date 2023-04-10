@@ -7,7 +7,7 @@ from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
-from core.messages import IS_REDIRECT
+from core.messages import IS_REDIRECT, IS_SUCCESS
 from core.utils import (get_checkoutpg_config,
                         process_checkoutpg_response_verification)
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
@@ -280,7 +280,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                             self.update_youpay_transaction_data(
                                 self.prepare_data_to_update())
-                            return response.json(), self.SUCCESS
+                            response_data[IS_SUCCESS] = True
+                            return response_data, self.SUCCESS
 
                     logger.error("Error in savedcard payment, {}".format(
                         response.text))
@@ -370,7 +371,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             self.update_youpay_transaction_data(
                                 self.prepare_data_to_update(
                                     name_on_card=name_on_card))
-                            return response.json(), self.SUCCESS
+                            response_data[IS_SUCCESS] = True
+                            return response_data, self.SUCCESS
 
                         logger.error("Error in card payment, {}".format(
                             response.text))
@@ -462,7 +464,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             data_to_update.update(additional_charges)
                             self.update_youpay_transaction_data(
                                 data_to_update)
-                            return response.json(), self.SUCCESS
+                            response_data[IS_SUCCESS] = True
+                            return response_data, self.SUCCESS
 
                         logger.error("Error in paypal payment, {}".format(
                             response.text))
