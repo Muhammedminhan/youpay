@@ -20,6 +20,7 @@ from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY)
+from services.constants import RESPONSE_CODE_LIST
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -291,7 +292,15 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
     else:
         source = response_data.get('source', None)
-        payment_status = response_data.get("status").lower()
+
+        response_code = response_data.get('response_code', None)
+        if response_code in RESPONSE_CODE_LIST:
+            # this allow retry payments
+            payment_status = PAYMENT_STATUS_DECLINED_RETRY
+        else:
+            # this doesnt allow retry payments
+            payment_status = response_data.get("status").lower()
+
         approved = response_data.get('approved', False)
 
         if source == PAYMENT_METHOD_APPLEPAY and approved:
