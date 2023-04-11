@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
+from core.utils import checkout_decline_check
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
 
@@ -48,13 +49,15 @@ class WebhookListener(APIView):
             payment_reference = request_data.get('payment_reference', None)
             transaction_obj = get_transaction_object(payment_reference)
 
+            payment_status = checkout_decline_check(request_data)
+
             if transaction_obj:
                 logger.info(
                     "In Webhook listner payment scheme for invoice {0}"
                     " is {1}".format(invoice_pk,
                                      transaction_obj.payment_scheme))
                 transaction_obj.approved = request_data.get('approved')
-                transaction_obj.status = str(request_data.get('status'))
+                transaction_obj.status = str(payment_status)
                 transaction_obj.auth_code = str(
                     request_data.get('auth_code'))
                 transaction_obj.response_summary = str(
@@ -102,7 +105,7 @@ class WebhookListener(APIView):
                     is_notification=request_data.get('is_notification',
                                                      None),
                     approved=request_data.get('approved', None),
-                    status=str(request_data.get('status', None)),
+                    status=str(payment_status),
                     auth_code=str(request_data.get('auth_code', None)),
                     response_summary=str(
                         request_data.get('response_summary', None)),
