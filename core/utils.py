@@ -293,13 +293,7 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
     else:
         source = response_data.get('source', None)
 
-        response_code = response_data.get('response_code', None)
-        if response_code in RESPONSE_CODE_LIST:
-            # this allow retry payments
-            payment_status = PAYMENT_STATUS_DECLINED_RETRY
-        else:
-            # this doesnt allow retry payments
-            payment_status = response_data.get("status").lower()
+        payment_status = checkout_decline_check(response_data)
 
         approved = response_data.get('approved', False)
 
@@ -331,3 +325,17 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
 
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
+
+
+def checkout_decline_check(response_data):
+
+    response_code = response_data.get('response_code', None)
+
+    if response_code in RESPONSE_CODE_LIST:
+        # this allow retry payments
+        payment_status = PAYMENT_STATUS_DECLINED_RETRY
+    else:
+        # this doesnt allow retry payments
+        payment_status = response_data.get("status").lower()
+
+    return payment_status
