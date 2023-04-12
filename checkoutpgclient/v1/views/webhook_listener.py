@@ -168,7 +168,7 @@ class WebhookListener(APIView):
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
                     "payment_status": (
-                        payment_status.lower() if payment_status else 'None'),
+                        payment_status.lower() if payment_status else None),
                     "payment_reference": request_data.get("reference"),
                     "approved": request_data.get("approved"),
                     "response_summary": request_data.get("response_summary"),
