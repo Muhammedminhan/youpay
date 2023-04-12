@@ -49,15 +49,13 @@ class WebhookListener(APIView):
             payment_reference = request_data.get('payment_reference', None)
             transaction_obj = get_transaction_object(payment_reference)
 
-            payment_status = checkout_decline_check(request_data)
-
             if transaction_obj:
                 logger.info(
                     "In Webhook listner payment scheme for invoice {0}"
                     " is {1}".format(invoice_pk,
                                      transaction_obj.payment_scheme))
                 transaction_obj.approved = request_data.get('approved')
-                transaction_obj.status = str(payment_status)
+                transaction_obj.status = str(request_data.get('status'))
                 transaction_obj.auth_code = str(
                     request_data.get('auth_code'))
                 transaction_obj.response_summary = str(
@@ -105,7 +103,7 @@ class WebhookListener(APIView):
                     is_notification=request_data.get('is_notification',
                                                      None),
                     approved=request_data.get('approved', None),
-                    status=str(payment_status),
+                    status=str(request_data.get('status', None)),
                     auth_code=str(request_data.get('auth_code', None)),
                     response_summary=str(
                         request_data.get('response_summary', None)),
@@ -161,6 +159,7 @@ class WebhookListener(APIView):
 
     def prepare_youpay_transaction_update_data(self, request_data,
                                                payment_reference):
+        payment_status = checkout_decline_check(request_data)
         try:
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(
@@ -168,7 +167,8 @@ class WebhookListener(APIView):
             if transaction_obj:
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
-                    "payment_status": request_data.get("status").lower(),
+                    "payment_status": (
+                        payment_status.lower() if payment_status else None),
                     "payment_reference": request_data.get("reference"),
                     "approved": request_data.get("approved"),
                     "response_summary": request_data.get("response_summary"),
