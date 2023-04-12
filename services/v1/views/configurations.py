@@ -17,7 +17,7 @@ from payments.constants import (
     PAYMENT_STATUS_VOIDED,
     PAYMENT_STATUS_CANCELLED,
     PAYMENT_STATUS_FLAGGED,
-    PAYMENT_STATUS_PAID
+    PAYMENT_STATUS_PAID, PAYMENT_METHOD_PAYPAL, PAYMENT_METHOD_APPLEPAY
 )
 from payments.models import YouPayTransactionData
 from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
@@ -302,7 +302,7 @@ class ConfigViewSet(ViewSet):
             "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
         applepay_config["label"] = APPLEPAY_LABEL
 
-        applepay_enabled = payment_option.get('applepay', False)
+        applepay_enabled = payment_option.get(PAYMENT_METHOD_APPLEPAY, False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
             applepay_config.update(self.get_additional_config(additional_fee,
@@ -315,7 +315,7 @@ class ConfigViewSet(ViewSet):
         only if paypal is enabled
         """
         paypal_config = {}
-        paypal_enabled = payment_option.get('paypal', False)
+        paypal_enabled = payment_option.get(PAYMENT_METHOD_PAYPAL, False)
         if paypal_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
             paypal_config = self.get_additional_config(additional_fee,

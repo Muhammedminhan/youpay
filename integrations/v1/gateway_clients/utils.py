@@ -122,17 +122,3 @@ def get_adcb_response_url(url, transaction_id):
     else:
         return_url = None
     return return_url
-
-
-def get_credit_redemption_data(request_data, transaction_obj):
-    deduct_request_data = dict()
-    deduct_request_data["payment_reference"] = request_data.get(
-        'payment_reference')
-    deduct_request_data["amount_in_payment_currency"] = str(
-        transaction_obj.amount)
-    deduct_request_data["payment_currency"] = transaction_obj.currency
-    deduct_request_data["platform"] = transaction_obj.platform
-    deduct_request_data["user_email"] = transaction_obj.customer_email
-    deduct_request_data["user_phone"] = transaction_obj.customer_phone
-    deduct_request_data["user_id"] = request_data.get('user_id')
-    return deduct_request_data

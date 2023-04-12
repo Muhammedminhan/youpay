@@ -208,7 +208,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         validators=[DecimalValidator(12, 4)],
         help_text="used to store calculated processing fee")
     additional_processing_fee_vat = models.DecimalField(
-        decimal_places=4, max_digits=12,  null=True, blank=True,
+        decimal_places=4, max_digits=12, null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
         help_text="used to store vat amount of the processing fee")
     additional_total_amount = models.DecimalField(
@@ -216,6 +216,11 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         validators=[DecimalValidator(12, 4)],
         help_text="used to store total amount after processing fee "
                   "calculation")
+    gateway_charge = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="Used to store calculated gateway charges "
+                  "based on the configuration")
 
 
 @receiver(post_save, sender=YouPayTransactionData)

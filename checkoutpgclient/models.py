@@ -7,6 +7,7 @@ from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_STATUS_PAID, PAYMENT_METHOD_CHOICES,
                         PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
                         PAYMENT_SCHEME_NONE)
+from payments.tasks import calculate_checkoutpg_gateway_charge
 
 logger = logging.getLogger(__name__)
 
@@ -82,3 +83,20 @@ class TransactionData(models.Model):
         default=PAYMENT_SCHEME_NONE,
         db_index=True,
         help_text='Denotes the payment scheme used for the payment')
+    payment_id = models.CharField(
+        max_length=200, null=True, blank=True,
+        help_text='Payment reference id received from checkout.com')
+    financial_action_response_data = models.JSONField(
+        null=True, blank=True, help_text='Response data received after '
+                                         'calling financial-actions api.')
+
+
+@receiver(post_save, sender=TransactionData)
+def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
+    logger.info("checkoutpg gateway charge calculating signal executing")
+    if instance.financial_action_response_data:
+        dct_args = {
+            "payment_reference": instance.payment_reference,
+            "financial_action_data": instance.financial_action_response_data
+        }
+        calculate_checkoutpg_gateway_charge.delay(**dct_args)

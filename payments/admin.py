@@ -25,12 +25,78 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                      'payment_reference', 'order_reference')
     list_filter = ('created_at', 'payment_status', 'api_client',
                    'payment_gateway', 'payment_method', 'currency',
-                   "platform")
+                   "platform", "is_gcc_card", "is_flagged", "is_fraud",)
     raw_id_fields = ('api_client',)
 
     inlines = [
         YoupayToPaymentGatewaysDataInline,
     ]
+
+    fieldsets = (
+        ('Customer details', {
+            'fields': ('customer_name', 'customer_email', 'customer_phone',
+                       'ip', 'language',
+                       )
+        }),
+        ('Card details', {
+            'fields': ('name_on_card', 'card_bin', 'card_last4',
+                       'card_issuer_country', 'is_gcc_card',
+                       )
+        }),
+        ('Order details', {
+            'fields': ('invoice_id', 'order_reference', 'api_client',
+                       'order_history', 'payment_status', 'approved',
+                       'order_items',
+                       )
+        }),
+        ('Cart details', {
+            'fields': ('cart_amount', 'cart_currency', 'cart_service_fee',
+                       'cart_base_amount', 'cart_VAT_amount',
+                       )
+        }),
+        ('Payment details', {
+            'fields': ('amount', 'currency', 'country_code',
+                       'payment_reference', 'transaction_id',
+                       'payment_gateway', 'channel_code', 'payment_method',
+                       'payment_scheme', 'platform', 'response_summary',
+                       'service_fee', 'base_amount', 'VAT_amount',
+                       'gateway_charge',
+                       )
+        }),
+        ('URLs', {
+            'fields': ('success_url', 'failure_url', 'cancel_url',
+                       'verify_url',
+                       )
+        }),
+        ('Risk details', {
+            'fields': ('is_fraud', 'is_flagged',
+                       )
+        }),
+        ('ADCB transaction details', {
+            'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
+                       'available_amount', 'available_points',
+                       'is_full_redemption',
+                       )
+        }),
+        ('Happycredits transaction details', {
+            'fields': ('credit_balance_amount', 'available_credit_balance',
+                       )
+        }),
+        ('Paypal Additional Fee details', {
+            'fields': ('additional_currency_decimal_notation',
+                       'additional_vat_percentage', 'additional_vat',
+                       'additional_processing_fee',
+                       'additional_processing_fee_vat',
+                       'additional_total_amount',
+                       )
+        }),
+
+        ('Other Details', {
+            'fields': ('retry_count', 'session_id', 'loyalty_level',
+                       'created_at', 'updated_at',
+                       )
+        }),
+    )
 
 
 class AnnouncementAdmin(AdminAbstract):
