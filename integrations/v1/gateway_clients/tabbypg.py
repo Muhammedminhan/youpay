@@ -9,8 +9,8 @@ from rest_framework.views import APIView
 from core.constants import (
     REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, IS_SUCCESS, REDIRECT_URL
-from core.utils import get_payment_gateway_config, get_redirect_url, \
-    tabby_reject_check
+from core.utils import (get_payment_gateway_config, get_redirect_url,
+                        tabby_reject_check)
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
     PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE,
