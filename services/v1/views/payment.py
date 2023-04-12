@@ -330,29 +330,22 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
 
                 redirect_url = get_redirect_url(transaction_object.cancel_url,
                                                 transaction_id)
-
-                message = "Transaction Cancelled"
                 logger.info(
                     "Payment cancelled for transaction_id : {}, "
                     "order reference :"
                     "{}".format(transaction_id,
                                 transaction_object.order_reference))
 
-
             elif transaction_object.payment_status == PAYMENT_STATUS_PAID:
                 redirect_url = get_redirect_url(
                     transaction_object.success_url,
                     transaction_id)
-                message = "Transaction already completed"
             else:
                 redirect_url = get_redirect_url(
                     transaction_object.failure_url,
                     transaction_id)
-                message = "Redirection"
-
             return Response({
                 'is_redirect': True,
-                'message': message,
                 REDIRECT_URL: redirect_url,
             })
         except Exception as e:
