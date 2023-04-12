@@ -75,8 +75,7 @@ class PaymentStatusCheckMiddleware(object):
                     the transaction and redirect to cancel url
                     """
 
-                    message = ("Payment Cancelled : You have reached your "
-                               "maximum retry attempt")
+                    message = "You have reached your maximum retry attempt"
 
                     youpay_obj.update_youpay_transaction_data(
                         {
