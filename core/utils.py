@@ -329,7 +329,7 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
 
 def checkout_decline_check(response_data):
 
-    response_code = response_data.get('response_code', None)
+    response_code = str(response_data.get('response_code', None))
 
     if response_code in RESPONSE_CODE_LIST:
         # this allow retry payments
