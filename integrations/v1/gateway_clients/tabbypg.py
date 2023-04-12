@@ -9,7 +9,8 @@ from rest_framework.views import APIView
 from core.constants import (
     REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, IS_SUCCESS, REDIRECT_URL
-from core.utils import get_payment_gateway_config, get_redirect_url
+from core.utils import get_payment_gateway_config, get_redirect_url, \
+    tabby_reject_check
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
     PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE,
@@ -21,7 +22,8 @@ from integrations.v1.serializers.tabbypg_payment_request import (
 )
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED)
+    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED,
+    PAYMENT_STATUS_REJECTED_RETRY)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -154,8 +156,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                         self.payment_reference = response_data.get(
                             "payment_ref_no")
-                        self.payment_status = response_data.get(
-                            "payment_status")
+                        self.payment_status = tabby_reject_check(
+                            response_data)
 
                         self.update_youpay_transaction_data(
                             self.prepare_data_to_update())
@@ -272,7 +274,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             )
 
     def process_tabby_failure_response(self):
-        if self.payment_status == PAYMENT_STATUS_REJECTED:
+        if self.payment_status in [PAYMENT_STATUS_REJECTED,
+                                   PAYMENT_STATUS_REJECTED_RETRY]:
             code = self.TABBYPG_PAYMENT_REJECTED
             response = {
                 IS_REDIRECT: False,
