@@ -132,6 +132,11 @@ class YouPayTransactionCRUD(object):
         data_dict['is_fraud'] = data.get('is_fraud', None)
         data_dict['is_flagged'] = data.get('is_flagged', None)
         data_dict['retry_count'] = data.get('retry_count', None)
+
+        from core.utils import get_settlement_entity
+        data_dict['settlement_entity'] = get_settlement_entity(
+            currency=data.get('currency', None),
+            payment_gateway=data.get('payment_gateway', None))
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:

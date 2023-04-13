@@ -332,9 +332,8 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
                                                 transaction_id)
                 logger.info(
                     "Payment cancelled for transaction_id : {}, "
-                    "order reference :"
-                    "{}".format(transaction_id,
-                                transaction_object.order_reference))
+                    "order reference : {}".format(
+                        transaction_id, transaction_object.order_reference))
 
             elif transaction_object.payment_status == PAYMENT_STATUS_PAID:
                 redirect_url = get_redirect_url(
