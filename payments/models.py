@@ -14,7 +14,7 @@ from core.validators import DecimalValidator
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
-    PAYMENT_METHOD_NONE)
+    PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES)
 
 
 # Create your models here.
@@ -208,7 +208,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         validators=[DecimalValidator(12, 4)],
         help_text="used to store calculated processing fee")
     additional_processing_fee_vat = models.DecimalField(
-        decimal_places=4, max_digits=12,  null=True, blank=True,
+        decimal_places=4, max_digits=12, null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
         help_text="used to store vat amount of the processing fee")
     additional_total_amount = models.DecimalField(
@@ -216,6 +216,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         validators=[DecimalValidator(12, 4)],
         help_text="used to store total amount after processing fee "
                   "calculation")
+    settlement_entity = models.CharField(
+        max_length=100, null=True, blank=True,
+        choices=SETTLEMENT_ENTITY_CHOICES,
+        help_text="used to store settlement entity")
 
 
 @receiver(post_save, sender=YouPayTransactionData)

@@ -13,14 +13,15 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
 
-from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
+from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY, \
+    PAYMENT_GATEWAY_B2CPAYBACK, PAYMENT_GATEWAY_HAPPYCREDITS
 from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY)
+    PAYMENT_STATUS_REJECTED_RETRY, YOUGOTAGIFT_UAE, YOUGOTAGIFT_KSA)
 from services.constants import RESPONSE_CODE_LIST
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
@@ -350,3 +351,33 @@ def tabby_reject_check(response_data):
         payment_status = PAYMENT_STATUS_REJECTED_RETRY
 
     return payment_status
+
+
+def get_settlement_entity(**kwargs):
+    """
+    This method is used to get settlement entity
+
+    If the currency is AED then the entity value will be Yougotagift UAE
+
+    If the currency is SAR then the entity value will be Yougotagift KSA
+
+    For ADCB → It will always be Yougotagift UAE
+
+    For Happy Credits → It will be blank.
+    """
+
+    currency = kwargs.get('currency', None)
+    payment_gateway = kwargs.get('payment_gateway', None)
+
+    settlement_entity = None
+
+    if payment_gateway == PAYMENT_GATEWAY_HAPPYCREDITS:
+        settlement_entity = None
+    elif currency == "AED" or payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+        settlement_entity = YOUGOTAGIFT_UAE
+    elif currency == "SAR":
+        settlement_entity = YOUGOTAGIFT_KSA
+    else:
+        logger.error("Settlement entity not found for currency {}"
+                     "".format(currency))
+    return settlement_entity
