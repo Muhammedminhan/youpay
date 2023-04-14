@@ -5,6 +5,7 @@ import requests
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
+from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
                         decrypt_string
                         )
@@ -221,8 +222,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 )
                 if response:
                     response_data = response.json()
-                    response_data["is_redirect"] = True
-                    response_data["redirect_url"] = (
+                    response_data[IS_REDIRECT] = True
+                    response_data[IS_SUCCESS] = True
+                    response_data[REDIRECT_URL] = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
                     return response_data, transaction_obj
@@ -262,9 +264,13 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 approved_status = transaction_obj.approved
                 if response_data.get("redirect_url") is None:
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                    response_data[IS_SUCCESS] = False
+
                 else:
                     payment_status = PAYMENT_STATUS_PAID
                     approved_status = True
+                    response_data[IS_SUCCESS] = True
+
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(

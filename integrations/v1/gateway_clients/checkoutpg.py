@@ -7,7 +7,7 @@ from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
-from core.messages import IS_REDIRECT
+from core.messages import IS_REDIRECT, IS_SUCCESS
 from core.utils import (get_checkoutpg_config,
                         process_checkoutpg_response_verification)
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
@@ -280,7 +280,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                             self.update_youpay_transaction_data(
                                 self.prepare_data_to_update())
-                            return response.json(), self.SUCCESS
+                            response_data[IS_SUCCESS] = True
+                            return response_data, self.SUCCESS
 
                     logger.error("Error in savedcard payment, {}".format(
                         response.text))
@@ -370,7 +371,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             self.update_youpay_transaction_data(
                                 self.prepare_data_to_update(
                                     name_on_card=name_on_card))
-                            return response.json(), self.SUCCESS
+                            response_data[IS_SUCCESS] = True
+                            return response_data, self.SUCCESS
 
                         logger.error("Error in card payment, {}".format(
                             response.text))
@@ -380,6 +382,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                                 name_on_card=name_on_card))
                         return ({"error": response.json()},
                                 self.CHECKOUTPG_CONNECTION_ERROR)
+                    logger.error(
+                        "Error occurred on checkout card payments for "
+                        "transaction id {} is".format(self.transaction_id))
                     return None, self.CHECKOUTPG_CONNECTION_ERROR
                 else:
                     logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
@@ -445,7 +450,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     logger.info(
                         "Checkoutpg paypal request response, transaction id "
-                        "{} is {}".format(self.transaction_id, response.text))
+                        "{} ".format(self.transaction_id))
 
                     if response:
                         response_data = response.json()
@@ -459,7 +464,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             data_to_update.update(additional_charges)
                             self.update_youpay_transaction_data(
                                 data_to_update)
-                            return response.json(), self.SUCCESS
+                            response_data[IS_SUCCESS] = True
+                            return response_data, self.SUCCESS
 
                         logger.error("Error in paypal payment, {}".format(
                             response.text))
@@ -468,7 +474,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                         data_to_update.update(additional_charges)
                         self.update_youpay_transaction_data(data_to_update)
-                        return ({"error": response.json()},
+                        return (None,
                                 self.CHECKOUTPG_CONNECTION_ERROR)
                     return None, self.CHECKOUTPG_CONNECTION_ERROR
                 else:
@@ -516,10 +522,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         youpay_transaction = self.get_youpay_transaction_data(transaction_id)
 
         if youpay_transaction is None:
-            response = {
-                "error": "Invalid transaction id provided"
-            }
-            return response, self.PAYMENT_FAILED
+            return None, self.TRANSACTION_NOT_FOUND
 
         params = {
             'cko-session-id': data.get('cko_session_id'),
@@ -543,7 +546,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             response_data = response.json()
             redirect, response_data = process_checkoutpg_response_verification(
                 transaction_id, response_data)
-
             if redirect:
                 return response_data, self.SUCCESS
             else:
@@ -552,7 +554,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(
                 "Error while verifying_payment status: {}, reason {} "
                 .format(response.status_code, response.json()))
-            return ({"error": response.json()},
+            return (None,
                     self.CHECKOUTPG_CONNECTION_ERROR)
 
     def create_transaction_in_checkoutpg(self, request_data):
@@ -696,8 +698,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         request_method=REQUEST_METHOD_POST,
                     )
 
-                    res_data = payment_response_data.get(
-                        'payment')
+                    res_data = payment_response_data.get('payment')
                     # to mark status as paid
                     res_data['source'] = PAYMENT_METHOD_APPLEPAY
 
@@ -739,4 +740,4 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "Error on processing applepay status update for transaction"
                 "id {}, err : {}".format(self.transaction_id, str(e)))
             logger.error(msg)
-            return {"error": msg}, self.APPLE_PAY_CONNECTION_ERROR
+            return None, self.APPLE_PAY_CONNECTION_ERROR

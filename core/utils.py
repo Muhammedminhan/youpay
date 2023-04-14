@@ -19,7 +19,9 @@ from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
-    PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY)
+    PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
+    PAYMENT_STATUS_REJECTED_RETRY)
+from services.constants import RESPONSE_CODE_LIST
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -291,7 +293,9 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
     else:
         source = response_data.get('source', None)
-        payment_status = response_data.get("status").lower()
+
+        payment_status = checkout_decline_check(response_data)
+
         approved = response_data.get('approved', False)
 
         if source == PAYMENT_METHOD_APPLEPAY and approved:
@@ -322,3 +326,27 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
 
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
+
+
+def checkout_decline_check(response_data):
+
+    response_code = str(response_data.get('response_code', None))
+
+    if response_code in RESPONSE_CODE_LIST:
+        # this allow retry payments
+        payment_status = PAYMENT_STATUS_DECLINED_RETRY
+    else:
+        # this doesnt allow retry payments
+        payment_status = response_data.get("status").lower()
+
+    return payment_status
+
+
+def tabby_reject_check(response_data):
+
+    payment_status = response_data.get("payment_status")
+
+    if payment_status == PAYMENT_STATUS_REJECTED:
+        payment_status = PAYMENT_STATUS_REJECTED_RETRY
+
+    return payment_status

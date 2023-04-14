@@ -12,9 +12,10 @@ from core.utils import (encrypt_payment_data, decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded)
-from payments.constants import (PAYMENT_STATUS_CANCELLED,
+from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
+                                PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
-                                PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID)
+                                PAYMENT_STATUS_PAID)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -265,6 +266,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     # Preparing response data as per the payment API response
                     data = {
                         "is_redirect": True,
+                        "is_success": False,
                         "redirect_url": redirect_url,
                         "message": self.MESSAGE.get(
                             self.CLIENT_TRANSACTION_VERIFICATION_FAILED),
@@ -320,7 +322,7 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
-            if transaction_object.payment_status == PAYMENT_STATUS_INITIATED:
+            if transaction_object.payment_status in ALLOW_CANCEL_STATUS_LIST:
                 self.update_youpay_transaction_data({
                     'transaction_id': transaction_id,
                     'payment_status': PAYMENT_STATUS_CANCELLED
@@ -342,7 +344,6 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
                 redirect_url = get_redirect_url(
                     transaction_object.failure_url,
                     transaction_id)
-
             return Response({
                 'is_redirect': True,
                 REDIRECT_URL: redirect_url,

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
+from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
@@ -181,10 +182,18 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
         if response:
             if response.get('results', {}).get('payment_status'):
                 logger.info("Verification successful, payment status true for"
-                            "transaction {}".format(transaction_id))
+                            " transaction {}".format(transaction_id))
+                code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
+                response = self.format_b2c_response(response, code)
             else:
-                logger.info("Verification unsuccessful for transaction"
-                            " id {}".format(transaction_id))
+                message = (
+                    "couldnt process b2c Verification for transaction id {}, "
+                    "response : {}".format(transaction_id, response))
+
+                logger.error(message)
+
+                code = self.response_obj.B2CPAYBACK_VERIFICATION_FAILED_TO_PROCESS
+                response = self.format_b2c_response(response, code)
             return Response(response, status=status.HTTP_200_OK)
         else:
             try:
@@ -193,10 +202,34 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                 message = response_text.get('message', None)
                 response = {'errors': {
                     'code': resp_code, 'message': message}}
+                code = self.response_obj.B2CPAYBACK_VERIFICATION_FAILED
+                logger.error("Verification failed for : {}, reason : {}"
+                             .format(transaction_id, response))
+                response = self.format_b2c_response(response, code)
+
             except Exception as e:
-                logger.error("Failed response received from b2cpayback "
-                             "verify endpoint", exc_info=e)
+                logger.error("Exception occurred for transaction id : {}, "
+                             "reason : {}".format(transaction_id, str(e)))
+
                 response = {'errors': {
                     'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}
                 }
+                code = self.response_obj.B2CPAYBACK_VERIFICATION_EXCEPTION
+                response = self.format_b2c_response(response, code)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+    def format_b2c_response(self, data, code):
+
+        errors = data.get('errors')
+        results = data.get('results')
+
+        if results:
+            data.pop('results')
+            data['code'] = code
+            data['message'] = self.response_obj.MESSAGE.get(code)
+
+        if errors:
+            errors['message'] = COMMON_ERROR_MESSAGE_EN
+            errors['code'] = code
+
+        return data

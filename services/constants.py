@@ -12,7 +12,11 @@ PAYMENT_OPTION_NAME_CHOICES = (
 
 RESPONSE_CODE_LIST = [
     '20005',  # Declined - Do not honour
-    '20051',  # Insufficient funds
+
+    # Insufficient Fund case
+    '20051',  # Verify response code from Checkoutpg
+    '34',  # webhook response code from Checkoutpg
+
     '20014',  # Invalid card number
     '012',  # Invalid payment
     '029',
@@ -23,6 +27,7 @@ RESPONSE_CODE_LIST = [
     '20151',  # Declined - Payment authorization initiated but failed
     None
 ]
+
 YOUPAY_SESSION_KEY = "youpay-session-id"
 
 APPLEPAY_MERCHANT_IDENTIFIER = "merchant.com.yougotagift.web.test"

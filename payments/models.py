@@ -237,6 +237,9 @@ class Announcement(AbstractDateTime, AbstractUserBase):
                                 related_name="gateway_announcement")
     offer_message = models.TextField(null=True, blank=True,
                                      help_text='Announcement message')
+    offer_message_arabic = models.TextField(null=True, blank=True,
+                                            help_text='Announcement message '
+                                                      'in arabic')
     is_active = models.BooleanField(default=False,
                                     help_text='Determines whether the '
                                               'announcement is active or not.')

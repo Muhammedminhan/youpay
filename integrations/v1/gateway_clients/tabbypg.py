@@ -8,8 +8,9 @@ from rest_framework.views import APIView
 
 from core.constants import (
     REQUEST_METHOD_POST, PAYMENT_GATEWAY_TABBYPG, REQUEST_METHOD_GET)
-from core.messages import IS_REDIRECT
-from core.utils import get_payment_gateway_config, get_redirect_url
+from core.messages import IS_REDIRECT, IS_SUCCESS, REDIRECT_URL
+from core.utils import (get_payment_gateway_config, get_redirect_url,
+                        tabby_reject_check)
 from integrations.constants import (
     TABBYPG_CREATE_PAYMENT_ENDPOINT,
     PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE,
@@ -21,7 +22,8 @@ from integrations.v1.serializers.tabbypg_payment_request import (
 )
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED)
+    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED,
+    PAYMENT_STATUS_REJECTED_RETRY)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -61,7 +63,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
     def get_tabbypg_payment_data(self, data):
 
-        if (data.get('transaction_data') and data.get('request_data')):
+        if data.get('transaction_data') and data.get('request_data'):
             payment_data = TabbyPGPaymentRequestSerializer(data)
             return payment_data.data
         else:
@@ -154,13 +156,15 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                         self.payment_reference = response_data.get(
                             "payment_ref_no")
-                        self.payment_status = response_data.get(
-                            "payment_status")
+                        self.payment_status = tabby_reject_check(
+                            response_data)
 
                         self.update_youpay_transaction_data(
                             self.prepare_data_to_update())
-                        return ({"error": response.json()}
-                                , self.TABBYPG_CONNECTION_ERROR)
+
+                        response, code = self.process_tabby_failure_response()
+
+                        return response, code
 
                     return ({"error": response_data},
                             self.TABBYPG_CONNECTION_ERROR)
@@ -268,6 +272,20 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 request_type=self.request_type,
                 request_method=self.request_method,
             )
+
+    def process_tabby_failure_response(self):
+        if self.payment_status in [PAYMENT_STATUS_REJECTED,
+                                   PAYMENT_STATUS_REJECTED_RETRY]:
+            code = self.TABBYPG_PAYMENT_REJECTED
+            response = {
+                IS_REDIRECT: False,
+                IS_SUCCESS: False,
+                REDIRECT_URL: None,
+                "message": self.MESSAGE.get(code)
+            }
+            return response, self.TABBYPG_PAYMENT_REJECTED
+        else:
+            return None, self.TABBYPG_CONNECTION_ERROR
 
 
 class TabbyPaymentCancel(YouPayTransactionCRUD, APIView):
