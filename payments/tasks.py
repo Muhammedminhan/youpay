@@ -3,11 +3,15 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 from celery import shared_task
+
+from adcbpgclient.models import ADCBTransactionData
 from payments.models import YouPayTransactionData, ClientNotification
 from integrations.models import GatewayChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_EXPIRED,
-    TRANSACTION_EXPIRE_TIME
+    TRANSACTION_EXPIRE_TIME, PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
+    PAYMENT_METHOD_ADCB_CARD_ONLY,
+    PAYMENT_METHOD_TOUCHPOINTS
 )
 from django.db.models.functions import Now
 from core.utils import wait_redis_lock
@@ -138,6 +142,7 @@ def calculate_checkoutpg_gateway_charge(**kwargs):
         if transaction_obj:
             transaction_obj.gateway_charge = gateway_charge
             transaction_obj.save()
+        return gateway_charge
     except Exception as e:
         logger.error(
             "Unable to store checkoutpg gateway charges for transaction "
@@ -190,19 +195,65 @@ def calculate_gateway_charges(transaction_obj):
     try:
         amount = transaction_obj.amount
         payment_method = transaction_obj.payment_method
-        gateway_charge_obj = get_gateway_charges(payment_method)
-        gateway_charges = Decimal('0.0')
-        if gateway_charge_obj:
-            percentage = gateway_charge_obj.percentage
-            fixed_amount = gateway_charge_obj.fixed_amount
-            if percentage:
-                gateway_charges += (amount * Decimal(percentage / 100))
-            if fixed_amount:
-                gateway_charges += Decimal(fixed_amount)
+
+        adcb_card_methods = [PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
+                             PAYMENT_METHOD_ADCB_CARD_ONLY]
+        if payment_method in adcb_card_methods:
+            adcb_obj = ADCBTransactionData.objects.get(
+                reference_id=transaction_obj.payment_reference)
+            if (payment_method == PAYMENT_METHOD_TOUCHPOINTS_AND_CARD and
+                    adcb_obj.financial_action_response_data):
+                redeem_amount = transaction_obj.redeemed_amount
+                points_charges = calculate_charge(
+                    PAYMENT_METHOD_TOUCHPOINTS, redeem_amount)
+                checkoutpg_gateway_charges = (
+                    calculate_checkoutpg_gateway_charge(
+                        payment_reference=transaction_obj.payment_reference,
+                        financial_action_data=
+                        adcb_obj.financial_action_response_data
+                    ))
+                # total amount = adcb charge + card charge
+                logger.info("adcb card and points fee charges {} and "
+                            "{}".format(checkoutpg_gateway_charges,
+                                        points_charges))
+                total_charges = (Decimal(points_charges) +
+                                 Decimal(checkoutpg_gateway_charges))
+                logger.info("total charges for card and points "
+                            "{}".format(total_charges))
+                return total_charges
+            if (payment_method == PAYMENT_METHOD_ADCB_CARD_ONLY and
+                    adcb_obj.financial_action_response_data):
+                checkoutpg_gateway_charges = (
+                    calculate_checkoutpg_gateway_charge(
+                        payment_reference=transaction_obj.payment_reference,
+                        financial_action_data=
+                        adcb_obj.financial_action_response_data
+                    ))
+                return checkoutpg_gateway_charges
+            else:
+                logger.info(
+                    "Skipping charge calculation for {} as adcb financial "
+                    "action response data is not updated".format(
+                        transaction_obj.transaction_id))
+                return None
+
+        gateway_charges = calculate_charge(payment_method, amount)
         return gateway_charges
     except Exception as e:
         logger.error(
-            "Error in calculating gateway charges for {}, {} with error {}"
-            "".format(transaction_obj.transaction_id,
-                      payment_method, str(e)))
+            "Error in calculating gateway charges for {}, with error {}"
+            "".format(transaction_obj.transaction_id, str(e)))
         return None
+
+
+def calculate_charge(payment_method, amount):
+    gateway_charge_obj = get_gateway_charges(payment_method)
+    gateway_charges = Decimal('0.0')
+    if gateway_charge_obj:
+        percentage = gateway_charge_obj.percentage
+        fixed_amount = gateway_charge_obj.fixed_amount
+        if percentage:
+            gateway_charges += (amount * Decimal(percentage / 100))
+        if fixed_amount:
+            gateway_charges += Decimal(fixed_amount)
+    return gateway_charges
