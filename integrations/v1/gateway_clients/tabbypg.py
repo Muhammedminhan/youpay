@@ -149,7 +149,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
 
                             self.update_youpay_transaction_data(
                                 self.prepare_data_to_update())
-                            return response.json(), self.SUCCESS
+                            response_data[IS_SUCCESS] = True
+                            return response_data, self.SUCCESS
 
                         logger.error("Error in tabbypg payment, {}".format(
                             response.text))
