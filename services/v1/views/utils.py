@@ -2,7 +2,6 @@ import json
 import logging
 
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
-from core.utils import get_settlement_entity
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
@@ -70,8 +69,6 @@ def reformat_payment_request_data(data):
 
         data['order_items'] = order_items
         data['order_history'] = order_history
-        data['settlement_entity'] = get_settlement_entity(
-            currency=data['currency'])
 
         return data
     else:
