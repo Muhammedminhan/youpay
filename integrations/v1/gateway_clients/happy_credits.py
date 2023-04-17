@@ -4,7 +4,7 @@ import logging
 import requests
 
 from core.constants import (PAYMENT_GATEWAY_HAPPYCREDITS, REQUEST_METHOD_POST)
-from core.messages import IS_REDIRECT, IS_SUCCESS, REDIRECT_URL
+from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, decrypt_payment_data)
 from integrations.constants import (
     HAPPYCREDITS_HUB_CODE, HAPPYCREDITS_CACHE_KEY,
@@ -38,6 +38,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
         self.payment_reference = None
         self.gateway_request_data = None
         self.gateway_response_data = None
+        self.payment_gateway = PAYMENT_GATEWAY_HAPPYCREDITS
+        self.currency = None
 
     def get_payment_header(self):
         """
@@ -132,6 +134,9 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                     data.get('transaction_data').get('transaction_id'))
             else:
                 return None, self.TRANSACTION_NOT_FOUND
+
+            self.currency = data.get('transaction_data').get('currency')
+
             if self.happy_credit_config:
                 request_data = self.get_credit_balance_request_data(data)
                 self.gateway_request_data = request_data

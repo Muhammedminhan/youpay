@@ -52,6 +52,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_status = None
         self.payment_reference = None
         self.channel_code = None
+        self.currency = None
 
     def prepare_data_to_update(self, **kwargs):
 
@@ -65,6 +66,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             "payment_method": self.payment_method,
             "payment_gateway": self.payment_gateway,
             "name_on_card": name_on_card,
+            'currency': self.currency,
         }
 
         return data_to_update
@@ -222,6 +224,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
+        self.currency = transaction_data.get('currency')
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
@@ -316,6 +319,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
+        self.currency = transaction_data.get('currency')
+        
         name_on_card = ""
 
         verify_response, verify_status = self.verify_transaction(
@@ -410,6 +415,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
+        self.currency = transaction_data.get('currency')
+        
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
@@ -635,6 +642,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_method = PAYMENT_METHOD_APPLEPAY
         self.payment_reference = transaction_data.get('payment_reference')
         self.transaction_obj = request_data.get('transaction_obj')
+        self.currency = transaction_data.get('currency')
+
         response_data = {}
 
         # payment_stage may be pending, authorized, paid
