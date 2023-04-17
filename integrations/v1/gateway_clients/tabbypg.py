@@ -47,6 +47,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         self.request_type = None
         self.request_method = None
         self.transaction_obj = None
+        self.currency = None
 
     def prepare_data_to_update(self):
 
@@ -95,6 +96,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         self.payment_method = PAYMENT_METHOD_TABBY
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
+        self.currency = transaction_data.get('currency')
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
