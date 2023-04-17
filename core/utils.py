@@ -350,5 +350,3 @@ def tabby_reject_check(response_data):
         payment_status = PAYMENT_STATUS_REJECTED_RETRY
 
     return payment_status
-
-
