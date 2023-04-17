@@ -642,8 +642,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_method = PAYMENT_METHOD_APPLEPAY
         self.payment_reference = transaction_data.get('payment_reference')
         self.transaction_obj = request_data.get('transaction_obj')
-        self.currency = self.transaction_obj.get('currency')
-        
+        self.currency = transaction_data.get('currency')
+
         response_data = {}
 
         # payment_stage may be pending, authorized, paid
