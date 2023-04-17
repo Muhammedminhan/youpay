@@ -1,8 +1,8 @@
 import logging
 
-from payments.models import YouPayTransactionData
 from integrations.constants import (ADCB_CLIENT_CODE,
                                     ADCB_CHECKOUTPG_PAYMENT_NOT_PAID)
+from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
 
@@ -76,15 +76,18 @@ def format_adcb_verify_data(request_data, transaction_obj):
     return request_data
 
 
-def get_adcb_verify_redirect_url(response_data, transaction_obj): # partial redemption
-    if (response_data.get("results", {}).get("payment_status") and
-            response_data.get("results", {}).get("redemption_status")):
+def get_adcb_verify_redirect_url(response_data,
+                                 transaction_obj):  # partial redemption
+    payment_status = response_data.get("results", {}).get("payment_status")
+    redemption_status = (
+        response_data.get("results", {}).get("redemption_status"))
+
+    if payment_status and redemption_status:
         logger.info("Partial payment through card and touchpoints for id "
                     "{}".format(transaction_obj.transaction_id))
         return get_adcb_response_url(
             transaction_obj.success_url, transaction_obj.transaction_id)
-    elif (response_data.get("results", {}).get("payment_status") and not
-    response_data.get("results", {}).get("redemption_status")):
+    elif payment_status and not redemption_status:
         logger.info("Full amount paid through card for id {}".format(
             transaction_obj.transaction_id))
         return get_adcb_response_url(
@@ -122,17 +125,3 @@ def get_adcb_response_url(url, transaction_id):
     else:
         return_url = None
     return return_url
-
-
-def get_credit_redemption_data(request_data, transaction_obj):
-    deduct_request_data = dict()
-    deduct_request_data["payment_reference"] = request_data.get(
-        'payment_reference')
-    deduct_request_data["amount_in_payment_currency"] = str(
-        transaction_obj.amount)
-    deduct_request_data["payment_currency"] = transaction_obj.currency
-    deduct_request_data["platform"] = transaction_obj.platform
-    deduct_request_data["user_email"] = transaction_obj.customer_email
-    deduct_request_data["user_phone"] = transaction_obj.customer_phone
-    deduct_request_data["user_id"] = request_data.get('user_id')
-    return deduct_request_data

@@ -6,7 +6,9 @@ from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
 )
-from payments.constants import PAYMENT_STATUS_INITIATED
+from payments.constants import (PAYMENT_STATUS_INITIATED,
+                                LANGUAGE_CODE_EN,
+                                LANGUAGE_CODE_AR)
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
@@ -121,25 +123,20 @@ def get_payment_options(transaction_obj, gateways):
     for gateway in gateways:
         code = gateway.code
 
-        # get checkoutpg payment options
         response_payment_options = get_checkoutpg_payment_options(
             code, gateway, response_payment_options)
 
-        # get b2cpayback payment options
         response_payment_options = get_b2cpayback_payment_options(
             code, store_currency, response_payment_options)
 
-        # get tabbypg payment options
         response_payment_options = get_tabbypg_payment_options(
             code, store_currency, response_payment_options)
 
-        # get amazonpg payment options
         response_payment_options = get_amazonpg_payment_options(
             code, store_currency, response_payment_options)
 
-        # get happycredits payment options
         response_payment_options = get_haapycredits_payment_options(
-            code, store_currency, response_payment_options
+            code, response_payment_options
         )
 
     return response_payment_options
@@ -194,8 +191,7 @@ def get_amazonpg_payment_options(code, store_currency,
     return response_payment_options
 
 
-def get_haapycredits_payment_options(code, store_currency,
-                                 response_payment_options):
+def get_haapycredits_payment_options(code, response_payment_options):
     if code == HAPPYCREDITS_HUB_CODE:
         response_payment_options['happy_credits'] = True
 
@@ -217,17 +213,32 @@ def get_announcements(platform):
             announcement_objs)
         for payment_options_dict in payment_options_announcements:
             payment_options_announcements_dict[payment_options_dict.get(
-                'payment_option__name')] = payment_options_dict.get(
-                'offer_message')
+                'payment_option__name')] = {
+                LANGUAGE_CODE_EN: payment_options_dict.get(
+                    'offer_message'),
+                LANGUAGE_CODE_AR: payment_options_dict.get(
+                    'offer_message_arabic')}
         for obj in announcement_objs:
             if obj.gateway.code == B2CPAYBACK_HUB_CODE:
-                announcements_dict['b2cpayback'] = obj.offer_message
+                announcements_dict['b2cpayback'] = {
+                    LANGUAGE_CODE_EN: obj.offer_message,
+                    LANGUAGE_CODE_AR: obj.offer_message_arabic
+                }
             elif obj.gateway.code == TABBYPG_HUB_CODE:
-                announcements_dict['tabbypg'] = obj.offer_message
+                announcements_dict['tabbypg'] = {
+                    LANGUAGE_CODE_EN: obj.offer_message,
+                    LANGUAGE_CODE_AR: obj.offer_message_arabic
+                }
             elif obj.gateway.code == QITAF_HUB_CODE:
-                announcements_dict['qitafpg'] = obj.offer_message
+                announcements_dict['qitafpg'] = {
+                    LANGUAGE_CODE_EN: obj.offer_message,
+                    LANGUAGE_CODE_AR: obj.offer_message_arabic
+                }
             elif obj.gateway.code == AMAZONPG_HUB_CODE:
-                announcements_dict['amazonpg'] = obj.offer_message
+                announcements_dict['amazonpg'] = {
+                    LANGUAGE_CODE_EN: obj.offer_message,
+                    LANGUAGE_CODE_AR: obj.offer_message_arabic
+                }
     announcements_dict['checkoutpg'] = payment_options_announcements_dict
     return announcements_dict
 
@@ -235,5 +246,6 @@ def get_announcements(platform):
 def get_payment_options_announcements(announcement_objs):
     options_values_dict = announcement_objs.exclude(
         payment_option=None).values(
-        'payment_option__name', 'offer_message').distinct()
+        'payment_option__name', 'offer_message',
+        'offer_message_arabic').distinct()
     return options_values_dict

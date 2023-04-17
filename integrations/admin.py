@@ -1,12 +1,15 @@
 import logging
 
+from django import forms
 from django.contrib import admin
 from django.core.cache import cache
+from django.forms import ValidationError
 
 from core.admin import AdminAbstract
-from integrations.models import (PaymentGateway, PaymentGatewayAPI,
-                                 PaymentOptions, AdditionalChargeConfiguration)
 from integrations.forms import AdditionalChargeConfigurationAdminForm
+from integrations.models import (PaymentGateway, PaymentGatewayAPI,
+                                 PaymentOptions,
+                                 AdditionalChargeConfiguration)
 from .constants import (B2CP_CACHE_KEY, CHECKOUTPG_CACHE_KEY,
                         AMAZONPG_CACHE_KEY, TABBYPG_CACHE_KEY,
                         HAPPYCREDITS_CACHE_KEY)
@@ -56,12 +59,34 @@ class PaymentOptionsAdmin(AdminAbstract):
     list_filter = ('gateway', 'created_by',)
 
 
+class AdditionalChargeConfigurationForm(forms.ModelForm):
+    class Meta:
+        model = AdditionalChargeConfiguration
+        fields = '__all__'
+
+    def clean_percentage(self):
+        percentage = self.cleaned_data.get('percentage')
+        # percentage validation
+        if percentage and (100 < percentage or percentage < 0):
+            raise ValidationError('Invalid value for percentage')
+        return percentage
+
+    def clean_fixed_amount(self):
+        fixed_amount = self.cleaned_data.get('fixed_amount')
+        # fixed_amount validation
+        if fixed_amount and fixed_amount < 0:
+            raise ValidationError('Invalid value for percentage')
+        return fixed_amount
+
+
 class AdditionalChargeConfigurationAdmin(AdminAbstract):
     form = AdditionalChargeConfigurationAdminForm
     list_display = ('payment_option', 'percentage', 'fixed_amount',
                     'is_active', 'created_at', 'updated_at')
     search_fields = ('payment_option__name',)
     list_filter = ('payment_option', 'created_by',)
+
+    form = AdditionalChargeConfigurationForm
 
 
 admin.site.register(PaymentGateway, PaymentGatewayAdmin)
