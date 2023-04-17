@@ -135,8 +135,12 @@ class YouPayTransactionCRUD(object):
         data_dict['is_flagged'] = data.get('is_flagged', None)
         data_dict['retry_count'] = data.get('retry_count', None)
 
+        data_dict['currency'] = data.get('currency', None)
+
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
+                payment_gateway=data_dict['payment_gateway'],
+                currency=data_dict['currency'],
                 transaction_id=transaction_id)
 
         try:
@@ -179,11 +183,12 @@ class YouPayTransactionCRUD(object):
         currency = kwargs.get('currency', None)
         payment_gateway = kwargs.get('payment_gateway', None)
 
-        if (payment_gateway == None or payment_gateway == '' or
-                currency == None or currency == ''):
+        if (payment_gateway is None or payment_gateway == '' or
+                currency is None or currency == ''):
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             currency = transaction_obj.currency
-            payment_gateway = transaction_obj.payment_gateway
+            if payment_gateway is None or payment_gateway == '':
+                payment_gateway = transaction_obj.payment_gateway
 
         settlement_entity = None
         if payment_gateway == PAYMENT_GATEWAY_HAPPYCREDITS:
