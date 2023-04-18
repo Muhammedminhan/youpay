@@ -106,4 +106,5 @@ def calculate_adcb_card_charges(sender, instance, created, **kwargs):
             update_calculated_gateway_charges(transaction_obj.transaction_id)
         except Exception as e:
             logger.error("Error calling gateway charge calculation for "
-                         "adcb transaction {}".format(instance.reference_id))
+                         "adcb transaction {}".format(instance.reference_id),
+                         exc_info=e)
