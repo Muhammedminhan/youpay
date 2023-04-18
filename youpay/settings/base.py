@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'checkoutpgclient',
     'amazonpgclient',
     'tabbypgclient',
+    'adcbpgclient',
     'happycreditsclient',
 
     # 3rd party apps
