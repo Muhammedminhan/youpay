@@ -1,9 +1,11 @@
 from rest_framework import serializers
+
+from core.utils import encrypt_string
+from core.utils import get_app_config
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     ADCB_TOKEN_TYPE, ADCB_REDEMPTION_CURRENCY)
-from core.utils import get_app_config
 from services.v1.views.common import add_payment_gateway_info_in_url
-from core.utils import encrypt_string
+
 
 class PointBalanceRequestSerializer(serializers.Serializer):
     card_no = serializers.SerializerMethodField()
@@ -90,9 +92,10 @@ class AuthenticateRequestSerializer(serializers.Serializer):
         return data.get('data', {}).get('checkout_amount')
 
     def get_response_url(self, data):
-        url = get_app_config().front_end_redirect_url
+        url = get_app_config().front_end_domain
         params = '?id=' + encrypt_string(data.get('transaction_data', {}).get(
             'transaction_id')) + '&redemption_reference_id=' + data.get(
             'data', {}).get('reference_id')
-        return add_payment_gateway_info_in_url(url, params,
+        return add_payment_gateway_info_in_url(data.get('transaction_data'),
+                                               url, params,
                                                B2CPAYBACK_HUB_CODE)

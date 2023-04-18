@@ -136,9 +136,10 @@ class TabbyPGPaymentRequestSerializer(serializers.Serializer):
 
 
 def common_response_url(data):
-    url = get_app_config().front_end_redirect_url
+    url = get_app_config().front_end_domain
     params = '?id=' + encrypt_string(data.get('transaction_data').get(
         'transaction_id'))
 
-    return add_payment_gateway_info_in_url(url, params,
+    return add_payment_gateway_info_in_url(data.get('transaction_data'), url,
+                                           params,
                                            TABBYPG_HUB_CODE)

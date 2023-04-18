@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.constants import PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
@@ -40,6 +41,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         self.payment_request_obj = None
         self.return_data = None
 
+
     def post(self, request):
         """
         decrypted_data : stores the decrypted data from request
@@ -48,6 +50,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         data with keys as fields in PaymentRequestData table
 
         """
+        # TODO : Congnitive complexity fix required
         logger.info("session data is {}, keys {}".format(
             request.session, request.session.keys()))
 
@@ -114,6 +117,12 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         redirect_url = PAYMENT_REDIRECT_URL + "/{}/{}".format(
                             language, encrypted_transaction_id)
+
+                        if (data_formatted.get(
+                                'platform') == PURCHASE_PLATFORM_IOS or
+                                data_formatted.get(
+                                    'platform') == PURCHASE_PLATFORM_ANDROID):
+                            redirect_url = redirect_url + "/?platform=app"
 
                         response_data = {
                             "status": status.HTTP_201_CREATED,
@@ -298,7 +307,13 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             body, response.text))
         return response
 
-
+    def prepair_frontend_redirect_url(self, transaction_obj):
+        """Prepair frontend redirect url"""
+        # TODO Sonar issue fix
+        redirect_url + "/?order_reference={}"
+        redirect_url = get_redirect_url(
+            transaction_obj.redirect_url, transaction_obj.transaction_id)
+        return redirect_url
 class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
     Test API endpoint for encrypting request data

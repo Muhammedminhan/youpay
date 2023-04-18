@@ -6,7 +6,8 @@ from rest_framework import status
 
 from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
-    PAYMENT_GATEWAY_B2CPAYBACK
+    PAYMENT_GATEWAY_B2CPAYBACK, PURCHASE_PLATFORM_IOS,
+    PURCHASE_PLATFORM_ANDROID
 )
 from core.messages import (
     ERROR_MISSING_FIELDS, IS_SUCCESS
@@ -314,12 +315,21 @@ def get_webhook_api_key_from_payment_gateway(hubcode):
         return None
 
 
-def add_payment_gateway_info_in_url(url, params, code):
+def add_payment_gateway_info_in_url(data, url, params, code):
     """
     Method to add payment gateway info in url
     sample : https://fe-domain.com/payment-response/+ params + hubcode
     """
+    print("DATA : ", data)
+    platform = data.get('platform', None)
+    print("platform", platform)
     url = url + params + "&gty=" + code
+
+    if (platform == PURCHASE_PLATFORM_IOS or
+            platform == PURCHASE_PLATFORM_ANDROID):
+        url = url + "&platform=app"
+
+    print("\n\n\nFinal URL : ", url, "\n\n\n")
     return url
 
 
