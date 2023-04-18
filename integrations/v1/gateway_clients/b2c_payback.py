@@ -5,6 +5,7 @@ import requests
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
+from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
                         decrypt_string
                         )
@@ -87,41 +88,59 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     'data': request_data,
                     'transaction_data': transaction_data.data
                 }
-                balance_request_data = PointBalanceRequestSerializer(
-                    request_dict)
-                request_data_json = json.dumps(balance_request_data.data)
-                b2c_gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
-                b2c_payback_domain = b2c_gateway_obj.domain
-                url = b2c_payback_domain + ADCB_POINT_BALANCE_API
-                ADCB_HEADERS['X-API-KEY'] = b2c_gateway_obj.api_key
-                response = requests.post(url, data=request_data_json,
-                                         headers=ADCB_HEADERS)
-                self.create_youpay_to_payment_gateways_data(
-                    transaction_obj=transaction_obj,
-                    transaction_id=transaction_obj.transaction_id,
-                    request_data=request_data_json,
-                    response_data=response.text,
-                    request_method=REQUEST_METHOD_POST,
-                    request_type=PAYMENT_REQUEST_POINT_BALANCE
-                )
-                if response:
-                    return response, transaction_obj.transaction_id
+                verify_response, verify_status = self.verify_transaction(
+                    transaction_data.data)
+                logger.info(
+                    "Verify response: {} - {}".format(verify_status,
+                                                      verify_response))
+
+                is_verified = verify_response.get('is_verified', False)
+                if verify_status == status.HTTP_200_OK and is_verified:
+                    balance_request_data = PointBalanceRequestSerializer(
+                        request_dict)
+                    request_data_json = json.dumps(balance_request_data.data)
+                    b2c_gateway_obj = get_payment_gateway_config(
+                        B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                    b2c_payback_domain = b2c_gateway_obj.domain
+                    url = b2c_payback_domain + ADCB_POINT_BALANCE_API
+                    response = requests.post(url, data=request_data_json,
+                                             headers=ADCB_HEADERS)
+                    self.create_youpay_to_payment_gateways_data(
+                        transaction_obj=transaction_obj,
+                        transaction_id=transaction_obj.transaction_id,
+                        request_data=request_data_json,
+                        response_data=response.text,
+                        request_method=REQUEST_METHOD_POST,
+                        request_type=PAYMENT_REQUEST_POINT_BALANCE
+                    )
+                    if response:
+                        return response, transaction_obj.transaction_id, None
+                    else:
+                        logger.error(
+                            "Error response received from point balance api "
+                            "call to b2cpayback for transaction {0}, {1}"
+                            "".format(transaction_obj.transaction_id,
+                                      response.text))
+                        return response, None, None
                 else:
-                    logger.error(
-                        "Error response received from point balance api call "
-                        "to b2cpayback for transaction {0}, {1}".format(
-                            transaction_obj.transaction_id, response.text))
-                    return response, None
+                    msg = (
+                        "Youpay b2c transaction verification failed for "
+                        "transaction id {} response is : {} ".format(
+                            transaction_obj.transaction_id, verify_response))
+                    logger.error(msg)
+                    return (verify_response, None,
+                            self.CLIENT_TRANSACTION_VERIFICATION_FAILED)
+
             except Exception as e:
-                logger.error("point balance api call to b2cpayback failed for"
-                             " for transaction {}".format(
-                                request_transaction_id), exc_info=e)
-                return None, None
+                logger.error(
+                    "point balance api call to b2cpayback failed for "
+                    "transaction {}".format(
+                        request_transaction_id), exc_info=e)
+                return None, None, None
         else:
             logger.error("Invalid transaction id received for point balance "
                          "api")
-            return None, None
+            return None, None, None
 
     def authenticate_redemption(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
@@ -130,60 +149,47 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 decrypt_string(request_transaction_id))
             transaction_data = YouPayTransactionDataSerializer(
                 transaction_obj)
-            verify_response, verify_status = self.verify_transaction(
-                transaction_data.data)
-            logger.info(
-                "Verify response: {} - {}".format(verify_status,
-                                                  verify_response))
 
-            is_verified = verify_response.get('is_verified', False)
-            if verify_status == status.HTTP_200_OK and is_verified:
-                request_dict = {
-                    'data': request_data,
-                    'transaction_data': transaction_data.data
-                }
-                authenticate_request_data = AuthenticateRequestSerializer(
-                    request_dict)
-                update_data = {
-                    'cko-card-token': request_data.get('cko-card-token')}
-                update_data.update(authenticate_request_data.data)
-                request_data_json = json.dumps(update_data)
-                b2c_gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY,
-                    B2CPAYBACK_HUB_CODE)
-                b2c_payback_domain = b2c_gateway_obj.domain
-                url = b2c_payback_domain + ADCB_AUTHENTICATE_API
-                response = requests.post(url, data=request_data_json,
-                                         headers=ADCB_HEADERS)
-                self.create_youpay_to_payment_gateways_data(
-                    transaction_obj=transaction_obj,
-                    transaction_id=transaction_obj.transaction_id,
-                    request_data=request_data_json,
-                    response_data=response.text,
-                    request_method=REQUEST_METHOD_POST,
-                    request_type=PAYMENT_REQUEST_AUTHENTICATE
-                )
-                if response:
-                    if response.json().get('url'):
-                        response_data = response.json()
-                        response_data['is_redirect'] = True
-                        return response_data, transaction_obj
-                    else:
-                        return response.json(), transaction_obj
+            request_dict = {
+                'data': request_data,
+                'transaction_data': transaction_data.data
+            }
+            authenticate_request_data = AuthenticateRequestSerializer(
+                request_dict)
+            update_data = {
+                'cko-card-token': request_data.get('cko-card-token')}
+            update_data.update(authenticate_request_data.data)
+            request_data_json = json.dumps(update_data)
+            b2c_gateway_obj = get_payment_gateway_config(
+                B2CP_CACHE_KEY,
+                B2CPAYBACK_HUB_CODE)
+            b2c_payback_domain = b2c_gateway_obj.domain
+            url = b2c_payback_domain + ADCB_AUTHENTICATE_API
+            response = requests.post(url, data=request_data_json,
+                                     headers=ADCB_HEADERS)
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=transaction_obj,
+                transaction_id=transaction_obj.transaction_id,
+                request_data=request_data_json,
+                response_data=response.text,
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_AUTHENTICATE
+            )
+            if response:
+                if response.json().get('url'):
+                    response_data = response.json()
+                    response_data['is_redirect'] = True
+                    return response_data, transaction_obj
                 else:
-                    logger.error(
-                        "Error response received from authenticate api call "
-                        "to b2cpayback for transaction {0}, {1}".format(
-                            transaction_obj.transaction_id,
-                            response.text))
-                    return response, None
+                    return response.json(), transaction_obj
             else:
-                msg = (
-                    "Youpay transaction verification failed for transaction"
-                    " id {} response is : {} ".format(
-                        transaction_obj.transaction_id, verify_response))
-                logger.error(msg)
-                return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+                logger.error(
+                    "Error response received from authenticate api call "
+                    "to b2cpayback for transaction {0}, {1}".format(
+                        transaction_obj.transaction_id,
+                        response.text))
+                return response, None
+
         except Exception as e:
             logger.error(
                 "authenticate api call to b2cpayback failed for "
@@ -217,8 +223,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 )
                 if response:
                     response_data = response.json()
-                    response_data["is_redirect"] = True
-                    response_data["redirect_url"] = (
+                    response_data[IS_REDIRECT] = True
+                    response_data[IS_SUCCESS] = True
+                    response_data[REDIRECT_URL] = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
                     return response_data, transaction_obj
@@ -261,9 +268,11 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 elif response_data.get("code") == ADCB_CHECKOUTPG_ERROR:
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False
+                    response_data[IS_SUCCESS] = False
                 else:
                     payment_status = PAYMENT_STATUS_PAID
                     approved_status = True
+                    response_data[IS_SUCCESS] = True
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(

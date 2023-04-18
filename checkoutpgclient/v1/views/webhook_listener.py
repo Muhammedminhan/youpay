@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
+from core.utils import checkout_decline_check
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
 
@@ -166,6 +167,7 @@ class WebhookListener(APIView):
 
     def prepare_youpay_transaction_update_data(self, request_data,
                                                payment_reference):
+        payment_status = checkout_decline_check(request_data)
         try:
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(
@@ -173,7 +175,8 @@ class WebhookListener(APIView):
             if transaction_obj:
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
-                    "payment_status": request_data.get("status").lower(),
+                    "payment_status": (
+                        payment_status.lower() if payment_status else None),
                     "payment_reference": request_data.get("reference"),
                     "approved": request_data.get("approved"),
                     "response_summary": request_data.get("response_summary"),

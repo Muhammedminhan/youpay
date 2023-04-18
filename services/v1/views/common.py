@@ -1,19 +1,26 @@
 import logging
 
+from django.db import transaction
 from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
-from django.db import transaction
 
 from core.constants import (
-    PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_TABBYPG,
-    PAYMENT_GATEWAY_B2CPAYBACK)
-from core.messages import ERROR_MISSING_FIELDS
+    PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
+    PAYMENT_GATEWAY_B2CPAYBACK
+)
+
 from core.messages import (
-    REDIRECT_URL, TRANSACTION_MSG, IS_REDIRECT
+    ERROR_MISSING_FIELDS, IS_SUCCESS
+)
+from core.messages import (
+    REDIRECT_URL,
+    TRANSACTION_MSG,
+    IS_REDIRECT
 )
 from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 from integrations.models import PaymentGateway
-from payments.constants import PAYMENT_STATUS_PAID
+from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
+                                YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -62,8 +69,9 @@ class YouPayTransactionCRUD(object):
         """
         with transaction.atomic():
             try:
-                transaction_obj = YouPayTransactionData.objects.get(
-                    happy_credit_reference=payment_reference)
+                transaction_obj = (
+                    YouPayTransactionData.objects.select_for_update().get(
+                        happy_credit_reference=payment_reference))
                 return transaction_obj
             except YouPayTransactionData.DoesNotExist:
                 logger.error("Unable to find youpay transaction object for {}"
@@ -75,7 +83,7 @@ class YouPayTransactionCRUD(object):
             try:
                 transaction_obj = (
                     YouPayTransactionData.objects.select_for_update().get(
-                    transaction_id=transaction_id))
+                        transaction_id=transaction_id))
                 return transaction_obj
             except YouPayTransactionData.DoesNotExist:
                 logger.error("Unable to find youpay transaction object for {}"
@@ -98,7 +106,7 @@ class YouPayTransactionCRUD(object):
         data_dict['card_bin'] = data.get('card_bin', None)
         data_dict['card_last4'] = data.get('card_last4', None)
         data_dict['card_issuer_country'] = data.get('card_issuer_country',
-                                                        None)
+                                                    None)
         data_dict['approved'] = data.get('approved', None)
         data_dict['response_summary'] = data.get('response_summary', None)
         data_dict['name_on_card'] = data.get('name_on_card', None)
@@ -126,6 +134,15 @@ class YouPayTransactionCRUD(object):
         data_dict['is_fraud'] = data.get('is_fraud', None)
         data_dict['is_flagged'] = data.get('is_flagged', None)
         data_dict['retry_count'] = data.get('retry_count', None)
+
+        data_dict['currency'] = data.get('currency', None)
+
+        if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
+            data_dict['settlement_entity'] = self.get_settlement_entity(
+                payment_gateway=data_dict['payment_gateway'],
+                currency=data_dict['currency'],
+                transaction_id=transaction_id)
+
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
@@ -155,6 +172,43 @@ class YouPayTransactionCRUD(object):
         except Exception as e:
             logger.error("Unable to update the transaction object, {0}"
                          "".format(str(e)))
+
+    def get_settlement_entity(self, **kwargs):
+        """
+        This method is used to get settlement entity
+
+        If the currency is AED then the entity value will be Yougotagift UAE
+
+        If the currency is SAR then the entity value will be Yougotagift KSA
+
+        For ADCB → It will always be Yougotagift UAE
+
+        For Happy Credits → It will be blank.
+        """
+
+        transaction_id = kwargs.get('transaction_id', None)
+        currency = kwargs.get('currency', None)
+        payment_gateway = kwargs.get('payment_gateway', None)
+
+        if (payment_gateway is None or payment_gateway == '' or
+                currency is None or currency == ''):
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+            currency = transaction_obj.currency
+            if payment_gateway is None or payment_gateway == '':
+                payment_gateway = transaction_obj.payment_gateway
+
+        settlement_entity = None
+        if payment_gateway == PAYMENT_GATEWAY_HAPPYCREDITS:
+            settlement_entity = None
+            return settlement_entity
+        elif currency == "AED" or payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+            settlement_entity = YOUGOTAGIFT_UAE
+        elif currency == "SAR":
+            settlement_entity = YOUGOTAGIFT_KSA
+        else:
+            logger.error("Settlement entity not found for currency {}"
+                         "".format(currency))
+        return settlement_entity
 
 
 class ClientValidator(object):
@@ -214,7 +268,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: False,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
         }
         return True, response_data
 
@@ -226,7 +281,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: True
         }
         return True, response_data
     else:
@@ -235,7 +291,8 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: transaction_message
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
         }
         return False, response_data
 

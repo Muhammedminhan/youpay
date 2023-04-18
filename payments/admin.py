@@ -2,9 +2,10 @@ from django.contrib import admin
 
 from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
+from payments.forms import AnnouncementForm
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification, AdditionalCharge)
-from payments.forms import AnnouncementForm
+
 
 class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
     readonly_fields = ('created_at', 'updated_at',)
@@ -23,9 +24,10 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         'customer_phone', 'loyalty_level')
     search_fields = ('transaction_id', 'customer_email', 'invoice_id',
                      'payment_reference', 'order_reference')
-    list_filter = ('created_at', 'payment_status', 'api_client',
+    list_filter = ('settlement_entity', 'payment_status', 'api_client',
                    'payment_gateway', 'payment_method', 'currency',
-                   "platform", "is_gcc_card", "is_flagged", "is_fraud",)
+                   "platform", "is_gcc_card", "is_flagged", "is_fraud",
+                   'created_at',)
     raw_id_fields = ('api_client',)
 
     inlines = [
@@ -55,8 +57,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
         ('Payment details', {
-            'fields': ('amount', 'currency', 'country_code',
-                       'payment_reference', 'transaction_id',
+            'fields': ('amount', 'currency', 'country_code', 'transaction_id',
+                       'payment_reference', 'settlement_entity',
                        'payment_gateway', 'channel_code', 'payment_method',
                        'payment_scheme', 'platform', 'response_summary',
                        'service_fee', 'base_amount', 'VAT_amount',

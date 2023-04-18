@@ -29,6 +29,20 @@ class AdditionalChargeConfigurationAdminForm(forms.ModelForm):
                                   'amount to complete the configuration.')
         return self.cleaned_data
 
+    def clean_percentage(self):
+        percentage = self.cleaned_data.get('percentage')
+        # percentage validation
+        if percentage and (100 < percentage or percentage < 0):
+            raise ValidationError('Invalid value for percentage')
+        return percentage
+
+    def clean_fixed_amount(self):
+        fixed_amount = self.cleaned_data.get('fixed_amount')
+        # fixed_amount validation
+        if fixed_amount and fixed_amount < 0:
+            raise ValidationError('Invalid value for fixed amount')
+        return fixed_amount
+
 
 class GatewayChargeConfigurationAdminForm(forms.ModelForm):
     class Meta:

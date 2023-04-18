@@ -203,7 +203,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                     "for transaction id {} response is : "
                     "{} ".format(self.transaction_id, verify_response))
                 logger.error(msg)
-                return None, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             error = "Error in amazonpg authentication api: {}".format(e)
             logger.error("Exception in amazonpg payment: {}".format(e))

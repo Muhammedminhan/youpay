@@ -12,9 +12,10 @@ from core.utils import (encrypt_payment_data, decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded)
-from payments.constants import (PAYMENT_STATUS_CANCELLED,
+from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
+                                PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
-                                PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PAID)
+                                PAYMENT_STATUS_PAID)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -102,7 +103,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     self.payment_request_obj = serializer.save()
                     transaction_response = self.create_youpay_transaction_data(
                         data_formatted)
-                    if transaction_response['status'] == status.HTTP_201_CREATED:
+                    if transaction_response[
+                        'status'] == status.HTTP_201_CREATED:
 
                         encrypted_transaction_id = encrypt_string(
                             transaction_response['data'][
@@ -228,9 +230,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 Verify transaction with client by calling verify url
                 """
 
-                api_key, api_secret = self.get_api_client_keys(
-                    transaction_obj)
-
                 verify_headers = {
                     'Accept': 'application/json',
                     "API-KEY": transaction_obj.api_client.api_key,
@@ -261,9 +260,19 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                         "Client verify url {} not "
                         "responding".format(client_verify_url))
                     """Client verify url not responding"""
-                    return_data = self.get_400_message(
-                        message="Client verify url not working")
-                    return return_data, status.HTTP_400_BAD_REQUEST
+                    redirect_url = get_redirect_url(
+                        transaction_obj.cancel_url, transaction_id)
+
+                    # Preparing response data as per the payment API response
+                    data = {
+                        "is_redirect": True,
+                        "is_success": False,
+                        "redirect_url": redirect_url,
+                        "message": self.MESSAGE.get(
+                            self.CLIENT_TRANSACTION_VERIFICATION_FAILED),
+                        "code": self.CLIENT_TRANSACTION_VERIFICATION_FAILED,
+                    }
+                    return data, status.HTTP_400_BAD_REQUEST
 
         else:
             response_data = self.get_error_dict(
@@ -313,7 +322,7 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
-            if transaction_object.payment_status == PAYMENT_STATUS_INITIATED:
+            if transaction_object.payment_status in ALLOW_CANCEL_STATUS_LIST:
                 self.update_youpay_transaction_data({
                     'transaction_id': transaction_id,
                     'payment_status': PAYMENT_STATUS_CANCELLED
@@ -323,9 +332,8 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
                                                 transaction_id)
                 logger.info(
                     "Payment cancelled for transaction_id : {}, "
-                    "order reference :"
-                    "{}".format(transaction_id,
-                                transaction_object.order_reference))
+                    "order reference : {}".format(
+                        transaction_id, transaction_object.order_reference))
 
             elif transaction_object.payment_status == PAYMENT_STATUS_PAID:
                 redirect_url = get_redirect_url(
@@ -335,7 +343,6 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
                 redirect_url = get_redirect_url(
                     transaction_object.failure_url,
                     transaction_id)
-
             return Response({
                 'is_redirect': True,
                 REDIRECT_URL: redirect_url,
@@ -514,8 +521,8 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
                 return Response(data,
                                 status=status.HTTP_200_OK)
         except Exception as e:
-            logger.error("Error in fetching additional charges for :"
-                         " {} {}".format(transaction_id, str(e)))
+            logger.error("Error in fetching additional charges :"
+                         "{}".format(str(e)))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
