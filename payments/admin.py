@@ -62,6 +62,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'payment_gateway', 'channel_code', 'payment_method',
                        'payment_scheme', 'platform', 'response_summary',
                        'service_fee', 'base_amount', 'VAT_amount',
+                       'gateway_charge',
                        )
         }),
         ('URLs', {

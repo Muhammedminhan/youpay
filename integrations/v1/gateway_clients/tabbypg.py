@@ -22,11 +22,13 @@ from integrations.v1.serializers.tabbypg_payment_request import (
 )
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_METHOD_TABBY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED,
+    PAYMENT_METHOD_TABBY_UAE, PAYMENT_METHOD_TABBY_KSA,
+    PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY)
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
+from services.constants import CURRENCY_UAE
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +83,16 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         }
         return headers
 
+    def set_payment_method(self, transaction_obj):
+        """
+        returns: payment methos based on currency
+        """
+        if transaction_obj:
+            if transaction_obj.currency == CURRENCY_UAE:
+                self.payment_method = PAYMENT_METHOD_TABBY_UAE
+            else:
+                self.payment_method = PAYMENT_METHOD_TABBY_KSA
+
     def create_session(self, data):
         """
         Method for creating session with Tabbypg
@@ -93,11 +105,12 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         transaction_data = data.get('transaction_data')
 
         self.transaction_id = transaction_data.get('transaction_id')
-        self.payment_method = PAYMENT_METHOD_TABBY
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
+        transaction_obj = self.get_youpay_transaction_data(
+            self.transaction_id)
+        self.set_payment_method(transaction_obj)
         self.currency = transaction_data.get('currency')
-
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
         logger.info(
@@ -119,8 +132,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                            TABBYPG_CREATE_PAYMENT_ENDPOINT)
                     headers = self.get_payment_header()
 
-                    transaction_obj = self.get_youpay_transaction_data(
-                        self.transaction_id)
                     response = requests.post(url, data=payment_data_to_send,
                                              headers=headers)
                     logger.info("TabbyPG response is {}".format(response))

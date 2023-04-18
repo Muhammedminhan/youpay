@@ -8,6 +8,7 @@ from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
     PAYMENT_GATEWAY_B2CPAYBACK
 )
+
 from core.messages import (
     ERROR_MISSING_FIELDS, IS_SUCCESS
 )
@@ -158,6 +159,13 @@ class YouPayTransactionCRUD(object):
                 logger.info(
                     "Transaction object updated successfully for {}"
                     "".format(transaction_id))
+
+                if (transaction_obj.payment_status == PAYMENT_STATUS_PAID
+                        and not transaction_obj.gateway_charge):
+                    from payments.tasks import (
+                        update_calculated_gateway_charges)
+                    update_calculated_gateway_charges.delay(
+                        transaction_id=transaction_id)
             else:
                 logger.error("unable to find the transaction object for {}"
                              "".format(transaction_id))
