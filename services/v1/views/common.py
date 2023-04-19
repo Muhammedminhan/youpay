@@ -333,16 +333,11 @@ def add_payment_gateway_info_in_url(**kwargs):
         path = app_config.redirect_path
         params = params + "&gty=" + code
 
-        print("frontend_domain : {} \nlanguage {}\npath {}\nparams {}".format(
-            frontend_domain, language, path, params))
-
-        if (platform == PURCHASE_PLATFORM_IOS or
-                platform == PURCHASE_PLATFORM_ANDROID):
+        if platform in [PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID]:
             params = params + "&platform=app"
 
         url = (
             "{}{}/{}{}".format(frontend_domain, language, path, params))
-        print("url : {}".format(url))
         return url
     except Exception as e:
         logger.error(
