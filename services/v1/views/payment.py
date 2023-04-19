@@ -50,7 +50,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         data with keys as fields in PaymentRequestData table
 
         """
-        # TODO : Congnitive complexity fix required
         logger.info("session data is {}, keys {}".format(
             request.session, request.session.keys()))
 
@@ -115,13 +114,13 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         language = data_formatted.get('language')
 
-                        redirect_url = PAYMENT_REDIRECT_URL + "/{}/{}".format(
+                        redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
                             language, encrypted_transaction_id)
 
-                        if (data_formatted.get(
-                                'platform') == PURCHASE_PLATFORM_IOS or
-                                data_formatted.get(
-                                    'platform') == PURCHASE_PLATFORM_ANDROID):
+                        platform = data_formatted.get('platform')
+
+                        if platform in [PURCHASE_PLATFORM_IOS,
+                                        PURCHASE_PLATFORM_ANDROID]:
                             redirect_url = redirect_url + "/?platform=app"
 
                         response_data = {
@@ -308,9 +307,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         return response
 
     def prepair_frontend_redirect_url(self, transaction_obj):
-        """Prepair frontend redirect url"""
-        # TODO Sonar issue fix
-        redirect_url + "/?order_reference={}"
+        """Prepare frontend redirect url"""
         redirect_url = get_redirect_url(
             transaction_obj.redirect_url, transaction_obj.transaction_id)
         return redirect_url

@@ -92,10 +92,12 @@ class AuthenticateRequestSerializer(serializers.Serializer):
         return data.get('data', {}).get('checkout_amount')
 
     def get_response_url(self, data):
-        url = get_app_config().front_end_domain
+        app_config = get_app_config()
         params = '?id=' + encrypt_string(data.get('transaction_data', {}).get(
             'transaction_id')) + '&redemption_reference_id=' + data.get(
             'data', {}).get('reference_id')
-        return add_payment_gateway_info_in_url(data.get('transaction_data'),
-                                               url, params,
-                                               B2CPAYBACK_HUB_CODE)
+
+        return add_payment_gateway_info_in_url(
+            transaction_data=data.get('transaction_data'),
+            app_config=app_config, params=params,
+            code=B2CPAYBACK_HUB_CODE)

@@ -53,13 +53,13 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('request_data').get("card_number")
 
     def get_return_url(self, data):
-        url = get_app_config().front_end_domain
+        app_config = get_app_config()
         params = '?id=' + encrypt_string(data.get('transaction_data').get(
             'transaction_id'))
-
-        return add_payment_gateway_info_in_url(data.get('transaction_data'),
-                                               url, params,
-                                               AMAZONPG_HUB_CODE)
+        return add_payment_gateway_info_in_url(
+            transaction_data=data.get('transaction_data'),
+            app_config=app_config, params=params,
+            code=AMAZONPG_HUB_CODE)
 
 
 class AmazonPGTokenizationSerializer(serializers.Serializer):

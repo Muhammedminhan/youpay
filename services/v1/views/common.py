@@ -315,22 +315,41 @@ def get_webhook_api_key_from_payment_gateway(hubcode):
         return None
 
 
-def add_payment_gateway_info_in_url(data, url, params, code):
+def add_payment_gateway_info_in_url(**kwargs):
     """
     Method to add payment gateway info in url
-    sample : https://fe-domain.com/payment-response/+ params + hubcode
+    sample : https://fe-domain.com/language/path/+ params + hubcode
     """
-    print("DATA : ", data)
-    platform = data.get('platform', None)
-    print("platform", platform)
-    url = url + params + "&gty=" + code
+    try:
 
-    if (platform == PURCHASE_PLATFORM_IOS or
-            platform == PURCHASE_PLATFORM_ANDROID):
-        url = url + "&platform=app"
+        transaction_data = kwargs.get('transaction_data', None)
+        app_config = kwargs.get('app_config', None)
+        params = kwargs.get('params', None)
+        code = kwargs.get('code', None)
 
-    print("\n\n\nFinal URL : ", url, "\n\n\n")
-    return url
+        language = transaction_data.get('language', None)
+        platform = transaction_data.get('platform', None)
+
+        frontend_domain = app_config.front_end_domain
+        path = app_config.redirect_path
+        params = params + "&gty=" + code
+
+        print("frontend_domain : {} \nlanguage {}\npath {}\nparams {}".format(
+            frontend_domain, language, path, params))
+
+        if (platform == PURCHASE_PLATFORM_IOS or
+                platform == PURCHASE_PLATFORM_ANDROID):
+            params = params + "&platform=app"
+
+        url = (
+            "{}{}/{}{}".format(frontend_domain, language, path, params))
+        print("url : {}".format(url))
+        return url
+    except Exception as e:
+        logger.error(
+            "Exception occurred while adding payment gateway info "
+            "in url : {}".format(str(e)))
+        return None
 
 
 def get_adcb_saved_fields(saved_fields, data_dict, transaction_obj):
@@ -338,7 +357,6 @@ def get_adcb_saved_fields(saved_fields, data_dict, transaction_obj):
         if value == 0 or value is False:
             transaction_obj.__dict__[key] = value
             saved_fields.append(key)
-
     return saved_fields
 
 
