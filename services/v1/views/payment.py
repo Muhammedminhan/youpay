@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.constants import PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
@@ -39,6 +40,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
     def __init__(self):
         self.payment_request_obj = None
         self.return_data = None
+
 
     def post(self, request):
         """
@@ -112,8 +114,14 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         language = data_formatted.get('language')
 
-                        redirect_url = PAYMENT_REDIRECT_URL + "/{}/{}".format(
+                        redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
                             language, encrypted_transaction_id)
+
+                        platform = data_formatted.get('platform')
+
+                        if platform in [PURCHASE_PLATFORM_IOS,
+                                        PURCHASE_PLATFORM_ANDROID]:
+                            redirect_url = redirect_url + "/?platform=app"
 
                         response_data = {
                             "status": status.HTTP_201_CREATED,
@@ -298,7 +306,11 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             body, response.text))
         return response
 
-
+    def prepair_frontend_redirect_url(self, transaction_obj):
+        """Prepare frontend redirect url"""
+        redirect_url = get_redirect_url(
+            transaction_obj.redirect_url, transaction_obj.transaction_id)
+        return redirect_url
 class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
     Test API endpoint for encrypting request data

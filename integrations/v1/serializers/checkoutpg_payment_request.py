@@ -74,11 +74,15 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         return data.get('request_data').get("is_save_user_token", False)
 
     def get_response_url(self, data):
-        url = get_app_config().front_end_redirect_url
-        params = '?id=' + encrypt_string(data.get('transaction_data').get(
-            'transaction_id'))
-        return add_payment_gateway_info_in_url(url, params,
-                                               CHECKOUTPG_HUB_CODE)
+        app_config = get_app_config()
+        params = '?id=' + encrypt_string(
+            data.get('transaction_data').get(
+                'transaction_id'))
+
+        return add_payment_gateway_info_in_url(
+            transaction_data=data.get('transaction_data'),
+            app_config=app_config, params=params,
+            code=CHECKOUTPG_HUB_CODE)
 
     def get_card_type(self, data):
         return ""
