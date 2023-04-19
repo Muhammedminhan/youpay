@@ -49,6 +49,8 @@ class AuthenticateRequestSerializer(serializers.Serializer):
     selected_amount = serializers.SerializerMethodField()
     checkout_amount = serializers.SerializerMethodField()
     response_url = serializers.SerializerMethodField()
+    amount_in_aed = serializers.SerializerMethodField()
+    invoice_currency = serializers.SerializerMethodField()
 
     def get_is_save_user_token(self, data):
         return False
@@ -101,3 +103,9 @@ class AuthenticateRequestSerializer(serializers.Serializer):
             transaction_data=data.get('transaction_data'),
             app_config=app_config, params=params,
             code=B2CPAYBACK_HUB_CODE)
+
+    def get_amount_in_aed(self, data):
+        return str(data.get('transaction_data', {}).get('amount'))
+
+    def get_invoice_currency(self, data):
+        return ADCB_REDEMPTION_CURRENCY
