@@ -108,7 +108,6 @@ class PaymentStatusCheckMiddleware(object):
                             payment_stage == PAYMENT_STATUS_PAID
                             and transaction_obj.payment_method ==
                             PAYMENT_METHOD_APPLEPAY):
-
                         retry_count = transaction_obj.retry_count + 1
 
                         youpay_obj.update_youpay_transaction_data(

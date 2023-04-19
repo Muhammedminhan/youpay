@@ -1,7 +1,7 @@
 import json
 import logging
-
 import requests
+
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
@@ -17,7 +17,8 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    PAYMENT_REQUEST_VERIFY)
+                                    PAYMENT_REQUEST_VERIFY,
+                                    ADCB_CHECKOUTPG_ERROR)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -29,7 +30,7 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
     AuthenticateRequestSerializer
 )
 from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
-                                PAYMENT_STATUS_PAID)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -192,8 +193,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
         except Exception as e:
             logger.error(
                 "authenticate api call to b2cpayback failed for "
-                "transaction {}".format(request_transaction_id),
-                exc_info=e)
+                "transaction {}".format(
+                    decrypt_string(request_transaction_id)), exc_info=e)
             return None, None
 
     def point_redemption(self, request_data):
@@ -206,8 +207,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     request_data, transaction_obj
                 )
                 request_data_json = json.dumps(formatted_data)
-                b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                             B2CPAYBACK_HUB_CODE)
+                b2c_gateway_obj = get_payment_gateway_config(
+                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_REDEMPTION_API
                 response = requests.post(url, data=request_data_json,
@@ -250,8 +251,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     decrypt_string(request_transaction_id))
                 formatted_data = format_adcb_verify_data(
                     request_data, transaction_obj)
-                b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                             B2CPAYBACK_HUB_CODE)
+                b2c_gateway_obj = get_payment_gateway_config(
+                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_VERIFY_API
                 formatted_data.pop("transaction_id")
@@ -264,13 +265,14 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 approved_status = transaction_obj.approved
                 if response_data.get("redirect_url") is None:
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                elif response_data.get("code") == ADCB_CHECKOUTPG_ERROR:
+                    payment_status = PAYMENT_STATUS_FAILED
+                    approved_status = False
                     response_data[IS_SUCCESS] = False
-
                 else:
                     payment_status = PAYMENT_STATUS_PAID
                     approved_status = True
                     response_data[IS_SUCCESS] = True
-
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(
