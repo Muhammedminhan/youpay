@@ -1,6 +1,14 @@
+import logging
+
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+from payments.models import YouPayTransactionData
 from .constants import (PURCHASE_PLATFORM_CHOICES, REDEMPTION_METHOD_CHOICES,
                         REDEMPTION_METHOD_NONE)
+
+logger = logging.getLogger(__name__)
 
 DECIMAL_MAX_DIGITS = 15
 DECIMAL_PLACES = 2
@@ -77,3 +85,26 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         choices=REDEMPTION_METHOD_CHOICES)
     customer_email = models.CharField(
         max_length=500, null=True, blank=True)
+    payment_id = models.CharField(
+        max_length=200, null=True, blank=True,
+        help_text='for checkoutpg transactions, payment id received from '
+                  'checkout.com')
+    financial_action_response_data = models.JSONField(
+        null=True, blank=True,
+        help_text='for checkoutpg transactions, response data received after '
+                  'calling financial-actions api.')
+
+
+@receiver(post_save, sender=ADCBTransactionData)
+def calculate_adcb_card_charges(sender, instance, created, **kwargs):
+    if instance.financial_action_response_data:
+        try:
+            logger.info("adcbpgclient updated with financial action data")
+            from payments.tasks import update_calculated_gateway_charges
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=instance.reference_id)
+            update_calculated_gateway_charges(transaction_obj.transaction_id)
+        except Exception as e:
+            logger.error("Error calling gateway charge calculation for "
+                         "adcb transaction {}".format(instance.reference_id),
+                         exc_info=e)

@@ -66,6 +66,10 @@ class WebhookListener(APIView):
                     request_data.get('payment_reference'))
                 transaction_obj.is_fraud = request_data.get('is_fraud')
                 transaction_obj.is_flagged = request_data.get('is_flagged')
+                transaction_obj.payment_id = request_data.get('payment_id',
+                                                              None)
+                transaction_obj.financial_action_response_data = (
+                    request_data.get('financial_action_response_data', None))
 
                 # Update the card bin & last4 if it is present in data
                 card_bin = request_data.get('card_bin', None)
@@ -116,7 +120,11 @@ class WebhookListener(APIView):
                     payment_method=request_data.get('payment_method',
                                                     PAYMENT_METHOD_CARD),
                     payment_scheme=request_data.get('payment_scheme',
-                                                    None)
+                                                    None),
+                    payment_id=request_data.get('payment_id',
+                                                None),
+                    financial_action_response_data=request_data.get(
+                        'financial_action_response_data', None)
                 )
 
             data_to_update = self.prepare_youpay_transaction_update_data(
