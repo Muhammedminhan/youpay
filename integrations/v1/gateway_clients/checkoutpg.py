@@ -244,7 +244,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     payment_data = self.get_checkout_payment_data(data)
                     self.channel_code = payment_data.get('channel_code')
                     logger.info(
-                        "Youpay sending payment data is {}".format(
+                        "Youpay sending savedcard payment data is {}".format(
                             payment_data))
                     payment_data_to_send = json.dumps(payment_data)
                     url = (self.checkoutpg_config.domain +

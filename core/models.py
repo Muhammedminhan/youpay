@@ -51,13 +51,11 @@ class CustomerProfile(models.Model):
 class AppConfig(AbstractDateTime, AbstractUserBase):
     front_end_domain = models.CharField(
         max_length=500, null=True, blank=True,
-        help_text="front-end domain for the"
-                  " redirection from the product")
-    front_end_redirect_url = models.CharField(
+        help_text="Youpay front end domain, ex : https://www.youpay-frontend.com/")
+    redirect_path = models.CharField(
         max_length=500, null=True,
         blank=True,
-        help_text="front-end url for the"
-                  " redirection from the gateway")
+        help_text="verify payment path for youpay, ex : redirect/")
 
 
 class Currency(AbstractDateTime, AbstractUserBase):
