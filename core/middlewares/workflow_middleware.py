@@ -125,7 +125,7 @@ class PaymentStatusCheckMiddleware(object):
 
         except TransactionNotFound:
             log_message = "TransactionNotFound"
-            code = youpay_message_obj.UNKNOWN_ERR
+            code = youpay_message_obj.TRANSACTION_NOT_FOUND
             logger.error(log_message)
             self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
 
