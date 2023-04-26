@@ -151,9 +151,8 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
 
                 response = requests.post(url, data=request_data,
                                          headers=headers)
-                logger.info("\n\nResponse from credit balance api "
+                logger.info("Response from credit balance api "
                             "{}".format(response))
-                print(response.status_code)
 
                 if response:
                     response_decrypted = json.loads(response.json())
