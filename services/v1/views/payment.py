@@ -113,7 +113,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         language = data_formatted.get('language')
 
-                        redirect_url = PAYMENT_REDIRECT_URL + "{}/{}/".format(
+                        redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
                             language, encrypted_transaction_id)
 
                         response_data = {
