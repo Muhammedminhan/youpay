@@ -270,7 +270,12 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                     "Error while deducting amount from happycredits for "
                     "transaction {} reason {} ".format(self.transaction_id,
                                                        response))
-                return None, self.HAPPY_CREDITS_CONNECTION_ERROR
+                response = {
+                    IS_REDIRECT: False,
+                    IS_SUCCESS: False,
+                    REDIRECT_URL: None,
+                }
+                return response, self.HAPPY_CREDITS_CONNECTION_ERROR
         except Exception as e:
             logger.error("Exception in happy credits "
                          "deduct balance session: {}".format(str(e)))
