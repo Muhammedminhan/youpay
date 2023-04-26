@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (encrypt_payment_data, decrypt_payment_data,
@@ -116,12 +115,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
                             language, encrypted_transaction_id)
-
-                        platform = data_formatted.get('platform')
-
-                        if platform in [PURCHASE_PLATFORM_IOS,
-                                        PURCHASE_PLATFORM_ANDROID]:
-                            redirect_url = redirect_url + "/?platform=app"
 
                         response_data = {
                             "status": status.HTTP_201_CREATED,
