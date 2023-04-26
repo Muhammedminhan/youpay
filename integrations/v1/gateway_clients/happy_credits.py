@@ -151,8 +151,9 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
 
                 response = requests.post(url, data=request_data,
                                          headers=headers)
-                logger.info("Response from credit balance api "
+                logger.info("\n\nResponse from credit balance api "
                             "{}".format(response))
+                print(response.status_code)
 
                 if response:
                     response_decrypted = json.loads(response.json())
@@ -270,7 +271,12 @@ class HappyCreditsManagement(PaymentRequestView, PaymentHandlers):
                     "Error while deducting amount from happycredits for "
                     "transaction {} reason {} ".format(self.transaction_id,
                                                        response))
-                return None, self.HAPPY_CREDITS_CONNECTION_ERROR
+                response = {
+                    IS_REDIRECT: False,
+                    IS_SUCCESS: False,
+                    REDIRECT_URL: None,
+                }
+                return response, self.HAPPY_CREDITS_CONNECTION_ERROR
         except Exception as e:
             logger.error("Exception in happy credits "
                          "deduct balance session: {}".format(str(e)))
