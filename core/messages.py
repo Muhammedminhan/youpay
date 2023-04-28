@@ -12,7 +12,9 @@ MIDDLEWARE_STATUS_CHECK_MESSAGE = ("Seems like this transaction is already "
 MIDDLEWARE_ALREADY_PAID_MESSAGE = (
     "Transaction Unsuccessful : You are trying to pay again "
     "for a successful transaction. ")
-GATEWAY_ERROR_OCCURRED = "Gateway error occurred"
+GATEWAY_ERROR_OCCURRED = (
+    "Service is temporarily unavailable please choose another payment option,"
+    " sorry for the inconvenience caused")
 
 REDIRECT_URL = 'redirect_url'
 TRANSACTION_MSG = 'transaction_message'
