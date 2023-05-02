@@ -167,6 +167,9 @@ class WebhookListener(APIView):
 
     def prepare_youpay_transaction_update_data(self, request_data,
                                                payment_reference):
+        request_data['response_code'] = request_data.get(
+            'checkout_response_code', None)
+
         payment_status = checkout_decline_check(request_data)
         try:
             transaction_obj = (
