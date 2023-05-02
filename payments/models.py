@@ -216,6 +216,11 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         validators=[DecimalValidator(12, 4)],
         help_text="used to store total amount after processing fee "
                   "calculation")
+    gateway_charge = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True,
+        validators=[DecimalValidator(12, 4)],
+        help_text="Used to store calculated gateway charges "
+                  "based on the configuration")
     settlement_entity = models.CharField(
         max_length=100, null=True, blank=True,
         choices=SETTLEMENT_ENTITY_CHOICES,

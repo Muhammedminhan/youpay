@@ -1,6 +1,7 @@
 import json
 import logging
 
+from core.constants import PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
@@ -120,6 +121,8 @@ def get_payment_options(transaction_obj, gateways):
 
     response_payment_options = {}
     store_currency = transaction_obj.cart_currency
+    platform = transaction_obj.platform
+
     for gateway in gateways:
         code = gateway.code
 
@@ -136,7 +139,7 @@ def get_payment_options(transaction_obj, gateways):
             code, store_currency, response_payment_options)
 
         response_payment_options = get_haapycredits_payment_options(
-            code, response_payment_options
+            code, response_payment_options, platform
         )
 
     return response_payment_options
@@ -191,9 +194,15 @@ def get_amazonpg_payment_options(code, store_currency,
     return response_payment_options
 
 
-def get_haapycredits_payment_options(code, response_payment_options):
-    if code == HAPPYCREDITS_HUB_CODE:
-        response_payment_options['happy_credits'] = True
+def get_haapycredits_payment_options(code, response_payment_options,
+                                     platform):
+
+    # happycredits is active only for Android and IOS Platforms
+    response_payment_options['happy_credits'] = False
+
+    if platform in [PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS]:
+        if code == HAPPYCREDITS_HUB_CODE:
+            response_payment_options['happy_credits'] = True
 
     return response_payment_options
 

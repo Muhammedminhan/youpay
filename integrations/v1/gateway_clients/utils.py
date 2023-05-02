@@ -1,7 +1,8 @@
 import logging
 
 from integrations.constants import (ADCB_CLIENT_CODE,
-                                    ADCB_CHECKOUTPG_PAYMENT_NOT_PAID)
+                                    ADCB_CHECKOUTPG_PAYMENT_NOT_PAID,
+                                    CHECKOUT_UAE_CHANNEL_CODE)
 from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ def format_adcb_redemption_data(request_data, transaction_obj):
 
 def format_adcb_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
-    request_data['channel_code'] = ADCB_CLIENT_CODE
+    request_data['channel_code'] = CHECKOUT_UAE_CHANNEL_CODE
     return request_data
 
 

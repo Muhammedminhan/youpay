@@ -1,11 +1,13 @@
 from django.db import models
 
-from core.constants import REQUEST_METHOD_CHOICES, REQUEST_METHOD_NONE
-from core.models import AbstractDateTime, AbstractUserBase
+from core.constants import (REQUEST_METHOD_CHOICES, REQUEST_METHOD_NONE,
+                            CHARGE_TYPE, CHARGE_TYPE_FIXED)
+from core.models import AbstractDateTime, AbstractUserBase, Currency
 from core.validators import DecimalValidator
 from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
                                     PAYMENT_REQUEST_TYPE_CHOICES)
-from services.constants import PAYMENT_OPTION_NAME_CHOICES
+from services.constants import (PAYMENT_OPTION_NAME_CHOICES,
+                                TOKEN_TYPE_ADCB_POINTS)
 
 YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
 
@@ -138,3 +140,21 @@ class AdditionalChargeConfiguration(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return str(self.payment_option)
+
+
+class GatewayChargeConfiguration(AbstractDateTime, AbstractUserBase):
+    payment_mode = models.CharField(
+        max_length=100,
+        choices=PAYMENT_OPTION_NAME_CHOICES, help_text='Chosen payment mode')
+    charge_type = models.CharField(
+        choices=CHARGE_TYPE, max_length=50, default=CHARGE_TYPE_FIXED)
+    fixed_amount = models.FloatField(default=None, blank=True, null=True)
+    percentage = models.FloatField(default=None, blank=True, null=True)
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE,
+                                 related_name="gateway_charge_currency")
+    is_active = models.BooleanField(
+        default=False, help_text='Denotes whether the configuration '
+                                 'is active or not.')
+
+    def __str__(self):
+        return self.payment_mode

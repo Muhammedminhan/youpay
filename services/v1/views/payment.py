@@ -40,6 +40,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         self.payment_request_obj = None
         self.return_data = None
 
+
     def post(self, request):
         """
         decrypted_data : stores the decrypted data from request
@@ -112,7 +113,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         language = data_formatted.get('language')
 
-                        redirect_url = PAYMENT_REDIRECT_URL + "/{}/{}".format(
+                        redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
                             language, encrypted_transaction_id)
 
                         response_data = {
@@ -298,7 +299,11 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             body, response.text))
         return response
 
-
+    def prepair_frontend_redirect_url(self, transaction_obj):
+        """Prepare frontend redirect url"""
+        redirect_url = get_redirect_url(
+            transaction_obj.redirect_url, transaction_obj.transaction_id)
+        return redirect_url
 class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
     Test API endpoint for encrypting request data
