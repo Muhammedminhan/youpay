@@ -30,7 +30,6 @@ from integrations.v1.serializers.checkoutpg_payment_request import (
 from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_NONE, PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_PENDING,
-                                PAYMENT_STATUS_ERROR,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
                                 PAYMENT_METHOD_APPLEPAY
@@ -288,10 +287,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     logger.error("Error in savedcard payment, {}".format(
                         response.text))
-                    self.payment_status = PAYMENT_STATUS_ERROR
-
-                    self.update_youpay_transaction_data(
-                        self.prepare_data_to_update())
 
                     return ({"error": response.json()},
                             self.CHECKOUTPG_CONNECTION_ERROR)
@@ -381,10 +376,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                         logger.error("Error in card payment, {}".format(
                             response.text))
-                        self.payment_status = PAYMENT_STATUS_ERROR
-                        self.update_youpay_transaction_data(
-                            self.prepare_data_to_update(
-                                name_on_card=name_on_card))
+
                         return ({"error": response.json()},
                                 self.CHECKOUTPG_CONNECTION_ERROR)
                     logger.error(
@@ -476,7 +468,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                         logger.error("Error in paypal payment, {}".format(
                             response.text))
-                        self.payment_status = PAYMENT_STATUS_ERROR
                         data_to_update = self.prepare_data_to_update()
 
                         data_to_update.update(additional_charges)
@@ -618,8 +609,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     logger.error("Error in paypal payment, {}".format(
                         checkoutpg_response.text))
-
-                    self.payment_status = PAYMENT_STATUS_ERROR
 
                     return ({"error": checkoutpg_response.json()},
                             self.CHECKOUTPG_CONNECTION_ERROR)
