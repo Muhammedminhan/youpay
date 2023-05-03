@@ -101,6 +101,7 @@ class WebhookListener(APIView):
                     reference))
             if transaction_obj:
                 data_to_update = {
+                    'transaction_id': transaction_obj.transaction_id,
                     'redeemed_amount': request_data.get("redeemed_amount"),
                     'redeemed_points': request_data.get("redeemed_points"),
                     'payable_amount': request_data.get("payable_amount"),
