@@ -34,11 +34,12 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
             if response_code == (
                     self.response_obj.CLIENT_TRANSACTION_VERIFICATION_FAILED):
                 return Response(response, status=status.HTTP_200_OK)
-
             if response and response.status_code == 200:
                 response_data = response.json()
                 self.update_youpay_transaction_data({
                     'transaction_id': transaction_id,
+                    'payment_reference': response_data.get('reference_id',
+                                                           None),
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                     'payment_status': PAYMENT_STATUS_PENDING,
                     'card_bin': request_data.get('card_no', "")[0:6],

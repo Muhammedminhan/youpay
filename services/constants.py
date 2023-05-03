@@ -17,11 +17,10 @@ PAYMENT_OPTION_NAME_CHOICES = (
 )
 
 RESPONSE_CODE_LIST = [
-    '20005',  # Declined - Do not honour
+    '20005',  # Declined - Do not honour checkout
 
     # Insufficient Fund case
-    '20051',  # Verify response code from Checkoutpg
-    '34',  # webhook response code from Checkoutpg
+    '20051',  # Verify response code from Checkout
 
     '20014',  # Invalid card number
     '012',  # Invalid payment
