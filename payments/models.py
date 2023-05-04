@@ -225,6 +225,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         max_length=100, null=True, blank=True,
         choices=SETTLEMENT_ENTITY_CHOICES,
         help_text="used to store settlement entity")
+    is_guest = models.BooleanField(
+        default=False,
+        help_text='Denotes whether the payment is done by guest user or not.')
 
 
 @receiver(post_save, sender=YouPayTransactionData)
