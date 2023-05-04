@@ -265,3 +265,56 @@ def update_financial_action_charges(**kwargs):
     used to update transactiondata table from checkoutpgclient with financial
     action response data breakdowns
     """
+    transaction_data_id = kwargs.get('pk', None)
+    financial_action_data = kwargs.get('financial_action_data', None)
+    if transaction_data_id:
+        for financial_action in financial_action_data:
+            for break_downs in financial_action.get('breakdown'):
+                update_breakdown_fee(transaction_data_id, break_downs)
+        logger.info("Updated financial action charge breakdowns "
+                    "successfully")
+
+
+def update_breakdown_fee(transaction_data_id, break_downs):
+    from checkoutpgclient.models import TransactionData
+    breakdown_type = break_downs.get('breakdown_type')
+    if breakdown_type == "Authorization Fixed Fee":
+        TransactionData.objects.filter(
+            id=transaction_data_id).update(
+            gateway_fee_authorization=break_downs.get(
+                'holding_currency_amount'))
+    elif breakdown_type == "Void Fixed Fee":
+        TransactionData.objects.filter(
+            id=transaction_data_id).update(
+            gateway_fee_void=break_downs.get(
+                'holding_currency_amount'))
+    elif breakdown_type == "Refund Fixed Fee":
+        TransactionData.objects.filter(
+            id=transaction_data_id).update(
+            gateway_fee_refund=break_downs.get(
+                'holding_currency_amount'))
+    elif breakdown_type == "Blended Variable Fee":
+        TransactionData.objects.filter(
+            id=transaction_data_id).update(
+            blended_variable_fee=break_downs.get(
+                'holding_currency_amount'))
+    elif breakdown_type == "Authorization Fixed Fee Tax":
+        TransactionData.objects.filter(
+            id=transaction_data_id).update(
+            gateway_fee_authorization_vat=break_downs.get(
+                'holding_currency_amount'))
+    elif breakdown_type == "Void Fixed Fee Tax":
+        TransactionData.objects.filter(
+            id=transaction_data_id).update(
+            gateway_fee_void_vat=break_downs.get(
+                'holding_currency_amount'))
+    elif breakdown_type == "Refund Fixed Fee Tax":
+        TransactionData.objects.filter(
+            id=transaction_data_id).update(
+            gateway_fee_refund_vat=break_downs.get(
+                'holding_currency_amount'))
+    elif breakdown_type == "Blended Variable Fee Tax":
+        TransactionData.objects.filter(
+            id=transaction_data_id).update(
+            blended_variable_fee_vat=break_downs.get(
+                'holding_currency_amount'))
