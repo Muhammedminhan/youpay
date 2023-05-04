@@ -10,8 +10,6 @@ from adcbpgclient.models import ADCBTransactionData
 from adcbpgclient.libs.authentication import SignatureAuthentication
 from adcbpgclient.v1.serializers.adcbtransactiondata_serializer import (
     ADCBTransactionDataSerializer)
-from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
-from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +33,6 @@ class WebhookListener(APIView):
     def post(self, request):
         request_data = json.loads(request.data)
         try:
-            b2cpayback_obj = B2CPaybackManager()
             invoice = str(request_data.get('invoice', None))
             logger.info("B2cpayback webhook received for invoice {}".format(
                 invoice))
@@ -54,14 +51,6 @@ class WebhookListener(APIView):
 
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
-                data_to_update = self.prepare_youpay_transaction_update_data(
-                    request_data, reference)
-                if data_to_update:
-                    b2cpayback_obj.update_youpay_transaction_data(
-                        data_to_update)
-                    logger.info("B2cpayback webhook listener updated "
-                                "youpaytransactiondata for reference "
-                                "{}".format(reference))
                 response_data = {'message': "B2cpayback webhook listener "
                                             "successfully processed data",
                                  'status': True}
@@ -93,40 +82,3 @@ class WebhookListener(APIView):
             },
             content_type='application/json'
         )
-
-    def prepare_youpay_transaction_update_data(self, request_data, reference):
-        try:
-            transaction_obj = (
-                self.get_youpay_transaction_data_with_payment_reference(
-                    reference))
-            if transaction_obj:
-                data_to_update = {
-                    'redeemed_amount': request_data.get("redeemed_amount"),
-                    'redeemed_points': request_data.get("redeemed_points"),
-                    'payable_amount': request_data.get("payable_amount"),
-                    'available_amount': request_data.get("available_amount"),
-                    'available_points': request_data.get("available_points"),
-                    'is_full_redemption': request_data.get(
-                        "is_full_redemption")
-                }
-                return data_to_update
-            else:
-                logger.info(
-                    "Transaction object not found for payment reference "
-                    "{}".format(reference))
-                return None
-        except Exception as e:
-            logger.error("Error while preparing data for youpay transaction "
-                         "update {}".format(e))
-
-    def get_youpay_transaction_data_with_payment_reference(self,
-                                                           payment_reference):
-        try:
-            transaction_obj = YouPayTransactionData.objects.get(
-                payment_reference=payment_reference)
-            return transaction_obj
-        except YouPayTransactionData.DoesNotExist:
-            logger.error(
-                "Unable to find youpay transaction object with payment"
-                "_reference {}".format(payment_reference))
-            return None
