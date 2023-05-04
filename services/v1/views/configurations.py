@@ -218,6 +218,8 @@ class ConfigViewSet(ViewSet):
             cart_base_amount = transaction.cart_base_amount
             cart_VAT_amount = transaction.cart_VAT_amount
 
+            is_guest = transaction.is_guest
+
             if transaction.payment_status == PAYMENT_STATUS_PAID:
                 redirect_url = transaction.success_url
 
@@ -256,7 +258,9 @@ class ConfigViewSet(ViewSet):
                 "cart_base_amount": cart_base_amount,
 
                 "redirect_url": redirect_url,
-                "announcements": announcements_dict
+                "announcements": announcements_dict,
+
+                "is_guest": is_guest
             },
             "integration_response": {
                 "checkoutpg": {

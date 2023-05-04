@@ -50,8 +50,7 @@ ONE_MB = 1048576
 CURRENCY_UAE = "AED"
 CURRENCY_KSA = "SAR"
 
-TABBYPG_STORE_CURRENCIES = [CURRENCY_UAE,
-                            CURRENCY_KSA]  # tabbypg active stores
+TABBYPG_STORE_CURRENCIES = [CURRENCY_KSA, ]  # tabbypg active stores
 ADCBPG_STORE_CURRENCIES = [CURRENCY_UAE, ]  # adcb active stores
 AMAZONPG_STORE_CURRENCIES = [CURRENCY_UAE,
                              CURRENCY_KSA]  # amazonpg active stores

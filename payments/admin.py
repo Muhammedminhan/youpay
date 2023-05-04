@@ -27,7 +27,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     list_filter = ('settlement_entity', 'payment_status', 'api_client',
                    'payment_gateway', 'payment_method', 'currency',
                    "platform", "is_gcc_card", "is_flagged", "is_fraud",
-                   'created_at',)
+                   'created_at', 'is_guest')
     raw_id_fields = ('api_client',)
 
     inlines = [
@@ -37,7 +37,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Customer details', {
             'fields': ('customer_name', 'customer_email', 'customer_phone',
-                       'ip', 'language',
+                       'is_guest', 'ip', 'language',
                        )
         }),
         ('Card details', {
