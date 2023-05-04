@@ -7,7 +7,8 @@ from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_STATUS_PAID, PAYMENT_METHOD_CHOICES,
                         PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
                         PAYMENT_SCHEME_NONE)
-from payments.tasks import calculate_checkoutpg_gateway_charge
+from payments.tasks import (calculate_checkoutpg_gateway_charge,
+                            update_financial_action_charges)
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,38 @@ class TransactionData(models.Model):
     financial_action_response_data = models.JSONField(
         null=True, blank=True, help_text='Response data received after '
                                          'calling financial-actions api.')
+    gateway_fee_authorization = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="used to store gateway authorization fee from financial "
+                  "action data")
+    gateway_fee_void = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="used to store gateway void fee from financial "
+                  "action data")
+    gateway_fee_refund = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="used to store gateway refund fee from financial "
+                  "action data")
+    blended_variable_fee = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="used to store blended variable fee from financial "
+                  "action data")
+    gateway_fee_authorization_vat = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="used to store gateway authorization fee vat from financial"
+                  " action data")
+    gateway_fee_void_vat = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="used to store gateway void fee vat from financial "
+                  "action data")
+    gateway_fee_refund_vat = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="used to store gateway refund fee vat from financial "
+                  "action data")
+    blended_variable_fee_vat = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="used to store blended variable fee vat from financial "
+                  "action data")
 
 
 @receiver(post_save, sender=TransactionData)
@@ -100,3 +133,8 @@ def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
             "financial_action_data": instance.financial_action_response_data
         }
         calculate_checkoutpg_gateway_charge.delay(**dct_args)
+        fin_args = {
+            "pk": instance.id,
+            "financial_action_data": instance.financial_action_response_data
+        }
+        update_financial_action_charges.delay(**fin_args)

@@ -257,3 +257,11 @@ def calculate_charge(payment_method, amount):
         if fixed_amount:
             gateway_charges += Decimal(fixed_amount)
     return gateway_charges
+
+
+@shared_task(name='update_financial_action_charges')
+def update_financial_action_charges(**kwargs):
+    """
+    used to update transactiondata table from checkoutpgclient with financial
+    action response data breakdowns
+    """
