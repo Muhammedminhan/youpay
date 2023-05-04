@@ -60,6 +60,7 @@ def reformat_payment_request_data(data):
         data['customer_email'] = customer.get('email')
         data['customer_phone'] = customer.get('phone')
         data['customer_name'] = customer.get('name')
+        data['is_guest'] = customer.get('is_guest', False)
 
         data['success_url'] = urls.get('success_url')
         data['failure_url'] = urls.get('failure_url')
@@ -122,12 +123,13 @@ def get_payment_options(transaction_obj, gateways):
     response_payment_options = {}
     store_currency = transaction_obj.cart_currency
     platform = transaction_obj.platform
+    is_guest = transaction_obj.is_guest
 
     for gateway in gateways:
         code = gateway.code
 
         response_payment_options = get_checkoutpg_payment_options(
-            code, gateway, response_payment_options)
+            code, gateway, is_guest, response_payment_options)
 
         response_payment_options = get_b2cpayback_payment_options(
             code, store_currency, response_payment_options)
@@ -145,7 +147,8 @@ def get_payment_options(transaction_obj, gateways):
     return response_payment_options
 
 
-def get_checkoutpg_payment_options(code, gateway, response_payment_options):
+def get_checkoutpg_payment_options(code, gateway, is_guest,
+                                   response_payment_options):
     if code == CHECKOUTPG_HUB_CODE:
         validation_json = gateway.validation_json
 
@@ -156,6 +159,9 @@ def get_checkoutpg_payment_options(code, gateway, response_payment_options):
                 "is_applepay_enabled", False)
             saved_card_flag = gateway.validation_json.get(
                 "is_saved_card_enabled", False)
+
+            if is_guest:
+                saved_card_flag = False
 
             # enable or disable based on validation_json
             response_payment_options['saved_card'] = saved_card_flag
