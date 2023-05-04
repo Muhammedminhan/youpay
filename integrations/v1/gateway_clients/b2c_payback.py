@@ -19,6 +19,7 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY,
                                     ADCB_CHECKOUTPG_ERROR)
+from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -266,6 +267,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 approved_status = transaction_obj.approved
                 if response_data.get("redirect_url") is None:
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                    response_data[IS_SUCCESS] = False
+                    response_data["message"] = (
+                        B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE)
                 elif response_data.get("code") == ADCB_CHECKOUTPG_ERROR:
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False
