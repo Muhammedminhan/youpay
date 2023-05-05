@@ -19,7 +19,6 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY,
                                     ADCB_CHECKOUTPG_ERROR)
-from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -40,6 +39,7 @@ from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                    )
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
+from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 
 logger = logging.getLogger(__name__)
 
@@ -262,22 +262,25 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                                         headers=ADCB_HEADERS)
                 response_data = response.json()
                 response_data["is_redirect"] = True
-                response_data["redirect_url"] = get_adcb_verify_redirect_url(
-                    response_data, transaction_obj)
+                response_data[
+                    "redirect_url"], transaction_status = (
+                    get_adcb_verify_redirect_url(
+                        response_data, transaction_obj))
                 approved_status = transaction_obj.approved
-                if response_data.get("redirect_url") is None:
+                if transaction_status:  # success case
+                    payment_status = PAYMENT_STATUS_PAID
+                    approved_status = True
+                    response_data[IS_SUCCESS] = True
+                elif response_data.get(
+                        "redirect_url") is None:  # checkoutpg declined
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
                     response_data[IS_SUCCESS] = False
                     response_data["message"] = (
                         B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE)
-                elif response_data.get("code") == ADCB_CHECKOUTPG_ERROR:
+                else:  # failure
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False
                     response_data[IS_SUCCESS] = False
-                else:
-                    payment_status = PAYMENT_STATUS_PAID
-                    approved_status = True
-                    response_data[IS_SUCCESS] = True
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(
