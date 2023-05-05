@@ -578,6 +578,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 checkoutpg_response = requests.post(
                     url, data=payment_data_to_send, headers=headers)
 
+                self.channel_code = payment_data['channel_code']
+
                 # storing Youpay to payment gateway request and response data
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
