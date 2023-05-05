@@ -227,7 +227,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     response_data = response.json()
                     response_data[IS_REDIRECT] = True
                     response_data[IS_SUCCESS] = True
-                    response_data[REDIRECT_URL] = (
+                    response_data[REDIRECT_URL], transaction_status = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
                     return response_data, transaction_obj

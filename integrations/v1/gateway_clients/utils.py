@@ -87,12 +87,12 @@ def get_adcb_verify_redirect_url(response_data,
         logger.info("Partial payment through card and touchpoints for id "
                     "{}".format(transaction_obj.transaction_id))
         return get_adcb_response_url(
-            transaction_obj.success_url, transaction_obj.transaction_id), True
+            transaction_obj.success_url, transaction_obj.transaction_id, True)
     elif payment_status and not redemption_status:
         logger.info("Full amount paid through card for id {}".format(
             transaction_obj.transaction_id))
         return get_adcb_response_url(
-            transaction_obj.success_url, transaction_obj.transaction_id), True
+            transaction_obj.success_url, transaction_obj.transaction_id, True)
     elif ("results" not in response_data and
           response_data.get("code") == ADCB_CHECKOUTPG_PAYMENT_NOT_PAID):
         logger.info(
@@ -102,28 +102,29 @@ def get_adcb_verify_redirect_url(response_data,
         response_data["is_redirect"] = False
         redirect_url = None
         return get_adcb_response_url(redirect_url,
-                                     transaction_obj.transaction_id), False
+                                     transaction_obj.transaction_id, False)
     else:
         logger.info("Transaction failed for transaction id {}, failure url "
                     "{}".format(transaction_obj.transaction_id,
                                 transaction_obj.failure_url))
         return get_adcb_response_url(
             transaction_obj.failure_url,
-            transaction_obj.transaction_id), False
+            transaction_obj.transaction_id, False)
 
 
 def get_adcb_redemption_redirect_url(response_data, transaction_obj): #full redemption
     if response_data.get('results', {}).get('redemption_status'):
         return get_adcb_response_url(
-            transaction_obj.success_url, transaction_obj.transaction_id)
+            transaction_obj.success_url, transaction_obj.transaction_id, True)
     else:
         return get_adcb_response_url(
-            transaction_obj.failure_url, transaction_obj.transaction_id)
+            transaction_obj.failure_url, transaction_obj.transaction_id,
+            False)
 
 
-def get_adcb_response_url(url, transaction_id):
+def get_adcb_response_url(url, transaction_id, status):
     if url:
         return_url = url + '?transaction_id=' + str(transaction_id)
     else:
         return_url = None
-    return return_url
+    return return_url, status
