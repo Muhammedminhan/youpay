@@ -7,7 +7,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from checkoutpgclient.constants import PAYMENT_METHOD_CARD
+from checkoutpgclient.constants import (PAYMENT_METHOD_CARD,
+                                        PAYMENT_STATUS_PENDING)
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 from core.utils import checkout_decline_check
@@ -174,7 +175,7 @@ class WebhookListener(APIView):
         try:
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(
-                    payment_reference))
+                    payment_reference, payment_status))
             if transaction_obj:
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
@@ -203,13 +204,23 @@ class WebhookListener(APIView):
                          "update {}".format(e))
 
     def get_youpay_transaction_data_with_payment_reference(self,
-                                                           payment_reference):
+                                                           payment_reference,
+                                                           payment_status):
         try:
             transaction_obj = YouPayTransactionData.objects.get(
                 payment_reference=payment_reference)
             return transaction_obj
         except YouPayTransactionData.DoesNotExist:
-            logger.error(
-                "Unable to find youpay transaction object with payment"
-                "_referance {}".format(payment_reference))
+            # no need to update youpaytransactiondata for pending status with
+            # transaction object none
+            if payment_status == PAYMENT_STATUS_PENDING:
+                logger.info(
+                    "Unable to find youpay transaction object with payment"
+                    "_reference {} for status {}".format(payment_reference,
+                                                         payment_status))
+            else:
+                logger.error(
+                    "Unable to find youpay transaction object with payment"
+                    "_reference {} for status {}".format(payment_reference,
+                                                         payment_status))
             return None
