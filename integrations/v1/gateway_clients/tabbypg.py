@@ -25,10 +25,10 @@ from payments.constants import (
     PAYMENT_METHOD_TABBY_UAE, PAYMENT_METHOD_TABBY_KSA,
     PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY)
+from services.constants import CURRENCY_UAE
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
-from services.constants import CURRENCY_UAE
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +224,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             # corresponding client url
             if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
                 response_data = {
-                    "is_redirect": True,
+                    IS_REDIRECT: True,
+                    IS_SUCCESS: True,
                     "redirect_url": (self.transaction_obj.success_url +
                                      '?transaction_id=' + transaction_id),
                     "transaction_message": {
