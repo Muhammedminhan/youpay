@@ -115,7 +115,8 @@ class ConfigViewSet(ViewSet):
                         gateways = client.payment_gateway.filter(
                             is_active=True)
                         payback_config = b2c_payback_obj.get_configurations(
-                            transaction.amount, transaction.currency)
+                            transaction.amount, transaction.currency,
+                            transaction.transaction_id)
                         payment_options = get_payment_options(
                             transaction, gateways)
                         announcements_dict = get_announcements(
