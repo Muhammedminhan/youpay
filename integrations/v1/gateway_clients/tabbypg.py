@@ -25,10 +25,10 @@ from payments.constants import (
     PAYMENT_METHOD_TABBY_UAE, PAYMENT_METHOD_TABBY_KSA,
     PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY)
+from services.constants import CURRENCY_UAE
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
-from services.constants import CURRENCY_UAE
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             return None
 
     def get_payment_header(self):
-        logger.info("get_payment_header using ?")
         headers = {
             'Content-Type': 'application/json',
             'Authorization': self.tabbypg_config.api_key,

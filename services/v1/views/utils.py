@@ -108,8 +108,6 @@ def get_session_id_from_header(request):
         logger.info(
             "Couldnt able to load Session keys {} ".format(
                 request.session.keys()))
-        logger.error(
-            "Error while getting session_id from request: {}".format(e))
         session_id = None
 
     return session_id

@@ -12,12 +12,9 @@ from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
-    PAYMENT_STATUS_ERROR,
-    PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_VOIDED,
     PAYMENT_STATUS_CANCELLED,
-    PAYMENT_STATUS_FLAGGED,
-    PAYMENT_STATUS_PAID, PAYMENT_METHOD_PAYPAL, PAYMENT_METHOD_APPLEPAY
+    PAYMENT_STATUS_PAID, PAYMENT_METHOD_PAYPAL, PAYMENT_METHOD_APPLEPAY,
+    PAYMENT_END_STATUS_LIST
 )
 from payments.models import YouPayTransactionData
 from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
@@ -44,13 +41,7 @@ class ConfigViewSet(ViewSet):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.list_failure_statuses = [
-            PAYMENT_STATUS_ERROR,
-            PAYMENT_STATUS_REJECTED,
-            PAYMENT_STATUS_VOIDED,
-            PAYMENT_STATUS_CANCELLED,
-            PAYMENT_STATUS_FLAGGED
-        ]
+        self.list_failure_statuses = PAYMENT_END_STATUS_LIST
 
     def list(self, request):
         queryset = PaymentGateway.objects.all()
