@@ -223,7 +223,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             # corresponding client url
             if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
                 response_data = {
-                    "is_redirect": True,
+                    IS_REDIRECT: True,
+                    IS_SUCCESS: True,
                     "redirect_url": (self.transaction_obj.success_url +
                                      '?transaction_id=' + transaction_id),
                     "transaction_message": {

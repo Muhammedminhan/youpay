@@ -18,8 +18,8 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY,
-                                    ADCB_CHECKOUTPG_ERROR)
-from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
+                                    ADCB_CHECKOUTPG_ERROR,
+                                    CHECKOUT_UAE_CURRENCY)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -40,6 +40,7 @@ from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                    )
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
+from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 
 logger = logging.getLogger(__name__)
 
@@ -49,33 +50,41 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     Class to manage b2cpayback related operations
     """
 
-    def get_configurations(self, amount, currency):
+    def get_configurations(self, amount, currency, transaction_id):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
         amount = str(amount)
         currency = str(currency)
-        config_request_data = {
-            "amount": amount, "currency": currency,
-            "product_code": product_code
-        }
-        request_data_json = json.dumps(config_request_data)
-        b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                     B2CPAYBACK_HUB_CODE)
-        b2c_payback_domain = b2c_gateway_obj.domain
-        try:
-            url = b2c_payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
-
-            response = requests.post(url, data=request_data_json,
-                                     headers=ADCB_HEADERS)
-            if response:
-                return response.json()
-            else:
-                logger.error(
-                    "No response received from configuration api call "
-                    "to b2cpayback")
-                return None
-        except Exception as e:
-            logger.error("config api call to b2cpayback failed", exc_info=e)
+        if currency != CHECKOUT_UAE_CURRENCY:
+            logger.info(
+                "Skipping config api call to b2cpayback for non AED "
+                "transaction {}".format(transaction_id))
             return None
+        else:
+            config_request_data = {
+                "amount": amount, "currency": currency,
+                "product_code": product_code
+            }
+            request_data_json = json.dumps(config_request_data)
+            b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
+                                                         B2CPAYBACK_HUB_CODE)
+            b2c_payback_domain = b2c_gateway_obj.domain
+            try:
+                url = b2c_payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
+
+                response = requests.post(url, data=request_data_json,
+                                         headers=ADCB_HEADERS)
+                if response:
+                    return response.json()
+                else:
+                    logger.error(
+                        "No configuration received from configuration api "
+                        "call to b2cpayback for transaction {}, response "
+                        "{}".format(transaction_id, response.text))
+                    return None
+            except Exception as e:
+                logger.error("config api call to b2cpayback failed",
+                             exc_info=e)
+                return None
 
     def get_point_balance(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
@@ -227,7 +236,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     response_data = response.json()
                     response_data[IS_REDIRECT] = True
                     response_data[IS_SUCCESS] = True
-                    response_data[REDIRECT_URL] = (
+                    response_data[REDIRECT_URL], transaction_status = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
                     return response_data, transaction_obj
@@ -262,22 +271,25 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                                         headers=ADCB_HEADERS)
                 response_data = response.json()
                 response_data["is_redirect"] = True
-                response_data["redirect_url"] = get_adcb_verify_redirect_url(
-                    response_data, transaction_obj)
+                response_data[
+                    "redirect_url"], transaction_status = (
+                    get_adcb_verify_redirect_url(
+                        response_data, transaction_obj))
                 approved_status = transaction_obj.approved
-                if response_data.get("redirect_url") is None:
+                if transaction_status:  # success case
+                    payment_status = PAYMENT_STATUS_PAID
+                    approved_status = True
+                    response_data[IS_SUCCESS] = True
+                elif response_data.get(
+                        "redirect_url") is None:  # checkoutpg declined
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
                     response_data[IS_SUCCESS] = False
                     response_data["message"] = (
                         B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE)
-                elif response_data.get("code") == ADCB_CHECKOUTPG_ERROR:
+                else:  # failure
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False
                     response_data[IS_SUCCESS] = False
-                else:
-                    payment_status = PAYMENT_STATUS_PAID
-                    approved_status = True
-                    response_data[IS_SUCCESS] = True
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(
