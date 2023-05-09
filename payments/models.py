@@ -257,6 +257,7 @@ def update_client(sender, instance, created, **kwargs):
         id=instance.id)
 
     if instance.previous_status != instance.payment_status:
+
         # logger for youpay status update
         logger.info("Payment status updated for transaction ({}) : {} --> {}"
                     "".format(instance.transaction_id,
