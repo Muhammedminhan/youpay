@@ -7,8 +7,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from checkoutpgclient.constants import (PAYMENT_METHOD_CARD,
-                                        PAYMENT_STATUS_PENDING)
+from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 from core.utils import checkout_decline_check
@@ -174,7 +173,7 @@ class WebhookListener(APIView):
         try:
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(
-                    payment_reference, payment_status))
+                    payment_reference))
             if transaction_obj:
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
