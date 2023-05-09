@@ -18,7 +18,8 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY,
-                                    ADCB_CHECKOUTPG_ERROR)
+                                    ADCB_CHECKOUTPG_ERROR,
+                                    CHECKOUT_UAE_CURRENCY)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -49,33 +50,41 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     Class to manage b2cpayback related operations
     """
 
-    def get_configurations(self, amount, currency):
+    def get_configurations(self, amount, currency, transaction_id):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
         amount = str(amount)
         currency = str(currency)
-        config_request_data = {
-            "amount": amount, "currency": currency,
-            "product_code": product_code
-        }
-        request_data_json = json.dumps(config_request_data)
-        b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                     B2CPAYBACK_HUB_CODE)
-        b2c_payback_domain = b2c_gateway_obj.domain
-        try:
-            url = b2c_payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
-
-            response = requests.post(url, data=request_data_json,
-                                     headers=ADCB_HEADERS)
-            if response:
-                return response.json()
-            else:
-                logger.error(
-                    "No response received from configuration api call "
-                    "to b2cpayback")
-                return None
-        except Exception as e:
-            logger.error("config api call to b2cpayback failed", exc_info=e)
+        if currency != CHECKOUT_UAE_CURRENCY:
+            logger.info(
+                "Skipping config api call to b2cpayback for non AED "
+                "transaction {}".format(transaction_id))
             return None
+        else:
+            config_request_data = {
+                "amount": amount, "currency": currency,
+                "product_code": product_code
+            }
+            request_data_json = json.dumps(config_request_data)
+            b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
+                                                         B2CPAYBACK_HUB_CODE)
+            b2c_payback_domain = b2c_gateway_obj.domain
+            try:
+                url = b2c_payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
+
+                response = requests.post(url, data=request_data_json,
+                                         headers=ADCB_HEADERS)
+                if response:
+                    return response.json()
+                else:
+                    logger.error(
+                        "No configuration received from configuration api "
+                        "call to b2cpayback for transaction {}, response "
+                        "{}".format(transaction_id, response.text))
+                    return None
+            except Exception as e:
+                logger.error("config api call to b2cpayback failed",
+                             exc_info=e)
+                return None
 
     def get_point_balance(self, request_data):
         request_transaction_id = request_data.get('transaction_id')
