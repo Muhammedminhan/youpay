@@ -75,7 +75,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             return None
 
     def get_payment_header(self):
-        logger.info("get_payment_header using ?")
         headers = {
             'Content-Type': 'application/json',
             'Authorization': self.tabbypg_config.api_key,

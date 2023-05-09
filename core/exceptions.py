@@ -32,3 +32,8 @@ class TransactionAlreadyPaid(Exception):
 class TransactionAlreadyCancelled(Exception):
     """Exception to be raised when transaction already processed."""
     pass
+
+
+class TransactionAlreadyExpired(Exception):
+    """Exception to be raised when transaction already processed."""
+    pass

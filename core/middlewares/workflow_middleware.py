@@ -7,14 +7,15 @@ from core.constants import MAX_PAYMENT_RETRY_COUNT
 from core.exceptions import (
     TransactionNotFound,
     TransactionAlreadyPaid,
-    TransactionAlreadyCancelled)
+    TransactionAlreadyCancelled, TransactionAlreadyExpired)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
     MIDDLEWARE_ALREADY_PAID_MESSAGE)
 from core.response_messages import YouPayResponse
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
-    PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY)
+    PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
+    PAYMENT_STATUS_EXPIRED)
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,9 @@ class PaymentStatusCheckMiddleware(object):
                     transaction_obj,
                     youpay_message_obj)
 
+                self.check_transaction_expired(transaction_obj,
+                                               youpay_message_obj)
+
                 if transaction_obj.retry_count >= MAX_PAYMENT_RETRY_COUNT:
                     """
                     if retry count is more than MAX_RETRY_COUNT, then cancel 
@@ -116,6 +120,9 @@ class PaymentStatusCheckMiddleware(object):
                                 "retry_count": retry_count
                             }
                         )
+
+        except TransactionAlreadyExpired:
+            return JsonResponse(self.response, status=200)
 
         except TransactionAlreadyCancelled:
             return JsonResponse(self.response, status=200)
@@ -202,6 +209,30 @@ class PaymentStatusCheckMiddleware(object):
                 redirect_url, transaction_message, youpay_message_obj,
                 is_success)
             raise TransactionAlreadyCancelled
+
+    def check_transaction_expired(self, transaction_obj,
+                                  youpay_message_obj):
+        transaction_status = transaction_obj.payment_status
+        transaction_id = transaction_obj.transaction_id
+
+        if transaction_status == PAYMENT_STATUS_EXPIRED:
+            """
+            This will redirect to failure url, so wont able to pay for
+            already expired transactions
+            """
+
+            transaction_message = MIDDLEWARE_STATUS_CHECK_MESSAGE
+            logger.info("{} {} ".format(transaction_message, transaction_id))
+
+            redirect_url = self.get_redirect_url(
+                transaction_obj.failure_url, transaction_id)
+            is_success = False
+
+            # Preparing response data as per the payment API response
+            self.response = self.get_payment_response(
+                redirect_url, transaction_message, youpay_message_obj,
+                is_success)
+            raise TransactionAlreadyExpired
 
     def common_error_response(self, message, code):
         return JsonResponse(
