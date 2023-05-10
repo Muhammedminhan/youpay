@@ -32,8 +32,7 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
-                                PAYMENT_METHOD_APPLEPAY,
-                                PAYMENT_STATUS_DECLINED_RETRY
+                                PAYMENT_METHOD_APPLEPAY
                                 )
 from services.v1.views.common import (AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
