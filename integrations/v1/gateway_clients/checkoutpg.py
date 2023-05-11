@@ -420,7 +420,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             # 2ds failure case
             logger.info("card payment response data {}".format(response_data))
             redirect, response_data = process_checkoutpg_response_verification(
-                self.transaction_id, response_data)
+                self.transaction_id, response_data.get("response_data"))
             logger.info(
                 "verification method response data {}".format(response_data))
             if redirect:
