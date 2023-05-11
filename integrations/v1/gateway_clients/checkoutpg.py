@@ -406,7 +406,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         elif response_data.get('status') == 200 and response_data.get(
                 "success") and response_data.get("approved"):
-            # 2ds success case
+            # preauth success case
             self.payment_status = PAYMENT_STATUS_PENDING
             self.payment_reference = response_data.get(
                 "reference")
@@ -417,7 +417,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         elif response_data.get('status') == 200 and response_data.get(
                 "success") and not response_data.get("approved"):
-            # 2ds failure case
+            # preauth failure case
             logger.info("card payment response data {}".format(response_data))
             redirect, response_data = process_checkoutpg_response_verification(
                 self.transaction_id, response_data.get("response_data"))
