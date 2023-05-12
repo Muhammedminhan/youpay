@@ -12,6 +12,7 @@ def archive_transaction_data(modeladmin, request, queryset):
     """
     Function to move YouPayTransactionData to ArchivedYouPayTransactionData
     """
+    
     try:
         # prepared_data for bulk create, filtered_queryset for delete
         prepared_data, filtered_queryset = prepare_archive_transaction_objects(
