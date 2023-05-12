@@ -19,9 +19,9 @@ from payments.constants import (
 
 logger = logging.getLogger(__name__)
 
+SERVICES_APICLIENT = 'services.APIClient'
 
 # Create your models here.
-
 
 class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     transaction_id = models.UUIDField(default=uuid.uuid4, editable=False,
@@ -43,7 +43,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                        db_index=True)
     payment_reference = models.CharField(max_length=120, null=True,
                                          db_index=True, blank=True)
-    api_client = models.ForeignKey('services.APIClient', null=True,
+    api_client = models.ForeignKey(SERVICES_APICLIENT, null=True,
                                    db_index=True,
                                    blank=True, on_delete=models.PROTECT)
     service_fee = models.DecimalField(decimal_places=4, max_digits=12,
@@ -299,7 +299,7 @@ class ClientNotification(AbstractDateTime):
                                     'Associated transaction',
                                     related_name=
                                     "transaction_clientnotification")
-    api_client = models.ForeignKey('services.APIClient', null=True,
+    api_client = models.ForeignKey(SERVICES_APICLIENT, null=True,
                                    blank=True, on_delete=models.CASCADE,
                                    help_text='Related api client')
     event_type = models.CharField(max_length=100, null=True, blank=True,
@@ -353,3 +353,136 @@ class AdditionalCharge(AbstractDateTime):
 
     def __str__(self):
         return str(self.transaction_id)
+
+
+class ArchivedYouPayTransactionData(models.Model):
+    customer_email = models.CharField(max_length=255, null=True, blank=True)
+    customer_phone = models.CharField(max_length=20, null=True, blank=True)
+    customer_name = models.CharField(max_length=100, null=True, blank=True)
+
+    created_at = models.DateTimeField(help_text='Date and time when the '
+                                                'payment was created')
+    updated_at = models.DateTimeField(help_text='Date and time when the '
+                                                'payment was updated')
+    archived_at = models.DateTimeField(auto_now=True,
+                                       help_text='Date and time when the last'
+                                                 ' payment was archived')
+
+    transaction_id = models.CharField(null=True, blank=True, max_length=100)
+    amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                 db_index=True)
+    currency = models.CharField(null=False, blank=False, max_length=15,
+                                db_index=True)
+    country_code = models.CharField(null=True, blank=True, max_length=15,
+                                    db_index=True)
+    ip = models.CharField(max_length=20, null=True, blank=True)
+    invoice_id = models.CharField(max_length=120, null=True, blank=True,
+                                  db_index=True)
+    order_reference = models.CharField(max_length=120, null=True, blank=True,
+                                       db_index=True)
+    payment_reference = models.CharField(max_length=120, null=True,
+                                         db_index=True, blank=True)
+    api_client = models.ForeignKey(SERVICES_APICLIENT, null=True,
+                                   db_index=True,
+                                   blank=True, on_delete=models.PROTECT)
+    service_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                      null=True, blank=True)
+    base_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                      null=True, blank=True)
+
+    VAT_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                     null=True, blank=True)
+    order_history = models.JSONField(null=True, blank=True)
+    payment_gateway = models.CharField(max_length=20, null=True, blank=True,
+                                       db_index=True,
+                                       choices=PAYMENT_GATEWAY_CHOICES)
+    payment_status = models.CharField(
+        max_length=20, null=True, blank=True, db_index=True,
+        choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
+    session_id = models.CharField(max_length=500, null=True, blank=True)
+    channel_code = models.CharField(
+        max_length=120, null=True, blank=True)
+
+    is_fraud = models.BooleanField(default=False, db_index=True)
+    is_flagged = models.BooleanField(default=False, db_index=True)
+    card_bin = models.CharField(max_length=6, null=True, blank=True,
+                                db_index=True)
+    card_last4 = models.CharField(max_length=4, null=True, blank=True)
+    name_on_card = models.CharField(max_length=255, null=True, blank=True)
+    payment_method = models.CharField(max_length=200, db_index=True,
+                                      choices=PAYMENT_METHOD_CHOICES,
+                                      default=PAYMENT_METHOD_NONE,
+                                      help_text='Payment Method')
+    payment_scheme = models.CharField(max_length=200,
+                                      choices=PAYMENT_SCHEME_CHOICES,
+                                      default=PAYMENT_SCHEME_NONE)
+
+    is_gcc_card = models.BooleanField(default=False, db_index=True)
+
+    card_issuer_country = models.CharField(max_length=4, null=True,
+                                           blank=True, db_index=True)
+    platform = models.CharField(choices=PURCHASE_PLATFORM_CHOICES,
+                                max_length=200, null=True, blank=True)
+    response_summary = models.CharField(max_length=500, null=True, blank=True)
+    approved = models.BooleanField(default=False, db_index=True)
+
+    success_url = models.CharField(max_length=500, blank=True, db_index=True)
+    failure_url = models.CharField(max_length=500, blank=True, db_index=True)
+    cancel_url = models.CharField(max_length=500, blank=True, db_index=True)
+    verify_url = models.CharField(max_length=500, blank=True, db_index=True)
+
+    language = models.CharField(choices=PAYMENT_REQUEST_LANGUAGE_CHOICES,
+                                max_length=15, null=True, blank=True,
+                                db_index=True)
+    order_items = models.JSONField(null=True, blank=True)
+    loyalty_level = models.IntegerField(null=True, blank=True, default=0)
+
+    # adcb related data
+    redeemed_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    redeemed_points = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    payable_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    available_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    available_points = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    is_full_redemption = models.BooleanField(
+        db_index=True, null=True, blank=True)
+
+    cart_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                      null=True, blank=True)
+    cart_currency = models.CharField(null=True, blank=True, max_length=15)
+    cart_service_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                           null=True, blank=True)
+    cart_base_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                           null=True, blank=True)
+    cart_VAT_amount = models.DecimalField(decimal_places=4, max_digits=12,
+                                          null=True, blank=True)
+    happy_credit_reference = models.CharField(max_length=120, null=True,
+                                              blank=True)
+    credit_balance_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    available_credit_balance = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    retry_count = models.IntegerField(default=0, null=True, blank=True,
+                                      db_index=True)
+    additional_vat_percentage = models.DecimalField(
+        default=0.0, decimal_places=2, null=True, blank=True, max_digits=5)
+    additional_currency_decimal_notation = models.FloatField(
+        default=0, null=True, blank=True)
+    additional_vat = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True, )
+    additional_processing_fee = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    additional_processing_fee_vat = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    additional_total_amount = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    gateway_charge = models.DecimalField(
+        decimal_places=4, max_digits=12, null=True, blank=True)
+    settlement_entity = models.CharField(
+        max_length=100, null=True, blank=True,
+        choices=SETTLEMENT_ENTITY_CHOICES)
+    is_guest = models.BooleanField(default=False, db_index=True)

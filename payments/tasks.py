@@ -1,21 +1,21 @@
 import logging
+
 from datetime import timedelta
 from decimal import Decimal
-
 from celery import shared_task
-from django.db import transaction
-from django.db.models.functions import Now
 
 from adcbpgclient.models import ADCBTransactionData
-from core.utils import wait_redis_lock
+from payments.models import YouPayTransactionData, ClientNotification
 from integrations.models import GatewayChargeConfiguration
 from payments.constants import (
-    PAYMENT_STATUS_EXPIRED,
+    PAYMENT_STATUS_INITIATED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_EXPIRED,
     TRANSACTION_EXPIRE_TIME, PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
     PAYMENT_METHOD_ADCB_CARD_ONLY,
-    PAYMENT_METHOD_TOUCHPOINTS, ALLOW_EXPIRE_STATUS_LIST
+    PAYMENT_METHOD_TOUCHPOINTS
 )
-from payments.models import YouPayTransactionData, ClientNotification
+from django.db.models.functions import Now
+from core.utils import wait_redis_lock
+from django.db import transaction
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -33,9 +33,11 @@ def set_transaction_expired():
         set_transaction_expired.request.id)
     try:
         with wait_redis_lock(lock_name=lock_name):
+            payment_statuses = [PAYMENT_STATUS_INITIATED,
+                                PAYMENT_STATUS_PENDING]
             transaction_objs = YouPayTransactionData.objects.filter(
-                payment_status__in=ALLOW_EXPIRE_STATUS_LIST,
-                updated_at__lt=Now() - timedelta(
+                payment_status__in=payment_statuses,
+                updated_at__lt=Now()-timedelta(
                     minutes=TRANSACTION_EXPIRE_TIME))
             if transaction_objs:
                 transaction_ids = []
