@@ -404,25 +404,16 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             response_data[IS_SUCCESS] = True
             return response_data, self.SUCCESS
 
-        elif response_data.get('status') == 200 and response_data.get(
-                "success") and response_data.get("approved"):
-            # pre-auth success case
-            self.payment_status = PAYMENT_STATUS_PENDING
-            self.payment_reference = response_data.get(
-                "reference")
-            self.update_youpay_transaction_data(
-                self.prepare_data_to_update(
-                    name_on_card=name_on_card))
-            return response_data, self.SUCCESS
-
-        elif response_data.get('status') == 200 and response_data.get(
-                "success") and not response_data.get("approved"):
-            # pre-auth failure case
-            logger.info("card payment response data {}".format(response_data))
+        elif response_data.get('status') == 200 and not response_data.get(
+                IS_REDIRECT):
+            # pre-auth case
+            logger.info(
+                "card payment pre auth response data {}".format(
+                    response_data))
             redirect, response_data = process_checkoutpg_response_verification(
                 self.transaction_id, response_data.get("response_data"))
-            logger.info(
-                "verification method response data {}".format(response_data))
+            logger.info("pre auth verification method response "
+                        "data {}".format(response_data))
             if redirect:
                 return response_data, self.SUCCESS
             else:
