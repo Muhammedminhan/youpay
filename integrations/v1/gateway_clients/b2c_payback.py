@@ -1,7 +1,6 @@
 import json
 import logging
 import requests
-
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
@@ -18,7 +17,6 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY,
-                                    ADCB_CHECKOUTPG_ERROR,
                                     CHECKOUT_UAE_CURRENCY)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
