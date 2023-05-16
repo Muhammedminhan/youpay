@@ -9,7 +9,6 @@ from core.constants import (
     PAYMENT_GATEWAY_B2CPAYBACK, PURCHASE_PLATFORM_IOS,
     PURCHASE_PLATFORM_ANDROID
 )
-
 from core.messages import (
     ERROR_MISSING_FIELDS, IS_SUCCESS
 )
@@ -21,7 +20,8 @@ from core.messages import (
 from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
-                                YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST)
+                                YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
+                                PAYMENT_STATUS_REJECTED_RETRY)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -269,6 +269,17 @@ def is_redirect(transaction_id, transaction_message):
         response_data = {
             IS_REDIRECT: False,
             REDIRECT_URL: redirect_url,
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
+        }
+        return True, response_data
+
+    if youpay_transaction.payment_status == PAYMENT_STATUS_REJECTED_RETRY:
+        # Mainly occurs for tabbypg, this will redirect to FE payment page
+
+        response_data = {
+            IS_REDIRECT: False,
+            REDIRECT_URL: None,
             TRANSACTION_MSG: transaction_message,
             IS_SUCCESS: False
         }
