@@ -265,10 +265,14 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                                                            response_data)
                 if redirect_flag:
                     self.response_data = json.dumps(response_data)
+                    logger.info("Tabbypg Success Response data {} ".format(
+                        self.response_data))
                     return response_data, self.SUCCESS
                 else:
                     self.response_data = json.dumps(response_data)
-                    return response_data, self.PAYMENT_FAILED
+                    logger.info("Tabbypg Failure Response data {} ".format(
+                        self.response_data))
+                    return response_data, self.TABBYPG_PAYMENT_REJECTED
             else:
                 logger.error(
                     "Error while verifying_payment status: {}, reason {} "
