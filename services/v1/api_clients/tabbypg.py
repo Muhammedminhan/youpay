@@ -129,10 +129,11 @@ class TabbyPGVerification(APIView):
 
         if transaction_message:
             is_capture = transaction_message.get('is_capture')
+
             if is_capture:
                 data['code'] = code
             else:
-                data['code'] = self.response_obj.TABBYPG_VERIFICATION_FAILED
+                data['code'] = self.response_obj.TABBYPG_PAYMENT_REJECTED
             data.pop('transaction_message', None)
 
         if errors:
