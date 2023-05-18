@@ -1,7 +1,6 @@
 import json
 import logging
 import requests
-
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
@@ -18,7 +17,6 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY,
-                                    ADCB_CHECKOUTPG_ERROR,
                                     CHECKOUT_UAE_CURRENCY)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
@@ -40,7 +38,6 @@ from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
                                    )
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
-from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 
 logger = logging.getLogger(__name__)
 
@@ -284,8 +281,6 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                         "redirect_url") is None:  # checkoutpg declined
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
                     response_data[IS_SUCCESS] = False
-                    response_data["message"] = (
-                        B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE)
                 else:  # failure
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False

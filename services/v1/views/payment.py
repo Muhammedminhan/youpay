@@ -15,7 +15,7 @@ from core.utils import (encrypt_payment_data, decrypt_payment_data,
 from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
-                                PAYMENT_STATUS_PAID)
+                                PAYMENT_STATUS_PAID, ALLOW_EXPIRE_STATUS_LIST)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -373,10 +373,13 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
-            self.update_youpay_transaction_data({
-                'transaction_id': transaction_object.transaction_id,
-                'payment_status': PAYMENT_STATUS_EXPIRED
-            })
+
+            if transaction_object.payment_status in ALLOW_EXPIRE_STATUS_LIST:
+                self.update_youpay_transaction_data({
+                    'transaction_id': transaction_object.transaction_id,
+                    'payment_status': PAYMENT_STATUS_EXPIRED
+                })
+
             logger.info(
                 "Payment status set to expired for transaction_id "
                 ": {}".format(transaction_id))
@@ -386,6 +389,7 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
                              "is_redirect": True,
                              REDIRECT_URL: redirect_url,
                              "message": "Successfully expired transaction"}
+            
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error("Error in transaction expire api ", exc_info=e)

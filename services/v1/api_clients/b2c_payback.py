@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
+from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_TOUCHPOINTS,
@@ -187,6 +188,9 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
             else:
+                if not response.get("message"):
+                    response["message"] = (
+                        B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE)
                 message = (
                     "couldnt process b2c Verification for transaction id {}, "
                     "response : {}".format(transaction_id, response))
