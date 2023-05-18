@@ -23,7 +23,7 @@ from integrations.v1.serializers.tabbypg_payment_request import (
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_METHOD_TABBY_UAE, PAYMENT_METHOD_TABBY_KSA,
-    PAYMENT_STATUS_FAILED, PAYMENT_STATUS_REJECTED,
+    PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY)
 from services.constants import CURRENCY_UAE
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -249,7 +249,7 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     approved = True
                     response_summary = "Payment successful"
                 else:
-                    payment_status = PAYMENT_STATUS_FAILED
+                    payment_status = PAYMENT_STATUS_REJECTED_RETRY
                     approved = False
                     response_summary = "Payment failed"
 
@@ -265,10 +265,14 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                                                            response_data)
                 if redirect_flag:
                     self.response_data = json.dumps(response_data)
+                    logger.info("Tabbypg Success Response data {} ".format(
+                        self.response_data))
                     return response_data, self.SUCCESS
                 else:
                     self.response_data = json.dumps(response_data)
-                    return response_data, self.PAYMENT_FAILED
+                    logger.info("Tabbypg Failure Response data {} ".format(
+                        self.response_data))
+                    return response_data, self.TABBYPG_PAYMENT_REJECTED
             else:
                 logger.error(
                     "Error while verifying_payment status: {}, reason {} "

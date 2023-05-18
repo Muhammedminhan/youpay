@@ -9,7 +9,6 @@ from core.constants import (
     PAYMENT_GATEWAY_B2CPAYBACK, PURCHASE_PLATFORM_IOS,
     PURCHASE_PLATFORM_ANDROID
 )
-
 from core.messages import (
     ERROR_MISSING_FIELDS, IS_SUCCESS
 )
@@ -23,7 +22,8 @@ from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
-                                PAYMENT_STATUS_AUTHORIZED)
+                                PAYMENT_STATUS_AUTHORIZED,
+                                PAYMENT_STATUS_REJECTED_RETRY)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -276,12 +276,22 @@ def is_redirect(transaction_id, transaction_message):
         }
         return True, response_data
 
+    if youpay_transaction.payment_status == PAYMENT_STATUS_REJECTED_RETRY:
+        # Mainly occurs for tabbypg, this will redirect to FE payment page
+
+        response_data = {
+            IS_REDIRECT: False,
+            REDIRECT_URL: None,
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
+        }
+        return False, response_data
+
     if (youpay_transaction.payment_status == PAYMENT_STATUS_PAID or
             (str(response_code) == str(
                 CHECKOUTPG_SUCCESS_RESPONSE_CODE) and str(
                 youpay_transaction.payment_status).lower() == (
                      PAYMENT_STATUS_AUTHORIZED))):
-
         redirect_url = (youpay_transaction.success_url +
                         '?transaction_id=' + transaction_id)
 
