@@ -19,9 +19,11 @@ from core.messages import (
     IS_REDIRECT
 )
 from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
+from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
-                                YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST)
+                                YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
+                                PAYMENT_STATUS_AUTHORIZED)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -274,7 +276,11 @@ def is_redirect(transaction_id, transaction_message):
         }
         return True, response_data
 
-    if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
+    if (youpay_transaction.payment_status == PAYMENT_STATUS_PAID or
+            (str(response_code) == str(
+                CHECKOUTPG_SUCCESS_RESPONSE_CODE) and str(
+                youpay_transaction.payment_status).lower() == (
+                     PAYMENT_STATUS_AUTHORIZED))):
 
         redirect_url = (youpay_transaction.success_url +
                         '?transaction_id=' + transaction_id)

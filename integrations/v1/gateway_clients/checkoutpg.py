@@ -410,8 +410,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.info(
                 "card payment pre auth response data {}".format(
                     response_data))
-            redirect, response_data = process_checkoutpg_response_verification(
-                self.transaction_id, response_data.get("response_data"))
+            redirect, response_data = (
+                process_checkoutpg_response_verification(
+                    self.transaction_id,
+                    response_data.get("checkout_response_data")))
             logger.info("pre auth verification method response "
                         "data {}".format(response_data))
             if redirect:
