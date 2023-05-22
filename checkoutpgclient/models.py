@@ -63,7 +63,7 @@ class TransactionData(models.Model):
                   'or not.')
     is_flagged_email_sent = models.BooleanField(
         default=False, db_index=True,
-        help_text='Denotes whether the flagged payment email sent or not')
+        help_text='Denotes whether the flagged payment email was sent or not')
     card_bin = models.CharField(
         max_length=6, null=True, blank=True,
         db_index=True, help_text=
@@ -86,42 +86,48 @@ class TransactionData(models.Model):
         help_text='Denotes the payment scheme used for the payment')
     payment_id = models.CharField(
         max_length=200, null=True, blank=True,
-        help_text='Payment reference id received from checkout.com')
+        help_text='Payment id received from checkout.com')
     financial_action_response_data = models.JSONField(
         null=True, blank=True, help_text='Response data received after '
                                          'calling financial-actions api.')
     gateway_fee_authorization = models.DecimalField(
         decimal_places=8, max_digits=12, null=True, blank=True,
-        help_text="used to store gateway authorization fee from financial "
+        help_text="Used to store gateway authorization fee from financial "
                   "action data")
     gateway_fee_void = models.DecimalField(
         decimal_places=8, max_digits=12, null=True, blank=True,
-        help_text="used to store gateway void fee from financial "
+        help_text="Used to store gateway void fee from financial "
                   "action data")
     gateway_fee_refund = models.DecimalField(
         decimal_places=8, max_digits=12, null=True, blank=True,
-        help_text="used to store gateway refund fee from financial "
+        help_text="Used to store gateway refund fee from financial "
                   "action data")
     blended_variable_fee = models.DecimalField(
         decimal_places=8, max_digits=12, null=True, blank=True,
-        help_text="used to store blended variable fee from financial "
+        help_text="Used to store blended variable fee from financial "
                   "action data")
     gateway_fee_authorization_vat = models.DecimalField(
         decimal_places=8, max_digits=12, null=True, blank=True,
-        help_text="used to store gateway authorization fee vat from financial"
+        help_text="Used to store gateway authorization fee vat from financial"
                   " action data")
     gateway_fee_void_vat = models.DecimalField(
         decimal_places=8, max_digits=12, null=True, blank=True,
-        help_text="used to store gateway void fee vat from financial "
+        help_text="Used to store gateway void fee vat from financial "
                   "action data")
     gateway_fee_refund_vat = models.DecimalField(
         decimal_places=8, max_digits=12, null=True, blank=True,
-        help_text="used to store gateway refund fee vat from financial "
+        help_text="Used to store gateway refund fee vat from financial "
                   "action data")
     blended_variable_fee_vat = models.DecimalField(
         decimal_places=8, max_digits=12, null=True, blank=True,
-        help_text="used to store blended variable fee vat from financial "
+        help_text="Used to store blended variable fee vat from financial "
                   "action data")
+    card_category = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text='Denotes the card category i.e. consumer/commercial')
+    entity_id = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text='The unique id related to the merchant account')
 
 
 @receiver(post_save, sender=TransactionData)
