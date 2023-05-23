@@ -35,7 +35,7 @@ deployment:
       command: '["sh", "/ygag/deployment/app/cron-entrypoint.sh"]'
       memory:
         requests: 200Mi
-        limits: 300Mi
+        limits: 250Mi
       cpu:
         requests: 50m
       volumeMounts:
