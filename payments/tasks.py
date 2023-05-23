@@ -13,7 +13,11 @@ from payments.constants import (
     PAYMENT_STATUS_EXPIRED,
     TRANSACTION_EXPIRE_TIME, PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
     PAYMENT_METHOD_ADCB_CARD_ONLY,
-    PAYMENT_METHOD_TOUCHPOINTS, ALLOW_EXPIRE_STATUS_LIST
+    PAYMENT_METHOD_TOUCHPOINTS, ALLOW_EXPIRE_STATUS_LIST,
+    MODEL_NAME_TRANSACTIONDATA, MODEL_NAME_ADCBTRANSACTIONDATA,
+    AUTHORIZATION_FIXED_FEE, VOID_FIXED_FEE, REFUND_FIXED_FEE,
+    BLENDED_VARIABLE_FEE, AUTHORIZATION_FIXED_FEE_TAX, VOID_FIXED_FEE_TAX,
+    REFUND_FIXED_FEE_TAX, BLENDED_VARIABLE_FEE_TAX
 )
 from payments.models import YouPayTransactionData, ClientNotification
 from services.v1.views.common import YouPayTransactionCRUD
@@ -257,62 +261,86 @@ def calculate_charge(payment_method, amount):
     return gateway_charges
 
 
-@shared_task(name='update_financial_action_charges')
-def update_financial_action_charges(**kwargs):
+@shared_task(name='common_update_financial_action_charges')
+def common_update_financial_action_charges(**kwargs):
     """
-    used to update transactiondata table from checkoutpgclient with financial
-    action response data breakdowns
-    """
-    transaction_data_id = kwargs.get('pk', None)
-    financial_action_data = kwargs.get('financial_action_data', None)
-    if transaction_data_id:
-        for financial_action in financial_action_data:
-            for break_downs in financial_action.get('breakdown'):
-                update_breakdown_fee(transaction_data_id, break_downs)
-        logger.info("Updated financial action charge breakdowns "
-                    "successfully")
+        used to update client table of checkoutpg or b2cpayback with
+        financial action response data breakdowns
+        """
+    model_name = kwargs.get('model_name', None)
+    try:
+        logger.info(
+            "Updating {} with received financial action response data breakups".format(
+                model_name))
+        if model_name == MODEL_NAME_TRANSACTIONDATA:
+            from checkoutpgclient.models import TransactionData
+            model_name = TransactionData
+        if model_name == MODEL_NAME_ADCBTRANSACTIONDATA:
+            from adcbpgclient.models import ADCBTransactionData
+            model_name = ADCBTransactionData
+        transaction_data_id = kwargs.get('pk', None)
+        financial_action_data = kwargs.get('financial_action_data', None)
+        if transaction_data_id:
+            first_iteration = True
+            for financial_action in financial_action_data:
+                if first_iteration:
+                    model_name.objects.filter(
+                        id=transaction_data_id).update(
+                        card_category=financial_action.get("card_category"),
+                        entity_id=financial_action.get("entity_id"))
+                    first_iteration = False
+                for break_downs in financial_action.get('breakdown'):
+                    common_update_breakdown_fee(model_name,
+                                                transaction_data_id,
+                                                break_downs)
+            logger.info("Updated financial action charge breakdowns in "
+                        "{} successfully for transaction "
+                        "{}".format(model_name, transaction_data_id))
+    except Exception as e:
+        logger.error(
+            "Error updating financial action response charges for"
+            " {}".format(model_name), exc_info=e)
 
 
-def update_breakdown_fee(transaction_data_id, break_downs):
-    from checkoutpgclient.models import TransactionData
+def common_update_breakdown_fee(model_name, transaction_data_id, break_downs):
     breakdown_type = break_downs.get('breakdown_type')
-    if breakdown_type == "Authorization Fixed Fee":
-        TransactionData.objects.filter(
+    if breakdown_type == AUTHORIZATION_FIXED_FEE:
+        model_name.objects.filter(
             id=transaction_data_id).update(
             gateway_fee_authorization=break_downs.get(
                 'holding_currency_amount'))
-    elif breakdown_type == "Void Fixed Fee":
-        TransactionData.objects.filter(
+    elif breakdown_type == VOID_FIXED_FEE:
+        model_name.objects.filter(
             id=transaction_data_id).update(
             gateway_fee_void=break_downs.get(
                 'holding_currency_amount'))
-    elif breakdown_type == "Refund Fixed Fee":
-        TransactionData.objects.filter(
+    elif breakdown_type == REFUND_FIXED_FEE:
+        model_name.objects.filter(
             id=transaction_data_id).update(
             gateway_fee_refund=break_downs.get(
                 'holding_currency_amount'))
-    elif breakdown_type == "Blended Variable Fee":
-        TransactionData.objects.filter(
+    elif breakdown_type == BLENDED_VARIABLE_FEE:
+        model_name.objects.filter(
             id=transaction_data_id).update(
             blended_variable_fee=break_downs.get(
                 'holding_currency_amount'))
-    elif breakdown_type == "Authorization Fixed Fee Tax":
-        TransactionData.objects.filter(
+    elif breakdown_type == AUTHORIZATION_FIXED_FEE_TAX:
+        model_name.objects.filter(
             id=transaction_data_id).update(
             gateway_fee_authorization_vat=break_downs.get(
                 'holding_currency_amount'))
-    elif breakdown_type == "Void Fixed Fee Tax":
-        TransactionData.objects.filter(
+    elif breakdown_type == VOID_FIXED_FEE_TAX:
+        model_name.objects.filter(
             id=transaction_data_id).update(
             gateway_fee_void_vat=break_downs.get(
                 'holding_currency_amount'))
-    elif breakdown_type == "Refund Fixed Fee Tax":
-        TransactionData.objects.filter(
+    elif breakdown_type == REFUND_FIXED_FEE_TAX:
+        model_name.objects.filter(
             id=transaction_data_id).update(
             gateway_fee_refund_vat=break_downs.get(
                 'holding_currency_amount'))
-    elif breakdown_type == "Blended Variable Fee Tax":
-        TransactionData.objects.filter(
+    elif breakdown_type == BLENDED_VARIABLE_FEE_TAX:
+        model_name.objects.filter(
             id=transaction_data_id).update(
             blended_variable_fee_vat=break_downs.get(
                 'holding_currency_amount'))
