@@ -17,7 +17,7 @@ service:
 hpa:
   name: 'youpay-nginx-hpa'
   minReplicas: 5
-  maxReplicas: 100
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
 
 pdb:
