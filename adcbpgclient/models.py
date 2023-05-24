@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from payments.constants import MODEL_NAME_ADCBTRANSACTIONDATA
 from payments.models import YouPayTransactionData
 from .constants import (PURCHASE_PLATFORM_CHOICES, REDEMPTION_METHOD_CHOICES,
                         REDEMPTION_METHOD_NONE)
@@ -93,17 +94,63 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         null=True, blank=True,
         help_text='for checkoutpg transactions, response data received after '
                   'calling financial-actions api.')
+    gateway_fee_authorization = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="Used to store gateway authorization fee from financial "
+                  "action data")
+    gateway_fee_void = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="Used to store gateway void fee from financial "
+                  "action data")
+    gateway_fee_refund = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="Used to store gateway refund fee from financial "
+                  "action data")
+    blended_variable_fee = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="Used to store blended variable fee from financial "
+                  "action data")
+    gateway_fee_authorization_vat = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="Used to store gateway authorization fee vat from financial"
+                  " action data")
+    gateway_fee_void_vat = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="Used to store gateway void fee vat from financial "
+                  "action data")
+    gateway_fee_refund_vat = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="Used to store gateway refund fee vat from financial "
+                  "action data")
+    blended_variable_fee_vat = models.DecimalField(
+        decimal_places=8, max_digits=12, null=True, blank=True,
+        help_text="Used to store blended variable fee vat from financial "
+                  "action data")
+    card_category = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text='Denotes the card category i.e. consumer/commercial')
+    entity_id = models.CharField(
+        max_length=40, null=True, blank=True,
+        help_text='The unique id related to the merchant account')
 
 
 @receiver(post_save, sender=ADCBTransactionData)
 def calculate_adcb_card_charges(sender, instance, created, **kwargs):
     if instance.financial_action_response_data:
+        from payments.tasks import common_update_financial_action_charges
         try:
             logger.info("adcbpgclient updated with financial action data")
             from payments.tasks import update_calculated_gateway_charges
             transaction_obj = YouPayTransactionData.objects.get(
                 payment_reference=instance.reference_id)
             update_calculated_gateway_charges(transaction_obj.transaction_id)
+            fin_args = {
+                "pk": instance.id,
+                "financial_action_data": (
+                    instance.financial_action_response_data),
+                "model_name": MODEL_NAME_ADCBTRANSACTIONDATA
+            }
+            common_update_financial_action_charges.delay(**fin_args)
         except Exception as e:
             logger.error("Error calling gateway charge calculation for "
                          "adcb transaction {}".format(instance.reference_id),
