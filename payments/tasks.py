@@ -270,8 +270,8 @@ def common_update_financial_action_charges(**kwargs):
     model_name = kwargs.get('model_name', None)
     try:
         logger.info(
-            "Updating {} with received financial action response data breakups".format(
-                model_name))
+            "Updating {} with received financial action response data "
+            "breakups".format(model_name))
         if model_name == MODEL_NAME_TRANSACTIONDATA:
             from checkoutpgclient.models import TransactionData
             model_name = TransactionData

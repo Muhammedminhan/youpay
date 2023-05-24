@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from payments.constants import MODEL_NAME_ADCBTRANSACTIONDATA
 from payments.models import YouPayTransactionData
 from .constants import (PURCHASE_PLATFORM_CHOICES, REDEMPTION_METHOD_CHOICES,
                         REDEMPTION_METHOD_NONE)
@@ -147,7 +148,7 @@ def calculate_adcb_card_charges(sender, instance, created, **kwargs):
                 "pk": instance.id,
                 "financial_action_data": (
                     instance.financial_action_response_data),
-                "model_name": "ADCBTransactionData"
+                "model_name": MODEL_NAME_ADCBTRANSACTIONDATA
             }
             common_update_financial_action_charges.delay(**fin_args)
         except Exception as e:
