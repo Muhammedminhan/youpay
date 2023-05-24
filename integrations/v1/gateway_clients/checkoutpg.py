@@ -416,14 +416,16 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     response_data.get("checkout_response_data")))
             logger.info("pre auth verification method response "
                         "data {}".format(response_data))
+            response_data.pop("transaction_message")
             if redirect:
                 return response_data, self.SUCCESS
             else:
-                return response_data, self.PAYMENT_FAILED
+
+                return response_data, self.PRE_AUTH_FAILED
         else:
             logger.error("card payment error occurred, response {}".format(
                 response_data))
-            return None, self.PAYMENT_FAILED
+            return None, self.UNKNOWN_ERR
 
     def paypal_payment(self, data):
         transaction_data = data.get('transaction_data')
