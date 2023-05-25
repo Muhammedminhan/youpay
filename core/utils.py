@@ -271,11 +271,15 @@ def get_redirect_url(url, transaction_id):
     return url + '?transaction_id=' + transaction_id
 
 
-def process_checkoutpg_response_verification(transaction_id, response_data):
+def process_checkoutpg_response_verification(transaction_id, response_data,
+                                             is_pre_auth=False):
     """
     function to process checkoutpg response verification and update in youpay
     transaction table
     """
+    if is_pre_auth:
+        response_data = format_pre_auth_payment_response_for_verify(
+            response_data)
 
     logger.info(
         "Verify payment response data {}".format(response_data))
@@ -343,10 +347,30 @@ def checkout_decline_check(response_data):
 
 
 def tabby_reject_check(response_data):
-
     payment_status = response_data.get("payment_status")
 
     if payment_status == PAYMENT_STATUS_REJECTED:
         payment_status = PAYMENT_STATUS_REJECTED_RETRY
 
     return payment_status
+
+
+def format_pre_auth_payment_response_for_verify(response_data):
+    structured_dict = {
+        "status": response_data.get("status"),
+        "reference": response_data.get("reference"),
+        "approved": response_data.get("approved"),
+        "response_code": response_data.get("response_code"),
+        "response_summary": response_data.get("response_summary"),
+        "payment_status_dict": response_data.get("payment_status_dict"),
+        "is_fraud": response_data.get("risk", {}).get("fraud"),
+        "is_flagged": response_data.get("risk", {}).get("flagged"),
+        "card_bin": response_data.get("source", {}).get("bin"),
+        "card_last4": response_data.get("source", {}).get("last4"),
+        "payment_scheme": response_data.get("source", {}).get("scheme"),
+        "is_gcc_card": response_data.get("is_gcc_card"),
+        "card_issuer_country": response_data.get("source", {}).get(
+            "issuer_country")}
+    logger.info(
+        "structured dict for pre auth case {} ".format(structured_dict))
+    return structured_dict
