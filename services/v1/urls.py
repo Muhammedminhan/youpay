@@ -14,6 +14,10 @@ from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
+from .api_clients.qitaf_service import (
+    QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
+    QitafRewardUpdateAPIView, QitafReversePointsAPIView,
+    QitafCollectPointsAPIView)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
@@ -68,4 +72,11 @@ urlpatterns = [
 
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
+
+    # Qitaf endpoints
+    path('qitaf/generate-otp/', QitafGenerateOTPAPIView.as_view()),
+    path('qitaf/collect/', QitafCollectPointsAPIView.as_view()),
+    path('qitaf/redeem-points/', QitafRedeemPointsAPIView.as_view()),
+    path('qitaf/reward-update/', QitafRewardUpdateAPIView.as_view()),
+    path('qitaf/reverse-points/', QitafReversePointsAPIView.as_view()),
 ]
