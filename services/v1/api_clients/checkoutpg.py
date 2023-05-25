@@ -164,6 +164,8 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                         code=code,
                         success_dict=response_data
                     )
+                    if code == self.response_obj.PRE_AUTH_CASE:
+                        data = format_checkoutpg_response(data, code)
                     return Response(data,
                                     status=status.HTTP_200_OK)
                 else:
@@ -252,12 +254,12 @@ class CheckoutVerification(APIView):
                     code=code,
                     success_dict=response_data
                 )
-                formatted_data = self.format_checkoutpg_response(data, code)
+                formatted_data = format_checkoutpg_response(data, code)
                 return Response(formatted_data,
                                 status=status.HTTP_200_OK)
             else:
                 data = self.response_obj.get_error_dict(error_code=code)
-                formatted_data = self.format_checkoutpg_response(data, code)
+                formatted_data = format_checkoutpg_response(data, code)
                 return Response(formatted_data,
                                 status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
@@ -266,28 +268,26 @@ class CheckoutVerification(APIView):
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 
-    def format_checkoutpg_response(self, data, code):
 
-        transaction_message = data.get('transaction_message')
-        errors = data.get('errors')
-        is_success = data.get(IS_SUCCESS)
+def format_checkoutpg_response(data, code):
+    transaction_message = data.get('transaction_message')
+    errors = data.get('errors')
+    is_success = data.get(IS_SUCCESS)
 
-        if transaction_message:
-            data['code'] = code
-            data['message'] = transaction_message.get('response_summary',
-                                                      None)
-            data[IS_SUCCESS] = is_success
-            data.pop('transaction_message', None)
-        if errors:
-            errors['message'] = COMMON_ERROR_MESSAGE_EN
-            errors['code'] = code
+    if transaction_message:
+        data['code'] = code
+        data['message'] = transaction_message.get('response_summary',
+                                                  None)
+        data[IS_SUCCESS] = is_success
+        data.pop('transaction_message', None)
+    if errors:
+        errors['message'] = COMMON_ERROR_MESSAGE_EN
+        errors['code'] = code
 
-        if data['message'] is None:
-            data['message'] = COMMON_ERROR_MESSAGE_EN
-            data['code'] = (
-                self.response_obj.CHECKOUTPG_RESPONSE_MESSAGE_NULL
-            )
-        return data
+    if data['message'] is None:
+        data['message'] = COMMON_ERROR_MESSAGE_EN
+        data['code'] = 2404  # CHECKOUTPG_RESPONSE_MESSAGE_NULL
+    return data
 
 
 @payment_status_check
