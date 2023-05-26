@@ -22,7 +22,7 @@ from services.constants import (
     TOKEN_TYPE_APPLEPAY,
     TOKEN_TYPE_SAVED_CARD,
     TOKEN_TYPE_CARD,
-    TOKEN_TYPE_PAYPAL
+    TOKEN_TYPE_PAYPAL, CHECKOUTPG_RESPONSE_MESSAGE_NULL_CODE
 )
 from services.v1.views.common import (
     YouPayTransactionCRUD,
@@ -288,7 +288,7 @@ def format_checkoutpg_response(data, code):
 
     if data['message'] is None:
         data['message'] = COMMON_ERROR_MESSAGE_EN
-        data['code'] = 2404  # CHECKOUTPG_RESPONSE_MESSAGE_NULL
+        data['code'] = CHECKOUTPG_RESPONSE_MESSAGE_NULL_CODE
     return data
 
 
