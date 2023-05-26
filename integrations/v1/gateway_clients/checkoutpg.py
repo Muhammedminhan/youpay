@@ -420,7 +420,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 response_data.pop('transaction_message')
                 return response_data, self.SUCCESS
             else:
-                return response_data, self.PRE_AUTH_CASE
+                return response_data, self.PRE_AUTH
         else:
             logger.error("card payment error occurred, response {}".format(
                 response_data))

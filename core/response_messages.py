@@ -34,7 +34,7 @@ class YouPayResponse(object):
     CHECKOUTPG_CONNECTION_ERROR = 2003
     CHECKOUTPG_RESPONSE_FAILED = 2400
     CHECKOUTPG_RESPONSE_MESSAGE_NULL = 2404
-    PRE_AUTH_CASE = 2405
+    PRE_AUTH = 2405
     """checkoutpg related ends"""
 
     """tabbypg related begins"""
@@ -143,7 +143,7 @@ class YouPayResponse(object):
             self.B2CPAYBACK_VERIFICATION_EXCEPTION: "Exception occurred ",
             self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
                                                  " verification",
-            self.PRE_AUTH_CASE: "Authentication not approved"
+            self.PRE_AUTH: "Authentication not approved"
         })
 
     def get_400_message(self, message):
