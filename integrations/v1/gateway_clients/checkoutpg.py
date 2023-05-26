@@ -272,18 +272,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                                                          response.text))
 
                     if response:
-                        response_data = response.json()
-                        if response_data.get(
-                                'status') == 200 and response_data.get(
-                            IS_REDIRECT) is True:
-                            self.payment_reference = response_data.get(
-                                "reference_id")
-                            self.payment_status = PAYMENT_STATUS_PENDING
-
-                            self.update_youpay_transaction_data(
-                                self.prepare_data_to_update())
-                            response_data[IS_SUCCESS] = True
-                            return response_data, self.SUCCESS
+                        response_data_json = response.json()
+                        response_data, response_code = (
+                            self.handle_card_payment_response(
+                                response_data_json, payment_data))
+                        return response_data, response_code
 
                     logger.error("Error in savedcard payment, {}".format(
                         response.text))
@@ -363,7 +356,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         response_data_json = response.json()
                         response_data, response_code = (
                             self.handle_card_payment_response(
-                                response_data_json, payment_data))
+                                response_data_json, payment_data,
+                                is_card=True))
                         return response_data, response_code
 
                     logger.error(
@@ -387,8 +381,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(error)
             return {"error": error}, self.CHECKOUTPG_CONNECTION_ERROR
 
-    def handle_card_payment_response(self, response_data, payment_data):
-        name_on_card = payment_data.get('customer_name')
+    def handle_card_payment_response(self, response_data, payment_data,
+                                     is_card=False):
         logger.info(
             "card payment response handling, checkoutpg response {} ".format(
                 response_data))
@@ -397,11 +391,16 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             # 3ds case
             self.payment_reference = response_data.get("reference_id")
             self.payment_status = PAYMENT_STATUS_PENDING
-
-            self.update_youpay_transaction_data(
-                self.prepare_data_to_update(
-                    name_on_card=name_on_card))
+            if is_card:
+                name_on_card = payment_data.get('customer_name')
+                self.update_youpay_transaction_data(
+                    self.prepare_data_to_update(name_on_card=name_on_card))
+            else:
+                # for saved card transactions
+                self.update_youpay_transaction_data(
+                    self.prepare_data_to_update())
             response_data[IS_SUCCESS] = True
+            # TODO remove checkout request and response data from response
             return response_data, self.SUCCESS
 
         elif response_data.get('status') == 200 and not response_data.get(
@@ -410,18 +409,18 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.info(
                 "card payment pre auth response data {}".format(
                     response_data))
+            is_pre_auth = True
             redirect, response_data = (
                 process_checkoutpg_response_verification(
                     self.transaction_id,
-                    response_data.get("checkout_response_data")))
+                    response_data.get("checkout_response_data"), is_pre_auth))
             logger.info("pre auth verification method response "
                         "data {}".format(response_data))
-            response_data.pop("transaction_message")
             if redirect:
+                response_data.pop('transaction_message')
                 return response_data, self.SUCCESS
             else:
-
-                return response_data, self.PRE_AUTH_FAILED
+                return response_data, self.PRE_AUTH
         else:
             logger.error("card payment error occurred, response {}".format(
                 response_data))
