@@ -96,7 +96,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                         code=code,
                         success_dict=response_data
                     )
-                    if code == self.response_obj.PRE_AUTH_CASE:
+                    if code == self.response_obj.PRE_AUTH:
                         data = format_checkoutpg_response(data, code)
                     return Response(data,
                                     status=status.HTTP_200_OK)
@@ -166,7 +166,7 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                         code=code,
                         success_dict=response_data
                     )
-                    if code == self.response_obj.PRE_AUTH_CASE:
+                    if code == self.response_obj.PRE_AUTH:
                         data = format_checkoutpg_response(data, code)
                     return Response(data,
                                     status=status.HTTP_200_OK)
