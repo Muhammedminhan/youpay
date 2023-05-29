@@ -14,8 +14,8 @@ from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
-from .api_clients.city_service import CityPointBalanceAPIView, \
-    CityPointRedemptionAPIView
+from .api_clients.city_service import (CityPointBalanceAPIView,
+                                       CityPointRedemptionAPIView)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
