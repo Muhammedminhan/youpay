@@ -271,8 +271,6 @@ def get_redirect_url(url, transaction_id):
     return url + '?transaction_id=' + transaction_id
 
 
-# def process_checkoutpg_response_verification(transaction_id, response_data,
-#                                              is_pre_auth=False):
 def process_checkoutpg_response_verification(**kwargs):
     """
     function to process checkoutpg response verification and update in youpay
