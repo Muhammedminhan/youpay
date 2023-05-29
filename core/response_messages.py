@@ -90,9 +90,9 @@ class YouPayResponse(object):
     MISSING_CLIENT_INFO = 6000
     """Youpay related ends"""
 
-    """City rewards related begins"""
-    CITY_REWARDS_CONNECTION_ERROR = 9002
-    """City rewards related ends"""
+    """Citi rewards related begins"""
+    CITI_REWARDS_CONNECTION_ERROR = 9002
+    """Citi rewards related ends"""
 
     MESSAGE = {}
 
@@ -130,7 +130,7 @@ class YouPayResponse(object):
                 "Your Tabby payment has been rejected"),
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
-            self.CITY_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.CITI_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
 
