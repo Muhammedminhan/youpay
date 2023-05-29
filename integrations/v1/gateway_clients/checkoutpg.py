@@ -400,7 +400,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 self.update_youpay_transaction_data(
                     self.prepare_data_to_update())
             response_data[IS_SUCCESS] = True
-            # TODO remove checkout request and response data from response
+            response_data.pop('checkout_request_data')
+            response_data.pop('checkout_response_data')
             return response_data, self.SUCCESS
 
         elif response_data.get('status') == 200 and not response_data.get(
@@ -412,8 +413,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             is_pre_auth = True
             redirect, response_data = (
                 process_checkoutpg_response_verification(
-                    self.transaction_id,
-                    response_data.get("checkout_response_data"), is_pre_auth))
+                    transaction_id=self.transaction_id,
+                    response_data=response_data.get("checkout_response_data"),
+                    is_pre_auth=is_pre_auth,
+                    payment_method=self.payment_method
+                ))
             logger.info("pre auth verification method response "
                         "data {}".format(response_data))
             if redirect:
@@ -567,8 +571,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         if response:
             response_data = response.json()
-            redirect, response_data = process_checkoutpg_response_verification(
-                transaction_id, response_data)
+            redirect, response_data = (
+                process_checkoutpg_response_verification(
+                    transaction_id=transaction_id,
+                    response_data=response_data))
             if redirect:
                 return response_data, self.SUCCESS
             else:
@@ -729,7 +735,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     redirect, response_data = (
                         process_checkoutpg_response_verification(
-                            self.transaction_id, res_data))
+                            transaction_id=self.transaction_id,
+                            response_data=res_data))
 
                     response_code = self.APPLE_PAY_REDIRECT
                     message = self.MESSAGE.get(response_code)

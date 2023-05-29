@@ -271,12 +271,19 @@ def get_redirect_url(url, transaction_id):
     return url + '?transaction_id=' + transaction_id
 
 
-def process_checkoutpg_response_verification(transaction_id, response_data,
-                                             is_pre_auth=False):
+# def process_checkoutpg_response_verification(transaction_id, response_data,
+#                                              is_pre_auth=False):
+def process_checkoutpg_response_verification(**kwargs):
     """
     function to process checkoutpg response verification and update in youpay
     transaction table
     """
+
+    transaction_id = kwargs.get('transaction_id')
+    response_data = kwargs.get('response_data')
+    is_pre_auth = kwargs.get('is_pre_auth')
+    payments_method = kwargs.get('payments_method')
+
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
             response_data)
@@ -323,6 +330,7 @@ def process_checkoutpg_response_verification(transaction_id, response_data,
             'is_flagged': is_flagged,
             'is_fraud': response_data.get("is_fraud"),
             'card_issuer_country': response_data.get("card_issuer_country"),
+            'payments_method': payments_method
         }
     )
     redirect, response_data = is_redirect(transaction_id,
