@@ -416,7 +416,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     transaction_id=self.transaction_id,
                     response_data=response_data.get("checkout_response_data"),
                     is_pre_auth=is_pre_auth,
-                    payment_method=self.payment_method
+                    payment_method=self.payment_method,
+                    payment_gateway=self.payment_gateway,
+                    channel_code=self.channel_code,
                 ))
             logger.info("pre auth verification method response "
                         "data {}".format(response_data))

@@ -281,6 +281,8 @@ def process_checkoutpg_response_verification(**kwargs):
     response_data = kwargs.get('response_data')
     is_pre_auth = kwargs.get('is_pre_auth')
     payment_method = kwargs.get('payment_method')
+    payment_gateway = kwargs.get('payment_gateway')
+    channel_code = kwargs.get('channel_code')
 
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
@@ -328,7 +330,9 @@ def process_checkoutpg_response_verification(**kwargs):
             'is_flagged': is_flagged,
             'is_fraud': response_data.get("is_fraud"),
             'card_issuer_country': response_data.get("card_issuer_country"),
-            'payment_method': payment_method
+            'payment_method': payment_method,
+            'payment_gateway': payment_gateway,
+            'channel_code': channel_code,
         }
     )
     redirect, response_data = is_redirect(transaction_id,
