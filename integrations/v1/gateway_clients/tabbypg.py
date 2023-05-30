@@ -255,17 +255,20 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     approved = False
                     response_summary = "Payment failed"
 
+                redirect_flag, response_data = is_redirect(transaction_id,
+                                                           response_data)
+
                 self.update_youpay_transaction_data(
                     {
                         'transaction_id': transaction_id,
                         "payment_status": payment_status,
                         "approved": approved,
                         "response_summary": response_summary,
-                        'is_payment_verified': is_payment_verified,
+                        'is_payment_verified': (
+                            True if redirect_flag else False),
                     }
                 )
-                redirect_flag, response_data = is_redirect(transaction_id,
-                                                           response_data)
+
                 if redirect_flag:
                     self.response_data = json.dumps(response_data)
                     logger.info("Tabbypg Success Response data {} ".format(

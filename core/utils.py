@@ -283,7 +283,6 @@ def process_checkoutpg_response_verification(**kwargs):
     payment_method = kwargs.get('payment_method')
     payment_gateway = kwargs.get('payment_gateway')
     channel_code = kwargs.get('channel_code')
-    is_payment_verified = False
 
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
@@ -314,9 +313,11 @@ def process_checkoutpg_response_verification(**kwargs):
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID
             is_flagged = response_data.get("risk", {}).get("flagged")
-            is_payment_verified = True
 
     youpay_obj = YouPayTransactionCRUD()
+
+    redirect, response_data = is_redirect(transaction_id,
+                                          response_data)
 
     youpay_obj.update_youpay_transaction_data(
         {
@@ -335,12 +336,10 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': is_payment_verified,
+            'is_payment_verified': True if redirect else False,
+
         }
     )
-    redirect, response_data = is_redirect(transaction_id,
-                                          response_data)
-
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
 
