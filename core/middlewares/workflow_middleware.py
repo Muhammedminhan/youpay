@@ -287,18 +287,29 @@ class PaymentVerificationCheckMiddleware(object):
             logger.error(log_message)
             self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
 
+    def common_error_response(self, message, code):
+        return JsonResponse(
+            {
+                'errors': {
+                    'message': message,
+                    'code': code
+                }
+            },
+            status=400)
+
     def check_already_verified(self, transaction_obj, youpay_message_obj):
         if transaction_obj.is_payment_verified:
             # Duplicate verification, so redirect to success or failure
+            url_format = '{}?transaction_id={}'
             if transaction_obj.payment_status in SUCCESS_REDIRECT_STATUS_LIST:
                 # success page direction on duplicate check
                 redirect_url = (
-                    '{}?transaction_id={}'.format(
+                    url_format.format(
                         transaction_obj.success_url,
                         transaction_obj.transaction_id))
             else:
                 redirect_url = (
-                    '{}?transaction_id={}'.format(
+                    url_format.format(
                         transaction_obj.failure_url,
                         transaction_obj.transaction_id))
 
