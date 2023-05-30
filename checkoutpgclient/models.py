@@ -140,9 +140,9 @@ def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
             "financial_action_data": instance.financial_action_response_data
         }
         calculate_checkoutpg_gateway_charge.delay(**dct_args)
-        fin_args = {
+        financial_kwargs = {
             "pk": instance.id,
             "financial_action_data": instance.financial_action_response_data,
             "model_name": MODEL_NAME_TRANSACTIONDATA
         }
-        common_update_financial_action_charges.delay(**fin_args)
+        common_update_financial_action_charges.delay(**financial_kwargs)
