@@ -17,7 +17,8 @@ from core.messages import (
     TRANSACTION_MSG,
     IS_REDIRECT
 )
-from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
+from core.middlewares.workflow_middleware import (
+    PaymentStatusCheckMiddleware, PaymentVerificationCheckMiddleware)
 from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
@@ -35,6 +36,9 @@ logger = logging.getLogger(__name__)
 
 payment_status_check = decorator_from_middleware(
     PaymentStatusCheckMiddleware)
+
+payment_verification_check = decorator_from_middleware(
+    PaymentVerificationCheckMiddleware)
 
 
 def get_saved_fields(saved_fields, data_dict, transaction_obj):
@@ -139,6 +143,8 @@ class YouPayTransactionCRUD(object):
         data_dict['retry_count'] = data.get('retry_count', None)
 
         data_dict['currency'] = data.get('currency', None)
+        data_dict['is_payment_verified'] = data.get('is_payment_verified',
+                                                    False)
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
@@ -417,6 +423,23 @@ class PaymentStatusCheckMiddlewareMixin:
 
 
 def payment_status_check(class_view):
+    def as_view(cls, **initkwargs):
+        view = super(cls, cls).as_view(**initkwargs)
+        view.payment_status_check = True
+        return view
+
+    return type(class_view.__name__, (class_view,), {
+        'as_view': classonlymethod(as_view),
+    })
+
+
+class PaymentVerificationCheckMiddlewareMixin:
+    @payment_verification_check
+    def dispatch(*args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+
+
+def payment_verification_check(class_view):
     def as_view(cls, **initkwargs):
         view = super(cls, cls).as_view(**initkwargs)
         view.payment_status_check = True

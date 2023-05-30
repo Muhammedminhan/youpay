@@ -7,7 +7,8 @@ from core.constants import MAX_PAYMENT_RETRY_COUNT
 from core.exceptions import (
     TransactionNotFound,
     TransactionAlreadyPaid,
-    TransactionAlreadyCancelled, TransactionAlreadyExpired)
+    TransactionAlreadyCancelled, TransactionAlreadyExpired,
+    TransactionAlreadyVerified)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
     MIDDLEWARE_ALREADY_PAID_MESSAGE)
@@ -15,7 +16,7 @@ from core.response_messages import YouPayResponse
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_STATUS_EXPIRED)
+    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST)
 
 logger = logging.getLogger(__name__)
 
@@ -210,8 +211,7 @@ class PaymentStatusCheckMiddleware(object):
                 is_success)
             raise TransactionAlreadyCancelled
 
-    def check_transaction_expired(self, transaction_obj,
-                                  youpay_message_obj):
+    def check_transaction_expired(self, transaction_obj, youpay_message_obj):
         transaction_status = transaction_obj.payment_status
         transaction_id = transaction_obj.transaction_id
 
@@ -243,3 +243,76 @@ class PaymentStatusCheckMiddleware(object):
                 }
             },
             status=400)
+
+
+class PaymentVerificationCheckMiddleware(object):
+    def __init__(self, get_response):
+        self.get_response = get_response
+        # One-time configuration and initialization.
+        self.response = {}
+
+    def __call__(self, request):
+        # Code to be executed for each request before
+        # the view (and later middleware) are called.
+        response = self.get_response(request)
+        # Code to be executed for each request/response after
+        # the view is called.
+
+        return response
+
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        from core.utils import decrypt_string
+        from services.v1.views.common import (YouPayTransactionCRUD)
+
+        youpay_obj = YouPayTransactionCRUD()
+        youpay_message_obj = YouPayResponse()
+
+        transaction_id = decrypt_string(request.GET.get('id'))
+
+        try:
+            transaction_obj = youpay_obj.get_youpay_transaction_data(
+                transaction_id)
+
+            self.check_transaction_obj(transaction_obj,
+                                       youpay_message_obj)
+
+            self.check_already_verified(transaction_obj, youpay_message_obj)
+
+        except TransactionAlreadyVerified:
+            return JsonResponse(self.response, status=200)
+
+        except TransactionNotFound:
+            log_message = "TransactionNotFound"
+            code = youpay_message_obj.TRANSACTION_NOT_FOUND
+            logger.error(log_message)
+            self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
+
+    def check_already_verified(self, transaction_obj, youpay_message_obj):
+        if transaction_obj.is_payment_verified:
+            # Duplicate verification, so redirect to success or failure
+            if transaction_obj.payment_status in SUCCESS_REDIRECT_STATUS_LIST:
+                # success page direction on duplicate check
+                redirect_url = (
+                    '{}?transaction_id={}'.format(
+                        transaction_obj.success_url,
+                        transaction_obj.transaction_id))
+            else:
+                redirect_url = (
+                    '{}?transaction_id={}'.format(
+                        transaction_obj.failure_url,
+                        transaction_obj.transaction_id))
+
+            self.response = {
+                "is_redirect": True,
+                "redirect_url": redirect_url,
+                "is_success": True,
+                "message": youpay_message_obj.MESSAGE.get(
+                    youpay_message_obj.DUPLICATE_PAYMENT_VERIFICATION),
+                "code": youpay_message_obj.DUPLICATE_PAYMENT_VERIFICATION
+            }
+            raise TransactionAlreadyVerified()
+
+    def check_transaction_obj(self, transaction_obj, youpay_message_obj):
+        if transaction_obj is None:
+            raise TransactionNotFound(
+                youpay_message_obj.TRANSACTION_NOT_FOUND)

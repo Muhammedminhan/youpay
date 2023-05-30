@@ -239,6 +239,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     is_guest = models.BooleanField(
         default=False, db_index=True,
         help_text='Denotes whether the payment is done by guest user or not.')
+    is_payment_verified = models.BooleanField(
+        default=False, db_index=True,
+        help_text=('Set to true once payment is verified, and prevent further'
+                   ' verification'))
 
 
 @receiver(post_init, sender=YouPayTransactionData)
@@ -486,3 +490,4 @@ class ArchivedYouPayTransactionData(models.Model):
         max_length=100, null=True, blank=True,
         choices=SETTLEMENT_ENTITY_CHOICES)
     is_guest = models.BooleanField(default=False, db_index=True)
+    is_payment_verified = models.BooleanField(default=False, db_index=True)
