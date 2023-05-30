@@ -58,15 +58,15 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 logger.error("Error in qitaf otp, {}".format(response.text))
                 return ({"error": response.text},
-                        self.Qitaf_CONNECTION_ERROR)
+                        self.QITAF_CONNECTION_ERROR)
             logger.error("Error in qitaf otp, {}".format(response.text))
             return ({"error": response.text},
-                    self.Qitaf_CONNECTION_ERROR)
+                    self.QITAF_CONNECTION_ERROR)
 
         except Exception as e:
             error = "Error in qitaf generate otp api: {}".format(e)
             logger.error("Exception in qitaf payment: {}".format(e))
-            return {"error": error}, self.Qitaf_CONNECTION_ERROR
+            return {"error": error}, self.QITAF_CONNECTION_ERROR
 
     def collect_points(self, data):
         """
@@ -92,16 +92,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 logger.error("Error in qitaf point collection api, {}"
                              "".format(response.text))
-                return {"error": response.text}, self.Qitaf_CONNECTION_ERROR
+                return {"error": response.text}, self.QITAF_CONNECTION_ERROR
             logger.error("Error in qitaf point collection api, {}"
                          "".format(response.text))
-            return {"error": response.text}, self.Qitaf_CONNECTION_ERROR
+            return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in qitaf point collection api: {}".format(e)
             logger.error("Exception in qitaf point collection api: "
                          "{}".format(e))
-            return {"error": error}, self.Qitaf_CONNECTION_ERROR
+            return {"error": error}, self.QITAF_CONNECTION_ERROR
 
     def redeem_points(self, data):
         """
@@ -127,16 +127,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 logger.error("Error in qitaf redeem point api, {}"
                              "".format(response.text))
-                return {"error": response.text}, self.Qitaf_CONNECTION_ERROR
+                return {"error": response.text}, self.QITAF_CONNECTION_ERROR
             logger.error("Error in qitaf redeem point api, {}"
                          "".format(response.text))
-            return {"error": response.text}, self.Qitaf_CONNECTION_ERROR
+            return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in qitaf redeem point api: {}".format(e)
             logger.error("Exception in qitaf redeem point api: "
                          "{}".format(e))
-            return {"error": error}, self.Qitaf_CONNECTION_ERROR
+            return {"error": error}, self.QITAF_CONNECTION_ERROR
 
     def reverse_points(self, data):
         """
@@ -162,16 +162,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 logger.error("Error in qitaf reverse point api, {}"
                              "".format(response.text))
-                return {"error": response.text}, self.Qitaf_CONNECTION_ERROR
+                return {"error": response.text}, self.QITAF_CONNECTION_ERROR
             logger.error("Error in qitaf reverse point api, {}"
                          "".format(response.text))
-            return {"error": response.text}, self.Qitaf_CONNECTION_ERROR
+            return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in qitaf reverse point api: {}".format(e)
             logger.error("Exception in qitaf reverse point api: "
                          "{}".format(e))
-            return {"error": error}, self.Qitaf_CONNECTION_ERROR
+            return {"error": error}, self.QITAF_CONNECTION_ERROR
 
     def reward_update(self, data):
         """
@@ -197,13 +197,13 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 logger.error("Error in qitaf reward update api, {}"
                              "".format(response.text))
-                return {"error": response.text}, self.Qitaf_CONNECTION_ERROR
+                return {"error": response.text}, self.QITAF_CONNECTION_ERROR
             logger.error("Error in qitaf reward update api, {}"
                          "".format(response.text))
-            return {"error": response.text}, self.Qitaf_CONNECTION_ERROR
+            return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in qitaf reward update api: {}".format(e)
             logger.error("Exception in qitaf reward update api: "
                          "{}".format(e))
-            return {"error": error}, self.Qitaf_CONNECTION_ERROR
+            return {"error": error}, self.QITAF_CONNECTION_ERROR

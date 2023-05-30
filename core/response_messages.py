@@ -91,7 +91,7 @@ class YouPayResponse(object):
     """Youpay related ends"""
 
     """Qitaf related begins"""
-    Qitaf_CONNECTION_ERROR = 8002
+    QITAF_CONNECTION_ERROR = 8002
     """Qitaf related ends"""
 
     MESSAGE = {}
@@ -132,7 +132,7 @@ class YouPayResponse(object):
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
-            self.Qitaf_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.QITAF_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
