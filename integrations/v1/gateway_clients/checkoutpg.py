@@ -308,7 +308,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
         self.currency = transaction_data.get('currency')
-
+        
         name_on_card = ""
 
         verify_response, verify_status = self.verify_transaction(
