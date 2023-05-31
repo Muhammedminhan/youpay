@@ -219,23 +219,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             return None, self.TRANSACTION_NOT_FOUND
 
         try:
-            # if transaction is already verified then redirect to
-            # corresponding client url
-            if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
-                response_data = {
-                    IS_REDIRECT: True,
-                    IS_SUCCESS: True,
-                    "redirect_url": (self.transaction_obj.success_url +
-                                     '?transaction_id=' + transaction_id),
-                    "transaction_message": {
-                        "status": 200,
-                        "is_capture": True,
-                        "message": "Duplicate verification"
-                    }
-                }
-                self.response_data = json.dumps(response_data)
-
-                return response_data, self.SUCCESS
 
             response = requests.get(url, params=params)
 
@@ -259,13 +242,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         "payment_status": payment_status,
                         "approved": approved,
                         "response_summary": response_summary,
-                        'is_payment_verified': True,
                     }
                 )
-
                 redirect_flag, response_data = is_redirect(transaction_id,
                                                            response_data)
-
                 if redirect_flag:
                     self.response_data = json.dumps(response_data)
                     logger.info("Tabbypg Success Response data {} ".format(
@@ -275,10 +255,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     self.response_data = json.dumps(response_data)
                     logger.info("Tabbypg Failure Response data {} ".format(
                         self.response_data))
-                    self.update_youpay_transaction_data({
-                        'transaction_id': transaction_id,
-                        'is_payment_verified': False,
-                    })
                     return response_data, self.TABBYPG_PAYMENT_REJECTED
             else:
                 logger.error(

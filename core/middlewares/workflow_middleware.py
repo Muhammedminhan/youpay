@@ -42,7 +42,6 @@ class PaymentStatusCheckMiddleware(object):
     def process_view(self, request, view_func, view_args, view_kwargs):
         from core.utils import decrypt_string
         from services.v1.views.common import (YouPayTransactionCRUD)
-        print("\n\nMiddleware check for status")
         youpay_obj = YouPayTransactionCRUD()
 
         # to import youpay codes
@@ -264,7 +263,6 @@ class PaymentVerificationCheckMiddleware(object):
     def process_view(self, request, view_func, view_args, view_kwargs):
         from core.utils import decrypt_string
         from services.v1.views.common import (YouPayTransactionCRUD)
-        print("\n\nMiddleware check for verification ")
 
         youpay_obj = YouPayTransactionCRUD()
         youpay_message_obj = YouPayResponse()
@@ -314,9 +312,6 @@ class PaymentVerificationCheckMiddleware(object):
                     url_format.format(
                         transaction_obj.failure_url,
                         transaction_obj.transaction_id))
-
-            print("CURRENT STATUS BEFORE VERIFICATION ",
-                  transaction_obj.payment_status)
 
             self.response = {
                 "is_redirect": True,

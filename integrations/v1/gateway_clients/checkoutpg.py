@@ -580,13 +580,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             if redirect:
                 return response_data, self.SUCCESS
             else:
-                self.update_youpay_transaction_data(
-                    {
-                        'transaction_id': transaction_id,
-                        'is_payment_verified': False,
-                    }
-                )
-
                 return response_data, self.PAYMENT_FAILED
         else:
             logger.error(
