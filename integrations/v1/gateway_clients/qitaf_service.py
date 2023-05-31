@@ -53,12 +53,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = response.json()
                 logger.info("qitaf payment response: {}".format(
                     response_data))
-                if response.status == 200:
-                    return response_data, self.SUCCESS
+                return response_data, self.SUCCESS
 
-                logger.error("Error in qitaf otp, {}".format(response.text))
-                return ({"error": response.text},
-                        self.QITAF_CONNECTION_ERROR)
             logger.error("Error in qitaf otp, {}".format(response.text))
             return ({"error": response.text},
                     self.QITAF_CONNECTION_ERROR)
@@ -87,12 +83,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = response.json()
                 logger.info("qitaf point collection api response: {}".format(
                     response_data))
-                if response.status == 200:
-                    return response_data, self.SUCCESS
+                return response_data, self.SUCCESS
 
-                logger.error("Error in qitaf point collection api, {}"
-                             "".format(response.text))
-                return {"error": response.text}, self.QITAF_CONNECTION_ERROR
             logger.error("Error in qitaf point collection api, {}"
                          "".format(response.text))
             return {"error": response.text}, self.QITAF_CONNECTION_ERROR
@@ -122,12 +114,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = response.json()
                 logger.info("qitaf redeem point api response: {}".format(
                     response_data))
-                if response.status == 200:
-                    return response_data, self.SUCCESS
+                return response_data, self.SUCCESS
 
-                logger.error("Error in qitaf redeem point api, {}"
-                             "".format(response.text))
-                return {"error": response.text}, self.QITAF_CONNECTION_ERROR
             logger.error("Error in qitaf redeem point api, {}"
                          "".format(response.text))
             return {"error": response.text}, self.QITAF_CONNECTION_ERROR
@@ -157,12 +145,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = response.json()
                 logger.info("qitaf reverse point api response: {}".format(
                     response_data))
-                if response.status == 200:
-                    return response_data, self.SUCCESS
+                return response_data, self.SUCCESS
 
-                logger.error("Error in qitaf reverse point api, {}"
-                             "".format(response.text))
-                return {"error": response.text}, self.QITAF_CONNECTION_ERROR
             logger.error("Error in qitaf reverse point api, {}"
                          "".format(response.text))
             return {"error": response.text}, self.QITAF_CONNECTION_ERROR
@@ -192,12 +176,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = response.json()
                 logger.info("qitaf reward update api response: {}".format(
                     response_data))
-                if response.status == 200:
-                    return response_data, self.SUCCESS
+                return response_data, self.SUCCESS
 
-                logger.error("Error in qitaf reward update api, {}"
-                             "".format(response.text))
-                return {"error": response.text}, self.QITAF_CONNECTION_ERROR
             logger.error("Error in qitaf reward update api, {}"
                          "".format(response.text))
             return {"error": response.text}, self.QITAF_CONNECTION_ERROR
