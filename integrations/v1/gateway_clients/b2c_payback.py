@@ -273,22 +273,21 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     "redirect_url"], transaction_status = (
                     get_adcb_verify_redirect_url(
                         response_data, transaction_obj))
-                is_payment_verified = False
+                is_payment_verified = True
                 approved_status = transaction_obj.approved
                 if transaction_status:  # success case
                     payment_status = PAYMENT_STATUS_PAID
                     approved_status = True
-                    response_data[IS_SUCCESS] = True
-                    is_payment_verified = True
                 elif response_data.get(
                         "redirect_url") is None:  # checkoutpg declined
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
                     response_data[IS_SUCCESS] = False
+                    is_payment_verified = False
+
                 else:  # failure
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False
                     response_data[IS_SUCCESS] = False
-                    is_payment_verified = True
 
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
