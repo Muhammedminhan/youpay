@@ -242,13 +242,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         "payment_status": payment_status,
                         "approved": approved,
                         "response_summary": response_summary,
-                        'is_payment_verified': True,
                     }
                 )
-
                 redirect_flag, response_data = is_redirect(transaction_id,
                                                            response_data)
-
                 if redirect_flag:
                     self.response_data = json.dumps(response_data)
                     logger.info("Tabbypg Success Response data {} ".format(
