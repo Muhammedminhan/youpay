@@ -273,7 +273,6 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     "redirect_url"], transaction_status = (
                     get_adcb_verify_redirect_url(
                         response_data, transaction_obj))
-                is_payment_verified = True
                 approved_status = transaction_obj.approved
                 if transaction_status:  # success case
                     payment_status = PAYMENT_STATUS_PAID
@@ -282,8 +281,6 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                         "redirect_url") is None:  # checkoutpg declined
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
                     response_data[IS_SUCCESS] = False
-                    is_payment_verified = False
-
                 else:  # failure
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False
@@ -320,8 +317,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                         'available_points': transaction_obj.available_points,
                         'payable_amount': transaction_obj.payable_amount,
                         'is_full_redemption':
-                            transaction_obj.is_full_redemption,
-                        'is_payment_verified': is_payment_verified,
+                            transaction_obj.is_full_redemption
                     }
                     self.update_youpay_transaction_data(update_data)
                     return response_data, transaction_obj
