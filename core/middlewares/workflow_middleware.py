@@ -16,7 +16,8 @@ from core.response_messages import YouPayResponse
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST)
+    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST,
+    PAYMENT_END_STATUS_LIST)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class PaymentStatusCheckMiddleware(object):
     def process_view(self, request, view_func, view_args, view_kwargs):
         from core.utils import decrypt_string
         from services.v1.views.common import (YouPayTransactionCRUD)
-
+        print("\n\nMiddleware check for status")
         youpay_obj = YouPayTransactionCRUD()
 
         # to import youpay codes
@@ -263,6 +264,7 @@ class PaymentVerificationCheckMiddleware(object):
     def process_view(self, request, view_func, view_args, view_kwargs):
         from core.utils import decrypt_string
         from services.v1.views.common import (YouPayTransactionCRUD)
+        print("\n\nMiddleware check for verification ")
 
         youpay_obj = YouPayTransactionCRUD()
         youpay_message_obj = YouPayResponse()
@@ -298,7 +300,7 @@ class PaymentVerificationCheckMiddleware(object):
             status=400)
 
     def check_already_verified(self, transaction_obj, youpay_message_obj):
-        if transaction_obj.is_payment_verified:
+        if transaction_obj.payment_status in PAYMENT_END_STATUS_LIST:
             # Duplicate verification, so redirect to success or failure
             url_format = '{}?transaction_id={}'
             if transaction_obj.payment_status in SUCCESS_REDIRECT_STATUS_LIST:
@@ -312,6 +314,9 @@ class PaymentVerificationCheckMiddleware(object):
                     url_format.format(
                         transaction_obj.failure_url,
                         transaction_obj.transaction_id))
+
+            print("CURRENT STATUS BEFORE VERIFICATION ",
+                  transaction_obj.payment_status)
 
             self.response = {
                 "is_redirect": True,
