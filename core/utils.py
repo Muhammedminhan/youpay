@@ -316,9 +316,6 @@ def process_checkoutpg_response_verification(**kwargs):
 
     youpay_obj = YouPayTransactionCRUD()
 
-    redirect, response_data = is_redirect(transaction_id,
-                                          response_data)
-
     youpay_obj.update_youpay_transaction_data(
         {
             'transaction_id': transaction_id,
@@ -336,10 +333,13 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': True if redirect else False,
-
+            'is_payment_verified': True,
         }
     )
+
+    redirect, response_data = is_redirect(transaction_id,
+                                          response_data)
+
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
 
