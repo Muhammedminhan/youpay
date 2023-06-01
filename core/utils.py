@@ -333,12 +333,13 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': True,
         }
     )
 
     redirect, response_data = is_redirect(transaction_id,
                                           response_data)
+    logger.info("Redirect ", redirect)
+    logger.info("Response Data ", response_data)
 
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data

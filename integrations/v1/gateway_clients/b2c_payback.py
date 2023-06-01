@@ -285,7 +285,6 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False
                     response_data[IS_SUCCESS] = False
-
                 logger.info("adcb verify api call response : {}"
                             "".format(response_data))
                 self.create_youpay_to_payment_gateways_data(
