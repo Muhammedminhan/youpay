@@ -143,8 +143,6 @@ class YouPayTransactionCRUD(object):
         data_dict['retry_count'] = data.get('retry_count', None)
 
         data_dict['currency'] = data.get('currency', None)
-        data_dict['is_payment_verified'] = data.get('is_payment_verified',
-                                                    False)
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
