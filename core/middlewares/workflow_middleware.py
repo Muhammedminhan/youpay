@@ -42,7 +42,6 @@ class PaymentStatusCheckMiddleware(object):
     def process_view(self, request, view_func, view_args, view_kwargs):
         from core.utils import decrypt_string
         from services.v1.views.common import (YouPayTransactionCRUD)
-        
         youpay_obj = YouPayTransactionCRUD()
 
         # to import youpay codes
