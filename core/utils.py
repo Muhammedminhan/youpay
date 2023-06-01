@@ -335,7 +335,6 @@ def process_checkoutpg_response_verification(**kwargs):
             'channel_code': channel_code,
         }
     )
-
     redirect, response_data = is_redirect(transaction_id,
                                           response_data)
 
