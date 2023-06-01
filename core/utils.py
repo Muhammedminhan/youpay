@@ -338,8 +338,6 @@ def process_checkoutpg_response_verification(**kwargs):
 
     redirect, response_data = is_redirect(transaction_id,
                                           response_data)
-    logger.info("Redirect ", redirect)
-    logger.info("Response Data ", response_data)
 
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
