@@ -1,6 +1,5 @@
 import json
 import logging
-
 import requests
 from rest_framework import status
 
@@ -277,6 +276,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 if transaction_status:  # success case
                     payment_status = PAYMENT_STATUS_PAID
                     approved_status = True
+                    response_data[IS_SUCCESS] = True
                 elif response_data.get(
                         "redirect_url") is None:  # checkoutpg declined
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
