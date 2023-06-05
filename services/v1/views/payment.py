@@ -21,8 +21,7 @@ from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
-                                      AdditionalChargesUpdation,
-                                      payment_status_check)
+                                      AdditionalChargesUpdation)
 from services.v1.views.utils import (
     reformat_payment_request_data
 )
@@ -317,7 +316,6 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
         })
 
 
-@payment_status_check
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
     def post(self, request):
         try:
