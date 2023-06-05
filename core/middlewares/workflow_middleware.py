@@ -8,7 +8,7 @@ from core.exceptions import (
     TransactionNotFound,
     TransactionAlreadyPaid,
     TransactionAlreadyCancelled, TransactionAlreadyExpired,
-    TransactionAlreadyVerified)
+    TransactionAlreadyVerified, TransactionMaxAttemptReached)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
     MIDDLEWARE_ALREADY_PAID_MESSAGE)
@@ -31,7 +31,6 @@ class PaymentStatusCheckMiddleware(object):
     def __call__(self, request):
         # Code to be executed for each request before
         # the view (and later middleware) are called.
-
         response = self.get_response(request)
 
         # Code to be executed for each request/response after
@@ -40,108 +39,76 @@ class PaymentStatusCheckMiddleware(object):
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        from core.utils import decrypt_string
-        from services.v1.views.common import (YouPayTransactionCRUD)
-        youpay_obj = YouPayTransactionCRUD()
 
-        # to import youpay codes
-        youpay_message_obj = YouPayResponse()
-        log_message = ""
-        code = None
-        try:
-            payment_status_check = getattr(view_func,
-                                           'payment_status_check', False)
+        class_name_list = [
+            'SavedCardPayment',
+            'CardPayment',
+            'PaypalPayment',
+            'B2CPaybackAuthenticate',
+            'TabbyPGCreateSession',
+            'AmazonPGAuthentication',
+            'HappyCreditsDebitBalance',
+        ]
+        if request.resolver_match.view_name in class_name_list:
+            from core.utils import decrypt_string
+            from services.v1.views.common import (YouPayTransactionCRUD)
+            youpay_obj = YouPayTransactionCRUD()
 
-            # this will check for only post requests
-            if payment_status_check and request.method == 'POST':
-                data = json.loads(request.body)
-                transaction_id = decrypt_string(
-                    data.get('transaction_id', None))
+            # to import youpay codes
+            youpay_message_obj = YouPayResponse()
+            log_message = ""
+            code = None
+            try:
+                # this will check for only post requests
+                if request.method == 'POST':
+                    data = json.loads(request.body)
+                    transaction_id = decrypt_string(
+                        data.get('transaction_id', None))
 
-                transaction_obj = youpay_obj.get_youpay_transaction_data(
-                    transaction_id)
+                    transaction_obj = youpay_obj.get_youpay_transaction_data(
+                        transaction_id)
 
-                self.check_transaction_obj(transaction_obj,
-                                           youpay_message_obj)
-
-                self.check_transaction_already_paid(transaction_obj,
-                                                    youpay_message_obj)
-
-                self.check_transaction_already_cancelled(
-                    transaction_obj,
-                    youpay_message_obj)
-
-                self.check_transaction_expired(transaction_obj,
+                    self.check_transaction_obj(transaction_obj,
                                                youpay_message_obj)
 
-                if transaction_obj.retry_count >= MAX_PAYMENT_RETRY_COUNT:
-                    """
-                    if retry count is more than MAX_RETRY_COUNT, then cancel 
-                    the transaction and redirect to cancel url
-                    """
+                    self.check_transaction_already_paid(transaction_obj,
+                                                        youpay_message_obj)
 
-                    message = "You have reached your maximum retry attempt"
+                    self.check_transaction_already_cancelled(
+                        transaction_obj,
+                        youpay_message_obj)
 
-                    youpay_obj.update_youpay_transaction_data(
-                        {
-                            "transaction_id": transaction_id,
-                            "payment_status": PAYMENT_STATUS_CANCELLED
-                        }
-                    )
+                    self.check_transaction_expired(transaction_obj,
+                                                   youpay_message_obj)
 
-                    redirect_url = self.get_redirect_url(
-                        transaction_obj.cancel_url, transaction_id)
+                    self.check_maximum_retry_attempt(transaction_obj,
+                                                     youpay_message_obj,
+                                                     youpay_obj,
+                                                     data)
 
-                    # Preparing response data as per the payment API response
-                    data = {
-                        "is_redirect": True,
-                        "is_success": False,
-                        "redirect_url": redirect_url,
-                        "message": message,
-                        "code": youpay_message_obj.MAX_PAYMENT_ATTEMPT_REACHED,
-                    }
+            except TransactionMaxAttemptReached:
+                return JsonResponse(self.response, status=200)
 
-                    return JsonResponse(data, status=200)
+            except TransactionAlreadyExpired:
+                return JsonResponse(self.response, status=200)
 
-                else:
+            except TransactionAlreadyCancelled:
+                return JsonResponse(self.response, status=200)
 
-                    # avoid retry count increment for applepay authorize and paid
-                    # transactions
-                    payment_stage = data.get('payment_stage', None)
+            except TransactionAlreadyPaid:
+                return JsonResponse(self.response, status=200)
 
-                    if not (payment_stage == PAYMENT_STATUS_AUTHORIZED or
-                            payment_stage == PAYMENT_STATUS_PAID
-                            and transaction_obj.payment_method ==
-                            PAYMENT_METHOD_APPLEPAY):
-                        retry_count = transaction_obj.retry_count + 1
+            except TransactionNotFound:
+                log_message = "TransactionNotFound"
+                code = youpay_message_obj.TRANSACTION_NOT_FOUND
+                logger.error(log_message)
+                self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
 
-                        youpay_obj.update_youpay_transaction_data(
-                            {
-                                "transaction_id": transaction_id,
-                                "retry_count": retry_count
-                            }
-                        )
-
-        except TransactionAlreadyExpired:
-            return JsonResponse(self.response, status=200)
-
-        except TransactionAlreadyCancelled:
-            return JsonResponse(self.response, status=200)
-
-        except TransactionAlreadyPaid:
-            return JsonResponse(self.response, status=200)
-
-        except TransactionNotFound:
-            log_message = "TransactionNotFound"
-            code = youpay_message_obj.TRANSACTION_NOT_FOUND
-            logger.error(log_message)
-            self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
-
-        except Exception as e:
-            log_message = "Exception in middleware: {}".format(e)
-            code = youpay_message_obj.UNKNOWN_ERR
-            logger.error(log_message)
-            self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
+            except Exception as e:
+                log_message = "Exception in middleware: {}".format(e)
+                code = youpay_message_obj.UNKNOWN_ERR
+                logger.error(log_message)
+                self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
 
     def get_payment_response(
             self, redirect_url, transaction_message, youpay_message_obj,
@@ -234,6 +201,57 @@ class PaymentStatusCheckMiddleware(object):
                 is_success)
             raise TransactionAlreadyExpired
 
+    def check_maximum_retry_attempt(self, transaction_obj,
+                                    youpay_message_obj, youpay_obj, data):
+
+        if transaction_obj.retry_count >= MAX_PAYMENT_RETRY_COUNT:
+            """
+            if retry count is more than MAX_RETRY_COUNT, then
+            cancel the transaction and redirect to cancel url
+            """
+
+            message = "You have reached your maximum retry attempt"
+
+            youpay_obj.update_youpay_transaction_data(
+                {
+                    "transaction_id": transaction_obj.transaction_id,
+                    "payment_status": PAYMENT_STATUS_CANCELLED
+                }
+            )
+
+            redirect_url = self.get_redirect_url(
+                transaction_obj.cancel_url, transaction_obj.transaction_id)
+
+            # Preparing response data as per the payment API response
+            data = {
+                "is_redirect": True,
+                "is_success": False,
+                "redirect_url": redirect_url,
+                "message": message,
+                "code": youpay_message_obj.MAX_PAYMENT_ATTEMPT_REACHED,
+            }
+            self.response = data
+            raise TransactionMaxAttemptReached
+
+        else:
+
+            # avoid retry count increment for applepay authorize
+            # and paid transactions
+            payment_stage = data.get('payment_stage', None)
+
+            if not (payment_stage == PAYMENT_STATUS_AUTHORIZED or
+                    payment_stage == PAYMENT_STATUS_PAID
+                    and transaction_obj.payment_method ==
+                    PAYMENT_METHOD_APPLEPAY):
+                retry_count = transaction_obj.retry_count + 1
+
+                youpay_obj.update_youpay_transaction_data(
+                    {
+                        "transaction_id": transaction_obj.transaction_id,
+                        "retry_count": retry_count
+                    }
+                )
+
     def common_error_response(self, message, code):
         return JsonResponse(
             {
@@ -261,31 +279,40 @@ class PaymentVerificationCheckMiddleware(object):
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        from core.utils import decrypt_string
-        from services.v1.views.common import (YouPayTransactionCRUD)
 
-        youpay_obj = YouPayTransactionCRUD()
-        youpay_message_obj = YouPayResponse()
+        verify_class_name_list = [  # these names are specified in the url.py
+            'CheckoutVerification', 'B2CPaybackVerify', 'TabbyPGVerification'
+        ]
 
-        transaction_id = decrypt_string(request.GET.get('id'))
+        if request.resolver_match.view_name in verify_class_name_list:
+            from core.utils import decrypt_string
+            from services.v1.views.common import (YouPayTransactionCRUD)
 
-        try:
-            transaction_obj = youpay_obj.get_youpay_transaction_data(
-                transaction_id)
+            youpay_obj = YouPayTransactionCRUD()
+            youpay_message_obj = YouPayResponse()
 
-            self.check_transaction_obj(transaction_obj,
-                                       youpay_message_obj)
+            transaction_id = decrypt_string(request.GET.get('id'))
 
-            self.check_already_verified(transaction_obj, youpay_message_obj)
+            try:
+                transaction_obj = youpay_obj.get_youpay_transaction_data(
+                    transaction_id)
 
-        except TransactionAlreadyVerified:
-            return JsonResponse(self.response, status=200)
+                self.check_transaction_obj(transaction_obj,
+                                           youpay_message_obj)
 
-        except TransactionNotFound:
-            log_message = "TransactionNotFound"
-            code = youpay_message_obj.TRANSACTION_NOT_FOUND
-            logger.error(log_message)
-            self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
+                self.check_already_verified(transaction_obj,
+                                            youpay_message_obj)
+
+            except TransactionAlreadyVerified:
+                logger.info("Middleware redirect for transaction_id {}"
+                            "".format(transaction_id))
+                return JsonResponse(self.response, status=200)
+
+            except TransactionNotFound:
+                log_message = "TransactionNotFound"
+                code = youpay_message_obj.TRANSACTION_NOT_FOUND
+                logger.error(log_message)
+                self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
 
     def common_error_response(self, message, code):
         return JsonResponse(
@@ -300,6 +327,9 @@ class PaymentVerificationCheckMiddleware(object):
     def check_already_verified(self, transaction_obj, youpay_message_obj):
         if transaction_obj.payment_status in PAYMENT_END_STATUS_LIST:
             # Duplicate verification, so redirect to success or failure
+            logger.info("Duplicate verification for transaction_id {}".format(
+                transaction_obj.transaction_id)
+            )
             url_format = '{}?transaction_id={}'
             if transaction_obj.payment_status in SUCCESS_REDIRECT_STATUS_LIST:
                 # success page direction on duplicate check

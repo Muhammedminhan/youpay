@@ -42,3 +42,8 @@ class TransactionAlreadyExpired(Exception):
 class TransactionAlreadyVerified(Exception):
     """Exception to be raised when transaction already verified."""
     pass
+
+
+class TransactionMaxAttemptReached(Exception):
+    """Exception to be raised when transaction Max attempt reached."""
+    pass
