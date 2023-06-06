@@ -3,8 +3,10 @@ import logging
 
 from django.http import JsonResponse
 
-from core.constants import MAX_PAYMENT_RETRY_COUNT, \
-    CHECK_PAYMENT_STATUS_CLASSES, VERIFY_PAYMENT_CLASSES
+from core.constants import (
+    MAX_PAYMENT_RETRY_COUNT,
+    CHECK_PAYMENT_STATUS_CLASSES,
+    VERIFY_PAYMENT_CLASSES)
 from core.exceptions import (
     TransactionNotFound,
     TransactionAlreadyPaid,
