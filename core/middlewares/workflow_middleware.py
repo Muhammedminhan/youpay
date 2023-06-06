@@ -315,7 +315,13 @@ class PaymentVerificationCheckMiddleware(object):
             status=400)
 
     def check_already_verified(self, transaction_obj, youpay_message_obj):
-        if transaction_obj.payment_status in PAYMENT_END_STATUS_LIST:
+        """
+        if transaction is already verified, then redirect to success or
+        failure url, based on the payment status and approved status
+        """
+
+        if (transaction_obj.payment_status in PAYMENT_END_STATUS_LIST
+                and transaction_obj.approved):
             # Duplicate verification, so redirect to success or failure
             logger.info("Duplicate verification for transaction_id {}".format(
                 transaction_obj.transaction_id)
