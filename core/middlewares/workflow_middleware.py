@@ -3,7 +3,8 @@ import logging
 
 from django.http import JsonResponse
 
-from core.constants import MAX_PAYMENT_RETRY_COUNT
+from core.constants import MAX_PAYMENT_RETRY_COUNT, \
+    CHECK_PAYMENT_STATUS_CLASSES, VERIFY_PAYMENT_CLASSES
 from core.exceptions import (
     TransactionNotFound,
     TransactionAlreadyPaid,
@@ -40,16 +41,7 @@ class PaymentStatusCheckMiddleware(object):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
 
-        class_name_list = [
-            'SavedCardPayment',
-            'CardPayment',
-            'PaypalPayment',
-            'B2CPaybackAuthenticate',
-            'TabbyPGCreateSession',
-            'AmazonPGAuthentication',
-            'HappyCreditsDebitBalance',
-        ]
-        if request.resolver_match.view_name in class_name_list:
+        if request.resolver_match.view_name in CHECK_PAYMENT_STATUS_CLASSES:
             from core.utils import decrypt_string
             from services.v1.views.common import (YouPayTransactionCRUD)
             youpay_obj = YouPayTransactionCRUD()
@@ -280,11 +272,7 @@ class PaymentVerificationCheckMiddleware(object):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
 
-        verify_class_name_list = [  # these names are specified in the url.py
-            'CheckoutVerification', 'B2CPaybackVerify', 'TabbyPGVerification'
-        ]
-
-        if request.resolver_match.view_name in verify_class_name_list:
+        if request.resolver_match.view_name in VERIFY_PAYMENT_CLASSES:
             from core.utils import decrypt_string
             from services.v1.views.common import (YouPayTransactionCRUD)
 
