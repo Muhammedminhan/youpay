@@ -18,7 +18,8 @@ class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
 
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
     actions = [archive_transaction_data]
-    archive_transaction_data.short_description = "Archive Selected Transaction data"
+    archive_transaction_data.short_description = (
+        "Archive Selected Transaction data")
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'order_reference',

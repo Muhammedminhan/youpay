@@ -219,23 +219,6 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
             return None, self.TRANSACTION_NOT_FOUND
 
         try:
-            # if transaction is already verified then redirect to
-            # corresponding client url
-            if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
-                response_data = {
-                    IS_REDIRECT: True,
-                    IS_SUCCESS: True,
-                    "redirect_url": (self.transaction_obj.success_url +
-                                     '?transaction_id=' + transaction_id),
-                    "transaction_message": {
-                        "status": 200,
-                        "is_capture": True,
-                        "message": "Duplicate verification"
-                    }
-                }
-                self.response_data = json.dumps(response_data)
-
-                return response_data, self.SUCCESS
 
             response = requests.get(url, params=params)
 

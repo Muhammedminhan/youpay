@@ -66,3 +66,21 @@ CHARGE_TYPES = {
     'CHARGE_TYPE_PERCENTAGE': CHARGE_TYPE_PERCENTAGE,
     'CHARGE_TYPE_FIXED_PERCENTAGE': CHARGE_TYPE_FIXED_PERCENTAGE
 }
+
+CHECK_PAYMENT_STATUS_CLASSES = [
+    # these names are specified in the urls
+    'SavedCardPayment',
+    'CardPayment',
+    'PaypalPayment',
+    'B2CPaybackAuthenticate',
+    'TabbyPGCreateSession',
+    'AmazonPGAuthentication',
+    'HappyCreditsDebitBalance',
+]
+
+VERIFY_PAYMENT_CLASSES = [
+    # these names are specified in the urls
+    'CheckoutVerification',
+    'B2CPaybackVerify',
+    'TabbyPGVerification'
+]
