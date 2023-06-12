@@ -14,6 +14,7 @@ class YouPayResponse(object):
     5XXX - for b2c
     6XXX - for youpay
     7xxx - for happy credits
+    8xxx - for citi rewards
     """
 
     SUCCESS = 1000
@@ -91,7 +92,10 @@ class YouPayResponse(object):
     """Youpay related ends"""
 
     """Citi rewards related begins"""
-    CITI_REWARDS_CONNECTION_ERROR = 9002
+    CITI_REWARDS_CONNECTION_ERROR = 8002
+    CITI_REWARDS_INSUFFICIENT_BALANCE = 8003
+    CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED = 8004
+    CITI_REWARDS_ALREADY_REDEEMED = 8005
     """Citi rewards related ends"""
 
     MESSAGE = {}
@@ -130,7 +134,6 @@ class YouPayResponse(object):
                 "Your Tabby payment has been rejected"),
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
-            self.CITI_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
 
@@ -146,7 +149,15 @@ class YouPayResponse(object):
                                                             "failed",
             self.B2CPAYBACK_VERIFICATION_EXCEPTION: "Exception occurred ",
             self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
-                                                 " verification"
+                                                 " verification",
+
+            self.CITI_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.CITI_REWARDS_INSUFFICIENT_BALANCE: (
+                "You don't have enough points to make this transaction"),
+            self.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED: (
+                "OTP expired or maximum attempts exceeded for activation"),
+            self.CITI_REWARDS_ALREADY_REDEEMED: (
+                "Transaction is already redeemed.")
         })
 
     def get_400_message(self, message):

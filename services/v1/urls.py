@@ -15,7 +15,8 @@ from services.v1.views.configurations import (ConfigViewSet,
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
 from .api_clients.citi_service import (CitiPointBalanceAPIView,
-                                       CitiPointRedemptionAPIView)
+                                       CitiPointRedemptionAPIView,
+                                       CitiGenerateOTPAPIView)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
@@ -72,6 +73,7 @@ urlpatterns = [
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
 
     # Citi Rewards endpoints
+    path('citi/generate-otp/', CitiGenerateOTPAPIView.as_view()),
     path('citi/point-balance/', CitiPointBalanceAPIView.as_view()),
     path('citi/point-redemption/', CitiPointRedemptionAPIView.as_view()),
 ]
