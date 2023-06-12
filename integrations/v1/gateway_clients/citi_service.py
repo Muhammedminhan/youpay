@@ -14,6 +14,7 @@ from integrations.constants import (
     PAYMENT_REQUEST_REDEMPTION, CITI_REWARDS_ALREADY_REDEEMED_CODE,
     CITI_REWARDS_INSUFFICIENT_BALANCE_CODE
 )
+from integrations.v1.gateway_clients.utils import get_citi_converted_amount
 from integrations.v1.serializers.citi_rewards_request import (
     GenerateOTPRequestSerializer)
 from payments.constants import (
@@ -204,7 +205,12 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                 ):
                     self.payment_reference = response_data.get(
                         "reference_id")
-                    response_data.update({'is_success': True})
+                    deducting_points = get_citi_converted_amount(
+                        response_data, transaction_obj.amount)
+                    response_data.update({
+                        'is_success': True,
+                        'redeem_points': deducting_points
+                    })
 
                     self.update_youpay_transaction_data(
                         {
@@ -321,7 +327,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                             'payment_status': PAYMENT_STATUS_PAID,
                             "transaction_id": self.transaction_id,
                         })
-                    
+
                     redirect_flag, response_data = is_redirect(
                         self.transaction_id, response_data)
                     return response_data, self.SUCCESS

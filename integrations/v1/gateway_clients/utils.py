@@ -128,3 +128,16 @@ def get_adcb_response_url(url, transaction_id, status):
     else:
         return_url = None
     return return_url, status
+
+
+def get_citi_converted_amount(response_data, amount):
+    """
+    will convert the amount to citi rewards
+    points based on the ratio
+    """
+    from decimal import Decimal
+    if response_data.get('conversion_rate'):
+        amount_conversion_rate = Decimal(response_data.get('conversion_rate'))
+        converted_points = int(round(amount / amount_conversion_rate))
+        return converted_points
+    return None
