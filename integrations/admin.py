@@ -11,7 +11,7 @@ from integrations.forms import (AdditionalChargeConfigurationAdminForm,
                                 GatewayChargeConfigurationAdminForm)
 from .constants import (B2CP_CACHE_KEY, CHECKOUTPG_CACHE_KEY,
                         AMAZONPG_CACHE_KEY, TABBYPG_CACHE_KEY,
-                        HAPPYCREDITS_CACHE_KEY)
+                        HAPPYCREDITS_CACHE_KEY, CITI_REWARDS_CACHE_KEY)
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ class PaymentGatewayAdmin(AdminAbstract):
             obj.created_by = request.user
         if form.changed_data:
             try:
+                cache.delete(CITI_REWARDS_CACHE_KEY)
                 cache.delete(CHECKOUTPG_CACHE_KEY)
                 cache.delete(B2CP_CACHE_KEY)
                 cache.delete(AMAZONPG_CACHE_KEY)

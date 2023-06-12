@@ -5,7 +5,8 @@ from core.constants import PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
-    QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
+    QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE,
+    CITI_REWARDS_HUB_CODE
 )
 from payments.constants import (PAYMENT_STATUS_INITIATED,
                                 LANGUAGE_CODE_EN,
@@ -13,7 +14,7 @@ from payments.constants import (PAYMENT_STATUS_INITIATED,
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
-                                AMAZONPG_STORE_CURRENCIES)
+                                AMAZONPG_STORE_CURRENCIES, CURRENCY_UAE)
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +143,9 @@ def get_payment_options(transaction_obj, gateways):
             code, response_payment_options, platform
         )
 
+        response_payment_options = get_citirewards_payment_options(
+            code, response_payment_options, store_currency)
+
     return response_payment_options
 
 
@@ -200,13 +204,23 @@ def get_amazonpg_payment_options(code, store_currency,
 
 def get_haapycredits_payment_options(code, response_payment_options,
                                      platform):
-
     # happycredits is active only for Android and IOS Platforms
     response_payment_options['happy_credits'] = False
 
     if platform in [PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS]:
         if code == HAPPYCREDITS_HUB_CODE:
             response_payment_options['happy_credits'] = True
+
+    return response_payment_options
+
+
+def get_citirewards_payment_options(code, response_payment_options,
+                                    store_currency):
+    # happycredits is active only for Android and IOS Platforms
+    response_payment_options['citi_rewards'] = False
+
+    if code == CITI_REWARDS_HUB_CODE and (store_currency == CURRENCY_UAE):
+        response_payment_options['citi_rewards'] = True
 
     return response_payment_options
 
