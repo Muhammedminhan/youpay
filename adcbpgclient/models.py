@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from payments.models import YouPayTransactionData
 from .constants import (PURCHASE_PLATFORM_CHOICES, REDEMPTION_METHOD_CHOICES,
                         REDEMPTION_METHOD_NONE)
@@ -139,7 +140,9 @@ def calculate_adcb_card_charges(sender, instance, created, **kwargs):
             from payments.tasks import update_calculated_gateway_charges
             transaction_obj = YouPayTransactionData.objects.get(
                 payment_reference=instance.reference_id)
-            update_calculated_gateway_charges(transaction_obj.transaction_id)
+            if transaction_obj.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+                update_calculated_gateway_charges(
+                    transaction_obj.transaction_id)
         except Exception as e:
             logger.error("Error calling gateway charge calculation for "
                          "adcb transaction {}".format(instance.reference_id),
