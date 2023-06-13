@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from payments.models import YouPayTransactionData
 from .constants import (PURCHASE_PLATFORM_CHOICES, REDEMPTION_METHOD_CHOICES,
                         REDEMPTION_METHOD_NONE)
@@ -93,6 +94,42 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         null=True, blank=True,
         help_text='for checkoutpg transactions, response data received after '
                   'calling financial-actions api.')
+    customer_phone = models.CharField(max_length=20, null=True, blank=True)
+    control_flow_id = models.CharField(
+        max_length=300, null=True, blank=True,
+        help_text=('Store citi rewards control flow id received '
+                   'from otp generation api.'))
+    maximum_redeemable_points = models.IntegerField(
+        null=True, blank=True, help_text=('Maximum points used for citi '
+                                          'rewards point redemption'))
+    minimum_redeemable_points = models.IntegerField(
+        null=True, blank=True, help_text=('Minimum points used for citi '
+                                          'rewards point redemption'))
+    amount_conversion_rate = models.FloatField(
+        null=True, blank=True, help_text=('Conversion rate received from '
+                                          'citi rewards point balance api'))
+    card_id = models.CharField(
+        max_length=500, null=True, blank=True,
+        help_text=('Store citi rewards card id received from '
+                   'point balance api.'))
+    point_transfer_enabled = models.BooleanField(
+        default=False,
+        help_text='stores citi rewards point transfer eligible flag')
+    pay_with_points_enabled = models.BooleanField(
+        default=False,
+        help_text='stores citi rewards pay with points eligible flag')
+    convert_cash_enabled = models.BooleanField(
+        default=False,
+        help_text='stores citi rewards convert to cash eligible flag')
+    citi_access_token = models.CharField(
+        max_length=500, null=True, blank=True,
+        help_text='stores citi rewards access token')
+    citi_token_type = models.CharField(
+        max_length=10, null=True, blank=True,
+        help_text='Denotes citi rewards token type')
+    citi_order_id = models.CharField(
+        max_length=300, null=True, blank=True,
+        help_text='Order id received from citi rewards redemption api')
 
 
 @receiver(post_save, sender=ADCBTransactionData)
@@ -103,7 +140,9 @@ def calculate_adcb_card_charges(sender, instance, created, **kwargs):
             from payments.tasks import update_calculated_gateway_charges
             transaction_obj = YouPayTransactionData.objects.get(
                 payment_reference=instance.reference_id)
-            update_calculated_gateway_charges(transaction_obj.transaction_id)
+            if transaction_obj.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+                update_calculated_gateway_charges(
+                    transaction_obj.transaction_id)
         except Exception as e:
             logger.error("Error calling gateway charge calculation for "
                          "adcb transaction {}".format(instance.reference_id),
