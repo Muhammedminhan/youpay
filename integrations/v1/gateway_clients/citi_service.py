@@ -14,7 +14,8 @@ from integrations.constants import (
     PAYMENT_REQUEST_REDEMPTION, CITI_REWARDS_ALREADY_REDEEMED_CODE,
     CITI_REWARDS_INSUFFICIENT_BALANCE_CODE
 )
-from integrations.v1.gateway_clients.utils import get_citi_converted_amount
+from integrations.v1.gateway_clients.utils import get_citi_converted_amount, \
+    format_citi_service_error_response
 from integrations.v1.serializers.citi_rewards_request import (
     GenerateOTPRequestSerializer)
 from payments.constants import (
@@ -136,11 +137,12 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                                 }
                             )
                             return response_data, self.SUCCESS
-
-                        logger.error("Error in citi rewards generate "
-                                     "otp api, {}".format(response_data))
-                        return (response_data,
-                                self.CITI_REWARDS_CONNECTION_ERROR)
+                        code = format_citi_service_error_response(
+                            response_data
+                        )
+                        logger.warning("Error in citi rewards generate "
+                                       "otp api, {}".format(response_data))
+                        return None, code
                     logger.error("Error in citi rewards generate "
                                  "otp api, {}".format(response.text))
                     return (None,
@@ -229,19 +231,12 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                         }
                     )
                     return response_data, self.SUCCESS
-                elif (
-                        'errors' in response_data and
-                        response_data.get('errors').get('code')
-                        == CITI_REWARDS_OTP_EXPIRED_CODE
-                ):
-                    logger.warning(
-                        "Citi rewards otp expired for {}"
-                        "".format(self.payment_reference))
-                    return (
-                        None,
-                        self.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED
-                    )
-                return None, self.CITI_REWARDS_CONNECTION_ERROR
+                code = format_citi_service_error_response(
+                    response_data
+                )
+                logger.warning("Error in citi rewards get points "
+                               "api, {}".format(response_data))
+                return None, code
             logger.error("Error in citi rewards generate point balance "
                          "api, {}".format(response.text))
             return None, self.CITI_REWARDS_CONNECTION_ERROR
@@ -331,29 +326,12 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                     redirect_flag, response_data = is_redirect(
                         self.transaction_id, response_data)
                     return response_data, self.SUCCESS
-                elif 'errors' in response_data:
-                    if (
-                            response_data.get('errors').get('code') ==
-                            CITI_REWARDS_ALREADY_REDEEMED_CODE
-                    ):
-                        logger.warning(
-                            "Citi rewards points already for {}"
-                            "".format(self.payment_reference))
-                        return (
-                            None,
-                            self.CITI_REWARDS_ALREADY_REDEEMED
-                        )
-                    elif (
-                            response_data.get('errors').get('code')
-                            == CITI_REWARDS_INSUFFICIENT_BALANCE_CODE):
-                        logger.warning(
-                            "Citi rewards points already for {}"
-                            "".format(self.payment_reference))
-                        return (
-                            None,
-                            self.CITI_REWARDS_INSUFFICIENT_BALANCE
-                        )
-                return None, self.CITI_REWARDS_CONNECTION_ERROR
+                code = format_citi_service_error_response(
+                    response_data
+                )
+                logger.warning("Error in citi rewards point redemption "
+                               "api, {}".format(response_data))
+                return None, code
             logger.error("Error in citi rewards generate point balance "
                          "api, {}".format(response.text))
             return None, self.CITI_REWARDS_CONNECTION_ERROR
