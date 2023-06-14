@@ -10,12 +10,10 @@ from integrations.constants import (
     PAYMENT_REQUEST_GENERATE_OTP, CITI_REWARDS_CONNECTION_ERROR_MESSAGE,
     CITI_REWARDS_SUCCESS_CODE, CITI_REWARDS_MFA_REQUIRED_CODE,
     CITI_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
-    CITI_REWARDS_OTP_EXPIRED_CODE, CITI_REDEMPTION_API,
-    PAYMENT_REQUEST_REDEMPTION, CITI_REWARDS_ALREADY_REDEEMED_CODE,
-    CITI_REWARDS_INSUFFICIENT_BALANCE_CODE
+    CITI_REDEMPTION_API, PAYMENT_REQUEST_REDEMPTION
 )
-from integrations.v1.gateway_clients.utils import get_citi_converted_amount, \
-    format_citi_service_error_response
+from integrations.v1.gateway_clients.utils import (
+    get_citi_converted_amount, format_citi_service_error_response)
 from integrations.v1.serializers.citi_rewards_request import (
     GenerateOTPRequestSerializer)
 from payments.constants import (
