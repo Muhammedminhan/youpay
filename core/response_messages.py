@@ -96,6 +96,7 @@ class YouPayResponse(object):
     CITI_REWARDS_INSUFFICIENT_BALANCE = 8003
     CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED = 8004
     CITI_REWARDS_ALREADY_REDEEMED = 8005
+    CITI_REWARDS_VALIDATION_ERROR = 8006
     """Citi rewards related ends"""
 
     MESSAGE = {}
@@ -157,7 +158,9 @@ class YouPayResponse(object):
             self.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED: (
                 "OTP expired or maximum attempts exceeded for activation"),
             self.CITI_REWARDS_ALREADY_REDEEMED: (
-                "Transaction is already redeemed.")
+                "Transaction is already redeemed."),
+            self.CITI_REWARDS_VALIDATION_ERROR: (
+                "Missing or invalid Parameters")
         })
 
     def get_400_message(self, message):
