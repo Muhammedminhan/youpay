@@ -91,7 +91,7 @@ class WebhookListener(APIView):
             else:
                 transaction_obj = TransactionData.objects.create(
                     invoice_id=invoice_pk,
-                    order_reference=request_data.get('idempotency_key',
+                    order_reference=request_data.get('order_reference',
                                                      None),
                     amount=decimal.Decimal(
                         str(request_data.get('amount', None))),
