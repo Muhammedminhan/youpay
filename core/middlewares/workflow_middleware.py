@@ -319,7 +319,7 @@ class PaymentVerificationCheckMiddleware(object):
         failure url, based on the payment status and approved status
         """
 
-        if transaction_obj.is_payment_verified and transaction_obj.approved:
+        if transaction_obj.is_payment_verified:
             # Duplicate verification, so redirect to success or failure
             logger.info("Duplicate verification for transaction_id {}".format(
                 transaction_obj.transaction_id)
