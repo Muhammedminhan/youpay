@@ -316,7 +316,10 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                         'available_points': transaction_obj.available_points,
                         'payable_amount': transaction_obj.payable_amount,
                         'is_full_redemption':
-                            transaction_obj.is_full_redemption
+                            transaction_obj.is_full_redemption,
+
+                        # if redirecting then it will be a verified payment
+                        'is_payment_verified': response_data["is_redirect"]
                     }
                     self.update_youpay_transaction_data(update_data)
                     return response_data, transaction_obj
