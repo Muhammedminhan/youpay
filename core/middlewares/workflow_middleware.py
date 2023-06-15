@@ -19,8 +19,7 @@ from core.response_messages import YouPayResponse
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST,
-    PAYMENT_END_STATUS_LIST)
+    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST)
 
 logger = logging.getLogger(__name__)
 
@@ -320,8 +319,7 @@ class PaymentVerificationCheckMiddleware(object):
         failure url, based on the payment status and approved status
         """
 
-        if (transaction_obj.payment_status in PAYMENT_END_STATUS_LIST
-                and transaction_obj.approved):
+        if transaction_obj.is_payment_verified and transaction_obj.approved:
             # Duplicate verification, so redirect to success or failure
             logger.info("Duplicate verification for transaction_id {}".format(
                 transaction_obj.transaction_id)
