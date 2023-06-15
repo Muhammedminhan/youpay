@@ -84,7 +84,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'available_amount', 'available_points',
                        'is_full_redemption', 'maximum_redeemable_points',
                        'minimum_redeemable_points', 'amount_conversion_rate',
-                       'citi_order_id',
+                       'citi_order_id', 'citi_phone_number'
                        )
         }),
         ('Happycredits transaction details', {

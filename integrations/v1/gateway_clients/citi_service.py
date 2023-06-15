@@ -3,10 +3,10 @@ import logging
 import requests
 from decimal import Decimal
 from rest_framework import status
-from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_CITIREWARDS
+from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
-    CITI_REWARDS_CACHE_KEY, CITI_REWARDS_HUB_CODE, CITI_GENERATE_OTP_API,
+    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE, CITI_GENERATE_OTP_API,
     PAYMENT_REQUEST_GENERATE_OTP, CITI_REWARDS_CONNECTION_ERROR_MESSAGE,
     CITI_REWARDS_SUCCESS_CODE, CITI_REWARDS_MFA_REQUIRED_CODE,
     CITI_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
@@ -35,8 +35,9 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
         self.payment_reference = None
         self.payment_status = None
         self.transaction_id = None
+        self.otp_mobile = None
         self.citi_reward_config = get_payment_gateway_config(
-            CITI_REWARDS_CACHE_KEY, CITI_REWARDS_HUB_CODE)
+            B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
 
     def get_payment_header(self):
         """
@@ -69,6 +70,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
         transaction_data = data.get('transaction_data')
         self.transaction_id = transaction_data.get('transaction_id')
         self.payment_status = transaction_data.get('payment_status')
+        self.otp_mobile = data.get('request_data', {}).get('customer_phone')
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
@@ -129,9 +131,10 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                                         self.payment_reference
                                     ),
                                     "payment_gateway": (
-                                        PAYMENT_GATEWAY_CITIREWARDS),
+                                        PAYMENT_GATEWAY_B2CPAYBACK),
                                     "card_last4": payment_data.get(
-                                        "card_last4")
+                                        "card_last4"),
+                                    "citi_phone_number": self.otp_mobile
                                 }
                             )
                             return response_data, self.SUCCESS
@@ -140,9 +143,21 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                         )
                         logger.warning("Error in citi rewards generate "
                                        "otp api, {}".format(response_data))
+                        self.update_youpay_transaction_data({
+                            "payment_reference": (
+                                self.payment_reference
+                            ),
+                            "citi_phone_number": self.otp_mobile
+                        })
                         return None, code
                     logger.error("Error in citi rewards generate "
                                  "otp api, {}".format(response.text))
+                    self.update_youpay_transaction_data({
+                        "payment_reference": (
+                            self.payment_reference
+                        ),
+                        "citi_phone_number": self.otp_mobile
+                    })
                     return (None,
                             self.CITI_REWARDS_CONNECTION_ERROR)
                 else:

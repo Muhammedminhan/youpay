@@ -146,6 +146,7 @@ class YouPayTransactionCRUD(object):
             'amount_conversion_rate', None)
         data_dict['citi_order_id'] = data.get(
             'citi_order_id', None)
+        data_dict['citi_phone_number'] = data.get('citi_phone_number', None)
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
