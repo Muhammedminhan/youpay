@@ -351,6 +351,7 @@ def checkout_decline_check(response_data):
     if response_code in RESPONSE_CODE_LIST:
         # this allow retry payments
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
+        is_payment_verified = False
     else:
         # this doesnt allow retry payments
         payment_status = response_data.get("status").lower()
