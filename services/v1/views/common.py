@@ -90,8 +90,6 @@ class YouPayTransactionCRUD(object):
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
-        logger.info("Updating youpay transaction {}".format(data))
-
         data_dict = {}
         transaction_id = data.get('transaction_id')
         data_dict['payment_reference'] = data.get('payment_reference', None)
