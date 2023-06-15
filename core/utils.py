@@ -14,7 +14,6 @@ from django.conf import settings
 from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
-from core.messages import IS_REDIRECT
 from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
@@ -340,14 +339,6 @@ def process_checkoutpg_response_verification(**kwargs):
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
-
-    if response_data.get(IS_REDIRECT) == False:
-        youpay_obj.update_youpay_transaction_data(
-            {
-                'transaction_id': transaction_id,
-                'is_payment_verified': is_payment_verified
-            }
-        )
 
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
