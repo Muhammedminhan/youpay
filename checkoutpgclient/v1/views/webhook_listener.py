@@ -169,7 +169,8 @@ class WebhookListener(APIView):
         request_data['response_code'] = request_data.get(
             'checkout_response_code', None)
 
-        payment_status = checkout_decline_check(request_data)
+        payment_status, is_payment_verified = checkout_decline_check(
+            request_data)
         try:
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(

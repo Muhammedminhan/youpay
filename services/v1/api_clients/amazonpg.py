@@ -11,7 +11,7 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.v1.views.common import (
-    YouPayTransactionCRUD, payment_status_check)
+    YouPayTransactionCRUD)
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,6 @@ class AmazonPGTokenization(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-@payment_status_check
 class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 

@@ -37,3 +37,13 @@ class TransactionAlreadyCancelled(Exception):
 class TransactionAlreadyExpired(Exception):
     """Exception to be raised when transaction already processed."""
     pass
+
+
+class TransactionAlreadyVerified(Exception):
+    """Exception to be raised when transaction already verified."""
+    pass
+
+
+class TransactionMaxAttemptReached(Exception):
+    """Exception to be raised when transaction Max attempt reached."""
+    pass

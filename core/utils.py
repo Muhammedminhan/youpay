@@ -294,6 +294,7 @@ def process_checkoutpg_response_verification(**kwargs):
 
     is_flagged = response_data.get("is_flagged")
 
+    is_payment_verified = False
     if (response_code is None and
             response_data.get(
                 "status").lower() == PAYMENT_STATUS_DECLINED):
@@ -305,14 +306,15 @@ def process_checkoutpg_response_verification(**kwargs):
     else:
         source = response_data.get('source', None)
 
-        payment_status = checkout_decline_check(response_data)
-
+        payment_status, is_payment_verified = checkout_decline_check(
+            response_data)
         approved = response_data.get('approved', False)
 
         if source == PAYMENT_METHOD_APPLEPAY and approved:
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID
             is_flagged = response_data.get("risk", {}).get("flagged")
+            is_payment_verified = True
 
     youpay_obj = YouPayTransactionCRUD()
 
@@ -333,10 +335,10 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
+            'is_payment_verified': is_payment_verified
         }
     )
-    redirect, response_data = is_redirect(transaction_id,
-                                          response_data)
+    redirect, response_data = is_redirect(transaction_id, response_data)
 
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
@@ -349,11 +351,13 @@ def checkout_decline_check(response_data):
     if response_code in RESPONSE_CODE_LIST:
         # this allow retry payments
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
+        is_payment_verified = False
     else:
         # this doesnt allow retry payments
         payment_status = response_data.get("status").lower()
+        is_payment_verified = True
 
-    return payment_status
+    return payment_status, is_payment_verified
 
 
 def tabby_reject_check(response_data):
