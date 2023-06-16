@@ -22,18 +22,16 @@ from services.constants import (
     TOKEN_TYPE_APPLEPAY,
     TOKEN_TYPE_SAVED_CARD,
     TOKEN_TYPE_CARD,
-    TOKEN_TYPE_PAYPAL
+    TOKEN_TYPE_PAYPAL, CHECKOUTPG_RESPONSE_MESSAGE_NULL_CODE
 )
 from services.v1.views.common import (
     YouPayTransactionCRUD,
-    payment_status_check,
     ClientValidator
 )
 
 logger = logging.getLogger(__name__)
 
 
-@payment_status_check
 class SavedCardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -96,6 +94,8 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                         code=code,
                         success_dict=response_data
                     )
+                    if code == self.response_obj.PRE_AUTH:
+                        data = format_checkoutpg_response(data, code)
                     return Response(data,
                                     status=status.HTTP_200_OK)
                 else:
@@ -134,7 +134,6 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-@payment_status_check
 class CardPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -164,6 +163,8 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                         code=code,
                         success_dict=response_data
                     )
+                    if code == self.response_obj.PRE_AUTH:
+                        data = format_checkoutpg_response(data, code)
                     return Response(data,
                                     status=status.HTTP_200_OK)
                 else:
@@ -183,7 +184,6 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-@payment_status_check
 class PaypalPayment(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
@@ -252,45 +252,42 @@ class CheckoutVerification(APIView):
                     code=code,
                     success_dict=response_data
                 )
-                formatted_data = self.format_checkoutpg_response(data, code)
+                formatted_data = format_checkoutpg_response(data, code)
                 return Response(formatted_data,
                                 status=status.HTTP_200_OK)
             else:
                 data = self.response_obj.get_error_dict(error_code=code)
-                formatted_data = self.format_checkoutpg_response(data, code)
+                formatted_data = format_checkoutpg_response(data, code)
                 return Response(formatted_data,
                                 status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
-            logger.error("Error in CheckoutVerification: {}".format(str(e)))
+            logger.error("Error in CheckoutVerification: {}".format(str(e)),
+                         exc_info=True)
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 
-    def format_checkoutpg_response(self, data, code):
 
-        transaction_message = data.get('transaction_message')
-        errors = data.get('errors')
-        is_success = data.get(IS_SUCCESS)
+def format_checkoutpg_response(data, code):
+    transaction_message = data.get('transaction_message')
+    errors = data.get('errors')
+    is_success = data.get(IS_SUCCESS)
 
-        if transaction_message:
-            data['code'] = code
-            data['message'] = transaction_message.get('response_summary',
-                                                      None)
-            data[IS_SUCCESS] = is_success
-            data.pop('transaction_message', None)
-        if errors:
-            errors['message'] = COMMON_ERROR_MESSAGE_EN
-            errors['code'] = code
+    if transaction_message:
+        data['code'] = code
+        data['message'] = transaction_message.get('response_summary', None)
+        data[IS_SUCCESS] = is_success
+        data.pop('transaction_message', None)
+    if errors:
+        errors['message'] = COMMON_ERROR_MESSAGE_EN
+        errors['code'] = code
 
-        if data['message'] is None:
-            data['message'] = COMMON_ERROR_MESSAGE_EN
-            data['code'] = (
-                self.response_obj.CHECKOUTPG_RESPONSE_MESSAGE_NULL
-            )
-        return data
+    if not data.get('message'):
+        data['message'] = COMMON_ERROR_MESSAGE_EN
+        data['code'] = CHECKOUTPG_RESPONSE_MESSAGE_NULL_CODE
+    return data
 
 
-@payment_status_check
 class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                               ClientValidator):
     response_obj = YouPayResponse()

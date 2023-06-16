@@ -85,6 +85,7 @@ MIDDLEWARE = [
 
     # custom middleware
     'core.middlewares.workflow_middleware.PaymentStatusCheckMiddleware',
+    'core.middlewares.workflow_middleware.PaymentVerificationCheckMiddleware',
 
 ]
 

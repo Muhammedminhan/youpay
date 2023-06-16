@@ -91,7 +91,7 @@ class WebhookListener(APIView):
             else:
                 transaction_obj = TransactionData.objects.create(
                     invoice_id=invoice_pk,
-                    order_reference=request_data.get('idempotency_key',
+                    order_reference=request_data.get('order_reference',
                                                      None),
                     amount=decimal.Decimal(
                         str(request_data.get('amount', None))),
@@ -169,7 +169,8 @@ class WebhookListener(APIView):
         request_data['response_code'] = request_data.get(
             'checkout_response_code', None)
 
-        payment_status = checkout_decline_check(request_data)
+        payment_status, is_payment_verified = checkout_decline_check(
+            request_data)
         try:
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(

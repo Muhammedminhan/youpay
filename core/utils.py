@@ -271,11 +271,22 @@ def get_redirect_url(url, transaction_id):
     return url + '?transaction_id=' + transaction_id
 
 
-def process_checkoutpg_response_verification(transaction_id, response_data):
+def process_checkoutpg_response_verification(**kwargs):
     """
     function to process checkoutpg response verification and update in youpay
     transaction table
     """
+
+    transaction_id = kwargs.get('transaction_id')
+    response_data = kwargs.get('response_data')
+    is_pre_auth = kwargs.get('is_pre_auth')
+    payment_method = kwargs.get('payment_method')
+    payment_gateway = kwargs.get('payment_gateway')
+    channel_code = kwargs.get('channel_code')
+
+    if is_pre_auth:
+        response_data = format_pre_auth_payment_response_for_verify(
+            response_data)
 
     logger.info(
         "Verify payment response data {}".format(response_data))
@@ -283,6 +294,7 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
 
     is_flagged = response_data.get("is_flagged")
 
+    is_payment_verified = False
     if (response_code is None and
             response_data.get(
                 "status").lower() == PAYMENT_STATUS_DECLINED):
@@ -294,14 +306,15 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
     else:
         source = response_data.get('source', None)
 
-        payment_status = checkout_decline_check(response_data)
-
+        payment_status, is_payment_verified = checkout_decline_check(
+            response_data)
         approved = response_data.get('approved', False)
 
         if source == PAYMENT_METHOD_APPLEPAY and approved:
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID
             is_flagged = response_data.get("risk", {}).get("flagged")
+            is_payment_verified = True
 
     youpay_obj = YouPayTransactionCRUD()
 
@@ -319,10 +332,13 @@ def process_checkoutpg_response_verification(transaction_id, response_data):
             'is_flagged': is_flagged,
             'is_fraud': response_data.get("is_fraud"),
             'card_issuer_country': response_data.get("card_issuer_country"),
+            'payment_method': payment_method,
+            'payment_gateway': payment_gateway,
+            'channel_code': channel_code,
+            'is_payment_verified': is_payment_verified
         }
     )
-    redirect, response_data = is_redirect(transaction_id,
-                                          response_data)
+    redirect, response_data = is_redirect(transaction_id, response_data)
 
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
@@ -335,18 +351,40 @@ def checkout_decline_check(response_data):
     if response_code in RESPONSE_CODE_LIST:
         # this allow retry payments
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
+        is_payment_verified = False
     else:
         # this doesnt allow retry payments
         payment_status = response_data.get("status").lower()
+        is_payment_verified = True
 
-    return payment_status
+    return payment_status, is_payment_verified
 
 
 def tabby_reject_check(response_data):
-
     payment_status = response_data.get("payment_status")
 
     if payment_status == PAYMENT_STATUS_REJECTED:
         payment_status = PAYMENT_STATUS_REJECTED_RETRY
 
     return payment_status
+
+
+def format_pre_auth_payment_response_for_verify(response_data):
+    structured_dict = {
+        "status": response_data.get("status"),
+        "reference": response_data.get("reference"),
+        "approved": response_data.get("approved"),
+        "response_code": response_data.get("response_code"),
+        "response_summary": response_data.get("response_summary"),
+        "payment_status_dict": response_data.get("payment_status_dict"),
+        "is_fraud": response_data.get("risk", {}).get("fraud"),
+        "is_flagged": response_data.get("risk", {}).get("flagged"),
+        "card_bin": response_data.get("source", {}).get("bin"),
+        "card_last4": response_data.get("source", {}).get("last4"),
+        "payment_scheme": response_data.get("source", {}).get("scheme"),
+        "is_gcc_card": response_data.get("is_gcc_card"),
+        "card_issuer_country": response_data.get("source", {}).get(
+            "issuer_country")}
+    logger.info(
+        "structured dict for pre auth case {} ".format(structured_dict))
+    return structured_dict
