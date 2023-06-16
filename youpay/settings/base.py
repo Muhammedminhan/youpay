@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'tabbypgclient',
     'adcbpgclient',
     'happycreditsclient',
+    'citirewardsclient',
 
     # 3rd party apps
     'rest_framework',

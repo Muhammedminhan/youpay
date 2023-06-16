@@ -175,6 +175,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     citi_order_id = models.CharField(
         max_length=300, null=True, blank=True,
         help_text='Order id received from citi rewards redemption api')
+    citi_phone_number = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text=("To store phone number used to generate "
+                   "otp in citi rewards"))
     cart_amount = models.DecimalField(decimal_places=4, max_digits=12,
                                       null=True, blank=True,
                                       validators=[DecimalValidator(12, 4)],
