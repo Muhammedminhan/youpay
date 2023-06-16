@@ -54,3 +54,5 @@ TABBYPG_STORE_CURRENCIES = [CURRENCY_KSA, ]  # tabbypg active stores
 ADCBPG_STORE_CURRENCIES = [CURRENCY_UAE, ]  # adcb active stores
 AMAZONPG_STORE_CURRENCIES = [CURRENCY_UAE,
                              CURRENCY_KSA]  # amazonpg active stores
+
+CHECKOUTPG_RESPONSE_MESSAGE_NULL_CODE = 2404

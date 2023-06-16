@@ -14,7 +14,6 @@ class YouPayResponse(object):
     5XXX - for b2c
     6XXX - for youpay
     7xxx - for happy credits
-    8xxx - for citi rewards
     """
 
     SUCCESS = 1000
@@ -22,6 +21,7 @@ class YouPayResponse(object):
 
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
+    DUPLICATE_PAYMENT_VERIFICATION = 1006
 
     MIDDLEWARE_REDIRECTED = 1307
 
@@ -35,6 +35,7 @@ class YouPayResponse(object):
     CHECKOUTPG_CONNECTION_ERROR = 2003
     CHECKOUTPG_RESPONSE_FAILED = 2400
     CHECKOUTPG_RESPONSE_MESSAGE_NULL = 2404
+    PRE_AUTH = 2405
     """checkoutpg related ends"""
 
     """tabbypg related begins"""
@@ -112,6 +113,8 @@ class YouPayResponse(object):
             self.SUCCESS: "API request completed successfully",
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
+            self.DUPLICATE_PAYMENT_VERIFICATION: (
+                "Duplicate payment verification"),
 
             self.APPLE_PAY_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.APPLE_PAY_BAD_REQUEST: "Applepay bad request",
@@ -150,6 +153,8 @@ class YouPayResponse(object):
                                                             "failed",
             self.B2CPAYBACK_VERIFICATION_EXCEPTION: "Exception occurred ",
             self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
+                                                 " verification",
+            self.PRE_AUTH: "Authentication not approved"
                                                  " verification",
 
             self.CITI_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,

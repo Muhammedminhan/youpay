@@ -255,7 +255,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     is_guest = models.BooleanField(
         default=False, db_index=True,
         help_text='Denotes whether the payment is done by guest user or not.')
-
+    is_payment_verified = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Flag to manage duplicate verification.')
 
 @receiver(post_init, sender=YouPayTransactionData)
 def set_previous_status(sender, instance, **kwargs):
@@ -502,3 +504,4 @@ class ArchivedYouPayTransactionData(models.Model):
         max_length=100, null=True, blank=True,
         choices=SETTLEMENT_ENTITY_CHOICES)
     is_guest = models.BooleanField(default=False, db_index=True)
+    is_payment_verified = models.BooleanField(default=False, db_index=True)

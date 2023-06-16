@@ -17,10 +17,11 @@ from core.messages import (
     TRANSACTION_MSG,
     IS_REDIRECT
 )
-from core.middlewares.workflow_middleware import PaymentStatusCheckMiddleware
+from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
+                                PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_REJECTED_RETRY)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
@@ -30,9 +31,6 @@ from services.constants import RESPONSE_CODE_LIST
 from services.models import APIClient
 
 logger = logging.getLogger(__name__)
-
-payment_status_check = decorator_from_middleware(
-    PaymentStatusCheckMiddleware)
 
 
 def get_saved_fields(saved_fields, data_dict, transaction_obj):
@@ -87,8 +85,8 @@ class YouPayTransactionCRUD(object):
                         transaction_id=transaction_id))
                 return transaction_obj
             except YouPayTransactionData.DoesNotExist:
-                logger.error("Unable to find youpay transaction object for {}"
-                             "".format(transaction_id))
+                logger.error("Unable to find youpay transaction object with "
+                             "transaction id {}".format(transaction_id))
                 return None
 
     def update_youpay_transaction_data(self, data):
@@ -138,6 +136,8 @@ class YouPayTransactionCRUD(object):
         data_dict['retry_count'] = data.get('retry_count', None)
 
         data_dict['currency'] = data.get('currency', None)
+        data_dict['is_payment_verified'] = data.get('is_payment_verified',
+                                                    None)
         data_dict['maximum_redeemable_points'] = data.get(
             'maximum_redeemable_points', None)
         data_dict['minimum_redeemable_points'] = data.get(
@@ -294,8 +294,11 @@ def is_redirect(transaction_id, transaction_message):
         }
         return False, response_data
 
-    if youpay_transaction.payment_status == PAYMENT_STATUS_PAID:
-
+    if (youpay_transaction.payment_status == PAYMENT_STATUS_PAID or
+            (str(response_code) == str(
+                CHECKOUTPG_SUCCESS_RESPONSE_CODE) and str(
+                youpay_transaction.payment_status).lower() == (
+                     PAYMENT_STATUS_AUTHORIZED))):
         redirect_url = (youpay_transaction.success_url +
                         '?transaction_id=' + transaction_id)
 
@@ -412,20 +415,3 @@ class AdditionalChargesUpdation(object):
             logger.error("Error in creating additional charge object for {} "
                          "{}".format(data.get('transaction').transaction_id,
                                      str(e)))
-
-
-class PaymentStatusCheckMiddlewareMixin:
-    @payment_status_check
-    def dispatch(*args, **kwargs):
-        return super().dispatch(*args, **kwargs)
-
-
-def payment_status_check(class_view):
-    def as_view(cls, **initkwargs):
-        view = super(cls, cls).as_view(**initkwargs)
-        view.payment_status_check = True
-        return view
-
-    return type(class_view.__name__, (class_view,), {
-        'as_view': classonlymethod(as_view),
-    })
