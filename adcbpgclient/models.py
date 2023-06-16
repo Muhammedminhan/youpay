@@ -97,6 +97,9 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         default=False, db_index=True,
         help_text='Denotes whether the payment is marked as flagged '
                   'or not.')
+    card_issuer_country = models.CharField(
+        max_length=4, null=True, blank=True, db_index=True,
+        help_text=' Denotes two letter code card issued country.')
     payment_id = models.CharField(
         max_length=200, null=True, blank=True,
         help_text='for checkoutpg transactions, payment id received from '

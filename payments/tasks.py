@@ -287,7 +287,9 @@ def common_update_financial_action_charges(**kwargs):
                     model_name.objects.filter(
                         id=transaction_data_id).update(
                         card_category=financial_action.get("card_category"),
-                        entity_id=financial_action.get("entity_id"))
+                        entity_id=financial_action.get("entity_id"),
+                        card_issuer_country=financial_action.get(
+                            'issuer_country'))
                     first_iteration = False
                 for break_downs in financial_action.get('breakdown'):
                     common_update_breakdown_fee(model_name,
