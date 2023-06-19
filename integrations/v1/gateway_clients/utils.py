@@ -7,7 +7,8 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CITI_REWARDS_OTP_EXPIRED_CODE,
                                     CITI_REWARDS_VALIDATION_ERROR_CODE,
                                     CITI_REWARDS_ALREADY_REDEEMED_CODE,
-                                    CITI_REWARDS_INSUFFICIENT_BALANCE_CODE)
+                                    CITI_REWARDS_INSUFFICIENT_BALANCE_CODE,
+                                    CITI_REWARDS_INVALID_CUSTOMER_CODE)
 from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
@@ -167,6 +168,9 @@ def format_citi_service_error_response(response_data):
             ),
             CITI_REWARDS_INSUFFICIENT_BALANCE_CODE: (
                 response_manager.CITI_REWARDS_INSUFFICIENT_BALANCE
+            ),
+            CITI_REWARDS_INVALID_CUSTOMER_CODE: (
+                response_manager.CITI_REWARDS_INVALID_CUSTOMER
             )
         }
         if code in error_dict:
