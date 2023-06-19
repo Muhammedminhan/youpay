@@ -98,6 +98,7 @@ class YouPayResponse(object):
     CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED = 8004
     CITI_REWARDS_ALREADY_REDEEMED = 8005
     CITI_REWARDS_VALIDATION_ERROR = 8006
+    CITI_REWARDS_INVALID_CUSTOMER = 8007
     """Citi rewards related ends"""
 
     MESSAGE = {}
@@ -155,7 +156,7 @@ class YouPayResponse(object):
             self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
                                                  " verification",
             self.PRE_AUTH: "Authentication not approved"
-                                                 " verification",
+                           " verification",
 
             self.CITI_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CITI_REWARDS_INSUFFICIENT_BALANCE: (
@@ -165,7 +166,10 @@ class YouPayResponse(object):
             self.CITI_REWARDS_ALREADY_REDEEMED: (
                 "Transaction is already redeemed."),
             self.CITI_REWARDS_VALIDATION_ERROR: (
-                "Missing or invalid Parameters")
+                "Missing or invalid Parameters"),
+            self.CITI_REWARDS_INVALID_CUSTOMER: (
+                "Customer data is not valid"
+            )
         })
 
     def get_400_message(self, message):
