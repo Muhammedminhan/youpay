@@ -9,7 +9,8 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CITI_REWARDS_ALREADY_REDEEMED_CODE,
                                     CITI_REWARDS_INSUFFICIENT_BALANCE_CODE,
                                     CITI_REWARDS_INVALID_CUSTOMER_CODE,
-                                    PAYMENT_REQUEST_POINT_BALANCE)
+                                    PAYMENT_REQUEST_POINT_BALANCE,
+                                    CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE)
 from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
@@ -177,6 +178,9 @@ def format_citi_service_error_response(response_data, api_type):
             ),
             CITI_REWARDS_INVALID_CUSTOMER_CODE: (
                 response_manager.CITI_REWARDS_INVALID_CUSTOMER
+            ),
+            CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE: (
+                response_manager.CITI_REWARDS_USER_BLOCKED
             )
         }
         if code in error_dict:
