@@ -99,6 +99,7 @@ class YouPayResponse(object):
     CITI_REWARDS_ALREADY_REDEEMED = 8005
     CITI_REWARDS_VALIDATION_ERROR = 8006
     CITI_REWARDS_INVALID_CUSTOMER = 8007
+    CITI_REWARDS_INVALID_OTP = 8008
     """Citi rewards related ends"""
 
     MESSAGE = {}
@@ -168,8 +169,9 @@ class YouPayResponse(object):
             self.CITI_REWARDS_VALIDATION_ERROR: (
                 "Missing or invalid Parameters"),
             self.CITI_REWARDS_INVALID_CUSTOMER: (
-                "Customer data is not valid"
-            )
+                "Invalid details, please try again"
+            ),
+            self.CITI_REWARDS_INVALID_OTP: "Invalid/Expired OTP"
         })
 
     def get_400_message(self, message):
