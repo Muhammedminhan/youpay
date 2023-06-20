@@ -100,6 +100,7 @@ class YouPayResponse(object):
     CITI_REWARDS_VALIDATION_ERROR = 8006
     CITI_REWARDS_INVALID_CUSTOMER = 8007
     CITI_REWARDS_INVALID_OTP = 8008
+    CITI_REWARDS_USER_BLOCKED = 8009
     """Citi rewards related ends"""
 
     MESSAGE = {}
@@ -171,7 +172,10 @@ class YouPayResponse(object):
             self.CITI_REWARDS_INVALID_CUSTOMER: (
                 "Invalid details, please try again"
             ),
-            self.CITI_REWARDS_INVALID_OTP: "Invalid/Expired OTP"
+            self.CITI_REWARDS_INVALID_OTP: "Invalid/Expired OTP",
+            self.CITI_REWARDS_USER_BLOCKED: (
+                "Exceeded the limit. Please try again later"
+            )
         })
 
     def get_400_message(self, message):
