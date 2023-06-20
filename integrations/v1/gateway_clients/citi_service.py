@@ -139,7 +139,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                             )
                             return response_data, self.SUCCESS
                         code = format_citi_service_error_response(
-                            response_data
+                            response_data, PAYMENT_REQUEST_GENERATE_OTP
                         )
                         logger.warning("Error in citi rewards generate "
                                        "otp api, {}".format(response_data))
@@ -245,7 +245,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                     )
                     return response_data, self.SUCCESS
                 code = format_citi_service_error_response(
-                    response_data
+                    response_data, PAYMENT_REQUEST_POINT_BALANCE
                 )
                 logger.warning("Error in citi rewards get points "
                                "api, {}".format(response_data))
@@ -340,7 +340,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                         self.transaction_id, response_data)
                     return response_data, self.SUCCESS
                 code = format_citi_service_error_response(
-                    response_data
+                    response_data, PAYMENT_REQUEST_REDEMPTION
                 )
                 logger.warning("Error in citi rewards point redemption "
                                "api, {}".format(response_data))

@@ -8,7 +8,8 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CITI_REWARDS_VALIDATION_ERROR_CODE,
                                     CITI_REWARDS_ALREADY_REDEEMED_CODE,
                                     CITI_REWARDS_INSUFFICIENT_BALANCE_CODE,
-                                    CITI_REWARDS_INVALID_CUSTOMER_CODE)
+                                    CITI_REWARDS_INVALID_CUSTOMER_CODE,
+                                    PAYMENT_REQUEST_POINT_BALANCE)
 from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
@@ -149,7 +150,7 @@ def get_citi_converted_amount(response_data, amount):
     return None
 
 
-def format_citi_service_error_response(response_data):
+def format_citi_service_error_response(response_data, api_type):
     """
     check the response code from b2cpayback
     returns corresponding response from youpay
@@ -157,6 +158,11 @@ def format_citi_service_error_response(response_data):
     response_manager = YouPayResponse()
     if 'errors' in response_data:
         code = response_data.get('errors').get('code')
+        if (
+                api_type == PAYMENT_REQUEST_POINT_BALANCE and
+                code == CITI_REWARDS_VALIDATION_ERROR_CODE
+        ):
+            return response_manager.CITI_REWARDS_INVALID_OTP
         error_dict = {
             CITI_REWARDS_OTP_EXPIRED_CODE: (
                 response_manager.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED
