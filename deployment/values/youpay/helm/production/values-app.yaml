@@ -13,7 +13,7 @@ service:
 hpa:
   name: 'youpay-app-hpa'
   minReplicas: 5
-  maxReplicas: 100
+  maxReplicas: 10
   targetCPUUtilizationPercentage: 80
 
 pdb:
@@ -38,8 +38,8 @@ deployment:
           value: 'DJANGO_SETTINGS_MODULE'
       port: 8000
       memory:
-        requests: 400Mi
-        limits: 500Mi
+        requests: 300Mi
+        limits: 350Mi
       cpu:
         requests: 100m
       health:
@@ -102,7 +102,7 @@ deployment:
           app: 'youpay'
           tier: app
     - maxSkew: 1
-      topologyKey: 'kubernetes.io/hostname'
+      topologyKey: 'karpenter.sh/capacity-type'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:

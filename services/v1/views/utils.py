@@ -5,8 +5,7 @@ from core.constants import PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
-    QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
-)
+    QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE)
 from payments.constants import (PAYMENT_STATUS_INITIATED,
                                 LANGUAGE_CODE_EN,
                                 LANGUAGE_CODE_AR)
@@ -130,7 +129,7 @@ def get_payment_options(transaction_obj, gateways):
             code, gateway, is_guest, response_payment_options)
 
         response_payment_options = get_b2cpayback_payment_options(
-            code, store_currency, response_payment_options)
+            code, store_currency, gateway, response_payment_options)
 
         response_payment_options = get_tabbypg_payment_options(
             code, store_currency, response_payment_options)
@@ -174,11 +173,18 @@ def get_checkoutpg_payment_options(code, gateway, is_guest,
     return response_payment_options
 
 
-def get_b2cpayback_payment_options(code, store_currency,
+def get_b2cpayback_payment_options(code, store_currency, gateway,
                                    response_payment_options):
-    if code == B2CPAYBACK_HUB_CODE and (store_currency in
-                                        ADCBPG_STORE_CURRENCIES):
-        response_payment_options['adcb'] = True
+    if code == B2CPAYBACK_HUB_CODE:
+        response_payment_options['citi_rewards'] = False
+        validation_json = gateway.validation_json
+
+        if validation_json:
+            response_payment_options['citi_rewards'] = (
+                validation_json.get("is_citi_rewards_enabled", False))
+
+        if store_currency in ADCBPG_STORE_CURRENCIES:
+            response_payment_options['adcb'] = True
     return response_payment_options
 
 
@@ -200,7 +206,6 @@ def get_amazonpg_payment_options(code, store_currency,
 
 def get_haapycredits_payment_options(code, response_payment_options,
                                      platform):
-
     # happycredits is active only for Android and IOS Platforms
     response_payment_options['happy_credits'] = False
 

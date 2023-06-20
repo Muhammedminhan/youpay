@@ -92,6 +92,16 @@ class YouPayResponse(object):
     MISSING_CLIENT_INFO = 6000
     """Youpay related ends"""
 
+    """Citi rewards related begins"""
+    CITI_REWARDS_CONNECTION_ERROR = 8002
+    CITI_REWARDS_INSUFFICIENT_BALANCE = 8003
+    CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED = 8004
+    CITI_REWARDS_ALREADY_REDEEMED = 8005
+    CITI_REWARDS_VALIDATION_ERROR = 8006
+    CITI_REWARDS_INVALID_CUSTOMER = 8007
+    CITI_REWARDS_INVALID_OTP = 8008
+    """Citi rewards related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
@@ -147,6 +157,21 @@ class YouPayResponse(object):
             self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
                                                  " verification",
             self.PRE_AUTH: "Authentication not approved"
+                           " verification",
+
+            self.CITI_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.CITI_REWARDS_INSUFFICIENT_BALANCE: (
+                "You don't have enough points to make this transaction"),
+            self.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED: (
+                "OTP expired or maximum attempts exceeded for activation"),
+            self.CITI_REWARDS_ALREADY_REDEEMED: (
+                "Transaction is already redeemed."),
+            self.CITI_REWARDS_VALIDATION_ERROR: (
+                "Missing or invalid Parameters"),
+            self.CITI_REWARDS_INVALID_CUSTOMER: (
+                "Invalid details, please try again"
+            ),
+            self.CITI_REWARDS_INVALID_OTP: "Invalid/Expired OTP"
         })
 
     def get_400_message(self, message):

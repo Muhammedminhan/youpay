@@ -13,7 +13,7 @@ service:
 hpa:
   name: 'youpay-worker-hpa'
   minReplicas: 1
-  maxReplicas: 10
+  maxReplicas: 1
   targetCPUUtilizationPercentage: 80
 
 pdb:
@@ -34,8 +34,8 @@ deployment:
       image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "/ygag/deployment/app/worker-entrypoint.sh"]'
       memory:
-        requests: 300Mi
-        limits: 400Mi
+        requests: 250Mi
+        limits: 300Mi
       cpu:
         requests: 50m
       volumeMounts:
@@ -76,7 +76,7 @@ deployment:
           app: 'youpay'
           tier: worker
     - maxSkew: 1
-      topologyKey: 'kubernetes.io/hostname'
+      topologyKey: 'karpenter.sh/capacity-type'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
