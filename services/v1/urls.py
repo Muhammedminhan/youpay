@@ -82,7 +82,8 @@ urlpatterns = [
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
 
     # Citi Rewards endpoints
-    path('citi/generate-otp/', CitiGenerateOTPAPIView.as_view()),
+    path('citi/generate-otp/', CitiGenerateOTPAPIView.as_view(),
+         name='CitiGenerateOTPAPIView'),
     path('citi/point-balance/', CitiPointBalanceAPIView.as_view()),
     path('citi/point-redemption/', CitiPointRedemptionAPIView.as_view()),
 ]
