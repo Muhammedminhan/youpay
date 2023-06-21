@@ -164,7 +164,7 @@ class YouPayResponse(object):
             self.CITI_REWARDS_INSUFFICIENT_BALANCE: (
                 "You don't have enough points to make this transaction"),
             self.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED: (
-                "OTP expired or maximum attempts exceeded for activation"),
+                "Exceeded the limit. Please try again later"),
             self.CITI_REWARDS_ALREADY_REDEEMED: (
                 "Transaction is already redeemed."),
             self.CITI_REWARDS_VALIDATION_ERROR: (
