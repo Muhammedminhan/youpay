@@ -85,6 +85,9 @@ class TransactionData(models.Model):
         default=PAYMENT_SCHEME_NONE,
         db_index=True,
         help_text='Denotes the payment scheme used for the payment')
+    card_issuer_country = models.CharField(
+        max_length=4, null=True, blank=True, db_index=True,
+        help_text=' Denotes two letter code card issued country.')
     payment_id = models.CharField(
         max_length=200, null=True, blank=True,
         help_text='Payment id received from checkout.com')

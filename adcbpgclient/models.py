@@ -86,6 +86,20 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         choices=REDEMPTION_METHOD_CHOICES)
     customer_email = models.CharField(
         max_length=500, null=True, blank=True)
+    auth_code = models.CharField(
+        max_length=50, null=True, blank=True,
+        help_text='The acquirer authorization code, if the payment '
+                  'was authorized.')
+    is_fraud = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Denotes whether the payment is fraud or not.')
+    is_flagged = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Denotes whether the payment is marked as flagged '
+                  'or not.')
+    card_issuer_country = models.CharField(
+        max_length=4, null=True, blank=True, db_index=True,
+        help_text=' Denotes two letter code card issued country.')
     payment_id = models.CharField(
         max_length=200, null=True, blank=True,
         help_text='for checkoutpg transactions, payment id received from '
