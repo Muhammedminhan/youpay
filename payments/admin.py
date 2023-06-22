@@ -83,9 +83,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('ADCB transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
-                       'is_full_redemption', 'maximum_redeemable_points',
-                       'minimum_redeemable_points', 'amount_conversion_rate',
-                       'citi_order_id', 'citi_phone_number'
+                       'is_full_redemption'
                        )
         }),
         ('Happycredits transaction details', {
