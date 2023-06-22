@@ -30,6 +30,11 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                  db_index=True,
                                  validators=[DecimalValidator(12, 4)],
                                  help_text="used to store total order amount")
+    amount_in_aed = models.DecimalField(decimal_places=4, max_digits=12,
+                                        null=True, blank=True,
+                                        validators=[DecimalValidator(12, 4)],
+                                        help_text="used to store total order"
+                                                  " amount converted to AED")
     currency = models.CharField(null=False, blank=False, max_length=15,
                                 help_text="used to store currency details",
                                 db_index=True)

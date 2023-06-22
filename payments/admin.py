@@ -63,12 +63,13 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
         ('Payment details', {
-            'fields': ('amount', 'currency', 'country_code', 'transaction_id',
-                       'payment_reference', 'settlement_entity',
-                       'payment_gateway', 'channel_code', 'payment_method',
-                       'payment_scheme', 'platform', 'response_summary',
-                       'service_fee', 'base_amount', 'VAT_amount',
-                       'gateway_charge', 'is_payment_verified'
+            'fields': ('amount', 'amount_in_aed', 'currency', 'country_code',
+                       'transaction_id', 'payment_reference',
+                       'settlement_entity', 'payment_gateway',
+                       'channel_code', 'payment_method', 'payment_scheme',
+                       'platform', 'response_summary', 'service_fee',
+                       'base_amount', 'VAT_amount', 'gateway_charge',
+                       'is_payment_verified'
                        )
         }),
         ('URLs', {
