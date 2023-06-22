@@ -80,7 +80,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
             'fields': ('is_fraud', 'is_flagged',
                        )
         }),
-        ('ADCB Payback transaction details', {
+        ('ADCB transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
                        'is_full_redemption', 'maximum_redeemable_points',
