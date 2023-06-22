@@ -23,8 +23,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'order_reference',
-                    'payment_reference', 'created_at', 'api_client',
-                    'payment_gateway', 'updated_at',)
+                    'payment_reference', 'api_client',
+                    'payment_Gateway', 'created_at', 'updated_at',)
     readonly_fields = (
         'transaction_id', 'created_at', 'updated_at', 'customer_email',
         'customer_phone', 'loyalty_level')
@@ -80,10 +80,12 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
             'fields': ('is_fraud', 'is_flagged',
                        )
         }),
-        ('ADCB transaction details', {
+        ('B2C Payback transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
-                       'is_full_redemption',
+                       'is_full_redemption', 'maximum_redeemable_points',
+                       'minimum_redeemable_points', 'amount_conversion_rate',
+                       'citi_order_id', 'citi_phone_number'
                        )
         }),
         ('Happycredits transaction details', {
@@ -105,6 +107,16 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
     )
+
+    def payment_Gateway(self, obj):
+        if obj.payment_gateway:
+            display_string = f"{obj.payment_gateway}"
+            if obj.payment_method:
+                display_string = f"{display_string} ({obj.payment_method})"
+
+            return display_string
+        else:
+            return None
 
 
 class AnnouncementAdmin(AdminAbstract):
