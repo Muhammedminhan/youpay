@@ -23,8 +23,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'order_reference',
-                    'payment_reference', 'created_at', 'api_client',
-                    'payment_gateway', 'updated_at',)
+                    'payment_reference', 'api_client',
+                    'payment_Gateway', 'created_at', 'updated_at',)
     readonly_fields = (
         'transaction_id', 'created_at', 'updated_at', 'customer_email',
         'customer_phone', 'loyalty_level')
@@ -105,6 +105,16 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
     )
+
+    def payment_Gateway(self, obj):
+        if obj.payment_gateway:
+            display_string = f"{obj.payment_gateway}"
+            if obj.payment_method:
+                display_string = f"{display_string} ({obj.payment_method})"
+
+            return display_string
+        else:
+            return None
 
 
 class AnnouncementAdmin(AdminAbstract):
