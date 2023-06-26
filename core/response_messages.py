@@ -95,6 +95,8 @@ class YouPayResponse(object):
 
     """Qitaf related begins"""
     QITAF_CONNECTION_ERROR = 8002
+    QITAF_PHONE_NUMBER_SAVE_FAILED = 8003
+    QITAF_PHONE_NUMBER_SAVED = 8004
     """Qitaf related ends"""
 
     MESSAGE = {}
@@ -138,6 +140,10 @@ class YouPayResponse(object):
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
             self.QITAF_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.QITAF_PHONE_NUMBER_SAVE_FAILED: (
+                "Qitaf Phone number failed to save"),
+            self.QITAF_PHONE_NUMBER_SAVED: (
+                "Qitaf Phone number updated"),
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),

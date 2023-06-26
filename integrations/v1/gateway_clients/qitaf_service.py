@@ -23,6 +23,18 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
     def __init__(self):
         self.qitaf_config = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                        B2CPAYBACK_HUB_CODE)
+        self.transaction_id = None
+
+    def update_qitaf_phone_number(self, data):
+        """
+        To update qitaf phone number
+        """
+        try:
+            return self.update_youpay_transaction_data(data)
+        except Exception as e:
+            error = "Exception in update_qitaf_phone_number: {}".format(e)
+            logger.error(error)
+            return False
 
     def get_payment_header(self):
         """

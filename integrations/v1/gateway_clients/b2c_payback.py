@@ -112,7 +112,6 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     b2c_payback_domain = b2c_gateway_obj.domain
                     ADCB_HEADERS['X-API-KEY'] = b2c_gateway_obj.api_key
                     url = b2c_payback_domain + ADCB_POINT_BALANCE_API
-                    print("B2C request data ", request_data_json)
                     response = requests.post(url, data=request_data_json,
                                              headers=ADCB_HEADERS)
                     self.create_youpay_to_payment_gateways_data(
