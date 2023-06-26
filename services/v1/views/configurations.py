@@ -333,7 +333,6 @@ class ConfigViewSet(ViewSet):
         """
 
         validation_json_data = qitaf_obj.qitaf_config.validation_json
-        print("CONF ", validation_json_data)
         if validation_json_data.get('is_qitaf_enabled'):
             qitaf_config = {
                 'qitaf_phone_number': transaction_data.qitaf_phone_number,
