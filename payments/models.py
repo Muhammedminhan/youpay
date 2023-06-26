@@ -248,7 +248,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         default=False, db_index=True,
         help_text='Flag to manage duplicate verification.')
     qitaf_phone_number = models.CharField(max_length=20, null=True,
-                                          blank=True,
+                                          blank=True, db_index=True,
                                           help_text="To store user qitaf "
                                                     "phone number")
     is_qitaf_enabled = models.BooleanField(
@@ -501,5 +501,5 @@ class ArchivedYouPayTransactionData(models.Model):
     is_guest = models.BooleanField(default=False, db_index=True)
     is_payment_verified = models.BooleanField(default=False, db_index=True)
     qitaf_phone_number = models.CharField(max_length=20, null=True,
-                                          blank=True, )
+                                          blank=True, db_index=True)
     is_qitaf_enabled = models.BooleanField(default=False, db_index=True, )
