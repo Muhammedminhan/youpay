@@ -33,6 +33,7 @@ TABBYPG_HUB_CODE = 'PAYMTTPG'
 AMAZONPG_HUB_CODE = 'PAYMTAPG'
 HAPPYCREDITS_HUB_CODE = 'PAYMTHPCRED'
 APPLE_PAY_HUB_CODE = ''  # TODO: Add Apple Pay code
+QITAF_HUB_CODE = 'PAYMTQTF'
 
 CHECKOUT_VERIFY_URL = 'services/checkout/verify/'
 
@@ -95,6 +96,7 @@ TABBYPG_CACHE_KEY = 'tabbypg_config'
 AMAZONPG_CACHE_KEY = 'amazonpg_config'
 HAPPYCREDITS_CACHE_KEY = 'happycredits_config'
 APPLE_PAY_CACHE_KEY = "apple_pay_config"
+QITAF_CACHE_KEY = 'qitaf_config'
 
 ADCB_POINT_BALANCE_API = "/payback/api/v1/touchpoint/point-balance/"
 ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
@@ -145,5 +147,3 @@ QITAF_REDEEM_POINTS_API = "/qitaf/api/v1/burn/redeem-qitafpoints/"
 QITAF_REVERSE_POINTS_API = "/qitaf/api/v1/burn/reverse-qitafpoints/"
 QITAF_REWARD_UPDATE_API = "/qitaf/api/v1/collect/reward-update/"
 
-QITAF_CACHE_KEY = 'qitaf_config'
-QITAF_HUB_CODE = 'PAYMTQTF'
