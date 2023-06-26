@@ -10,6 +10,7 @@ from core.utils import decrypt_string, get_gateway_additional_fee
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
@@ -60,6 +61,7 @@ class ConfigViewSet(ViewSet):
         checkout_obj = CheckoutpgManager()
         tabbypg_obj = TabbyPGManager()
         b2c_payback_obj = B2CPaybackManager()
+        qitaf_obj = QitafServiceManager()
 
         decrypted_transaction_id = decrypt_string(pk)
         try:
@@ -121,7 +123,8 @@ class ConfigViewSet(ViewSet):
                         applepay_config = (
                             self.get_applepay_config(payment_options))
 
-                        qitaf_config = (self.get_qitaf_config(transaction))
+                        qitaf_config = self.get_qitaf_config(
+                            qitaf_obj, transaction)
 
                         response_data = self.retrieve_response(
                             api_client=api_client,
@@ -324,16 +327,21 @@ class ConfigViewSet(ViewSet):
                                                        TOKEN_TYPE_PAYPAL)
         return paypal_config
 
-    def get_qitaf_config(self, transaction_data):
+    def get_qitaf_config(self, qitaf_obj, transaction_data):
         """
         returns qitaf configurations
         """
-        qitaf_config = {
-            'qitaf_phone_number': transaction_data.qitaf_phone_number,
-            'is_qitaf_enabled': transaction_data.is_qitaf_enabled
-        }
-        return qitaf_config
 
+        validation_json_data = qitaf_obj.qitaf_config.validation_json
+        print("CONF ", validation_json_data)
+        if validation_json_data.get('is_qitaf_enabled'):
+            qitaf_config = {
+                'qitaf_phone_number': transaction_data.qitaf_phone_number,
+                'is_qitaf_enabled': transaction_data.is_qitaf_enabled
+            }
+            return qitaf_config
+        else:
+            return None
 
 class ClientStaticFilesAPI(APIView):
     """
