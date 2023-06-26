@@ -30,7 +30,6 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
         response, transaction_id, response_code = payback.get_point_balance(
             request.data)
         request_data = request.data
-
         try:
             if response_code == (
                     self.response_obj.CLIENT_TRANSACTION_VERIFICATION_FAILED):
