@@ -18,7 +18,6 @@ from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
-    QitafRewardUpdateAPIView, QitafReversePointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
@@ -87,6 +86,4 @@ urlpatterns = [
     path('qitaf/generate-otp/', QitafGenerateOTPAPIView.as_view()),
     path('qitaf/collect/', QitafCollectPointsAPIView.as_view()),
     path('qitaf/redeem-points/', QitafRedeemPointsAPIView.as_view()),
-    path('qitaf/reward-update/', QitafRewardUpdateAPIView.as_view()),
-    path('qitaf/reverse-points/', QitafReversePointsAPIView.as_view()),
 ]

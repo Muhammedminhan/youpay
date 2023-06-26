@@ -142,6 +142,7 @@ class QitafRedeemPointsAPIView(APIView):
 
 
 class QitafReversePointsAPIView(APIView):
+    # TODO : Convert this is an admin action instead of calling api
     response_obj = YouPayResponse()
 
     def post(self, request):
@@ -171,6 +172,7 @@ class QitafReversePointsAPIView(APIView):
 
 
 class QitafRewardUpdateAPIView(APIView):
+    # TODO : No api need for this, this will be an automated process while doing the payment
     response_obj = YouPayResponse()
 
     def post(self, request):
