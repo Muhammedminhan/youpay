@@ -131,7 +131,7 @@ def get_payment_options(transaction_obj, gateways):
             code, gateway, is_guest, response_payment_options)
 
         response_payment_options = get_b2cpayback_payment_options(
-            code, store_currency, response_payment_options)
+            code, gateway, store_currency, response_payment_options)
 
         response_payment_options = get_tabbypg_payment_options(
             code, store_currency, response_payment_options)
@@ -175,10 +175,15 @@ def get_checkoutpg_payment_options(code, gateway, is_guest,
     return response_payment_options
 
 
-def get_b2cpayback_payment_options(code, store_currency,
+def get_b2cpayback_payment_options(code, gateway, store_currency,
                                    response_payment_options):
     if code == B2CPAYBACK_HUB_CODE and (store_currency in
                                         ADCBPG_STORE_CURRENCIES):
+        validation_json = gateway.validation_json
+        if validation_json:
+            response_payment_options['qitaf'] = gateway.validation_json.get(
+                "is_qitaf_enabled", False)
+
         response_payment_options['adcb'] = True
     return response_payment_options
 

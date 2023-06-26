@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from integrations.v1.gateway_clients.tabbypg import TabbyPaymentCancel
 
+from integrations.v1.gateway_clients.tabbypg import TabbyPaymentCancel
 from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
                                                  B2CPaybackRedemption,
@@ -14,9 +14,12 @@ from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
-from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
+from .api_clients.qitaf_service import (
+    QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
+    QitafCollectPointsAPIView, UpdateQitafPhoneNumber)
+from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
@@ -77,4 +80,10 @@ urlpatterns = [
 
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
+
+    # Qitaf endpoints
+    path('qitaf/update-phone-number/', UpdateQitafPhoneNumber.as_view()),
+    path('qitaf/generate-otp/', QitafGenerateOTPAPIView.as_view()),
+    path('qitaf/collect/', QitafCollectPointsAPIView.as_view()),
+    path('qitaf/redeem-points/', QitafRedeemPointsAPIView.as_view()),
 ]
