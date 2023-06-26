@@ -30,7 +30,6 @@ CHECKOUTPG_SAVED_CARD_ENDPOINT_V2 = '/gateway/checkout/api/v2/payment-token/'
 CHECKOUTPG_HUB_CODE = 'PAYMTCPG'
 B2CPAYBACK_HUB_CODE = 'PAYMTB2CPBK'
 TABBYPG_HUB_CODE = 'PAYMTTPG'
-QITAF_HUB_CODE = 'PAYMTQTF'
 AMAZONPG_HUB_CODE = 'PAYMTAPG'
 HAPPYCREDITS_HUB_CODE = 'PAYMTHPCRED'
 APPLE_PAY_HUB_CODE = ''  # TODO: Add Apple Pay code
@@ -138,3 +137,13 @@ HAPPY_CREDITS_ERROR_CODES = [2240, 2252, 2251]
 HAPPY_CREDITS_SUCCESS_CODES = [2250, 2255]
 
 CHECKOUTPG_SUCCESS_RESPONSE_CODE = 10000
+
+# Qitaf related constants
+QITAF_OTP_GENERATION_API = "/qitaf/api/v1/burn/generate-otp/"
+QITAF_EARN_POINTS_API = "/qitaf/api/v1/collect/"
+QITAF_REDEEM_POINTS_API = "/qitaf/api/v1/burn/redeem-qitafpoints/"
+QITAF_REVERSE_POINTS_API = "/qitaf/api/v1/burn/reverse-qitafpoints/"
+QITAF_REWARD_UPDATE_API = "/qitaf/api/v1/collect/reward-update/"
+
+QITAF_CACHE_KEY = 'qitaf_config'
+QITAF_HUB_CODE = 'PAYMTQTF'
