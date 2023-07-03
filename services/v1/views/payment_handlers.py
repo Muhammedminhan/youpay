@@ -50,4 +50,4 @@ class PaymentHandlers(YouPayTransactionCRUD):
         except Exception as e:
             logger.error(
                 "YoupayToPaymentGateways data failed to save, {0}".format(
-                    str(e)))
+                    str(e)), exc_info=True)
