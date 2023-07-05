@@ -208,7 +208,7 @@ class WebhookListener(APIView):
                 payment_reference=payment_reference)
             return transaction_obj
         except YouPayTransactionData.DoesNotExist:
-            logger.error(
+            logger.info(
                 "Unable to find youpay transaction object with payment"
                 "_reference {}".format(payment_reference))
             return None
