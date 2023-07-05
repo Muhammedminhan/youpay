@@ -494,3 +494,5 @@ class ArchivedYouPayTransactionData(models.Model):
         choices=SETTLEMENT_ENTITY_CHOICES)
     is_guest = models.BooleanField(default=False, db_index=True)
     is_payment_verified = models.BooleanField(default=False, db_index=True)
+    amount_in_aed = models.DecimalField(decimal_places=4, max_digits=12,
+                                        null=True, blank=True, db_index=True)
