@@ -56,7 +56,7 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-class QitafGenerateOTPAPIView(APIView):
+class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
     def post(self, request):
@@ -64,19 +64,37 @@ class QitafGenerateOTPAPIView(APIView):
         request for handling qitaf generate otp api
         """
         try:
-            otp_generate_data = {'request_data': request.data}
-            qitaf_service = QitafServiceManager()
-            response_data, code = qitaf_service.generate_otp(
-                otp_generate_data)
-            if response_data:
-                data = self.response_obj.get_success_dict(
-                    code=code,
-                    success_dict=response_data
-                )
-                return Response(data, status=status.HTTP_200_OK)
+            transaction_id = request.data.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+                if transaction_obj.qitaf_phone_number is None:
+                    data = (self.response_obj.get_error_dict(error_code=(
+                        self.response_obj.QITAF_PHONE_NUMBER_FAILED_TO_FETCH))
+                    )
+                    return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+                otp_generate_data = {'request_data': {
+                    'transaction_obj': transaction_obj,
+                    "mobile_number": transaction_obj.qitaf_phone_number
+
+                }}
+                qitaf_service = QitafServiceManager()
+                response_data, code = qitaf_service.generate_otp(
+                    otp_generate_data)
+                if response_data:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data, status=status.HTTP_400_BAD_REQUEST)
             else:
-                data = self.response_obj.get_error_dict(error_code=code)
-                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+                data = self.response_obj.get_404_message(
+                    message="Transaction doesn't exists")
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),

@@ -3,11 +3,12 @@ import logging
 
 import requests
 
+from core.constants import REQUEST_METHOD_POST
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE
+    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT
 )
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -24,6 +25,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.qitaf_config = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                        B2CPAYBACK_HUB_CODE)
         self.transaction_id = None
+        self.transaction_obj = None
+        self.request_data = {}
+        self.response_data = {}
+        self.request_method = None
+        self.request_type = None
 
     def update_qitaf_phone_number(self, data):
         """
@@ -53,29 +59,49 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         """
         try:
             request_data = data['request_data']
+            self.transaction_obj = request_data.get('transaction_obj')
+            self.transaction_id = self.transaction_obj.transaction_id
+            payload = {
+                "mobile_number": request_data.get("mobile_number")
+            }
+
             logger.info(
                 "Youpay sending request data to qitaf generate otp api "
-                "is {}".format(request_data))
-            payload = json.dumps(request_data)
+                "is {}".format(payload))
+            self.request_data = payload
             url = self.qitaf_config.domain + QITAF_OTP_GENERATION_API
             headers = self.get_payment_header()
 
-            response = requests.post(url, data=payload, headers=headers)
+            response = requests.post(url, data=json.dumps(payload),
+                                     headers=headers)
             logger.info("Response from Qitaf service {}".format(response))
             if response:
                 response_data = response.json()
                 logger.info("qitaf payment response: {}".format(
                     response_data))
+                self.response_data = response_data
                 return response_data, self.SUCCESS
 
             logger.error("Error in qitaf otp, {}".format(response.json()))
+            self.response_data = response.json()
+
             return ({"error": response.json()},
                     self.QITAF_CONNECTION_ERROR)
 
         except Exception as e:
             error = "Exception in qitaf generate otp api: {}".format(e)
-            logger.error(error)
+            logger.error(error, exc_info=True)
+            self.response_data = {}
             return {"error": error}, self.QITAF_CONNECTION_ERROR
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
+            )
 
     def collect_points(self, data):
         """

@@ -97,6 +97,7 @@ class YouPayResponse(object):
     QITAF_CONNECTION_ERROR = 8002
     QITAF_PHONE_NUMBER_SAVE_FAILED = 8003
     QITAF_PHONE_NUMBER_SAVED = 8004
+    QITAF_PHONE_NUMBER_FAILED_TO_FETCH = 8005
     """Qitaf related ends"""
 
     MESSAGE = {}
@@ -144,6 +145,8 @@ class YouPayResponse(object):
                 "Qitaf Phone number failed to save"),
             self.QITAF_PHONE_NUMBER_SAVED: (
                 "Qitaf Phone number updated"),
+            self.QITAF_PHONE_NUMBER_FAILED_TO_FETCH: (
+                "Qitaf Phone number failed to fetch"),
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
