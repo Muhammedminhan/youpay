@@ -64,6 +64,13 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             payload = {
                 "mobile_number": request_data.get("mobile_number")
             }
+            data = {
+                'transaction_id': self.transaction_id,
+                'qitaf_phone_number': request_data.get("mobile_number"),
+                'is_qitaf_enabled': str(True)
+            }
+
+            self.update_qitaf_phone_number(data)
 
             logger.info(
                 "Youpay sending request data to qitaf generate otp api "
