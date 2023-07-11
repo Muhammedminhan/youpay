@@ -3,11 +3,12 @@ import logging
 
 import requests
 
+from core.constants import REQUEST_METHOD_POST
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE
+    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT
 )
 from integrations.v1.serializers.qitafpg_serializer import \
     QitafPaymentRequestSerializer
@@ -113,14 +114,14 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             self.response_data = {}
             return {"error": error}, self.QITAF_CONNECTION_ERROR
         finally:
-            # self.create_youpay_to_payment_gateways_data(
-            #     transaction_obj=self.transaction_obj,
-            #     transaction_id=self.transaction_id,
-            #     request_data=json.dumps(self.request_data),
-            #     response_data=json.dumps(self.response_data),
-            #     request_method=REQUEST_METHOD_POST,
-            #     request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
-            # )
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
+            )
             # TODO: uncomment above code after testing
             print("Youpay to payment gateway data Not created")
 

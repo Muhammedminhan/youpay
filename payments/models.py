@@ -267,7 +267,6 @@ def update_client(sender, instance, created, **kwargs):
     """
     Signal to send webhook for client on each transaction
     """
-    return
     from services.v1.views.client_webhook import ClientService
     service = ClientService()
     payment_transaction = YouPayTransactionData.objects.get(
