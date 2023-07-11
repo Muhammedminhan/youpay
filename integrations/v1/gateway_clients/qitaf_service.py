@@ -10,8 +10,9 @@ from integrations.constants import (
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT
 )
-from integrations.v1.serializers.qitafpg_serializer import \
+from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
+)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
