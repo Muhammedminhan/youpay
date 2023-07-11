@@ -77,7 +77,7 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
                 qitaf_service = QitafServiceManager()
                 response_data, code = qitaf_service.generate_otp(payload)
 
-                if response_data:
+                if response_data and code == self.response_obj.SUCCESS:
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
