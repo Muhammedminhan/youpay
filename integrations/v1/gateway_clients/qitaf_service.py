@@ -34,9 +34,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
     def get_qitaf_payment_data(self, data):
         if data.get('transaction_obj'):
-            print("Transaction obj: ", data)
             payment_data = QitafPaymentRequestSerializer(data)
-            print("Payment data: ", payment_data)
             return payment_data.data
         else:
             logger.error(
@@ -74,12 +72,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             request_data = data['request_data']
             self.transaction_obj = request_data.get('transaction_obj')
             self.transaction_id = self.transaction_obj.transaction_id
-            print("\n\nTransaction id: ", request_data)
             payload = self.get_qitaf_payment_data(request_data)
-            print("Payload: ", payload)
-            # payload = {
-            #     "mobile_number": request_data.get("mobile_number")
-            # }
+
             data = {
                 'transaction_id': str(self.transaction_id),
                 'qitaf_phone_number': request_data.get("mobile_number"),
@@ -127,6 +121,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             #     request_method=REQUEST_METHOD_POST,
             #     request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
             # )
+            # TODO: uncomment above code after testing
             print("Youpay to payment gateway data Not created")
 
     def collect_points(self, data):
