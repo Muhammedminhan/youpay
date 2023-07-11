@@ -123,8 +123,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
             )
-            # TODO: uncomment above code after testing
-            print("Youpay to payment gateway data Not created")
 
     def collect_points(self, data):
         """
