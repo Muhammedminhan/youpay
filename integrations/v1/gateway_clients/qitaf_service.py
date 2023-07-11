@@ -10,6 +10,9 @@ from integrations.constants import (
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT
 )
+from integrations.v1.serializers.qitafpg_serializer import (
+    QitafPaymentRequestSerializer
+)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -30,6 +33,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.response_data = {}
         self.request_method = None
         self.request_type = None
+
+    def get_qitaf_payment_data(self, data):
+        if data.get('transaction_obj'):
+            payment_data = QitafPaymentRequestSerializer(data)
+            return payment_data.data
+        else:
+            logger.error(
+                "transaction_data or request_data or token_type data "
+                "is not available")
+            return None
 
     def update_qitaf_phone_number(self, data):
         """
@@ -61,21 +74,22 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             request_data = data['request_data']
             self.transaction_obj = request_data.get('transaction_obj')
             self.transaction_id = self.transaction_obj.transaction_id
-            payload = {
-                "mobile_number": request_data.get("mobile_number")
-            }
+            payload = self.get_qitaf_payment_data(request_data)
+
             data = {
-                'transaction_id': self.transaction_id,
+                'transaction_id': str(self.transaction_id),
                 'qitaf_phone_number': request_data.get("mobile_number"),
                 'is_qitaf_enabled': str(True)
             }
 
             self.update_qitaf_phone_number(data)
 
+            payload.update(data)
+            self.request_data = payload
+            payload['MSISDN'] = payload['qitaf_phone_number']
             logger.info(
                 "Youpay sending request data to qitaf generate otp api "
                 "is {}".format(payload))
-            self.request_data = payload
             url = self.qitaf_config.domain + QITAF_OTP_GENERATION_API
             headers = self.get_payment_header()
 
