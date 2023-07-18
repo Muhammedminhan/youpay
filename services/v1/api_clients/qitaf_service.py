@@ -7,6 +7,8 @@ from rest_framework.views import APIView
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
+from integrations.v1.serializers.qitafpg_serializer import (
+    QitafRedemptionSerializer)
 from services.v1.serializers.payment_request import QitafOTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
 
@@ -73,7 +75,6 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
                     'transaction_obj': transaction_obj,
                     "mobile_number": mobile_number
                 }}
-
                 qitaf_service = QitafServiceManager()
                 response_data, code = qitaf_service.generate_otp(payload)
 
@@ -128,15 +129,58 @@ class QitafCollectPointsAPIView(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-class QitafRedeemPointsAPIView(APIView):
+class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
     def post(self, request):
         """
         request for handling qitaf points redemption api
+
+        1.full redemption
+        2.partial redemption
+
+        body:
+
+        amount through card -- can take remaining balance from transaction amt
+
+        transaction_id
+        selected_amount
+        checkout_amount
+        pin_number
+
+
+        for card
+        is_save_user_token
+        card holder name
+        token  -- generated card token (eg:tok_4ysrgucqwwpero7rasfcprtevq)
+
+        for saved cards
+        token  -- saved card token (eg:src_4ysrgucqwwpero7rasfcprtevq)
+        cvv
+
         """
         try:
-            points_redemption_data = {'request_data': request.data}
+            qitaf_redemption_serializer = QitafRedemptionSerializer(
+                data=request.data, context={'request': request})
+
+            qitaf_redemption_serializer.is_valid(raise_exception=True)
+            validated_data = qitaf_redemption_serializer.data
+
+            points_redemption_data = validated_data
+            points_redemption_data.update(
+                {
+                    "transaction_obj": qitaf_redemption_serializer.transaction_obj,
+                    "referance_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
+                    "pin_number": validated_data.get('pin_number'),
+                    "selected_amount": validated_data.get('selected_amount'),
+                    "checkout_amount": validated_data.get('checkout_amount'),
+                    "is_save_user_token": validated_data.get(
+                        'is_save_user_token'),
+                    "customer_name": validated_data.get('customer_name'),
+                    "cvv": validated_data.get('cvv'),
+                    "token": validated_data.get('token'),
+                }
+            )
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.redeem_points(
                 points_redemption_data)
