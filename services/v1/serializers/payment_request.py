@@ -32,7 +32,7 @@ class QitafOTPSerializer(serializers.Serializer):
     mobile_number = serializers.CharField(required=True)
 
     @property
-    def transaction_obj(self, ):
+    def transaction_obj(self):
         transaction_id = self.validated_data.get('transaction_id')
         from services.v1.views.common import YouPayTransactionCRUD
         obj = YouPayTransactionCRUD()

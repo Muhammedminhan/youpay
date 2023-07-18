@@ -8,7 +8,8 @@ from core.utils import get_payment_gateway_config
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT
+    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT,
+    PAYMENT_REQUEST_REDEMPTION
 )
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -101,6 +102,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.info("qitaf payment response: {}".format(
                     response_data))
                 self.response_data = response_data
+                self.update_youpay_transaction_data({
+                    'transaction_id': self.transaction_obj.transaction_id,
+                    'payment_reference': response_data.get(
+                        'payment_reference'),
+                })
+
                 return response_data, self.SUCCESS
 
             logger.error("Error in qitaf otp, {}".format(response.json()))
@@ -158,26 +165,37 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
     def redeem_points(self, data):
         """
         calls qitaf points redeem api
+
+        "amount":100,
+        "pin_number": 1231,
+        "mobile_number":551601275,
         """
         try:
-            request_data = data['request_data']
-            logger.info(
-                "Youpay sending request data to qitaf redeem point api "
-                "is {}".format(request_data))
-            payload = json.dumps(request_data)
+            self.request_data = data
+
+            self.transaction_obj = self.request_data.get('transaction_obj')
+            self.transaction_id = self.transaction_obj.transaction_id
+            payload = self.request_data
+            payload.pop('transaction_obj')
             url = self.qitaf_config.domain + QITAF_REDEEM_POINTS_API
             headers = self.get_payment_header()
-            response = requests.post(url, data=payload, headers=headers)
+            logger.info(
+                "Youpay sending request data to qitaf redeem point api "
+                "is {}".format(payload))
+            response = requests.post(url, data=json.dumps(payload),
+                                     headers=headers)
             logger.info("Response from qitaf redeem point api {}"
                         "".format(response))
             if response:
                 response_data = response.json()
                 logger.info("qitaf redeem point api response: {}".format(
                     response_data))
+                self.response_data = response_data
                 return response_data, self.SUCCESS
 
             logger.error("Error in qitaf redeem point api, {}"
                          "".format(response.text))
+            self.response_data = response.json()
             return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
@@ -185,6 +203,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Exception in qitaf redeem point api: "
                          "{}".format(e))
             return {"error": error}, self.QITAF_CONNECTION_ERROR
+
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_REDEMPTION,
+            )
 
     def reverse_points(self, data):
         """
@@ -205,16 +233,19 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = response.json()
                 logger.info("qitaf reverse point api response: {}".format(
                     response_data))
+                self.response_data = response_data
+
                 return response_data, self.SUCCESS
 
             logger.error("Error in qitaf reverse point api, {}"
                          "".format(response.text))
+            self.response_data = response.json()
             return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in qitaf reverse point api: {}".format(e)
             logger.error("Exception in qitaf reverse point api: "
-                         "{}".format(e))
+                         "{}".format(e), exc_info=True)
             return {"error": error}, self.QITAF_CONNECTION_ERROR
 
     def reward_update(self, data):
