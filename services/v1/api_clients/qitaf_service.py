@@ -160,6 +160,8 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
 
         """
         try:
+            logger.info("QitafRedeemPointsAPIView API triggered, request data"
+                        ": {}".format(request.data))
             qitaf_redemption_serializer = QitafRedemptionSerializer(
                 data=request.data, context={'request': request})
 
