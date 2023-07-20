@@ -23,6 +23,7 @@ SERVICES_APICLIENT = 'services.APIClient'
 
 # Create your models here.
 
+
 class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     transaction_id = models.UUIDField(default=uuid.uuid4, editable=False,
                                       db_index=True, unique=True)

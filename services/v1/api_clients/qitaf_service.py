@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
@@ -186,10 +187,12 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.redeem_points(
                 points_redemption_data)
+
             if response_data:
+                formatted_res = qitaf_response_formatter(response_data, code)
                 data = self.response_obj.get_success_dict(
                     code=code,
-                    success_dict=response_data
+                    success_dict=formatted_res
                 )
                 return Response(data, status=status.HTTP_200_OK)
             else:
@@ -259,3 +262,63 @@ class QitafRewardUpdateAPIView(APIView):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+def qitaf_response_formatter(data, code):
+    # Todo Clear code
+    """Success response
+    {
+        "status": true,
+        "reason": "Success",
+        "code": 1000,
+        "message": "API request completed successfully",
+        "proceed": true,
+        "retry_same": false,
+        "retry_new": false,
+        "reverse": false
+    }
+
+    {
+        "error": {
+            "status": true,
+            "reason": "Redemption Rejected – Duplicated Request ID",
+            "code": 1050,
+            "message": "An error occurred while redeeming Qitaf points.Please try again",
+            "proceed": false,
+            "retry_same": false,
+            "retry_new": true,
+            "reverse": false,
+            "warning": "Please add 1050 for Generate OTP in Qitaf"
+        },
+        "message": "Service is temporarily unavailable please choose another payment option, sorry for the inconvenience caused",
+        "code": 8002
+    }
+    """
+
+    """retrun response
+    {
+        "status": 200,
+        "is_redirect": true,
+        "redirect_url": "https://3ds2-sandbox.ckotech.co/interceptor/3ds_m6p6ifvzzpseppafs7h5ukfdxa",
+        "message": "API request completed successfully",
+        "code": 1000
+    }
+    """
+
+    qitaf_response = data.get('qitaf_response')
+    errors = data.get('errors')
+    is_success = data.get(IS_SUCCESS)
+    if qitaf_response:
+        message = qitaf_response.get("reason")
+        data['code'] = code
+        data['reason'], data['message'] = message, message
+        data[IS_SUCCESS] = is_success
+        data.pop('qitaf_response', None)
+    if errors:
+        errors['message'] = COMMON_ERROR_MESSAGE_EN
+        errors['code'] = code
+
+    if not data.get('message'):
+        data['message'] = COMMON_ERROR_MESSAGE_EN
+        data['code'] = 11111
+    return data
