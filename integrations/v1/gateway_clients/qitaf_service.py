@@ -1,9 +1,11 @@
 import json
 import logging
+from decimal import Decimal
 
 import requests
 
-from core.constants import REQUEST_METHOD_POST
+from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK
+from core.messages import IS_REDIRECT, REDIRECT_URL
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
@@ -14,6 +16,10 @@ from integrations.constants import (
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
 )
+from payments.constants import (PAYMENT_STATUS_PAID,
+                                PAYMENT_STATUS_DECLINED_RETRY,
+                                PAYMENT_METHOD_FULL_REDEMPTION_QITAF,
+                                PAYMENT_METHOD_PARTIAL_REDEMPTION_QITAF)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -34,6 +40,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.response_data = {}
         self.request_method = None
         self.request_type = None
+        self.payment_status = None
+        self.payment_method = None
+        self.approved = False
+        self.payment_gateway = PAYMENT_GATEWAY_B2CPAYBACK
 
     def get_qitaf_payment_data(self, data):
         if data.get('transaction_obj'):
@@ -162,6 +172,22 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                          "{}".format(e))
             return {"error": error}, self.QITAF_CONNECTION_ERROR
 
+    def determine_full_or_partial_redemption(self, **kwargs):
+        try:
+            selected_amount = Decimal(kwargs.get('selected_amount', 0))
+            checkout_amount = Decimal(kwargs.get('checkout_amount', 0))
+            total_amount = kwargs.get("amount")
+
+            if selected_amount == total_amount:
+                self.payment_method = PAYMENT_METHOD_FULL_REDEMPTION_QITAF
+            elif (selected_amount + checkout_amount) == total_amount:
+                self.payment_method = PAYMENT_METHOD_PARTIAL_REDEMPTION_QITAF
+            return self.payment_method
+        except Exception as e:
+            logger.error(
+                "UNABLE TO DETERMINE PAYMENT METHOD : {} ".format(str(e)))
+            return None
+
     def redeem_points(self, data):
         """
         calls qitaf points redeem api
@@ -172,8 +198,13 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         """
         try:
             self.request_data = data
-
             self.transaction_obj = self.request_data.get('transaction_obj')
+            selected_amount = self.request_data.get('selected_amount')
+
+            self.payment_method = self.determine_full_or_partial_redemption(
+                selected_amount=selected_amount,
+                amount=self.transaction_obj.amount
+            )
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             payload.pop('transaction_obj')
@@ -186,23 +217,42 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                                      headers=headers)
             logger.info("Response from qitaf redeem point api {}"
                         "".format(response))
+
             if response:
                 response_data = response.json()
+                self.response_data = response_data
+
+                """sample success response to figureout success case
+                response_data = {
+                    "status": True,
+                    "reason": "Success",
+                    "code": 1000,
+                    "message": "API request completed successfully",
+                    "proceed": True,
+                    "retry_same": False,
+                    "retry_new": False,
+                    "reverse": False
+                }
+                """
                 logger.info("qitaf redeem point api response: {}".format(
                     response_data))
-                self.response_data = response_data
+                # update redirection and save payment status
+                response_data = self.handle_qitaf_response(
+                    response_data, self.transaction_obj)
                 return response_data, self.SUCCESS
 
             logger.error("Error in qitaf redeem point api, {}"
                          "".format(response.text))
             self.response_data = response.json()
-            return {"error": response.text}, self.QITAF_CONNECTION_ERROR
+            response_data = self.handle_qitaf_response(
+                response.json(), self.transaction_obj)
+            return response_data, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in qitaf redeem point api: {}".format(e)
             logger.error("Exception in qitaf redeem point api: "
                          "{}".format(e))
-            return {"error": error}, self.QITAF_CONNECTION_ERROR
+            return {"errors": error}, self.QITAF_CONNECTION_ERROR
 
         finally:
             self.create_youpay_to_payment_gateways_data(
@@ -278,3 +328,37 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Exception in qitaf reward update api: "
                          "{}".format(e))
             return {"error": error}, self.QITAF_CONNECTION_ERROR
+
+    def handle_qitaf_response(self, response_data, payment_data):
+        is_success, is_redirect, redirect_url = False, False, None
+        update_data = {}
+        if str(response_data.get('code')) in ["0"]:
+            self.payment_status = PAYMENT_STATUS_PAID
+            self.approved = True
+
+            redirect_url = payment_data.success_url
+            is_success, is_redirect = True, True
+
+        else:
+            self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
+            is_redirect = False
+
+        update_data.update({
+            "transaction_id": payment_data.transaction_id,
+            "payment_status": self.payment_status,
+            "approved": self.approved,
+            "payment_method": self.payment_method,
+            "payment_gateway": self.payment_gateway,
+            "response_summary": response_data.get('reason')
+
+        })
+
+        self.update_youpay_transaction_data(update_data)
+        return_response = {
+            "message": "API request completed successfully",
+            REDIRECT_URL: redirect_url,
+            IS_REDIRECT: is_redirect,
+            "qitaf_response": response_data,
+            "is_success": is_success
+        }
+        return return_response
