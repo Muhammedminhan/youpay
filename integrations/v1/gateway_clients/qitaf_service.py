@@ -173,6 +173,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             return {"error": error}, self.QITAF_CONNECTION_ERROR
 
     def determine_full_or_partial_redemption(self, **kwargs):
+        """
+        Todo move to b2c qitaf
+        abs(payment_amount - invoice_amount) <= 3, TODO
+        """
         try:
             selected_amount = Decimal(kwargs.get('selected_amount', 0))
             checkout_amount = Decimal(kwargs.get('checkout_amount', 0))
@@ -201,10 +205,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             self.transaction_obj = self.request_data.get('transaction_obj')
             selected_amount = self.request_data.get('selected_amount')
 
-            self.payment_method = self.determine_full_or_partial_redemption(
-                selected_amount=selected_amount,
-                amount=self.transaction_obj.amount
-            )
+            # self.payment_method = self.determine_full_or_partial_redemption(
+            #     selected_amount=selected_amount,
+            #     amount=self.transaction_obj.amount
+            # )
+            # todo move to separate function
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             payload.pop('transaction_obj')
@@ -234,14 +239,14 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     "reverse": False
                 }
                 """
-                logger.info("qitaf redeem point api response: {}".format(
+                logger.info("\n\nqitaf redeem point api response: {}".format(
                     response_data))
                 # update redirection and save payment status
                 response_data = self.handle_qitaf_response(
                     response_data, self.transaction_obj)
                 return response_data, self.SUCCESS
 
-            logger.error("Error in qitaf redeem point api, {}"
+            logger.error("\n\nError in qitaf redeem point api, {}"
                          "".format(response.text))
             self.response_data = response.json()
             response_data = self.handle_qitaf_response(
@@ -249,7 +254,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             return response_data, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
-            error = "Error in qitaf redeem point api: {}".format(e)
+            error = "Exception in qitaf redeem point api: {}".format(e)
             logger.error("Exception in qitaf redeem point api: "
                          "{}".format(e))
             return {"errors": error}, self.QITAF_CONNECTION_ERROR
@@ -342,6 +347,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         else:
             self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
             is_redirect = False
+        self.payment_method = (
+            PAYMENT_METHOD_FULL_REDEMPTION_QITAF if
+            response_data.get("redemption_method") == "full" else
+            PAYMENT_METHOD_PARTIAL_REDEMPTION_QITAF)
+        # todo
 
         update_data.update({
             "transaction_id": payment_data.transaction_id,
