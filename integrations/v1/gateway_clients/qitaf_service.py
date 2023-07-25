@@ -18,8 +18,8 @@ from integrations.v1.serializers.qitafpg_serializer import (
 )
 from payments.constants import (PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_DECLINED_RETRY,
-                                PAYMENT_METHOD_FULL_REDEMPTION_QITAF,
-                                PAYMENT_METHOD_PARTIAL_REDEMPTION_QITAF)
+                                PAYMENT_METHOD_TOUCHPOINTS,
+                                PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -183,9 +183,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             total_amount = kwargs.get("amount")
 
             if selected_amount == total_amount:
-                self.payment_method = PAYMENT_METHOD_FULL_REDEMPTION_QITAF
+                self.payment_method = PAYMENT_METHOD_TOUCHPOINTS
             elif (selected_amount + checkout_amount) == total_amount:
-                self.payment_method = PAYMENT_METHOD_PARTIAL_REDEMPTION_QITAF
+                self.payment_method = PAYMENT_METHOD_TOUCHPOINTS_AND_CARD
             return self.payment_method
         except Exception as e:
             logger.error(
@@ -348,9 +348,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
             is_redirect = False
         self.payment_method = (
-            PAYMENT_METHOD_FULL_REDEMPTION_QITAF if
+            PAYMENT_METHOD_TOUCHPOINTS if
             response_data.get("redemption_method") == "full" else
-            PAYMENT_METHOD_PARTIAL_REDEMPTION_QITAF)
+            PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
         # todo
 
         update_data.update({
