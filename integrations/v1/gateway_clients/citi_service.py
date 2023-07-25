@@ -64,6 +64,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
             return None
 
     def generate_otp(self, data):
+        logger.info("generate otp triggered at the client")
         """
         calls citi rewards point otp generating api and returns the balance
         """
@@ -79,7 +80,9 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
         """if transaction is verified then proceed with payment"""
         try:
             if verify_status == status.HTTP_200_OK and is_verified:
+                logger.info("generate otp verified ")
                 if self.citi_reward_config:
+                    logger.info("generate otp got configurations ")
                     payment_data = self.get_generate_otp_data(data)
                     logger.info(
                         "Youpay sending payment data to citi rewards point"
