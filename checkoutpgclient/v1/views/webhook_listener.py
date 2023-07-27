@@ -235,8 +235,4 @@ class WebhookListener(APIView):
 
     def get_cvv_check(self, response_data):
         cvv_check = response_data.get("source", {}).get("cvv_check")
-        if cvv_check == 'Y':
-            cvv_check = True
-        else:
-            cvv_check = False
         return cvv_check

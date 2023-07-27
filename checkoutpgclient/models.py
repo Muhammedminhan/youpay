@@ -136,7 +136,10 @@ class TransactionData(models.Model):
         max_length=200, null=True, blank=True,
         help_text='Denotes the card issued bank.'
     )
-    cvv_check = models.BooleanField(default=False)
+    cvv_check = models.CharField(
+        max_length=10, null=True, blank=True,
+        help_text='cvv check info.'
+    )
     three_ds_check = models.BooleanField(default=False)
 
 @receiver(post_save, sender=TransactionData)
