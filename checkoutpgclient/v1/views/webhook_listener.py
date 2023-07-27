@@ -48,7 +48,6 @@ class WebhookListener(APIView):
 
             payment_reference = request_data.get('payment_reference', None)
             transaction_obj = get_transaction_object(payment_reference)
-
             if transaction_obj:
                 logger.info(
                     "In Webhook listner payment scheme for invoice {0}"
@@ -82,6 +81,12 @@ class WebhookListener(APIView):
                 transaction_obj.payment_scheme = request_data.get(
                     'payment_scheme',
                     None)
+                transaction_obj.issuer_bank = self.get_issuer_bank(
+                    request_data.get('api_response_data'))
+                transaction_obj.three_ds_check = self.get_three_ds(
+                    request_data.get('api_response_data'))
+                transaction_obj.cvv_check = self.get_cvv_check(
+                    request_data.get('api_response_data'))
                 transaction_obj.save()
                 data_to_update = self.prepare_youpay_transaction_update_data(
                     request_data, payment_reference)
@@ -128,7 +133,13 @@ class WebhookListener(APIView):
                     payment_id=request_data.get('payment_id',
                                                 None),
                     financial_action_response_data=request_data.get(
-                        'financial_action_response_data', None)
+                        'financial_action_response_data', None),
+                    issuer_bank=self.get_issuer_bank(request_data.get(
+                        'api_response_data')),
+                    three_ds_check=self.get_three_ds(request_data.get(
+                        'api_response_data')),
+                    cvv_check=self.get_cvv_check(request_data.get(
+                        'api_response_data'))
                 )
 
             logger.info("Payment scheme set is {0} for transaction"
@@ -213,3 +224,19 @@ class WebhookListener(APIView):
                 "Unable to find youpay transaction object with payment"
                 "_reference {}".format(payment_reference))
             return None
+
+    def get_issuer_bank(self, response_data):
+        issuer_bank = response_data.get("source", {}).get("issuer")
+        return issuer_bank
+
+    def get_three_ds(self, response_data):
+        three_ds = response_data.get("3ds", {}).get("challenged")
+        return three_ds
+
+    def get_cvv_check(self, response_data):
+        cvv_check = response_data.get("source", {}).get("cvv_check")
+        if cvv_check == 'Y':
+            cvv_check = True
+        else:
+            cvv_check = False
+        return cvv_check

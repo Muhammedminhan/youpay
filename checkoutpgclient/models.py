@@ -132,7 +132,12 @@ class TransactionData(models.Model):
     entity_id = models.CharField(
         max_length=40, null=True, blank=True,
         help_text='The unique id related to the merchant account')
-
+    issuer_bank = models.CharField(
+        max_length=200, null=True, blank=True,
+        help_text='Denotes the card issued bank.'
+    )
+    cvv_check = models.BooleanField(default=False)
+    three_ds_check = models.BooleanField(default=False)
 
 @receiver(post_save, sender=TransactionData)
 def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
