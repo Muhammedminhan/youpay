@@ -11,6 +11,7 @@ from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 from core.utils import checkout_decline_check
+from integrations.common import WebhookDataFormat
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
 
@@ -30,7 +31,7 @@ def get_transaction_object(payment_reference):
         return transaction_obj
 
 
-class WebhookListener(APIView):
+class WebhookListener(APIView, WebhookDataFormat):
     authentication_classes = (
         YoupayAuthentication,
     )
@@ -224,15 +225,3 @@ class WebhookListener(APIView):
                 "Unable to find youpay transaction object with payment"
                 "_reference {}".format(payment_reference))
             return None
-
-    def get_issuer_bank(self, response_data):
-        issuer_bank = response_data.get("source", {}).get("issuer")
-        return issuer_bank
-
-    def get_three_ds(self, response_data):
-        three_ds = response_data.get("3ds", {}).get("challenged")
-        return three_ds
-
-    def get_cvv_check(self, response_data):
-        cvv_check = response_data.get("source", {}).get("cvv_check")
-        return cvv_check
