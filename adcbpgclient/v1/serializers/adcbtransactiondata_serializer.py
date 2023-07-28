@@ -11,6 +11,10 @@ class SourceSerializer(serializers.Serializer):
     cvv_check = serializers.CharField()
 
 
+class CheckoutpgResponseSerializer(serializers.Serializer):
+    source = SourceSerializer()
+
+
 class ADCBTransactionDataSerializer(serializers.ModelSerializer,
                                     WebhookDataFormat):
     amount = serializers.DecimalField(
@@ -29,7 +33,8 @@ class ADCBTransactionDataSerializer(serializers.ModelSerializer,
         max_digits=12, decimal_places=2, allow_null=True)
     redemption_amount = serializers.DecimalField(
         max_digits=12, decimal_places=2, allow_null=True)
-    source = SourceSerializer()
+    checkoutpg_response_data = CheckoutpgResponseSerializer()
+    
     class Meta:
         model = ADCBTransactionData
         fields = '__all__'
