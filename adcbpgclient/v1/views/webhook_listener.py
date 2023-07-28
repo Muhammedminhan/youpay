@@ -170,12 +170,6 @@ class WebhookListener(APIView, WebhookDataFormat):
                     financial_action_response_data=(
                         request_data.get(
                             'financial_action_response_data')),
-                    issuer_bank=self.get_issuer_bank(
-                        request_data.get('checkoutpg_response_data')),
-                    three_ds_check=self.get_three_ds(
-                        request_data.get('checkoutpg_response_data')),
-                    cvv_check=self.get_cvv_check(
-                        request_data.get('checkoutpg_response_data'))
                 )
             response_data = {'message': "B2cpayback webhook listener "
                                         "successfully processed data",
