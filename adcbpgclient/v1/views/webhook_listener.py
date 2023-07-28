@@ -34,8 +34,8 @@ class WebhookListener(APIView):
         request_data = json.loads(request.data)
         try:
             invoice = str(request_data.get('invoice', None))
-            logger.info("B2cpayback webhook received for invoice {}".format(
-                invoice))
+            logger.info("B2cpayback webhook received for invoice {} is "
+                        "{}".format(invoice, request_data))
 
             reference = request_data.get('reference_id', None)
             purchase_obj = get_purchase_request_object(reference)
