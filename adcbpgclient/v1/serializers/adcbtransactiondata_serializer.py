@@ -33,8 +33,9 @@ class ADCBTransactionDataSerializer(serializers.ModelSerializer,
         three_ds_check = self.get_three_ds(
             data.get('checkoutpg_response_data'))
         cvv_check = self.get_cvv_check(data.get('checkoutpg_response_data'))
-        return {
+        formatted_fields = {
             'issuer_bank': issuer_bank,
             'three_ds_check': three_ds_check,
             'cvv_check': cvv_check
         }
+        return data.update(formatted_fields)
