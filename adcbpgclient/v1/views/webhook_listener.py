@@ -102,13 +102,13 @@ class WebhookListener(APIView, WebhookDataFormat):
                 transaction_obj.financial_action_response_data = (
                     request_data.get(
                         'financial_action_response_data'))
-
-                transaction_obj.issuer_bank = self.get_issuer_bank(
-                    request_data.get('checkoutpg_response_data'))
-                transaction_obj.three_ds_check = self.get_three_ds(
-                    request_data.get('checkoutpg_response_data'))
-                transaction_obj.cvv_check = self.get_cvv_check(
-                    request_data.get('checkoutpg_response_data'))
+                if request_data.get('checkoutpg_response_data'):
+                    transaction_obj.issuer_bank = self.get_issuer_bank(
+                        request_data.get('checkoutpg_response_data'))
+                    transaction_obj.three_ds_check = self.get_three_ds(
+                        request_data.get('checkoutpg_response_data'))
+                    transaction_obj.cvv_check = self.get_cvv_check(
+                        request_data.get('checkoutpg_response_data'))
                 transaction_obj.save()
             else:
                 transaction_obj = ADCBTransactionData.objects.create(
