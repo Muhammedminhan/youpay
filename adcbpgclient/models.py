@@ -76,10 +76,10 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         db_index=True, null=True, blank=True,
         help_text='Denotes whether the redemption is full or not.')
     redemption_status = models.BooleanField(
-        default=False,
+        default=False, null=True, blank=True,
         help_text='Denotes the redemption is completed')
     payment_status = models.BooleanField(
-        default=False,
+        default=False, null=True, blank=True,
         help_text='Denotes the payment is completed')
     redemption_method = models.CharField(
         max_length=50, default=REDEMPTION_METHOD_NONE,
@@ -91,10 +91,10 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         help_text='The acquirer authorization code, if the payment '
                   'was authorized.')
     is_fraud = models.BooleanField(
-        default=False, db_index=True,
+        default=False, db_index=True, null=True, blank=True,
         help_text='Denotes whether the payment is fraud or not.')
     is_flagged = models.BooleanField(
-        default=False, db_index=True,
+        default=False, db_index=True, null=True, blank=True,
         help_text='Denotes whether the payment is marked as flagged '
                   'or not.')
     card_issuer_country = models.CharField(
@@ -154,7 +154,7 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         max_length=10, null=True, blank=True,
         help_text='cvv check info.'
     )
-    three_ds_check = models.BooleanField(default=False)
+    three_ds_check = models.BooleanField(default=False, null=True, blank=True)
 
 
 @receiver(post_save, sender=ADCBTransactionData)
