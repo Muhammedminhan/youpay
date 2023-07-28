@@ -146,4 +146,5 @@ QITAF_EARN_POINTS_API = "/qitaf/api/v1/collect/"
 QITAF_REDEEM_POINTS_API = "/qitaf/api/v1/burn/redeem-qitafpoints/"
 QITAF_REVERSE_POINTS_API = "/qitaf/api/v1/burn/reverse-qitafpoints/"
 QITAF_REWARD_UPDATE_API = "/qitaf/api/v1/collect/reward-update/"
-
+QITAF_VERIFY_API = "/qitaf/api/v1/verify/"  # todo
+QITAF_HEADERS = {'Content-Type': 'application/json'}

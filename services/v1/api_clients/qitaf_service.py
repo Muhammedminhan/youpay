@@ -1,3 +1,4 @@
+import json
 import logging
 
 from rest_framework import status
@@ -182,13 +183,14 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "customer_name": validated_data.get('customer_name'),
                     "cvv": validated_data.get('cvv'),
                     "token": validated_data.get('token'),
+                    "encrypted_id": request.data.get('transaction_id')
+
                 }
             )
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.redeem_points(
                 points_redemption_data)
-
-            if response_data:
+            if response_data and code == 1000:
                 formatted_res = qitaf_response_formatter(response_data, code)
                 data = self.response_obj.get_success_dict(
                     code=code,
@@ -262,6 +264,80 @@ class QitafRewardUpdateAPIView(APIView):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class QitafVerify(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def get(self, request, *args, **kwargs):
+        manager_obj = QitafServiceManager()
+        payment_data = {
+            'transaction_id': request.query_params.get('id'),
+            'redemption_reference_id': request.query_params.get(
+                'redemption_reference_id'),
+            'cko-session-id': request.query_params.get(
+                'cko-session-id')}
+        response, transaction_obj = manager_obj.verification(payment_data)
+        transaction_id = (transaction_obj.transaction_id if transaction_obj
+                          else None)
+        if response:
+            if response.get('results', {}).get('payment_status'):
+                logger.info(
+                    "Qitaf Verification successful, payment status true for"
+                    " transaction {}".format(transaction_id))
+                code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
+                response = self.format_b2c_response(response, code)
+            else:
+                if not response.get("message"):
+                    response["message"] = "Transaction failed"
+                message = (
+                    "couldnt process qitaf Verification for transaction id {}, "
+                    "response : {}".format(transaction_id, response))
+
+                logger.error(message)
+
+                code = self.response_obj.QITAF_VERIFICATION_FAILED_TO_PROCESS
+                response = self.format_b2c_response(response, code)
+            return Response(response, status=status.HTTP_200_OK)
+        else:
+            try:
+                response_text = json.loads(response.text)
+                resp_code = response_text.get('code', False)
+                message = response_text.get('message', None)
+                response = {'errors': {
+                    'code': resp_code, 'message': message}}
+                code = self.response_obj.QITAF_VERIFICATION_FAILED
+                logger.error("Verification failed for : {}, reason : {}"
+                             .format(transaction_id, response))
+                response = self.format_b2c_response(response, code)
+
+            except Exception as e:
+                logger.error("Exception occurred for transaction id : {}, "
+                             "reason : {}".format(transaction_id, str(e)))
+
+                response = {'errors': {
+                    'code': "400",
+                    'message': "Unable to process verification"}
+                }
+                code = self.response_obj.QITAF_VERIFICATION_EXCEPTION
+                response = self.format_b2c_response(response, code)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+    def format_b2c_response(self, data, code):
+
+        errors = data.get('errors')
+        results = data.get('results')
+
+        if results:
+            data.pop('results')
+            data['code'] = code
+            data['message'] = self.response_obj.MESSAGE.get(code)
+
+        if errors:
+            errors['message'] = COMMON_ERROR_MESSAGE_EN
+            errors['code'] = code
+
+        return data
 
 
 def qitaf_response_formatter(data, code):
