@@ -220,7 +220,9 @@ def decrypt_string(encrypted_text):
         decrypted_text = fernet.decrypt(encrypted_text).decode()
         return decrypted_text
     except Exception as e:
-        logger.error("string decryption failed. {}".format(e))
+        logger.error(
+            "string decryption failed {}. for {}".format(str(e),
+                                                         encrypted_text))
         return None
 
 
