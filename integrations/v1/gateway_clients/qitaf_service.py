@@ -374,7 +374,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             is_redirect = True
             self.payment_status = PAYMENT_STATUS_PENDING
         else:
-            if str(response_data.get('code')) in ["0"]:
+            if str(response_data.get('response_code')) in ["0"]:
                 '''Qitaf full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
                 self.approved = True
@@ -431,6 +431,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response = requests.get(url, params=formatted_data,
                                         headers=QITAF_HEADERS)
                 response_data = response.json()
+                logger.info(
+                    "QitafPG Verification response {}".format(response_data))
                 response_data["is_redirect"] = True
                 response_data["redirect_url"], transaction_status = (
                     get_adcb_verify_redirect_url(
