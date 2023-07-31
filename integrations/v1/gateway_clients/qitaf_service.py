@@ -7,14 +7,14 @@ import requests
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK, \
     REQUEST_METHOD_GET
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
-from core.utils import get_payment_gateway_config, get_app_config, \
-    decrypt_string
+from core.utils import (get_payment_gateway_config, get_app_config,
+                        decrypt_string)
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT,
     PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY, QITAF_HEADERS,
-    QITAF_HUB_CODE, QITAF_CACHE_KEY, ADCB_VERIFY_API
+    QITAF_VERIFY_API
 )
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data, \
     get_adcb_verify_redirect_url
@@ -229,7 +229,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     transaction_data=transaction_data,
                     app_config=get_app_config(),
                     params=('?id=' + self.request_data.get("encrypted_id") +
-                            "redemption_reference_id=" + transaction_data.get(
+                            "&redemption_reference_id=" + transaction_data.get(
                                 "payment_reference")),
                     code=B2CPAYBACK_HUB_CODE,
                 ),
@@ -422,10 +422,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 formatted_data = format_qitaf_verify_data(
                     request_data, transaction_obj)
                 gateway_obj = get_payment_gateway_config(
-                    QITAF_CACHE_KEY, QITAF_HUB_CODE)
+                    # QITAF_CACHE_KEY, QITAF_HUB_CODE)
+                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 qitaf_domain = gateway_obj.domain
                 # TODO : CHANGE TO QITAF
-                url = qitaf_domain + ADCB_VERIFY_API
+                url = qitaf_domain + QITAF_VERIFY_API
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
                                         headers=QITAF_HEADERS)
