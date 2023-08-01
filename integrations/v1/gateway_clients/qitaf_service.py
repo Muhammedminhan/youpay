@@ -427,10 +427,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 # TODO : CHANGE TO QITAF
                 url = qitaf_domain + QITAF_VERIFY_API
                 formatted_data.pop("transaction_id")
+
                 response = requests.get(url, params=formatted_data,
                                         headers=QITAF_HEADERS)
-                logger.info("Response from qitaf verify api {}"
-                            "".format(response.text))
+                logger.info("Response from qitaf verify api : {}, params {}"
+                            " data --- {},".format(url, formatted_data,
+                                                   response.text))
                 return_response_data = {}
                 if response.status_code == 200:
 
