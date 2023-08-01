@@ -425,7 +425,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 qitaf_domain = gateway_obj.domain
                 # TODO : CHANGE TO QITAF
-                url = qitaf_domain + QITAF_VERIFY_API
+                url = qitaf_domain + QITAF_VERIFY_API + "?&redemption_partner=QITAF"
                 formatted_data.pop("transaction_id")
 
                 response = requests.get(url, params=formatted_data,
