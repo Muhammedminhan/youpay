@@ -273,6 +273,8 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         manager_obj = QitafServiceManager()
         payment_data = {
             'transaction_id': request.query_params.get('id'),
+            'redemption_partner': request.query_params.get(
+                'redemption_partner'),
             'redemption_reference_id': request.query_params.get(
                 'redemption_reference_id'),
             'cko-session-id': request.query_params.get(
@@ -281,15 +283,15 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         transaction_id = (transaction_obj.transaction_id if transaction_obj
                           else None)
         if response:
-            if response.get('results', {}).get('payment_status'):
+            if response.get('is_success') and response.get('is_redirect'):
                 logger.info(
                     "Qitaf Verification successful, payment status true for"
                     " transaction {}".format(transaction_id))
+                response['message'] = "Transaction successful"
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
             else:
-                if not response.get("message"):
-                    response["message"] = "Transaction failed"
+                response["message"] = "Transaction failed"
                 message = (
                     "couldnt process qitaf Verification for transaction id {}, "
                     "response : {}".format(transaction_id, response))

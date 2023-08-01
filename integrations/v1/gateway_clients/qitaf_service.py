@@ -14,10 +14,9 @@ from integrations.constants import (
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT,
     PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY, QITAF_HEADERS,
-    QITAF_VERIFY_API
+    QITAF_VERIFY_API, QITAF_HUB_CODE
 )
-from integrations.v1.gateway_clients.utils import format_qitaf_verify_data, \
-    get_adcb_verify_redirect_url
+from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
 )
@@ -25,7 +24,7 @@ from payments.constants import (PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_DECLINED_RETRY,
                                 PAYMENT_METHOD_TOUCHPOINTS,
                                 PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
-                                PAYMENT_STATUS_PENDING, PAYMENT_STATUS_FAILED)
+                                PAYMENT_STATUS_PENDING)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
@@ -230,8 +229,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     app_config=get_app_config(),
                     params=('?id=' + self.request_data.get("encrypted_id") +
                             "&redemption_reference_id=" + transaction_data.get(
-                                "payment_reference")),
-                    code=B2CPAYBACK_HUB_CODE,
+                                "payment_reference") + "&redemption_partner=QITAF"),
+                    code=QITAF_HUB_CODE,
                 ),
                 "invoice_id": self.transaction_obj.invoice_id,
                 "customer_ip_address": self.transaction_obj.ip,
@@ -429,70 +428,65 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 url = qitaf_domain + QITAF_VERIFY_API
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
-                                        headers=QITAF_HEADERS)
-                response_data = response.json()
-                logger.info(
-                    "QitafPG Verification response {}".format(response_data))
-                response_data["is_redirect"] = True
-                response_data["redirect_url"], transaction_status = (
-                    get_adcb_verify_redirect_url(
-                        response_data, transaction_obj))
-                approved_status = transaction_obj.approved
-                if transaction_status:  # success case
+                                        headers=QITAF_HEADERS
+                                        )
+                return_response_data = {}
+                if response.status_code == 200:
+                    #     Redemption verified successfully
+                    response_data = response.json()
+                    return_response_data["is_redirect"] = True
+                    return_response_data[
+                        "redirect_url"] = transaction_obj.success_url
+                    approved = response_data.get("approved", False)
+                    is_flagged = response_data.get("is_flagged", False)
+                    is_gcc_card = response_data.get("is_gcc_card", False)
+
                     payment_status = PAYMENT_STATUS_PAID
-                    approved_status = True
-                    response_data[IS_SUCCESS] = True
-                elif response_data.get(
-                        "redirect_url") is None:  # checkoutpg declined
+                    return_response_data[IS_SUCCESS] = True
+                else:
+                    #     Redemption failed
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
-                    response_data[IS_SUCCESS] = False
-                else:  # failure
-                    payment_status = PAYMENT_STATUS_FAILED
-                    approved_status = False
-                    response_data[IS_SUCCESS] = False
-                logger.info("Qitaf verify api call response : {}"
-                            "".format(response_data))
+                    return_response_data[IS_SUCCESS] = False
+                    return_response_data['is_redirect'] = False
+                    return_response_data['redirect_url'] = None
+                    approved = False
+                    is_flagged = False
+                    is_gcc_card = False
+                    response_data = response.json()
+
+                return_response_data["payment_status"] = payment_status
+
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_obj.transaction_id,
                     request_data=json.dumps(formatted_data),
-                    response_data=response.text,
+                    response_data=json.dumps(response_data),
                     request_method=REQUEST_METHOD_GET,
                     request_type=PAYMENT_REQUEST_VERIFY
                 )
-                if response_data:
-                    update_data = {
-                        'transaction_id': transaction_obj.transaction_id,
-                        'payment_status': payment_status,
-                        'payment_reference': (
-                            response_data.get('payment_reference')
-                            if response_data.get('payment_reference')
-                            else response_data.get(
-                                'results', {}).get('reference_id')),
-                        'is_flagged': response_data.get('is_flagged', False),
-                        'approved': approved_status,
-                        'redeemed_amount': response_data.get(
-                            'results', {}).get('redeemed_amount'),
-                        'redeemed_points': response_data.get(
-                            'results', {}).get('redeemed_points'),
-                        'is_gcc_card': True,
-                        'available_amount': response_data.get(
-                            'results', {}).get('available_amount'),
-                        'available_points': transaction_obj.available_points,
-                        'payable_amount': transaction_obj.payable_amount,
-                        'is_full_redemption':
-                            transaction_obj.is_full_redemption,
+                update_data = {
+                    'transaction_id': transaction_obj.transaction_id,
+                    'payment_status': payment_status,
+                    # 'payment_reference': (
+                    #     response_data.get('payment_reference')
+                    #     if response_data.get('payment_reference')
+                    #     else response_data.get(
+                    #         'results', {}).get('reference_id')),
+                    'is_flagged': is_flagged,
+                    'approved': approved,
+                    # 'redeemed_amount': response_data.get(
+                    #     'results', {}).get('redeemed_amount'),
+                    # 'redeemed_points': response_data.get(
+                    #     'results', {}).get('redeemed_points'),
+                    # 'available_amount': response_data.get(
+                    #     'results', {}).get('available_amount'),
+                    # 'available_points': transaction_obj.available_points,
+                    # 'payable_amount': transaction_obj.payable_amount,
+                    'is_gcc_card': is_gcc_card,
+                }
+                self.update_youpay_transaction_data(update_data)
+                return return_response_data, transaction_obj
 
-                        # if redirecting then it will be a verified payment
-                        'is_payment_verified': response_data["is_redirect"]
-                    }
-                    self.update_youpay_transaction_data(update_data)
-                    return response_data, transaction_obj
-                else:
-                    logger.error(
-                        "Error response received from verify api call "
-                        "to Qitaf {}".format(response.text))
-                    return response_data, None
             except Exception as e:
                 logger.error(
                     "Verify api call to Qitaf failed", exc_info=e)
