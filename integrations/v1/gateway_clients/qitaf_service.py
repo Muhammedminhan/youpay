@@ -428,10 +428,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 url = qitaf_domain + QITAF_VERIFY_API
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
-                                        headers=QITAF_HEADERS
-                                        )
+                                        headers=QITAF_HEADERS)
+                logger.info("Response from qitaf verify api {}"
+                            "".format(response.text))
                 return_response_data = {}
                 if response.status_code == 200:
+
                     #     Redemption verified successfully
                     response_data = response.json()
                     return_response_data["is_redirect"] = True
