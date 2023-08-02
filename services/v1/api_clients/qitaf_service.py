@@ -183,8 +183,8 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "customer_name": validated_data.get('customer_name'),
                     "cvv": validated_data.get('cvv'),
                     "token": validated_data.get('token'),
+                    "token_type": validated_data.get('token_type'),
                     "encrypted_id": request.data.get('transaction_id')
-
                 }
             )
             qitaf_service = QitafServiceManager()

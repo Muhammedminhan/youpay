@@ -66,6 +66,7 @@ class QitafRedemptionSerializer(serializers.Serializer):
     customer_name = serializers.SerializerMethodField()
     token = serializers.SerializerMethodField()
     cvv = serializers.SerializerMethodField()
+    token_type = serializers.SerializerMethodField()
 
     def get_selected_amount(self, data):
         data = self.context.get('request').data
@@ -109,3 +110,7 @@ class QitafRedemptionSerializer(serializers.Serializer):
             raise serializers.ValidationError((
                 "QitafOTPSerializer : Transaction not found with ID"
                 " {}".format(transaction_id)))
+
+    def get_token_type(self, data):
+        data = self.context.get('request').data
+        return data.get('token_type')
