@@ -14,12 +14,15 @@ from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization)
+from .api_clients.citi_service import (CitiPointBalanceAPIView,
+                                       CitiPointRedemptionAPIView,
+                                       CitiGenerateOTPAPIView)
+from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
-from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
@@ -80,6 +83,12 @@ urlpatterns = [
 
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
+
+    # Citi Rewards endpoints
+    path('citi/generate-otp/', CitiGenerateOTPAPIView.as_view(),
+         name='CitiGenerateOTPAPIView'),
+    path('citi/point-balance/', CitiPointBalanceAPIView.as_view()),
+    path('citi/point-redemption/', CitiPointRedemptionAPIView.as_view()),
 
     # Qitaf endpoints
     path('qitaf/update-phone-number/', UpdateQitafPhoneNumber.as_view()),

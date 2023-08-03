@@ -168,7 +168,23 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True,
         help_text='Denotes whether the redemption is full or not.')
-
+    maximum_redeemable_points = models.IntegerField(
+        null=True, blank=True, help_text=('Maximum points used for citi '
+                                          'rewards point redemption'))
+    minimum_redeemable_points = models.IntegerField(
+        null=True, blank=True, help_text=('Minimum points used for citi '
+                                          'rewards point redemption'))
+    amount_conversion_rate = models.DecimalField(
+        null=True, blank=True, decimal_places=10, max_digits=12,
+        help_text=('Conversion rate received from citi '
+                   'rewards point balance api'))
+    citi_order_id = models.CharField(
+        max_length=300, null=True, blank=True,
+        help_text='Order id received from citi rewards redemption api')
+    citi_phone_number = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text=("To store phone number used to generate "
+                   "otp in citi rewards"))
     cart_amount = models.DecimalField(decimal_places=4, max_digits=12,
                                       null=True, blank=True,
                                       validators=[DecimalValidator(12, 4)],

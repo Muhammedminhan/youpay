@@ -1,9 +1,19 @@
 import logging
 
+from core.response_messages import YouPayResponse
 from integrations.constants import (ADCB_CLIENT_CODE,
                                     ADCB_CHECKOUTPG_PAYMENT_NOT_PAID,
                                     CHECKOUT_UAE_CHANNEL_CODE,
-                                    CHECKOUT_SAUDI_CHANNEL_CODE)
+                                    CITI_REWARDS_OTP_EXPIRED_CODE,
+                                    CITI_REWARDS_VALIDATION_ERROR_CODE,
+                                    CITI_REWARDS_ALREADY_REDEEMED_CODE,
+                                    CITI_REWARDS_INSUFFICIENT_BALANCE_CODE,
+                                    CITI_REWARDS_INVALID_CUSTOMER_CODE,
+                                    PAYMENT_REQUEST_POINT_BALANCE,
+                                    CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE,
+                                    CHECKOUT_UAE_CHANNEL_CODE,
+                                    CHECKOUT_SAUDI_CHANNEL_CODE
+)
 from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
@@ -170,3 +180,53 @@ def get_adcb_response_url(url, transaction_id, status):
     else:
         return_url = None
     return return_url, status
+
+
+def get_citi_converted_amount(response_data, amount):
+    """
+    will convert the amount to citi rewards
+    points based on the ratio
+    """
+    from decimal import Decimal
+    if response_data.get('conversion_rate'):
+        amount_conversion_rate = Decimal(response_data.get('conversion_rate'))
+        converted_points = int(round(amount / amount_conversion_rate))
+        return converted_points
+    return None
+
+
+def format_citi_service_error_response(response_data, api_type):
+    """
+    check the response code from b2cpayback
+    returns corresponding response from youpay
+    """
+    response_manager = YouPayResponse()
+    if 'errors' in response_data:
+        code = response_data.get('errors').get('code')
+        if (
+                api_type == PAYMENT_REQUEST_POINT_BALANCE and
+                code == CITI_REWARDS_VALIDATION_ERROR_CODE
+        ):
+            return response_manager.CITI_REWARDS_INVALID_OTP
+        error_dict = {
+            CITI_REWARDS_OTP_EXPIRED_CODE: (
+                response_manager.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED
+            ),
+            CITI_REWARDS_VALIDATION_ERROR_CODE: (
+                response_manager.CITI_REWARDS_VALIDATION_ERROR),
+            CITI_REWARDS_ALREADY_REDEEMED_CODE: (
+                response_manager.CITI_REWARDS_ALREADY_REDEEMED
+            ),
+            CITI_REWARDS_INSUFFICIENT_BALANCE_CODE: (
+                response_manager.CITI_REWARDS_INSUFFICIENT_BALANCE
+            ),
+            CITI_REWARDS_INVALID_CUSTOMER_CODE: (
+                response_manager.CITI_REWARDS_INVALID_CUSTOMER
+            ),
+            CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE: (
+                response_manager.CITI_REWARDS_USER_BLOCKED
+            )
+        }
+        if code in error_dict:
+            return error_dict[code]
+    return response_manager.CITI_REWARDS_CONNECTION_ERROR

@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
 
 from core.constants import (
@@ -90,6 +91,7 @@ class YouPayTransactionCRUD(object):
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
+
         data_dict = {}
         transaction_id = data.get('transaction_id')
         data_dict['payment_reference'] = data.get('payment_reference', None)
@@ -136,6 +138,15 @@ class YouPayTransactionCRUD(object):
         data_dict['currency'] = data.get('currency', None)
         data_dict['is_payment_verified'] = data.get('is_payment_verified',
                                                     None)
+        data_dict['maximum_redeemable_points'] = data.get(
+            'maximum_redeemable_points', None)
+        data_dict['minimum_redeemable_points'] = data.get(
+            'minimum_redeemable_points', None)
+        data_dict['amount_conversion_rate'] = data.get(
+            'amount_conversion_rate', None)
+        data_dict['citi_order_id'] = data.get(
+            'citi_order_id', None)
+        data_dict['citi_phone_number'] = data.get('citi_phone_number', None)
         data_dict['qitaf_phone_number'] = data.get('qitaf_phone_number', None)
         data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', False)
 
@@ -190,7 +201,6 @@ class YouPayTransactionCRUD(object):
 
         For Happy Credits → It will be blank.
         """
-
         transaction_id = kwargs.get('transaction_id', None)
         currency = kwargs.get('currency', None)
         payment_gateway = kwargs.get('payment_gateway', None)
