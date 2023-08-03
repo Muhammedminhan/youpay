@@ -38,6 +38,7 @@ urlpatterns = [
     path('tabbypg/', include('tabbypgclient.urls')),
     path('adcbpg/', include('adcbpgclient.urls')),
     path('happycredits/', include('happycreditsclient.urls')),
+    path('citirewards/', include('citirewardsclient.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

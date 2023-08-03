@@ -93,6 +93,17 @@ class YouPayResponse(object):
     MISSING_CLIENT_INFO = 6000
     """Youpay related ends"""
 
+    """Citi rewards related begins"""
+    CITI_REWARDS_CONNECTION_ERROR = 8002
+    CITI_REWARDS_INSUFFICIENT_BALANCE = 8003
+    CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED = 8004
+    CITI_REWARDS_ALREADY_REDEEMED = 8005
+    CITI_REWARDS_VALIDATION_ERROR = 8006
+    CITI_REWARDS_INVALID_CUSTOMER = 8007
+    CITI_REWARDS_INVALID_OTP = 8008
+    CITI_REWARDS_USER_BLOCKED = 8009
+    """Citi rewards related ends"""
+
     """Qitaf related begins"""
     QITAF_CONNECTION_ERROR = 8002
     QITAF_PHONE_NUMBER_SAVE_FAILED = 8003
@@ -169,6 +180,24 @@ class YouPayResponse(object):
             self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
                                                  " verification",
             self.PRE_AUTH: "Authentication not approved"
+                           " verification",
+
+            self.CITI_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.CITI_REWARDS_INSUFFICIENT_BALANCE: (
+                "You don't have enough points to make this transaction"),
+            self.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED: (
+                "Exceeded the limit. Please try again later"),
+            self.CITI_REWARDS_ALREADY_REDEEMED: (
+                "Transaction is already redeemed."),
+            self.CITI_REWARDS_VALIDATION_ERROR: (
+                "Missing or invalid Parameters"),
+            self.CITI_REWARDS_INVALID_CUSTOMER: (
+                "Invalid details, please try again"
+            ),
+            self.CITI_REWARDS_INVALID_OTP: "Invalid/Expired OTP",
+            self.CITI_REWARDS_USER_BLOCKED: (
+                "Exceeded the limit. Please try again later"
+            )
         })
 
     def get_400_message(self, message):

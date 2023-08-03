@@ -179,12 +179,15 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
                                    response_payment_options):
     if code == B2CPAYBACK_HUB_CODE and (store_currency in
                                         ADCBPG_STORE_CURRENCIES):
+        response_payment_options['citi_rewards'] = False
         validation_json = gateway.validation_json
+
         if validation_json:
+            response_payment_options['citi_rewards'] = (
+                validation_json.get("is_citi_rewards_enabled", False))
             response_payment_options['qitaf'] = gateway.validation_json.get(
                 "is_qitaf_enabled", False)
-
-        response_payment_options['adcb'] = True
+            response_payment_options['adcb'] = True
     return response_payment_options
 
 
@@ -206,7 +209,6 @@ def get_amazonpg_payment_options(code, store_currency,
 
 def get_haapycredits_payment_options(code, response_payment_options,
                                      platform):
-
     # happycredits is active only for Android and IOS Platforms
     response_payment_options['happy_credits'] = False
 

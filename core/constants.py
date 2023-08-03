@@ -76,6 +76,7 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'TabbyPGCreateSession',
     'AmazonPGAuthentication',
     'HappyCreditsDebitBalance',
+    'CitiGenerateOTPAPIView'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
