@@ -1,11 +1,10 @@
 import json
 import logging
-from decimal import Decimal
 
 import requests
 
-from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK, \
-    REQUEST_METHOD_GET
+from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
+                            REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
@@ -180,99 +179,62 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                          "{}".format(e))
             return {"error": error}, self.QITAF_CONNECTION_ERROR
 
-    def determine_full_or_partial_redemption(self, **kwargs):
+    def prepair_redeem_payload(self, transaction_data):
         """
-        Todo move to b2c qitaf
-        abs(payment_amount - invoice_amount) <= 3, TODO
+        prepares payload for qitaf redeem api
         """
-        try:
-            selected_amount = Decimal(kwargs.get('selected_amount', 0))
-            checkout_amount = Decimal(kwargs.get('checkout_amount', 0))
-            total_amount = kwargs.get("amount")
-
-            if selected_amount == total_amount:
-                self.payment_method = PAYMENT_METHOD_TOUCHPOINTS
-            elif (selected_amount + checkout_amount) == total_amount:
-                self.payment_method = PAYMENT_METHOD_TOUCHPOINTS_AND_CARD
-            return self.payment_method
-        except Exception as e:
-            logger.error(
-                "UNABLE TO DETERMINE PAYMENT METHOD : {} ".format(str(e)))
-            return None
+        redeem_payload = {
+            "response_url": add_payment_gateway_info_in_url(
+                transaction_data=transaction_data,
+                app_config=get_app_config(),
+                params=('?id=' + self.request_data.get("encrypted_id") +
+                        "&redemption_reference_id=" + transaction_data.get(
+                            "payment_reference") + "&redemption_partner=QITAF"),
+                code=QITAF_HUB_CODE,
+            ),
+            "invoice_id": self.transaction_obj.invoice_id,
+            "customer_ip_address": self.transaction_obj.ip,
+        }
+        return redeem_payload
 
     def redeem_points(self, data):
         """
         calls qitaf points redeem api
-
-        "amount":100,
-        "pin_number": 1231,
-        "mobile_number":551601275,
         """
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
-            selected_amount = self.request_data.get('selected_amount')
-
-            # self.payment_method = self.determine_full_or_partial_redemption(
-            #     selected_amount=selected_amount,
-            #     amount=self.transaction_obj.amount
-            # )
-            # todo move to separate function
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
 
             serializer = YouPayTransactionDataSerializer(self.transaction_obj)
             transaction_data = serializer.data
-            payload.update({
-                "response_url": add_payment_gateway_info_in_url(
-                    transaction_data=transaction_data,
-                    app_config=get_app_config(),
-                    params=('?id=' + self.request_data.get("encrypted_id") +
-                            "&redemption_reference_id=" + transaction_data.get(
-                                "payment_reference") + "&redemption_partner=QITAF"),
-                    code=QITAF_HUB_CODE,
-                ),
-                "invoice_id": self.transaction_obj.invoice_id,
-                "customer_ip_address": self.transaction_obj.ip,
-                # "channel_code": "TEST"
-            })
+
+            payload.update(self.prepair_redeem_payload(transaction_data))
             payload.pop('transaction_obj')
+
             url = self.qitaf_config.domain + QITAF_REDEEM_POINTS_API
             headers = self.get_payment_header()
+
             logger.info(
-                "Youpay sending request data to qitaf redeem point api "
-                "is {}".format(payload))
+                "Youpay sending request data to qitaf redeem point api is {}"
+                "headers {} ".format(payload, headers))
+
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
-            logger.info("Response from qitaf redeem point api {}"
-                        "".format(response.text))
 
             if response:
                 response_data = response.json()
                 self.response_data = response_data
-
-                """sample success response to figureout success case
-                response_data = {
-                    "status": True,
-                    "reason": "Success",
-                    "code": 1000,
-                    "message": "API request completed successfully",
-                    "proceed": True,
-                    "retry_same": False,
-                    "retry_new": False,
-                    "reverse": False
-                }
-                """
-                logger.info(
-                    "qitaf redeem point api response: {}".format(
-                        response_data))
-                # update redirection and save payment status
+                logger.info("qitaf redeem point api response: {}".format(
+                    response_data))
                 response_data = self.handle_qitaf_response(
                     response_data, self.transaction_obj)
                 return response_data, self.SUCCESS
+            else:
+                logger.error("Error in qitaf redeem point api, {}"
+                             "".format(response.text))
 
-            logger.error("\n\nError in qitaf redeem point api, {}"
-                         "".format(response.text))
             self.response_data = response.json()
             response_data = self.handle_qitaf_response(
                 response.json(), self.transaction_obj)
@@ -362,17 +324,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
     def handle_qitaf_response(self, response_data, payment_data):
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
-        '''
-        {'url': 'https://api.sandbox.checkout.com/sessions-interceptor/sid_cyr5xswa5afe7jpf5rraqfjkj4',
-            'is_full_redemption': False, 'reference_id': '6TKX3RV54TL7LB'}
-        '''
+
         is_full_redemption = response_data.get("is_full_redemption", False)
         if is_full_redemption is False:
+            """Handle qiTaf partial redemption response"""
             redirect_url = response_data.get('url')
             is_success = True
             is_redirect = True
             self.payment_status = PAYMENT_STATUS_PENDING
         else:
+            """Handle qiTaf full redemption response"""
             if str(response_data.get('response_code')) in ["0"]:
                 '''Qitaf full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
@@ -387,10 +348,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = False
 
         self.payment_method = (
-            PAYMENT_METHOD_TOUCHPOINTS if
-            response_data.get("redemption_method") == "full" else
-            PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
-        # todo
+            PAYMENT_METHOD_TOUCHPOINTS if is_full_redemption
+            else PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
 
         update_data.update({
             "transaction_id": payment_data.transaction_id,
@@ -399,7 +358,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             "payment_method": self.payment_method,
             "payment_gateway": self.payment_gateway,
             "response_summary": response_data.get('reason')
-
         })
 
         self.update_youpay_transaction_data(update_data)
@@ -413,7 +371,13 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         return return_response
 
     def verification(self, request_data):
+        """Qitaf Verification with b2c"""
+
         request_transaction_id = request_data.get('transaction_id')
+        logger.info(
+            "Qitaf Verification with b2c started for transaction {}, data -->"
+            " {}".format(request_transaction_id, request_data))
+
         if request_transaction_id:
             try:
                 transaction_obj = self.get_youpay_transaction_data(
@@ -423,20 +387,24 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 gateway_obj = get_payment_gateway_config(
                     # QITAF_CACHE_KEY, QITAF_HUB_CODE)
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
-                qitaf_domain = gateway_obj.domain
-                # TODO : CHANGE TO QITAF
-                url = qitaf_domain + QITAF_VERIFY_API + "?&redemption_partner=QITAF"
-                formatted_data.pop("transaction_id")
 
+                qitaf_domain = gateway_obj.domain
+                url = (qitaf_domain + QITAF_VERIFY_API +
+                       "?&redemption_partner=QITAF")
+
+                formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
                                         headers=QITAF_HEADERS)
-                logger.info("Response from qitaf verify api : {}, params {}"
-                            " data --- {},".format(url, formatted_data,
+                logger.info("Response from qitaf verify api : {}, params {} "
+                            "data ---> {},".format(url, formatted_data,
                                                    response.text))
                 return_response_data = {}
                 if response.status_code == 200:
-
                     #     Redemption verified successfully
+                    logger.info(
+                        "Qitaf Verification with b2c completed for "
+                        "transaction {}".format(request_transaction_id))
+
                     response_data = response.json()
                     return_response_data["is_redirect"] = True
                     return_response_data[
@@ -444,7 +412,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     approved = response_data.get("approved", False)
                     is_flagged = response_data.get("is_flagged", False)
                     is_gcc_card = response_data.get("is_gcc_card", False)
-
                     payment_status = PAYMENT_STATUS_PAID
                     return_response_data[IS_SUCCESS] = True
                 else:
@@ -459,7 +426,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     response_data = response.json()
 
                 return_response_data["payment_status"] = payment_status
-
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_obj.transaction_id,
@@ -471,21 +437,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 update_data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'payment_status': payment_status,
-                    # 'payment_reference': (
-                    #     response_data.get('payment_reference')
-                    #     if response_data.get('payment_reference')
-                    #     else response_data.get(
-                    #         'results', {}).get('reference_id')),
                     'is_flagged': is_flagged,
                     'approved': approved,
-                    # 'redeemed_amount': response_data.get(
-                    #     'results', {}).get('redeemed_amount'),
-                    # 'redeemed_points': response_data.get(
-                    #     'results', {}).get('redeemed_points'),
-                    # 'available_amount': response_data.get(
-                    #     'results', {}).get('available_amount'),
-                    # 'available_points': transaction_obj.available_points,
-                    # 'payable_amount': transaction_obj.payable_amount,
                     'is_gcc_card': is_gcc_card,
                 }
                 self.update_youpay_transaction_data(update_data)
@@ -493,9 +446,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             except Exception as e:
                 logger.error(
-                    "Verify api call to Qitaf failed", exc_info=e)
+                    "Verify api call to Qitaf failed for transaction {}"
+                    "".format(request_transaction_id), exc_info=e)
                 return None, None
         else:
-            logger.error("Invalid transaction id received for Qitaf "
-                         "verify api")
+            logger.error("Invalid transaction id ({}) received for Qitaf "
+                         "verify api".format(request_transaction_id))
             return None, None

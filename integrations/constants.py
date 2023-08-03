@@ -33,7 +33,7 @@ TABBYPG_HUB_CODE = 'PAYMTTPG'
 AMAZONPG_HUB_CODE = 'PAYMTAPG'
 HAPPYCREDITS_HUB_CODE = 'PAYMTHPCRED'
 APPLE_PAY_HUB_CODE = ''  # TODO: Add Apple Pay code
-QITAF_HUB_CODE = 'PAYMTQTF'  # TODO not used
+QITAF_HUB_CODE = 'PAYMTQTF'
 
 CHECKOUT_VERIFY_URL = 'services/checkout/verify/'
 
@@ -146,5 +146,5 @@ QITAF_EARN_POINTS_API = "/qitaf/api/v1/collect/"
 QITAF_REDEEM_POINTS_API = "/qitaf/api/v1/burn/redeem-qitafpoints/"
 QITAF_REVERSE_POINTS_API = "/qitaf/api/v1/burn/reverse-qitafpoints/"
 QITAF_REWARD_UPDATE_API = "/qitaf/api/v1/collect/reward-update/"
-QITAF_VERIFY_API = "/qitaf/api/v1/verify/"  # todo
+QITAF_VERIFY_API = "/qitaf/api/v1/verify/"
 QITAF_HEADERS = {'Content-Type': 'application/json'}
