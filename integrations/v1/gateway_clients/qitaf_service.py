@@ -11,9 +11,9 @@ from core.utils import (get_payment_gateway_config, get_app_config,
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_PAYMENT,
-    PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY, QITAF_HEADERS,
-    QITAF_VERIFY_API, QITAF_HUB_CODE
+    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
+    QITAF_HEADERS,
+    QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP
 )
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
@@ -145,7 +145,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 request_data=json.dumps(self.request_data),
                 response_data=json.dumps(self.response_data),
                 request_method=REQUEST_METHOD_POST,
-                request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
+                request_type=PAYMENT_REQUEST_GENERATE_OTP,
             )
 
     def collect_points(self, data):
