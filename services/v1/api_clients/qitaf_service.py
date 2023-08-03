@@ -344,44 +344,8 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
 
 
 def qitaf_response_formatter(data, code):
-    # Todo Clear code
-    """Success response
-    {
-        "status": true,
-        "reason": "Success",
-        "code": 1000,
-        "message": "API request completed successfully",
-        "proceed": true,
-        "retry_same": false,
-        "retry_new": false,
-        "reverse": false
-    }
-
-    {
-        "error": {
-            "status": true,
-            "reason": "Redemption Rejected – Duplicated Request ID",
-            "code": 1050,
-            "message": "An error occurred while redeeming Qitaf points.Please try again",
-            "proceed": false,
-            "retry_same": false,
-            "retry_new": true,
-            "reverse": false,
-            "warning": "Please add 1050 for Generate OTP in Qitaf"
-        },
-        "message": "Service is temporarily unavailable please choose another payment option, sorry for the inconvenience caused",
-        "code": 8002
-    }
     """
-
-    """retrun response
-    {
-        "status": 200,
-        "is_redirect": true,
-        "redirect_url": "https://3ds2-sandbox.ckotech.co/interceptor/3ds_m6p6ifvzzpseppafs7h5ukfdxa",
-        "message": "API request completed successfully",
-        "code": 1000
-    }
+    Qitaf Response format method
     """
 
     qitaf_response = data.get('qitaf_response')
