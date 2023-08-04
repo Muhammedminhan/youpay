@@ -13,7 +13,8 @@ from integrations.constants import (
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
     QITAF_HEADERS,
-    QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP
+    QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
+    CHECKOUTPG_PAYMENT_CONFIGURATIONS
 )
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
@@ -194,6 +195,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             ),
             "invoice_id": self.transaction_obj.invoice_id,
             "customer_ip_address": self.transaction_obj.ip,
+            "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
+                transaction_data.get("currency").upper()),
         }
         return redeem_payload
 
