@@ -13,7 +13,8 @@ from payments.constants import (PAYMENT_STATUS_INITIATED,
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
-                                AMAZONPG_STORE_CURRENCIES)
+                                AMAZONPG_STORE_CURRENCIES,
+                                QITAF_STORE_CURRENCIES)
 
 logger = logging.getLogger(__name__)
 
@@ -177,17 +178,24 @@ def get_checkoutpg_payment_options(code, gateway, is_guest,
 
 def get_b2cpayback_payment_options(code, gateway, store_currency,
                                    response_payment_options):
+    response_payment_options['adcb'] = False
+
     if code == B2CPAYBACK_HUB_CODE and (store_currency in
                                         ADCBPG_STORE_CURRENCIES):
         response_payment_options['citi_rewards'] = False
-        validation_json = gateway.validation_json
+        response_payment_options['adcb'] = True
 
-        if validation_json:
-            response_payment_options['citi_rewards'] = (
-                validation_json.get("is_citi_rewards_enabled", False))
-            response_payment_options['qitaf'] = gateway.validation_json.get(
-                "is_qitaf_enabled", False)
-            response_payment_options['adcb'] = True
+    validation_json = gateway.validation_json
+
+    if validation_json:
+        response_payment_options['citi_rewards'] = (
+            validation_json.get("is_citi_rewards_enabled", False))
+        response_payment_options['qitaf'] = gateway.validation_json.get(
+            "is_qitaf_enabled", False)
+
+        if store_currency in QITAF_STORE_CURRENCIES:
+            response_payment_options['qitaf'] = True
+
     return response_payment_options
 
 
