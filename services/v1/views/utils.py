@@ -183,7 +183,7 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
         response_payment_options['adcb'] = False
         response_payment_options['citi_rewards'] = False
 
-        if (store_currency in ADCBPG_STORE_CURRENCIES):
+        if store_currency in ADCBPG_STORE_CURRENCIES:
             response_payment_options['adcb'] = True
 
         validation_json = gateway.validation_json
@@ -193,13 +193,13 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
                 "is_citi_rewards_enabled", False)
             is_qitaf_enabled = validation_json.get("is_qitaf_enabled", False)
 
-            response_payment_options['citi_rewards'] = is_citi_rewards_enabled
-            response_payment_options['qitaf'] = is_qitaf_enabled
+            (response_payment_options['qitaf'],
+             response_payment_options['citi_rewards']) = (False, False)
 
-            if store_currency in QITAF_STORE_CURRENCIES:
+            if store_currency in QITAF_STORE_CURRENCIES and is_qitaf_enabled:
                 response_payment_options['qitaf'] = True
 
-            if store_currency in CITI_STORE_CURRENCIES:
+            if store_currency in CITI_STORE_CURRENCIES and is_citi_rewards_enabled:
                 response_payment_options['citi_rewards'] = True
 
     return response_payment_options
