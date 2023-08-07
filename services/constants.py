@@ -53,6 +53,7 @@ CURRENCY_KSA = "SAR"
 TABBYPG_STORE_CURRENCIES = [CURRENCY_KSA, ]  # tabbypg active stores
 ADCBPG_STORE_CURRENCIES = [CURRENCY_UAE, ]  # adcb active stores
 QITAF_STORE_CURRENCIES = [CURRENCY_KSA, ]  # Qitaf active stores
+CITI_STORE_CURRENCIES = [CURRENCY_UAE, ]  # Qitaf active stores
 AMAZONPG_STORE_CURRENCIES = [CURRENCY_UAE,
                              CURRENCY_KSA]  # amazonpg active stores
 
