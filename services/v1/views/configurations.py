@@ -10,6 +10,7 @@ from core.utils import decrypt_string, get_gateway_additional_fee
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
@@ -60,6 +61,7 @@ class ConfigViewSet(ViewSet):
         checkout_obj = CheckoutpgManager()
         tabbypg_obj = TabbyPGManager()
         b2c_payback_obj = B2CPaybackManager()
+        qitaf_obj = QitafServiceManager()
 
         decrypted_transaction_id = decrypt_string(pk)
         try:
@@ -121,6 +123,9 @@ class ConfigViewSet(ViewSet):
                         applepay_config = (
                             self.get_applepay_config(payment_options))
 
+                        qitaf_config = self.get_qitaf_config(
+                            qitaf_obj, transaction)
+
                         response_data = self.retrieve_response(
                             api_client=api_client,
                             payment_options=payment_options,
@@ -132,6 +137,7 @@ class ConfigViewSet(ViewSet):
                             announcements_dict=announcements_dict,
                             status_code=status_code,
                             paypal_config=paypal_config,
+                            qitaf_config=qitaf_config
                         )
 
                         data = self.response_obj.get_success_dict(
@@ -182,6 +188,7 @@ class ConfigViewSet(ViewSet):
         status_code = kwargs.get('status_code', None)
         applepay_config = kwargs.get('applepay_config', None)
         paypal_config = kwargs.get('paypal_config', None)
+        qitaf_config = kwargs.get('qitaf_config', None)
 
         amount = None
         currency = None
@@ -248,6 +255,8 @@ class ConfigViewSet(ViewSet):
                 "cart_service_fee": cart_service_fee,
                 "cart_vat_amount": cart_VAT_amount,
                 "cart_base_amount": cart_base_amount,
+
+                "qitaf_config": qitaf_config,
 
                 "redirect_url": redirect_url,
                 "announcements": announcements_dict,
@@ -318,6 +327,20 @@ class ConfigViewSet(ViewSet):
                                                        TOKEN_TYPE_PAYPAL)
         return paypal_config
 
+    def get_qitaf_config(self, qitaf_obj, transaction_data):
+        """
+        returns qitaf configurations
+        """
+
+        validation_json_data = qitaf_obj.qitaf_config.validation_json
+        if validation_json_data.get('is_qitaf_enabled'):
+            qitaf_config = {
+                'qitaf_phone_number': transaction_data.qitaf_phone_number,
+                'is_qitaf_enabled': transaction_data.is_qitaf_enabled
+            }
+            return qitaf_config
+        else:
+            return None
 
 class ClientStaticFilesAPI(APIView):
     """

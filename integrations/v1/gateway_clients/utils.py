@@ -10,7 +10,10 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CITI_REWARDS_INSUFFICIENT_BALANCE_CODE,
                                     CITI_REWARDS_INVALID_CUSTOMER_CODE,
                                     PAYMENT_REQUEST_POINT_BALANCE,
-                                    CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE)
+                                    CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE,
+                                    CHECKOUT_UAE_CHANNEL_CODE,
+                                    CHECKOUT_SAUDI_CHANNEL_CODE
+)
 from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
@@ -85,6 +88,12 @@ def format_adcb_verify_data(request_data, transaction_obj):
     return request_data
 
 
+def format_qitaf_verify_data(request_data, transaction_obj):
+    request_data['invoice_id'] = transaction_obj.invoice_id
+    request_data['channel_code'] = CHECKOUT_SAUDI_CHANNEL_CODE
+    return request_data
+
+
 def get_adcb_verify_redirect_url(response_data,
                                  transaction_obj):  # partial redemption
     payment_status = response_data.get("results", {}).get("payment_status")
@@ -120,7 +129,42 @@ def get_adcb_verify_redirect_url(response_data,
             transaction_obj.transaction_id, False)
 
 
-def get_adcb_redemption_redirect_url(response_data, transaction_obj): #full redemption
+def get_qitaf_verify_redirect_url(response_data, transaction_obj):
+    payment_status = response_data.get("results", {}).get("payment_status")
+    redemption_status = (
+        response_data.get("results", {}).get("redemption_status"))
+
+    if payment_status and redemption_status:
+        logger.info("Partial payment through card and touchpoints for id "
+                    "{}".format(transaction_obj.transaction_id))
+        return get_adcb_response_url(
+            transaction_obj.success_url, transaction_obj.transaction_id, True)
+    elif payment_status and not redemption_status:
+        logger.info("Full amount paid through card for id {}".format(
+            transaction_obj.transaction_id))
+        return get_adcb_response_url(
+            transaction_obj.success_url, transaction_obj.transaction_id, True)
+    elif ("results" not in response_data and
+          response_data.get("code") == ADCB_CHECKOUTPG_PAYMENT_NOT_PAID):
+        logger.info(
+            "Transaction failed at checkout for transaction id {}, failure "
+            "url {}".format(transaction_obj.transaction_id,
+                            transaction_obj.failure_url))
+        response_data["is_redirect"] = False
+        redirect_url = None
+        return get_adcb_response_url(redirect_url,
+                                     transaction_obj.transaction_id, False)
+    else:
+        logger.info("Transaction failed for transaction id {}, failure url "
+                    "{}".format(transaction_obj.transaction_id,
+                                transaction_obj.failure_url))
+        return get_adcb_response_url(
+            transaction_obj.failure_url,
+            transaction_obj.transaction_id, False)
+
+
+def get_adcb_redemption_redirect_url(response_data,
+                                     transaction_obj):  # full redemption
     if response_data.get('results', {}).get('redemption_status'):
         return get_adcb_response_url(
             transaction_obj.success_url, transaction_obj.transaction_id, True)

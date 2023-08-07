@@ -14,6 +14,7 @@ class YouPayResponse(object):
     5XXX - for b2c
     6XXX - for youpay
     7xxx - for happy credits
+    8xxx - for qitaf
     """
 
     SUCCESS = 1000
@@ -103,6 +104,17 @@ class YouPayResponse(object):
     CITI_REWARDS_USER_BLOCKED = 8009
     """Citi rewards related ends"""
 
+    """Qitaf related begins"""
+    QITAF_CONNECTION_ERROR = 8002
+    QITAF_PHONE_NUMBER_SAVE_FAILED = 8003
+    QITAF_PHONE_NUMBER_SAVED = 8004
+    QITAF_PHONE_NUMBER_FAILED_TO_FETCH = 8005
+    QITAF_VERIFICATION_FAILED_TO_PROCESS = 8006
+    QITAF_VERIFICATION_FAILED = 8007
+    QITAF_VERIFICATION_EXCEPTION = 8008
+
+    """Qitaf related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
@@ -143,6 +155,16 @@ class YouPayResponse(object):
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
+            self.QITAF_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.QITAF_PHONE_NUMBER_SAVE_FAILED: (
+                "Qitaf Phone number failed to save"),
+            self.QITAF_PHONE_NUMBER_SAVED: (
+                "Qitaf Phone number updated"),
+            self.QITAF_PHONE_NUMBER_FAILED_TO_FETCH: (
+                "Qitaf Phone number failed to fetch"),
+            self.QITAF_VERIFICATION_FAILED_TO_PROCESS: "Verification failed to process",
+            self.QITAF_VERIFICATION_FAILED: "Verification failed",
+            self.QITAF_VERIFICATION_EXCEPTION: "Verification failed.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),

@@ -5,14 +5,16 @@ from core.constants import PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
-    QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE)
+    QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
+)
 from payments.constants import (PAYMENT_STATUS_INITIATED,
                                 LANGUAGE_CODE_EN,
                                 LANGUAGE_CODE_AR)
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
-                                AMAZONPG_STORE_CURRENCIES)
+                                AMAZONPG_STORE_CURRENCIES,
+                                QITAF_STORE_CURRENCIES)
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,7 @@ def reformat_payment_request_data(data):
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
+        data['amount_in_aed'] = order.get('amount_in_aed')
         data['service_fee'] = order.get('service_fee')
         data['base_amount'] = order.get('base_amount')
         data['VAT_amount'] = order.get('VAT_amount')
@@ -129,7 +132,7 @@ def get_payment_options(transaction_obj, gateways):
             code, gateway, is_guest, response_payment_options)
 
         response_payment_options = get_b2cpayback_payment_options(
-            code, store_currency, gateway, response_payment_options)
+            code, gateway, store_currency, response_payment_options)
 
         response_payment_options = get_tabbypg_payment_options(
             code, store_currency, response_payment_options)
@@ -173,18 +176,26 @@ def get_checkoutpg_payment_options(code, gateway, is_guest,
     return response_payment_options
 
 
-def get_b2cpayback_payment_options(code, store_currency, gateway,
+def get_b2cpayback_payment_options(code, gateway, store_currency,
                                    response_payment_options):
-    if code == B2CPAYBACK_HUB_CODE:
+    response_payment_options['adcb'] = False
+
+    if code == B2CPAYBACK_HUB_CODE and (store_currency in
+                                        ADCBPG_STORE_CURRENCIES):
         response_payment_options['citi_rewards'] = False
-        validation_json = gateway.validation_json
+        response_payment_options['adcb'] = True
 
-        if validation_json:
-            response_payment_options['citi_rewards'] = (
-                validation_json.get("is_citi_rewards_enabled", False))
+    validation_json = gateway.validation_json
 
-        if store_currency in ADCBPG_STORE_CURRENCIES:
-            response_payment_options['adcb'] = True
+    if validation_json:
+        response_payment_options['citi_rewards'] = (
+            validation_json.get("is_citi_rewards_enabled", False))
+        response_payment_options['qitaf'] = gateway.validation_json.get(
+            "is_qitaf_enabled", False)
+
+        if store_currency in QITAF_STORE_CURRENCIES:
+            response_payment_options['qitaf'] = True
+
     return response_payment_options
 
 

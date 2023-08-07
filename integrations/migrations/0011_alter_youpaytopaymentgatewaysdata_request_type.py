@@ -13,6 +13,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='youpaytopaymentgatewaysdata',
             name='request_type',
+
             field=models.CharField(choices=[('Payment', 'Payment'), ('Retrieve', 'Retrieve'), ('Capture', 'Capture'), ('None', 'None'), ('Saved Card', 'Saved Card'), ('Card', 'Card'), ('Verify', 'Verify'), ('Point Balance', 'Point Balance'), ('Authenticate', 'Authenticate'), ('Redemption', 'Redemption'), ('Refund', 'Refund'), ('Credit Balance', 'Credit Balance'), ('Create-transaction', 'Create-transaction'), ('Generate OTP', 'Generate OTP')], db_index=True, default='None', help_text='Payment status', max_length=200),
         ),
     ]

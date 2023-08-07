@@ -23,8 +23,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'order_reference',
-                    'payment_reference', 'created_at', 'api_client',
-                    'payment_gateway', 'updated_at',)
+                    'payment_reference', 'api_client',
+                    'payment_Gateway', 'created_at', 'updated_at',)
     readonly_fields = (
         'transaction_id', 'created_at', 'updated_at', 'customer_email',
         'customer_phone', 'loyalty_level')
@@ -63,12 +63,13 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
         ('Payment details', {
-            'fields': ('amount', 'currency', 'country_code', 'transaction_id',
-                       'payment_reference', 'settlement_entity',
-                       'payment_gateway', 'channel_code', 'payment_method',
-                       'payment_scheme', 'platform', 'response_summary',
-                       'service_fee', 'base_amount', 'VAT_amount',
-                       'gateway_charge', 'is_payment_verified'
+            'fields': ('amount', 'amount_in_aed', 'currency', 'country_code',
+                       'transaction_id', 'payment_reference',
+                       'settlement_entity', 'payment_gateway',
+                       'channel_code', 'payment_method', 'payment_scheme',
+                       'platform', 'response_summary', 'service_fee',
+                       'base_amount', 'VAT_amount', 'gateway_charge',
+                       'is_payment_verified'
                        )
         }),
         ('URLs', {
@@ -100,13 +101,26 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'additional_total_amount',
                        )
         }),
-
+        ('Quitaf transaction details', {
+            'fields': ('qitaf_phone_number', 'is_qitaf_enabled',
+                       )
+        }),
         ('Other Details', {
             'fields': ('retry_count', 'session_id', 'loyalty_level',
                        'created_at', 'updated_at'
                        )
         }),
     )
+
+    def payment_Gateway(self, obj):
+        if obj.payment_gateway:
+            display_string = f"{obj.payment_gateway}"
+            if obj.payment_method:
+                display_string = f"{display_string} ({obj.payment_method})"
+
+            return display_string
+        else:
+            return None
 
 
 class AnnouncementAdmin(AdminAbstract):
