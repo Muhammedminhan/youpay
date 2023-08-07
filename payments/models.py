@@ -268,7 +268,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                           blank=True, db_index=True,
                                           help_text="To store user qitaf "
                                                     "phone number")
-    is_qitaf_enabled = models.BooleanField(
+    is_qitaf_enabled = models.BooleanField(null=True,  blank=True,
         default=False, db_index=True, help_text='Qitaf enabled flag')
     qitaf_request_id = models.CharField(max_length=100, null=True,
                                         blank=True, db_index=True,
