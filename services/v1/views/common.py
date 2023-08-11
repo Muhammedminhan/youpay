@@ -1,7 +1,6 @@
 import logging
 
 from django.db import transaction
-from django.utils.decorators import decorator_from_middleware, classonlymethod
 from rest_framework import status
 
 from core.constants import (

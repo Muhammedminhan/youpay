@@ -154,7 +154,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         calls qitaf points collecting api
         """
         try:
-            request_data = data['request_data']
+            request_data = data
             logger.info(
                 "Youpay sending request data to qitaf point collection api "
                 "is {}".format(request_data))
@@ -410,8 +410,24 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                     response_data = response.json()
                     return_response_data["is_redirect"] = True
-                    return_response_data[
-                        "redirect_url"] = transaction_obj.success_url
+                    redirect_url = transaction_obj.success_url
+
+                    # Qitaf Reward Point
+                    from services.v1.api_clients.qitaf_service import (
+                        QitafCollectPointsAPIView)
+                    qitaf_reward_point_obj = QitafCollectPointsAPIView()
+                    response, code, reward = qitaf_reward_point_obj.collect_reward_point(
+                        transaction_obj)
+                    logger.info("Checking for Reward Point for transaction : "
+                                "{}, response : {}, code : {}, Qitaf reward :"
+                                " {}".format(transaction_obj.transaction_id,
+                                             response, code, reward))
+
+                    if reward:
+                        redirect_url = redirect_url + "/?&qitaf_reward=" + reward
+
+                    return_response_data["redirect_url"] = redirect_url
+
                     approved = response_data.get("approved", False)
                     is_flagged = response_data.get("is_flagged", False)
                     is_gcc_card = response_data.get("is_gcc_card", False)
