@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.constants import Qitaf_response_object, QITAF_REWARD_POINT_MIN_AMT
 from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
@@ -51,8 +52,8 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
                                     status=status.HTTP_400_BAD_REQUEST)
 
             else:
-                data = self.response_obj.get_404_message(
-                    message="Transaction doesn't exists")
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
@@ -79,6 +80,8 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
                 }}
                 qitaf_service = QitafServiceManager()
                 response_data, code = qitaf_service.generate_otp(payload)
+                response_flag, qitaf_response_data = get_qitaf_response_message(
+                    response_data, code)
 
                 if response_data and code == self.response_obj.SUCCESS:
                     data = self.response_obj.get_success_dict(
@@ -86,12 +89,15 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
                         success_dict=response_data
                     )
                     return Response(data, status=status.HTTP_200_OK)
+                elif response_flag:  # todo Remove after testing
+                    return Response(qitaf_response_data,
+                                    status=status.HTTP_400_BAD_REQUEST)
                 else:
                     data = self.response_obj.get_error_dict(error_code=code)
                     return Response(data, status=status.HTTP_400_BAD_REQUEST)
             else:
-                data = self.response_obj.get_404_message(
-                    message="Transaction doesn't exists")
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             logger.error(
@@ -102,7 +108,42 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-class QitafCollectPointsAPIView(APIView):
+def get_qitaf_response_message(response_data, code):
+    """
+    ERROR RESPONSE OBJECT
+    {
+        'error':{
+            'message': 'QitafNot Found Or Available',
+            'status': False,
+            'response_data':{
+                'no_response': False,
+                'response_code': '1019',
+                'response_text': 'QitafNot Found Or Available'
+            }
+        }
+    }
+    """
+    response_flag = False
+    error_obj = response_data.get('error', {})
+    if error_obj:
+        response_flag = True
+        qitaf_response_data = error_obj.get('response_data', {})
+        if qitaf_response_data:
+            response_code = qitaf_response_data.get('response_code')
+            result_response = {
+                "errors": {
+                    "message": Qitaf_response_object.get(response_code),
+                    "qitaf_code": response_code,
+                    "code": code
+
+                }
+            }
+            response_data = result_response
+
+    return response_flag, response_data
+
+
+class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
     def post(self, request):
@@ -110,25 +151,69 @@ class QitafCollectPointsAPIView(APIView):
         request for handling qitaf collect points api
         """
         try:
-            collect_points_data = {'request_data': request.data}
-            qitaf_service = QitafServiceManager()
-            response_data, code = qitaf_service.collect_points(
-                collect_points_data)
-            if response_data:
-                data = self.response_obj.get_success_dict(
-                    code=code,
-                    success_dict=response_data
-                )
-                return Response(data,
-                                status=status.HTTP_200_OK)
+            transaction_id = request.data.get('transaction_id')
+
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+
+                response_data, code, qitaf_reward = self.collect_reward_point(
+                    transaction_obj)
+                logger.info(
+                    "Reward Point(Collect Points) API response {}, code : {},"
+                    " rewarded : {}".format(response_data, code,
+                                            qitaf_reward))
+                if response_data:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
-                data = self.response_obj.get_error_dict(error_code=code)
-                return Response(data,
-                                status=status.HTTP_400_BAD_REQUEST)
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                logger.error(
+                    "QitafCollectPointsAPIView : Transaction not found for {}"
+                    "".format(transaction_id))
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+    def collect_reward_point(self, transaction_obj):
+
+        data = {
+            "mobile_number": transaction_obj.qitaf_phone_number,
+            "amount": int(transaction_obj.amount),
+        }
+        response_obj = YouPayResponse()
+
+        # TODO need a check for already rewarded
+
+        if not transaction_obj.is_qitaf_enabled:
+            logger.error("Reward point enabled unexpectedly for transaction "
+                         "{}".format(transaction_obj.transaction_id))
+            return None, response_obj.QITAF_NOT_ENABLED, 0
+
+        if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
+            logger.info("Qitaf RewardPoint Failed for {} ".format(
+                transaction_obj.transaction_id,
+            ))
+            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, 0
+
+        qitaf_service = QitafServiceManager()
+        response_data, code = qitaf_service.collect_points(
+            data)
+
+        qitaf_reward = response_data.get("qitaf_response", {}).get(
+            "reward_point", 0)
+        return response_data, code, qitaf_reward
 
 
 class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
