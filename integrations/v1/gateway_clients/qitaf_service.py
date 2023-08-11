@@ -412,20 +412,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     return_response_data["is_redirect"] = True
                     redirect_url = transaction_obj.success_url
 
-                    # Qitaf Reward Point
-                    from services.v1.api_clients.qitaf_service import (
-                        QitafCollectPointsAPIView)
-                    qitaf_reward_point_obj = QitafCollectPointsAPIView()
-                    response, code, reward = qitaf_reward_point_obj.collect_reward_point(
-                        transaction_obj)
-                    logger.info("Checking for Reward Point for transaction : "
-                                "{}, response : {}, code : {}, Qitaf reward :"
-                                " {}".format(transaction_obj.transaction_id,
-                                             response, code, reward))
-
-                    if reward:
-                        redirect_url = redirect_url + "/?&qitaf_reward=" + reward
-
                     return_response_data["redirect_url"] = redirect_url
 
                     approved = response_data.get("approved", False)
