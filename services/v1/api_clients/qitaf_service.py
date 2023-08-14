@@ -189,16 +189,21 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
     def collect_reward_point(self, transaction_obj):
 
         data = {
+            "payment_reference": transaction_obj.payment_reference,
             "mobile_number": transaction_obj.qitaf_phone_number,
             "amount": int(transaction_obj.amount),
+            "platform": transaction_obj.platform,
         }
         response_obj = YouPayResponse()
 
         # TODO need a check for already rewarded
 
-        if not transaction_obj.is_qitaf_enabled:
-            logger.error("Reward point enabled unexpectedly for transaction "
-                         "{}".format(transaction_obj.transaction_id))
+        if not transaction_obj.is_qitaf_enabled and transaction_obj.earned_point:
+            logger.error(
+                "Failed for Reward point, qitaf not enabled ({}) or already "
+                "rewarded ({}) {}".format(transaction_obj.is_qitaf_enabled,
+                                          transaction_obj.transaction_id,
+                                          transaction_obj.transaction_id))
             return None, response_obj.QITAF_NOT_ENABLED, 0
 
         if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
