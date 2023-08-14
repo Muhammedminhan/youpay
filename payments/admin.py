@@ -107,7 +107,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Other Details', {
             'fields': ('retry_count', 'session_id', 'loyalty_level',
-                       'created_at', 'updated_at'
+                       'earned_point', 'created_at', 'updated_at'
                        )
         }),
     )
@@ -243,7 +243,8 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Other Details', {
             'fields': ('retry_count', 'session_id', 'loyalty_level',
-                       'created_at', 'updated_at', 'archived_at'
+                       'earned_point', 'created_at', 'updated_at',
+                       'archived_at'
                        )
         }),
     )
