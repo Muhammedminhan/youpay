@@ -14,7 +14,7 @@ from integrations.constants import (
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS
+    CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS
 )
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
@@ -179,6 +179,15 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Exception in qitaf point collection api: "
                          "{}".format(e))
             return {"error": error}, self.QITAF_CONNECTION_ERROR
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_COLLECT_POINTS,
+            )
 
     def prepair_redeem_payload(self, transaction_data):
         """
