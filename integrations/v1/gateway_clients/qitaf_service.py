@@ -201,7 +201,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_COLLECT_POINTS,
             )
-            print("\n\n\n\nYoupay to payment gateways data created")
 
     def prepair_redeem_payload(self, transaction_data):
         """
