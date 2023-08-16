@@ -220,11 +220,6 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
         qitaf_reward = response_data.get("qitaf_response", {}).get(
             "reward_point", 0)
 
-        self.update_youpay_transaction_data({
-            "transaction_id": transaction_obj.transaction_id,
-            "earned_point": qitaf_reward
-        })
-
         return response_data, code, qitaf_reward
 
 

@@ -307,20 +307,6 @@ def is_redirect(transaction_id, transaction_message):
         redirect_url = (youpay_transaction.success_url +
                         '?transaction_id=' + transaction_id)
 
-        # Qitaf Reward Point
-        from services.v1.api_clients.qitaf_service import (
-            QitafCollectPointsAPIView)
-        qitaf_reward_point_obj = QitafCollectPointsAPIView()
-        response, code, reward = qitaf_reward_point_obj.collect_reward_point(
-            youpay_transaction)
-        logger.info("Checking for Reward Point for transaction : "
-                    "{}, response : {}, code : {}, Qitaf reward :"
-                    " {}".format(youpay_transaction.transaction_id,
-                                 response, code, reward))
-
-        if reward:
-            redirect_url = redirect_url + "/?&qitaf_reward=" + reward
-
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
