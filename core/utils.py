@@ -278,7 +278,7 @@ def process_checkoutpg_response_verification(**kwargs):
     function to process checkoutpg response verification and update in youpay
     transaction table
     """
-
+    reward = None
     transaction_id = kwargs.get('transaction_id')
     response_data = kwargs.get('response_data')
     is_pre_auth = kwargs.get('is_pre_auth')
@@ -318,6 +318,22 @@ def process_checkoutpg_response_verification(**kwargs):
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
 
+        if payment_status == PAYMENT_STATUS_PAID:
+            # Qitaf Reward Point
+            from services.v1.api_clients.qitaf_service import (
+                QitafCollectPointsAPIView)
+            qitaf_reward_point_obj = QitafCollectPointsAPIView()
+            youpay = YouPayTransactionCRUD()
+            youpay_transaction = youpay.get_youpay_transaction_data(
+                transaction_id)
+            response, code, qitaf_reward = qitaf_reward_point_obj.collect_reward_point(
+                youpay_transaction)
+            logger.info("Checking for Reward Point for transaction : "
+                        "{}, response : {}, code : {}, Qitaf reward :"
+                        " {}".format(transaction_id,
+                                     response, code, qitaf_reward))
+            reward = qitaf_reward
+
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(
@@ -337,7 +353,8 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': is_payment_verified
+            'is_payment_verified': is_payment_verified,
+            'earned_point': reward,
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
