@@ -189,16 +189,14 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
     def collect_reward_point(self, transaction_obj):
 
         data = {
-            "payment_reference": transaction_obj.payment_reference,
             "mobile_number": transaction_obj.qitaf_phone_number,
-            "transaction_id": "youpay|" + str(transaction_obj.transaction_id),
+            "transaction_obj": transaction_obj,
             "amount": int(transaction_obj.amount),
             "platform": transaction_obj.platform,
         }
 
         response_obj = YouPayResponse()
-        if not (
-                transaction_obj.is_qitaf_enabled and
+        if not (transaction_obj.is_qitaf_enabled and
                 (not transaction_obj.earned_point)):
             '''if qitaf not enabled or already rewarded, this will check for
              already rewarded or qitaf is enabled'''
