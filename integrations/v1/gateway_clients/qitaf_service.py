@@ -14,7 +14,7 @@ from integrations.constants import (
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS
+    CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS
 )
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
@@ -155,10 +155,21 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         """
         try:
             request_data = data
+
+            self.transaction_obj = request_data.get('transaction_obj')
+            self.transaction_id = str(self.transaction_obj.transaction_id)
+
+            request_data.pop('transaction_obj')
+
             logger.info(
                 "Youpay sending request data to qitaf point collection api "
                 "is {}".format(request_data))
+
+            request_data['transaction_id'] = "youpay|" + self.transaction_id
+            self.request_data = request_data
+
             payload = json.dumps(request_data)
+
             url = self.qitaf_config.domain + QITAF_EARN_POINTS_API
             headers = self.get_payment_header()
             response = requests.post(url, data=payload, headers=headers)
@@ -166,19 +177,30 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                         "".format(response))
             if response:
                 response_data = response.json()
+                self.response_data = response_data
                 logger.info("qitaf point collection api response: {}".format(
                     response_data))
                 return response_data, self.SUCCESS
 
             logger.error("Error in qitaf point collection api, {}"
                          "".format(response.text))
+            self.response_data = response.json()
             return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in qitaf point collection api: {}".format(e)
             logger.error("Exception in qitaf point collection api: "
-                         "{}".format(e))
+                         "{}".format(e), exc_info=True)
             return {"error": error}, self.QITAF_CONNECTION_ERROR
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_COLLECT_POINTS,
+            )
 
     def prepair_redeem_payload(self, transaction_data):
         """

@@ -148,6 +148,7 @@ class YouPayTransactionCRUD(object):
         data_dict['citi_phone_number'] = data.get('citi_phone_number', None)
         data_dict['qitaf_phone_number'] = data.get('qitaf_phone_number', None)
         data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', False)
+        data_dict['earned_point'] = data.get('earned_point', 0)
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
