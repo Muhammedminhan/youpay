@@ -46,7 +46,11 @@ class QitafPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_obj').payment_reference
 
     def get_amount(self, data):
-        return str(data.get('transaction_obj').amount)
+        """
+        as per PRD : the base price will be redeemed and no additional charges
+        link : https://yougotagift.atlassian.net/wiki/spaces/YPRD/pages/2294808578/Qitaf+charges
+        """
+        return str(data.get('transaction_obj').base_amount)
 
     def get_currency(self, data):
         return data.get('transaction_obj').currency

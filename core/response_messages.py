@@ -31,6 +31,7 @@ class YouPayResponse(object):
 
     TRANSACTION_ALREADY_CLOSED = 1600
     REQUIRED_DATA_MISSING = 1601
+    DATA_CORRUPTED = 1602
 
     """checkoutpg related begins"""
     CHECKOUTPG_CONNECTION_ERROR = 2003
@@ -114,6 +115,7 @@ class YouPayResponse(object):
     QITAF_VERIFICATION_EXCEPTION = 9008
     QITAF_NOT_ENABLED = 9401
     QITAF_REWARD_POINT_MIN_AMT_NOT_MET = 9403
+    QITAF_NOT_SUPPORTED = 9404
 
     """Qitaf related ends"""
 
@@ -127,6 +129,7 @@ class YouPayResponse(object):
 
         self.MESSAGE.update({
             self.UNKNOWN_ERR: "Something went wrong",
+            self.DATA_CORRUPTED: "Data corrupted",
             self.SUCCESS: "API request completed successfully",
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
@@ -167,6 +170,7 @@ class YouPayResponse(object):
             self.QITAF_VERIFICATION_FAILED_TO_PROCESS: "Verification failed to process",
             self.QITAF_VERIFICATION_FAILED: "Verification failed",
             self.QITAF_VERIFICATION_EXCEPTION: "Verification failed.",
+            self.QITAF_NOT_SUPPORTED: "Qitaf Forbidden, or partial redemption not supported.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),

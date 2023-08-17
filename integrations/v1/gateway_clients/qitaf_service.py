@@ -256,19 +256,26 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = self.handle_qitaf_response(
                     response_data, self.transaction_obj)
                 return response_data, self.SUCCESS
+            elif response.status_code == 403:
+                msg = "Qitaf Forbidden, or partial redemption not supported"
+                logger.error("{}, {}".format(msg, response.text))
+                return {"errors": msg}, self.QITAF_NOT_SUPPORTED
             else:
                 logger.error("Error in qitaf redeem point api, {}"
                              "".format(response.text))
-
-            self.response_data = response.json()
-            response_data = self.handle_qitaf_response(
-                response.json(), self.transaction_obj)
-            return response_data, self.QITAF_CONNECTION_ERROR
-
+                self.response_data = response.json()
+                err_obj = {
+                    "message": self.response_data.get("response_text"),
+                    "code": self.response_data.get("response_code"),
+                    "is_full_redemption": self.response_data.get(
+                        "is_full_redemption")
+                }
+                return {"errors": err_obj}, self.QITAF_CONNECTION_ERROR
+            
         except Exception as e:
             error = "Exception in qitaf redeem point api: {}".format(e)
             logger.error("Exception in qitaf redeem point api: "
-                         "{}".format(e))
+                         "{}".format(e), exc_info=True)
             return {"errors": error}, self.QITAF_CONNECTION_ERROR
 
         finally:

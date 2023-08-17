@@ -69,6 +69,9 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
         """
         request for handling qitaf generate otp api
         """
+        logger.info("QitafGenerateOTPAPIView request data : {}".format(
+            request.data))
+
         try:
             mobile_number = request.data.get('mobile_number')
             otp_serializer = QitafOTPSerializer(data=request.data)
@@ -263,12 +266,18 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             validated_data = qitaf_redemption_serializer.data
 
             points_redemption_data = validated_data
+
+            selected_amount_in_req = request.data.get("selected_amount")
+            base_amount = int(
+                qitaf_redemption_serializer.transaction_obj.base_amount)
+
             points_redemption_data.update(
                 {
                     "transaction_obj": qitaf_redemption_serializer.transaction_obj,
                     "referance_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
                     "pin_number": validated_data.get('pin_number'),
-                    "selected_amount": validated_data.get('selected_amount'),
+                    "selected_amount": base_amount,
+                    # "selected_amount": validated_data.get('selected_amount'),
                     "checkout_amount": validated_data.get('checkout_amount'),
                     "is_save_user_token": validated_data.get(
                         'is_save_user_token'),
@@ -279,6 +288,18 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "encrypted_id": request.data.get('transaction_id')
                 }
             )
+
+            if selected_amount_in_req != str(base_amount):
+                logger.error(
+                    "selected amount not equal to base amount {}, {}".
+                    format(
+                        request.data.get("selected_amount"),
+                        str(int(
+                            qitaf_redemption_serializer.transaction_obj.base_amount))))
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.DATA_CORRUPTED)
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.redeem_points(
                 points_redemption_data)
@@ -290,8 +311,11 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                 )
                 return Response(data, status=status.HTTP_200_OK)
             else:
-                data = self.response_obj.get_error_dict(error_code=code)
-                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+                """Need to show error message to Front end
+                so data = self.response_obj.get_error_dict(error_code=code)
+                """
+                return Response(response_data,
+                                status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
