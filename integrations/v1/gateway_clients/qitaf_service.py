@@ -98,7 +98,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             data = {
                 'transaction_id': str(self.transaction_id),
                 'qitaf_phone_number': request_data.get("mobile_number"),
-                'is_qitaf_enabled': str(True)
             }
 
             self.update_qitaf_phone_number(data)
@@ -271,7 +270,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                         "is_full_redemption")
                 }
                 return {"errors": err_obj}, self.QITAF_CONNECTION_ERROR
-            
+
         except Exception as e:
             error = "Exception in qitaf redeem point api: {}".format(e)
             logger.error("Exception in qitaf redeem point api: "
