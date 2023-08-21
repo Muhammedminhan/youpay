@@ -384,6 +384,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
         update_data.update({
             "transaction_id": payment_data.transaction_id,
+            "is_full_redemption": is_full_redemption,
             "payment_status": self.payment_status,
             "approved": self.approved,
             "payment_method": self.payment_method,
