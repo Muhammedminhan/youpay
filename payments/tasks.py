@@ -123,22 +123,8 @@ def calculate_checkoutpg_gateway_charge(**kwargs):
     logger.info("checkoutpg gateway charge calculation "
                 "started {}".format(kwargs))
     payment_reference = kwargs.get('payment_reference', None)
-    financial_action_data = kwargs.get('financial_action_data', None)
     gateway_charge = 0
     try:
-        breakdown_types = ["Authorization Fixed Fee",
-                           "Authentication Fixed Fee",
-                           "Authentication Variable Fee",
-                           "Void Fixed Fee",
-                           "Gateway Fixed Fee",
-                           "Card Verification Fixed Fee"]
-
-        for financial_action in financial_action_data:
-            for break_downs in financial_action.get('breakdown'):
-                if break_downs.get('breakdown_type') in breakdown_types:
-                    gateway_charge += Decimal(
-                        break_downs.get('fx_rate_applied', '0.00'))
-
         transaction_obj = YouPayTransactionData.objects.get(
             payment_reference=payment_reference)
         if transaction_obj:
