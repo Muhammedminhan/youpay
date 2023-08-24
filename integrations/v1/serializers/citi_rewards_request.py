@@ -61,7 +61,7 @@ class GenerateOTPRequestSerializer(serializers.Serializer):
         return data.get('request_data', {}).get('card_last4')
 
     def get_amount(self, data):
-        return str(data.get('transaction_data').get("amount"))
+        return str(data.get('transaction_data').get("base_amount"))
 
     def get_currency(self, data):
         return data.get('transaction_data', {}).get('currency')
