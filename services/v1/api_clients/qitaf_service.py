@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import Qitaf_response_object, QITAF_REWARD_POINT_MIN_AMT
+from core.constants import QITAF_REWARD_POINT_MIN_AMT
 from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
@@ -83,8 +83,6 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
                 }}
                 qitaf_service = QitafServiceManager()
                 response_data, code = qitaf_service.generate_otp(payload)
-                response_flag, qitaf_response_data = get_qitaf_response_message(
-                    response_data, code)
 
                 if response_data and code == self.response_obj.SUCCESS:
                     data = self.response_obj.get_success_dict(
@@ -92,9 +90,6 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
                         success_dict=response_data
                     )
                     return Response(data, status=status.HTTP_200_OK)
-                elif response_flag:  # todo Remove after testing
-                    return Response(qitaf_response_data,
-                                    status=status.HTTP_400_BAD_REQUEST)
                 else:
                     data = self.response_obj.get_error_dict(error_code=code)
                     return Response(data, status=status.HTTP_400_BAD_REQUEST)
