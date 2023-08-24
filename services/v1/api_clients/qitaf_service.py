@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import Qitaf_response_object, QITAF_REWARD_POINT_MIN_AMT
+from core.constants import QITAF_REWARD_POINT_MIN_AMT
 from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
