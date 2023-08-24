@@ -120,9 +120,9 @@ def calculate_checkoutpg_gateway_charge(**kwargs):
     task to calculate gateway charge based on the
     financial response from checkout pg
     """
-    logger.info("checkoutpg gateway charge calculation "
-                "started {}".format(kwargs))
     payment_reference = kwargs.get('payment_reference', None)
+    logger.info("checkoutpg gateway charge calculation "
+                "started for {}".format(payment_reference))
     gateway_charge = 0
     try:
         transaction_obj = YouPayTransactionData.objects.get(
@@ -130,6 +130,8 @@ def calculate_checkoutpg_gateway_charge(**kwargs):
         if transaction_obj:
             transaction_obj.gateway_charge = gateway_charge
             transaction_obj.save()
+            logger.info("Successfully saved gateway charge for reference "
+                        "{}".format(payment_reference))
         return gateway_charge
     except Exception as e:
         logger.error(
