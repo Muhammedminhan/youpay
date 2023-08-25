@@ -15,7 +15,9 @@ from core.utils import (encrypt_payment_data, decrypt_payment_data,
 from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
-                                PAYMENT_STATUS_PAID, ALLOW_EXPIRE_STATUS_LIST)
+                                PAYMENT_STATUS_PAID, ALLOW_EXPIRE_STATUS_LIST,
+                                PAYMENT_METHOD_CITI_REWARDS,
+                                PAYMENT_METHOD_QITAF)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -38,7 +40,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
     def __init__(self):
         self.payment_request_obj = None
         self.return_data = None
-
 
     def post(self, request):
         """
@@ -241,12 +242,16 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     "invoice_id": transaction_obj.invoice_id,
                     "amount": str(transaction_obj.amount),
                     "currency": transaction_obj.currency,
+                    "payment_method": transaction_obj.payment_method,
                 }
+
+                self.update_amount_with_base_amount(transaction_obj,
+                                                    verify_body)
 
                 response = self.verify_transaction_with_client(
                     url=client_verify_url, body=json.dumps(verify_body),
                     headers=verify_headers)
-                logger.info("Client verify request send data : {}\nresponse "
+                logger.info("Client verify request send data : {} response "
                             "data{}".format(verify_body, response.text))
 
                 if response:
@@ -281,6 +286,16 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             )
             return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
 
+    def update_amount_with_base_amount(self, transaction_obj, verify_body):
+        # For payment methods = citi/Qitaf base amount is verified
+        if transaction_obj.payment_method in [
+            PAYMENT_METHOD_CITI_REWARDS,
+            PAYMENT_METHOD_QITAF
+        ]:
+            verify_body['amount'] = transaction_obj.base_amount
+
+        return verify_body
+
     def get_api_client_keys(self, transaction_obj):
         api_key = ""
         api_secret = ""
@@ -303,6 +318,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         redirect_url = get_redirect_url(
             transaction_obj.redirect_url, transaction_obj.transaction_id)
         return redirect_url
+
+
 class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
     Test API endpoint for encrypting request data
@@ -387,7 +404,7 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
                              "is_redirect": True,
                              REDIRECT_URL: redirect_url,
                              "message": "Successfully expired transaction"}
-            
+
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error("Error in transaction expire api ", exc_info=e)
