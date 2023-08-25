@@ -145,20 +145,16 @@ def calculate_checkoutpg_gateway_charge(**kwargs):
             transaction_obj.gateway_charge = gateway_charge
             transaction_obj.save()
         return gateway_charge
+
+    except YouPayTransactionData.DoesNotExist:
+        logger.info(
+            "Unable to store YouPayTransactionData with payment reference {}"
+            " to store checkoutpg gateway charges".format(payment_reference))
+
     except Exception as e:
-        err_msg = str(e)
-        msg = ("Unable to store checkoutpg gateway charges for transaction "
-               "{} with error {}".format(payment_reference, err_msg))
-        if err_msg in (
-                "YouPayTransactionData matching query does not exist."
-        ):
-            """
-            payment reference may be changed for TXN, so ignoring doesn't
-            exist err
-            """
-            logger.info(msg)
-        else:
-            logger.error(msg)
+        logger.error(
+            "Unable to store checkoutpg gateway charges for transaction "
+            "{} with error {}".format(payment_reference, str(e)))
 
 
 @shared_task(name='update_calculated_gateway_charges')
