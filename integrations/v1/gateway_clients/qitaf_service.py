@@ -22,9 +22,8 @@ from integrations.v1.serializers.qitafpg_serializer import (
 )
 from payments.constants import (PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_DECLINED_RETRY,
-                                PAYMENT_METHOD_TOUCHPOINTS,
-                                PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
-                                PAYMENT_STATUS_PENDING)
+                                PAYMENT_STATUS_PENDING, PAYMENT_METHOD_QITAF,
+                                PAYMENT_METHOD_QITAFAND_CARD)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
@@ -377,10 +376,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 '''Qitaf full redemption Failure case'''
                 self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
                 is_redirect = False
-
         self.payment_method = (
-            PAYMENT_METHOD_TOUCHPOINTS if is_full_redemption
-            else PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
+            PAYMENT_METHOD_QITAF if is_full_redemption
+            else PAYMENT_METHOD_QITAFAND_CARD)
 
         update_data.update({
             "transaction_id": payment_data.transaction_id,
