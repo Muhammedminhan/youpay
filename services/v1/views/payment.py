@@ -213,7 +213,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     message="API Client Does Not Exist or Inactive")
                 return return_data, status.HTTP_400_BAD_REQUEST
 
-            if transaction_obj.api_client.is_active is True:
+            if transaction_obj.api_client.is_active is False:
                 '''Skip verification if client is inactive'''
                 dummy_response = {
                     "is_verified": True,
