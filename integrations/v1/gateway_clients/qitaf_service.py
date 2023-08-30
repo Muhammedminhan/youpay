@@ -235,7 +235,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             transaction_data = serializer.data
 
             verify_response, verify_status = self.verify_transaction(
-                transaction_data)
+                transaction_data, payment_method=PAYMENT_METHOD_QITAF)
 
             is_verified = verify_response.get('is_verified', False)
 
