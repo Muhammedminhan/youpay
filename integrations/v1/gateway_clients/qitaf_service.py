@@ -50,6 +50,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.payment_status = None
         self.payment_method = None
         self.approved = False
+        self.amount = None
         self.payment_gateway = PAYMENT_GATEWAY_B2CPAYBACK
 
     def get_qitaf_payment_data(self, data):
@@ -233,6 +234,19 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             serializer = YouPayTransactionDataSerializer(self.transaction_obj)
             transaction_data = serializer.data
 
+            verify_response, verify_status = self.verify_transaction(
+                transaction_data)
+
+            is_verified = verify_response.get('is_verified', False)
+
+            if not is_verified:
+                msg = (
+                    "Youpay Qitaf transaction verification failed for"
+                    " transaction id {} response is : {} ".format(
+                        self.transaction_id, verify_response))
+                logger.error(msg)
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+
             payload.update(self.prepair_redeem_payload(transaction_data))
             payload.pop('transaction_obj')
 
@@ -368,6 +382,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 '''Qitaf full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
                 self.approved = True
+                paid_amount = response_data.get('amount')
+                if paid_amount:
+                    self.amount = paid_amount
+                    update_data['amount'] = self.amount
 
                 redirect_url = payment_data.success_url
                 is_success, is_redirect = True, True
@@ -380,15 +398,21 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             PAYMENT_METHOD_QITAF if is_full_redemption
             else PAYMENT_METHOD_QITAFAND_CARD)
 
-        update_data.update({
-            "transaction_id": payment_data.transaction_id,
-            "is_full_redemption": is_full_redemption,
-            "payment_status": self.payment_status,
-            "approved": self.approved,
-            "payment_method": self.payment_method,
-            "payment_gateway": self.payment_gateway,
-            "response_summary": response_data.get('reason')
-        })
+        youpay_update_data = {
+            **update_data,
+            **{
+                "transaction_id": payment_data.transaction_id,
+                "is_full_redemption": is_full_redemption,
+                "payment_status": self.payment_status,
+                "approved": self.approved,
+                "payment_method": self.payment_method,
+                "payment_gateway": self.payment_gateway,
+                "response_summary": response_data.get(
+                    'reason')
+            }
+        }
+
+        update_data.update(youpay_update_data)
 
         self.update_youpay_transaction_data(update_data)
         return_response = {

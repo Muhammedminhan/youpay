@@ -21,7 +21,8 @@ from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
                                 PAYMENT_STATUS_AUTHORIZED,
-                                PAYMENT_STATUS_REJECTED_RETRY)
+                                PAYMENT_STATUS_REJECTED_RETRY,
+                                PAYMENT_METHOD_QITAF)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -149,6 +150,12 @@ class YouPayTransactionCRUD(object):
         data_dict['qitaf_phone_number'] = data.get('qitaf_phone_number', None)
         data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', False)
         data_dict['earned_point'] = data.get('earned_point', 0)
+
+        if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
+            #     Amount is updating only in qitaf
+            amount = data.get('amount', )
+            if amount:
+                data_dict['amount'] = amount
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(

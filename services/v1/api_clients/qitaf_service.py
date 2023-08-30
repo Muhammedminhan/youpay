@@ -106,41 +106,6 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
-def get_qitaf_response_message(response_data, code):
-    """
-    ERROR RESPONSE OBJECT
-    {
-        'error':{
-            'message': 'QitafNot Found Or Available',
-            'status': False,
-            'response_data':{
-                'no_response': False,
-                'response_code': '1019',
-                'response_text': 'QitafNot Found Or Available'
-            }
-        }
-    }
-    """
-    response_flag = False
-    error_obj = response_data.get('error', {})
-    if error_obj:
-        response_flag = True
-        qitaf_response_data = error_obj.get('response_data', {})
-        if qitaf_response_data:
-            response_code = qitaf_response_data.get('response_code')
-            result_response = {
-                "errors": {
-                    "message": Qitaf_response_object.get(response_code),
-                    "qitaf_code": response_code,
-                    "code": code
-
-                }
-            }
-            response_data = result_response
-
-    return response_flag, response_data
-
-
 class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
