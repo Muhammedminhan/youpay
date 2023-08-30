@@ -195,7 +195,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         except Exception as e:
             logger.error("Error in saving response data for : {}".format(e))
 
-    def verify_transaction(self, data):
+    def verify_transaction(self, data, **kwargs):
+
+        payment_method = kwargs.get("payment_method")
+
         serializer = PaymentVerifyDataSerializer(data=data)
         if serializer.is_valid():
             """Validate transaction data with youpay client"""
@@ -210,7 +213,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     message="API Client Does Not Exist or Inactive")
                 return return_data, status.HTTP_400_BAD_REQUEST
 
-            if transaction_obj.api_client.is_active is False:
+            if transaction_obj.api_client.is_active is True:
                 '''Skip verification if client is inactive'''
                 dummy_response = {
                     "is_verified": True,
@@ -237,22 +240,19 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     "API-SECRET": transaction_obj.api_client.api_secret,
                 }
 
-                verify_body = {
-                    "transaction_id": str(transaction_obj.transaction_id),
-                    "invoice_id": transaction_obj.invoice_id,
-                    "amount": str(transaction_obj.amount),
-                    "currency": transaction_obj.currency,
-                    "payment_method": transaction_obj.payment_method,
-                }
+                verify_body = self.prepair_client_verify_data(payment_method,
+                                                              transaction_obj)
 
-                self.update_amount_with_base_amount(transaction_obj,
-                                                    verify_body)
-
+                logger.info("Client verification request data {} ".format(
+                    verify_body))
                 response = self.verify_transaction_with_client(
                     url=client_verify_url, body=json.dumps(verify_body),
                     headers=verify_headers)
-                logger.info("Client verify request send data : {} response "
-                            "data{}".format(verify_body, response.text))
+                logger.info(
+                    "Client verify request send data : {} response "
+                    "data{} for transaction {}".format(
+                        verify_body, response.text,
+                        transaction_obj.transaction_id))
 
                 if response:
                     return_data = self.get_success_dict(
@@ -286,14 +286,21 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             )
             return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
 
-    def update_amount_with_base_amount(self, transaction_obj, verify_body):
+    def prepair_client_verify_data(self, payment_method, transaction_obj):
         # For payment methods = citi/Qitaf base amount is verified
-        if transaction_obj.payment_method in [
-            PAYMENT_METHOD_CITI_REWARDS,
-            PAYMENT_METHOD_QITAF
-        ]:
-            verify_body['amount'] = transaction_obj.base_amount
 
+        amount = transaction_obj.amount
+        if payment_method in [PAYMENT_METHOD_CITI_REWARDS,
+                              PAYMENT_METHOD_QITAF]:
+            amount = transaction_obj.base_amount
+
+        verify_body = {
+            "transaction_id": str(transaction_obj.transaction_id),
+            "invoice_id": transaction_obj.invoice_id,
+            "amount": str(amount),
+            "currency": transaction_obj.currency,
+            "payment_method": payment_method,
+        }
         return verify_body
 
     def get_api_client_keys(self, transaction_obj):
