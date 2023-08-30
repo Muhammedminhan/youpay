@@ -11,6 +11,7 @@ from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 from core.utils import checkout_decline_check
+from integrations.common import WebhookDataFormat
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
 
@@ -30,7 +31,7 @@ def get_transaction_object(payment_reference):
         return transaction_obj
 
 
-class WebhookListener(APIView):
+class WebhookListener(APIView, WebhookDataFormat):
     authentication_classes = (
         YoupayAuthentication,
     )
@@ -48,7 +49,6 @@ class WebhookListener(APIView):
 
             payment_reference = request_data.get('payment_reference', None)
             transaction_obj = get_transaction_object(payment_reference)
-
             if transaction_obj:
                 logger.info(
                     "In Webhook listner payment scheme for invoice {0}"
@@ -82,6 +82,12 @@ class WebhookListener(APIView):
                 transaction_obj.payment_scheme = request_data.get(
                     'payment_scheme',
                     None)
+                transaction_obj.issuer_bank = self.get_issuer_bank(
+                    request_data.get('api_response_data'))
+                transaction_obj.three_ds_check = self.get_three_ds(
+                    request_data.get('api_response_data'))
+                transaction_obj.cvv_check = self.get_cvv_check(
+                    request_data.get('api_response_data'))
                 transaction_obj.save()
                 data_to_update = self.prepare_youpay_transaction_update_data(
                     request_data, payment_reference)
@@ -128,7 +134,13 @@ class WebhookListener(APIView):
                     payment_id=request_data.get('payment_id',
                                                 None),
                     financial_action_response_data=request_data.get(
-                        'financial_action_response_data', None)
+                        'financial_action_response_data', None),
+                    issuer_bank=self.get_issuer_bank(request_data.get(
+                        'api_response_data')),
+                    three_ds_check=self.get_three_ds(request_data.get(
+                        'api_response_data')),
+                    cvv_check=self.get_cvv_check(request_data.get(
+                        'api_response_data'))
                 )
 
             logger.info("Payment scheme set is {0} for transaction"
@@ -209,7 +221,7 @@ class WebhookListener(APIView):
                 payment_reference=payment_reference)
             return transaction_obj
         except YouPayTransactionData.DoesNotExist:
-            logger.error(
+            logger.info(
                 "Unable to find youpay transaction object with payment"
                 "_reference {}".format(payment_reference))
             return None
