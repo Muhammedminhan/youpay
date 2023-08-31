@@ -387,7 +387,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     self.amount = paid_amount
                     update_data['amount'] = self.amount
 
-                redirect_url = payment_data.success_url
+                redirect_url = ('{}?transaction_id={}'.format(
+                    payment_data.success_url, payment_data.transaction_id))
                 is_success, is_redirect = True, True
 
             else:
