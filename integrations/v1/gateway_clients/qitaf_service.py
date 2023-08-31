@@ -371,7 +371,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
         is_full_redemption = response_data.get("is_full_redemption", False)
         if is_full_redemption is False:
-            """Handle qiTaf partial redemption response"""
+            # Handle qitaf partial redemption response
             redirect_url = response_data.get('url')
             is_success = True
             is_redirect = True

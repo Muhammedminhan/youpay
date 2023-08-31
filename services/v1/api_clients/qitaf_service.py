@@ -192,29 +192,8 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
     def post(self, request):
         """
         request for handling qitaf points redemption api
-
         1.full redemption
         2.partial redemption
-
-        body:
-
-        amount through card -- can take remaining balance from transaction amt
-
-        transaction_id
-        selected_amount
-        checkout_amount
-        pin_number
-
-
-        for card
-        is_save_user_token
-        card holder name
-        token  -- generated card token (eg:tok_4ysrgucqwwpero7rasfcprtevq)
-
-        for saved cards
-        token  -- saved card token (eg:src_4ysrgucqwwpero7rasfcprtevq)
-        cvv
-
         """
         try:
             logger.info("QitafRedeemPointsAPIView API triggered, request data"
@@ -237,7 +216,6 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "referance_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
                     "pin_number": validated_data.get('pin_number'),
                     "selected_amount": base_amount,
-                    # "selected_amount": validated_data.get('selected_amount'),
                     "checkout_amount": validated_data.get('checkout_amount'),
                     "is_save_user_token": validated_data.get(
                         'is_save_user_token'),
@@ -370,8 +348,8 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
             else:
                 response["message"] = "Transaction failed"
                 message = (
-                    "couldnt process qitaf Verification for transaction id {}, "
-                    "response : {}".format(transaction_id, response))
+                    "couldnt process qitaf Verification for transaction id {}"
+                    ", response : {}".format(transaction_id, response))
 
                 logger.error(message)
 
