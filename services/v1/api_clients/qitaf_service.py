@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import QITAF_REWARD_POINT_MIN_AMT
-from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN
+from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN, \
+    COMMON_ERROR_MESSAGE_EN_CODE
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
@@ -383,8 +384,8 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
 
     def format_b2c_response(self, data, code):
 
-        errors = data.get('errors')
-        results = data.get('results')
+        errors = data.get('errors', None)
+        results = data.get('results', None)
 
         if results:
             data.pop('results')
@@ -418,5 +419,5 @@ def qitaf_response_formatter(data, code):
 
     if not data.get('message'):
         data['message'] = COMMON_ERROR_MESSAGE_EN
-        data['code'] = 11111
+        data['code'] = COMMON_ERROR_MESSAGE_EN_CODE
     return data
