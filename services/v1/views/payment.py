@@ -286,7 +286,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
 
     def prepare_client_verify_data(self, payment_method, transaction_obj):
-        # For payment methods = citi/Qitaf base amount is verified
+        """
+        For payment methods citi/Qitaf there is no service charge and extra
+        charges so base amount is to be verified instead of amount
+        """
 
         amount = transaction_obj.amount
         if payment_method in [PAYMENT_METHOD_CITI_REWARDS,
