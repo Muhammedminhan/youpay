@@ -19,7 +19,7 @@ class YouPayResponse(object):
 
     SUCCESS = 1000
     UNKNOWN_ERR = 1002
-
+    PAYMENT_SUCCESS = 1003
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
     DUPLICATE_PAYMENT_VERIFICATION = 1006
@@ -131,6 +131,9 @@ class YouPayResponse(object):
             self.UNKNOWN_ERR: "Something went wrong",
             self.DATA_CORRUPTED: "Data corrupted",
             self.SUCCESS: "API request completed successfully",
+            self.PAYMENT_SUCCESS: "Transaction success",
+            self.PAYMENT_FAILED: "Payment failed",
+
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
             self.DUPLICATE_PAYMENT_VERIFICATION: (
@@ -149,9 +152,6 @@ class YouPayResponse(object):
             self.APPLE_PAY_STATUS_UPDATED_PAID: "Apple pay payment status "
                                                 "updated to paid",
             self.APPLE_PAY_REDIRECT: "Apple pay redirect",
-
-            self.PAYMENT_FAILED: "Payment failed",
-
             self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.TABBYPG_VERIFICATION_FAILED: "Tabbypg verification failed",
             self.TABBYPG_PAYMENT_REJECTED: (
