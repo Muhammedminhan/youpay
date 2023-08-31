@@ -33,7 +33,7 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
                 data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'qitaf_phone_number': qitaf_phone_number,
-                    'is_qitaf_enabled': str(True)
+                    'is_qitaf_enabled': True
                 }
                 qitaf_service = QitafServiceManager()
                 result = qitaf_service.update_qitaf_phone_number(data)
