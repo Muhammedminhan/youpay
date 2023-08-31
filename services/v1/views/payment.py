@@ -239,7 +239,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     "API-SECRET": transaction_obj.api_client.api_secret,
                 }
 
-                verify_body = self.prepair_client_verify_data(payment_method,
+                verify_body = self.prepare_client_verify_data(payment_method,
                                                               transaction_obj)
 
                 logger.info("Client verification request data {} ".format(
@@ -285,7 +285,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             )
             return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
 
-    def prepair_client_verify_data(self, payment_method, transaction_obj):
+    def prepare_client_verify_data(self, payment_method, transaction_obj):
         # For payment methods = citi/Qitaf base amount is verified
 
         amount = transaction_obj.amount

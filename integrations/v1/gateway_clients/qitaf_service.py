@@ -201,7 +201,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 request_type=PAYMENT_REQUEST_COLLECT_POINTS,
             )
 
-    def prepair_redeem_payload(self, transaction_data):
+    def prepare_redeem_payload(self, transaction_data):
         """
         prepares payload for qitaf redeem api
         """
@@ -247,7 +247,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.error(msg)
                 return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
 
-            payload.update(self.prepair_redeem_payload(transaction_data))
+            payload.update(self.prepare_redeem_payload(transaction_data))
             payload.pop('transaction_obj')
 
             url = self.qitaf_config.domain + QITAF_REDEEM_POINTS_API
@@ -387,7 +387,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     self.amount = paid_amount
                     update_data['amount'] = self.amount
 
-                redirect_url = payment_data.success_url
+                redirect_url = ('{}?transaction_id={}'.format(
+                    payment_data.success_url, payment_data.transaction_id))
                 is_success, is_redirect = True, True
 
             else:
