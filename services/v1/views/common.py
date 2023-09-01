@@ -5,7 +5,7 @@ from rest_framework import status
 
 from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
-    PAYMENT_GATEWAY_B2CPAYBACK, PURCHASE_PLATFORM_IOS,
+    PURCHASE_PLATFORM_IOS,
     PURCHASE_PLATFORM_ANDROID
 )
 from core.messages import (
@@ -203,8 +203,6 @@ class YouPayTransactionCRUD(object):
 
         If the currency is SAR then the entity value will be Yougotagift KSA
 
-        For ADCB → It will always be Yougotagift UAE
-
         For Happy Credits → It will be blank.
         """
         transaction_id = kwargs.get('transaction_id', None)
@@ -222,7 +220,7 @@ class YouPayTransactionCRUD(object):
         if payment_gateway == PAYMENT_GATEWAY_HAPPYCREDITS:
             settlement_entity = None
             return settlement_entity
-        elif currency == "AED" or payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+        elif currency == "AED":
             settlement_entity = YOUGOTAGIFT_UAE
         elif currency == "SAR":
             settlement_entity = YOUGOTAGIFT_KSA
