@@ -203,8 +203,6 @@ class YouPayTransactionCRUD(object):
 
         If the currency is SAR then the entity value will be Yougotagift KSA
 
-        For ADCB → It will always be Yougotagift UAE
-
         For Happy Credits → It will be blank.
         """
         transaction_id = kwargs.get('transaction_id', None)
