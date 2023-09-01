@@ -27,7 +27,7 @@ from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import RESPONSE_CODE_LIST
+from services.constants import RESPONSE_CODE_LIST, CURRENCY_UAE, CURRENCY_KSA
 from services.models import APIClient
 
 logger = logging.getLogger(__name__)
@@ -203,6 +203,8 @@ class YouPayTransactionCRUD(object):
 
         If the currency is SAR then the entity value will be Yougotagift KSA
 
+        For ADCB → It will always be Yougotagift UAE
+
         For Happy Credits → It will be blank.
         """
         transaction_id = kwargs.get('transaction_id', None)
@@ -220,9 +222,9 @@ class YouPayTransactionCRUD(object):
         if payment_gateway == PAYMENT_GATEWAY_HAPPYCREDITS:
             settlement_entity = None
             return settlement_entity
-        elif currency == "AED":
+        elif currency == CURRENCY_UAE:
             settlement_entity = YOUGOTAGIFT_UAE
-        elif currency == "SAR":
+        elif currency == CURRENCY_KSA:
             settlement_entity = YOUGOTAGIFT_KSA
         else:
             logger.error("Settlement entity not found for currency {}"
