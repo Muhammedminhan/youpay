@@ -76,6 +76,7 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'TabbyPGCreateSession',
     'AmazonPGAuthentication',
     'HappyCreditsDebitBalance',
+    'CitiGenerateOTPAPIView'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
@@ -84,3 +85,5 @@ VERIFY_PAYMENT_CLASSES = [
     'B2CPaybackVerify',
     'TabbyPGVerification'
 ]
+
+QITAF_REWARD_POINT_MIN_AMT = 10

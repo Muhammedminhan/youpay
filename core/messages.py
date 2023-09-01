@@ -22,3 +22,4 @@ IS_REDIRECT = 'is_redirect'
 IS_SUCCESS = "is_success"
 
 COMMON_ERROR_MESSAGE_EN = "Oops! Something went wrong with the system."
+COMMON_ERROR_MESSAGE_EN_CODE = 11111

@@ -13,7 +13,8 @@ from payments.constants import (PAYMENT_STATUS_INITIATED,
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
-                                AMAZONPG_STORE_CURRENCIES)
+                                AMAZONPG_STORE_CURRENCIES,
+                                QITAF_STORE_CURRENCIES, CITI_STORE_CURRENCIES)
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,7 @@ def get_payment_options(transaction_obj, gateways):
             code, gateway, is_guest, response_payment_options)
 
         response_payment_options = get_b2cpayback_payment_options(
-            code, store_currency, response_payment_options)
+            code, gateway, store_currency, response_payment_options)
 
         response_payment_options = get_tabbypg_payment_options(
             code, store_currency, response_payment_options)
@@ -175,11 +176,32 @@ def get_checkoutpg_payment_options(code, gateway, is_guest,
     return response_payment_options
 
 
-def get_b2cpayback_payment_options(code, store_currency,
+def get_b2cpayback_payment_options(code, gateway, store_currency,
                                    response_payment_options):
-    if code == B2CPAYBACK_HUB_CODE and (store_currency in
-                                        ADCBPG_STORE_CURRENCIES):
-        response_payment_options['adcb'] = True
+    if code == B2CPAYBACK_HUB_CODE:
+        """This will check only B2CPayback gateway"""
+        response_payment_options['adcb'] = False
+        response_payment_options['citi_rewards'] = False
+
+        if store_currency in ADCBPG_STORE_CURRENCIES:
+            response_payment_options['adcb'] = True
+
+        validation_json = gateway.validation_json
+
+        if validation_json:
+            is_citi_rewards_enabled = validation_json.get(
+                "is_citi_rewards_enabled", False)
+            is_qitaf_enabled = validation_json.get("is_qitaf_enabled", False)
+
+            (response_payment_options['qitaf'],
+             response_payment_options['citi_rewards']) = (False, False)
+
+            if store_currency in QITAF_STORE_CURRENCIES and is_qitaf_enabled:
+                response_payment_options['qitaf'] = True
+
+            if store_currency in CITI_STORE_CURRENCIES and is_citi_rewards_enabled:
+                response_payment_options['citi_rewards'] = True
+
     return response_payment_options
 
 
@@ -201,7 +223,6 @@ def get_amazonpg_payment_options(code, store_currency,
 
 def get_haapycredits_payment_options(code, response_payment_options,
                                      platform):
-
     # happycredits is active only for Android and IOS Platforms
     response_payment_options['happy_credits'] = False
 

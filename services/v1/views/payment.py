@@ -15,7 +15,9 @@ from core.utils import (encrypt_payment_data, decrypt_payment_data,
 from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
-                                PAYMENT_STATUS_PAID, ALLOW_EXPIRE_STATUS_LIST)
+                                PAYMENT_STATUS_PAID, ALLOW_EXPIRE_STATUS_LIST,
+                                PAYMENT_METHOD_CITI_REWARDS,
+                                PAYMENT_METHOD_QITAF)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -38,7 +40,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
     def __init__(self):
         self.payment_request_obj = None
         self.return_data = None
-
 
     def post(self, request):
         """
@@ -194,7 +195,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         except Exception as e:
             logger.error("Error in saving response data for : {}".format(e))
 
-    def verify_transaction(self, data):
+    def verify_transaction(self, data, **kwargs):
+
+        payment_method = kwargs.get("payment_method")
+
         serializer = PaymentVerifyDataSerializer(data=data)
         if serializer.is_valid():
             """Validate transaction data with youpay client"""
@@ -217,7 +221,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                 logger.info(
                     "Client is inactive, skipping payment verification with "
                     "API Client for : {}".format(transaction_id))
-
                 return dummy_response, status.HTTP_200_OK
 
             client_verify_url = transaction_obj.verify_url
@@ -236,18 +239,19 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     "API-SECRET": transaction_obj.api_client.api_secret,
                 }
 
-                verify_body = {
-                    "transaction_id": str(transaction_obj.transaction_id),
-                    "invoice_id": transaction_obj.invoice_id,
-                    "amount": str(transaction_obj.amount),
-                    "currency": transaction_obj.currency,
-                }
+                verify_body = self.prepare_client_verify_data(payment_method,
+                                                              transaction_obj)
 
+                logger.info("Client verification request data {} ".format(
+                    verify_body))
                 response = self.verify_transaction_with_client(
                     url=client_verify_url, body=json.dumps(verify_body),
                     headers=verify_headers)
-                logger.info("Client verify request send data : {}\nresponse "
-                            "data{}".format(verify_body, response.text))
+                logger.info(
+                    "Client verify request send data : {} response "
+                    "data{} for transaction {}".format(
+                        verify_body, response.text,
+                        transaction_obj.transaction_id))
 
                 if response:
                     return_data = self.get_success_dict(
@@ -281,6 +285,26 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             )
             return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
 
+    def prepare_client_verify_data(self, payment_method, transaction_obj):
+        """
+        For payment methods citi/Qitaf there is no service charge and extra
+        charges so base amount is to be verified instead of amount
+        """
+
+        amount = transaction_obj.amount
+        if payment_method in [PAYMENT_METHOD_CITI_REWARDS,
+                              PAYMENT_METHOD_QITAF]:
+            amount = transaction_obj.base_amount
+
+        verify_body = {
+            "transaction_id": str(transaction_obj.transaction_id),
+            "invoice_id": transaction_obj.invoice_id,
+            "amount": str(amount),
+            "currency": transaction_obj.currency,
+            "payment_method": payment_method,
+        }
+        return verify_body
+
     def get_api_client_keys(self, transaction_obj):
         api_key = ""
         api_secret = ""
@@ -303,6 +327,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         redirect_url = get_redirect_url(
             transaction_obj.redirect_url, transaction_obj.transaction_id)
         return redirect_url
+
+
 class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
     Test API endpoint for encrypting request data
@@ -387,7 +413,7 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
                              "is_redirect": True,
                              REDIRECT_URL: redirect_url,
                              "message": "Successfully expired transaction"}
-            
+
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error("Error in transaction expire api ", exc_info=e)

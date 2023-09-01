@@ -558,7 +558,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             'channel_code': youpay_transaction.channel_code,
             'invoice_id': youpay_transaction.invoice_id}
         response = requests.get(url, params=params)
-
+        logger.info(
+            "Checkout Verify API response for transaction {} is {}"
+            "".format(transaction_id, response.text))
         transaction_obj = self.get_youpay_transaction_data(transaction_id)
 
         # storing Youpay to payment gateway request and response data

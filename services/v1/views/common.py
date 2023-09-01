@@ -5,7 +5,7 @@ from rest_framework import status
 
 from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
-    PAYMENT_GATEWAY_B2CPAYBACK, PURCHASE_PLATFORM_IOS,
+    PURCHASE_PLATFORM_IOS,
     PURCHASE_PLATFORM_ANDROID
 )
 from core.messages import (
@@ -21,12 +21,13 @@ from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
                                 PAYMENT_STATUS_AUTHORIZED,
-                                PAYMENT_STATUS_REJECTED_RETRY)
+                                PAYMENT_STATUS_REJECTED_RETRY,
+                                PAYMENT_METHOD_QITAF)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import RESPONSE_CODE_LIST
+from services.constants import RESPONSE_CODE_LIST, CURRENCY_UAE, CURRENCY_KSA
 from services.models import APIClient
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,7 @@ class YouPayTransactionCRUD(object):
 
     def update_youpay_transaction_data(self, data):
         """Method to update youpay transaction data"""
+
         data_dict = {}
         transaction_id = data.get('transaction_id')
         data_dict['payment_reference'] = data.get('payment_reference', None)
@@ -136,6 +138,23 @@ class YouPayTransactionCRUD(object):
         data_dict['currency'] = data.get('currency', None)
         data_dict['is_payment_verified'] = data.get('is_payment_verified',
                                                     None)
+        data_dict['maximum_redeemable_points'] = data.get(
+            'maximum_redeemable_points', None)
+        data_dict['minimum_redeemable_points'] = data.get(
+            'minimum_redeemable_points', None)
+        data_dict['amount_conversion_rate'] = data.get(
+            'amount_conversion_rate', None)
+        data_dict['citi_order_id'] = data.get('citi_order_id', None)
+        data_dict['citi_phone_number'] = data.get('citi_phone_number', None)
+        data_dict['qitaf_phone_number'] = data.get('qitaf_phone_number', None)
+        data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', False)
+        data_dict['earned_point'] = data.get('earned_point', 0)
+
+        if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
+            # Amount is updating only for qitaf
+            amount = data.get('amount', None)
+            if amount:
+                data_dict['amount'] = amount
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
@@ -166,12 +185,15 @@ class YouPayTransactionCRUD(object):
                         update_calculated_gateway_charges)
                     update_calculated_gateway_charges.delay(
                         transaction_id=transaction_id)
+                return True
             else:
                 logger.error("unable to find the transaction object for {}"
                              "".format(transaction_id))
+                return False
         except Exception as e:
             logger.error("Unable to update the transaction object, {0}"
                          "".format(str(e)))
+            return False
 
     def get_settlement_entity(self, **kwargs):
         """
@@ -181,11 +203,8 @@ class YouPayTransactionCRUD(object):
 
         If the currency is SAR then the entity value will be Yougotagift KSA
 
-        For ADCB → It will always be Yougotagift UAE
-
         For Happy Credits → It will be blank.
         """
-
         transaction_id = kwargs.get('transaction_id', None)
         currency = kwargs.get('currency', None)
         payment_gateway = kwargs.get('payment_gateway', None)
@@ -201,9 +220,9 @@ class YouPayTransactionCRUD(object):
         if payment_gateway == PAYMENT_GATEWAY_HAPPYCREDITS:
             settlement_entity = None
             return settlement_entity
-        elif currency == "AED" or payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+        elif currency == CURRENCY_UAE:
             settlement_entity = YOUGOTAGIFT_UAE
-        elif currency == "SAR":
+        elif currency == CURRENCY_KSA:
             settlement_entity = YOUGOTAGIFT_KSA
         else:
             logger.error("Settlement entity not found for currency {}"

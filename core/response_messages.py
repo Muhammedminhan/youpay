@@ -14,11 +14,12 @@ class YouPayResponse(object):
     5XXX - for b2c
     6XXX - for youpay
     7xxx - for happy credits
+    8xxx - for qitaf
     """
 
     SUCCESS = 1000
     UNKNOWN_ERR = 1002
-
+    PAYMENT_SUCCESS = 1003
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
     DUPLICATE_PAYMENT_VERIFICATION = 1006
@@ -30,6 +31,7 @@ class YouPayResponse(object):
 
     TRANSACTION_ALREADY_CLOSED = 1600
     REQUIRED_DATA_MISSING = 1601
+    DATA_CORRUPTED = 1602
 
     """checkoutpg related begins"""
     CHECKOUTPG_CONNECTION_ERROR = 2003
@@ -92,6 +94,31 @@ class YouPayResponse(object):
     MISSING_CLIENT_INFO = 6000
     """Youpay related ends"""
 
+    """Citi rewards related begins"""
+    CITI_REWARDS_CONNECTION_ERROR = 8002
+    CITI_REWARDS_INSUFFICIENT_BALANCE = 8003
+    CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED = 8004
+    CITI_REWARDS_ALREADY_REDEEMED = 8005
+    CITI_REWARDS_VALIDATION_ERROR = 8006
+    CITI_REWARDS_INVALID_CUSTOMER = 8007
+    CITI_REWARDS_INVALID_OTP = 8008
+    CITI_REWARDS_USER_BLOCKED = 8009
+    """Citi rewards related ends"""
+
+    """Qitaf related begins"""
+    QITAF_CONNECTION_ERROR = 9002
+    QITAF_PHONE_NUMBER_SAVE_FAILED = 9003
+    QITAF_PHONE_NUMBER_SAVED = 9004
+    QITAF_PHONE_NUMBER_FAILED_TO_FETCH = 9005
+    QITAF_VERIFICATION_FAILED_TO_PROCESS = 9006
+    QITAF_VERIFICATION_FAILED = 9007
+    QITAF_VERIFICATION_EXCEPTION = 9008
+    QITAF_NOT_ENABLED = 9401
+    QITAF_REWARD_POINT_MIN_AMT_NOT_MET = 9403
+    QITAF_NOT_SUPPORTED = 9404
+
+    """Qitaf related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
@@ -102,7 +129,11 @@ class YouPayResponse(object):
 
         self.MESSAGE.update({
             self.UNKNOWN_ERR: "Something went wrong",
+            self.DATA_CORRUPTED: "Data corrupted",
             self.SUCCESS: "API request completed successfully",
+            self.PAYMENT_SUCCESS: "Transaction success",
+            self.PAYMENT_FAILED: "Payment failed",
+
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
             self.DUPLICATE_PAYMENT_VERIFICATION: (
@@ -121,9 +152,6 @@ class YouPayResponse(object):
             self.APPLE_PAY_STATUS_UPDATED_PAID: "Apple pay payment status "
                                                 "updated to paid",
             self.APPLE_PAY_REDIRECT: "Apple pay redirect",
-
-            self.PAYMENT_FAILED: "Payment failed",
-
             self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.TABBYPG_VERIFICATION_FAILED: "Tabbypg verification failed",
             self.TABBYPG_PAYMENT_REJECTED: (
@@ -132,6 +160,17 @@ class YouPayResponse(object):
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
+            self.QITAF_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.QITAF_PHONE_NUMBER_SAVE_FAILED: (
+                "Qitaf Phone number failed to save"),
+            self.QITAF_PHONE_NUMBER_SAVED: (
+                "Qitaf Phone number updated"),
+            self.QITAF_PHONE_NUMBER_FAILED_TO_FETCH: (
+                "Qitaf Phone number failed to fetch"),
+            self.QITAF_VERIFICATION_FAILED_TO_PROCESS: "Verification failed to process",
+            self.QITAF_VERIFICATION_FAILED: "Verification failed",
+            self.QITAF_VERIFICATION_EXCEPTION: "Verification failed.",
+            self.QITAF_NOT_SUPPORTED: "Qitaf Forbidden, or partial redemption not supported.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
@@ -147,6 +186,24 @@ class YouPayResponse(object):
             self.B2CPAYBACK_VERIFICATION_FAILED: "Response failed during b2c"
                                                  " verification",
             self.PRE_AUTH: "Authentication not approved"
+                           " verification",
+
+            self.CITI_REWARDS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.CITI_REWARDS_INSUFFICIENT_BALANCE: (
+                "You don't have enough points to make this transaction"),
+            self.CITI_REWARDS_OTP_EXPIRED_OR_ATTEMPTS_EXCEEDED: (
+                "Exceeded the limit. Please try again later"),
+            self.CITI_REWARDS_ALREADY_REDEEMED: (
+                "Transaction is already redeemed."),
+            self.CITI_REWARDS_VALIDATION_ERROR: (
+                "Missing or invalid Parameters"),
+            self.CITI_REWARDS_INVALID_CUSTOMER: (
+                "Invalid details, please try again"
+            ),
+            self.CITI_REWARDS_INVALID_OTP: "Invalid/Expired OTP",
+            self.CITI_REWARDS_USER_BLOCKED: (
+                "Exceeded the limit. Please try again later"
+            )
         })
 
     def get_400_message(self, message):
