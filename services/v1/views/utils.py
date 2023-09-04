@@ -201,7 +201,9 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
 
             if store_currency in CITI_STORE_CURRENCIES and is_citi_rewards_enabled:
                 response_payment_options['citi_rewards'] = True
-
+        else:
+            logger.warning("validation_json not setup for {}".format(
+                gateway.gateway_name))
     return response_payment_options
 
 
