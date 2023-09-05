@@ -235,13 +235,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             serializer = YouPayTransactionDataSerializer(self.transaction_obj)
             transaction_data = serializer.data
+            payload.update(self.prepare_redeem_payload(transaction_data))
+            payload.pop('transaction_obj')
 
             verify_response, verify_status = self.verify_transaction(
                 transaction_data, payment_method=PAYMENT_METHOD_QITAF)
-
-            is_verified = verify_response.get('is_verified', False)
-
-            if not is_verified:
+            if not verify_response:
                 msg = (
                     "Youpay Qitaf transaction verification failed for"
                     " transaction id {} response is : {} ".format(
@@ -249,8 +248,15 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.error(msg)
                 return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
 
-            payload.update(self.prepare_redeem_payload(transaction_data))
-            payload.pop('transaction_obj')
+            is_verified = verify_response.get('is_verified', False)
+            if not is_verified and verify_response:
+                msg = (
+                    "Youpay Qitaf transaction verification failed for"
+                    " transaction id {} response is : {} ".format(
+                        self.transaction_id, verify_response))
+                logger.error(msg)
+                self.response_data = verify_response
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
 
             url = self.qitaf_config.domain + QITAF_REDEEM_POINTS_API
             headers = self.get_payment_header()
