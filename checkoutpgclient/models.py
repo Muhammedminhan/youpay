@@ -140,7 +140,7 @@ class TransactionData(models.Model):
         max_length=10, null=True, blank=True,
         help_text='cvv check info.'
     )
-    three_ds_check = models.BooleanField(default=False)
+    three_ds_check = models.BooleanField(default=False, null=True, blank=True)
 
 @receiver(post_save, sender=TransactionData)
 def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
