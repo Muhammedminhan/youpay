@@ -256,6 +256,7 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error("Exception {}".format(str(e)), exc_info=True)
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

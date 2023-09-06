@@ -168,7 +168,7 @@ def get_checkoutpg_payment_options(code, gateway, is_guest,
             response_payment_options['applepay'] = applepay_flag
             response_payment_options['paypal'] = paypal_flag
         else:
-            logger.warning("validation_json not setup for {}".format(
+            logger.error("validation_json not setup for {}".format(
                 gateway.gateway_name))
 
         # Always active if checkout is active in API client
@@ -201,7 +201,9 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
 
             if store_currency in CITI_STORE_CURRENCIES and is_citi_rewards_enabled:
                 response_payment_options['citi_rewards'] = True
-
+        else:
+            logger.error("validation_json not setup for {}".format(
+                gateway.gateway_name))
     return response_payment_options
 
 

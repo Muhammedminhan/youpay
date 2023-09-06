@@ -43,6 +43,14 @@ class PaymentStatusCheckMiddleware(object):
     def process_view(self, request, view_func, view_args, view_kwargs):
 
         if request.resolver_match.view_name in CHECK_PAYMENT_STATUS_CLASSES:
+            '''
+            checks for
+            1. transaction exist or not
+            2. already paid or not
+            3. already cancelled or not
+            4. already expired or not
+            5. already reached max attempt or not 
+            '''
             from core.utils import decrypt_string
             from services.v1.views.common import (YouPayTransactionCRUD)
             youpay_obj = YouPayTransactionCRUD()
