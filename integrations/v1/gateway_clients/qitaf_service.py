@@ -23,7 +23,8 @@ from integrations.v1.serializers.qitafpg_serializer import (
 from payments.constants import (PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_DECLINED_RETRY,
                                 PAYMENT_STATUS_PENDING, PAYMENT_METHOD_QITAF,
-                                PAYMENT_METHOD_QITAFAND_CARD)
+                                PAYMENT_METHOD_QITAFAND_CARD,
+                                LANGUAGE_CODE_AR)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
@@ -232,6 +233,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             self.transaction_obj = self.request_data.get('transaction_obj')
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
+            language = self.transaction_obj.language
 
             serializer = YouPayTransactionDataSerializer(self.transaction_obj)
             transaction_data = serializer.data
@@ -284,8 +286,13 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.error("Error in qitaf redeem point api, {}"
                              "".format(response.text))
                 self.response_data = response.json()
+                if language == LANGUAGE_CODE_AR:
+                    message = self.response_data.get("response_text_ar")
+                else:
+                    message = self.response_data.get("response_text")
+
                 err_obj = {
-                    "message": self.response_data.get("response_text"),
+                    "message": message,
                     "code": self.response_data.get("response_code"),
                     "is_full_redemption": self.response_data.get(
                         "is_full_redemption")
