@@ -264,7 +264,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                         logger.info(
                             "Client verify url {} not "
                             "responding".format(client_verify_url))
-                        """Client verify url not responding"""
                         redirect_url = get_redirect_url(
                             transaction_obj.cancel_url, transaction_id)
 
