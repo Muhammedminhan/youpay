@@ -145,6 +145,12 @@ def calculate_checkoutpg_gateway_charge(**kwargs):
             transaction_obj.gateway_charge = gateway_charge
             transaction_obj.save()
         return gateway_charge
+
+    except YouPayTransactionData.DoesNotExist:
+        logger.info(
+            "Unable to store YouPayTransactionData with payment reference {}"
+            " to store checkoutpg gateway charges".format(payment_reference))
+
     except Exception as e:
         logger.error(
             "Unable to store checkoutpg gateway charges for transaction "
