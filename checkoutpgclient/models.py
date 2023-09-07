@@ -144,13 +144,13 @@ class TransactionData(models.Model):
 
 @receiver(post_save, sender=TransactionData)
 def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
-    logger.info("checkoutpg gateway charge calculating signal executing")
+    logger.info("checkoutpg gateway charge calculating signal executing for"
+                " {}".format(instance.payment_reference))
+    dct_args = {
+        "payment_reference": instance.payment_reference
+    }
+    calculate_checkoutpg_gateway_charge.delay(**dct_args)
     if instance.financial_action_response_data:
-        dct_args = {
-            "payment_reference": instance.payment_reference,
-            "financial_action_data": instance.financial_action_response_data
-        }
-        calculate_checkoutpg_gateway_charge.delay(**dct_args)
         financial_kwargs = {
             "pk": instance.id,
             "financial_action_data": instance.financial_action_response_data,
