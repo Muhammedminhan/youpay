@@ -1,8 +1,8 @@
 import json
 import logging
 
-from core.constants import PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS, \
-    QITAF_AVAILABLE_PLATFORM
+from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
+                            QITAF_AVAILABLE_PLATFORM)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
