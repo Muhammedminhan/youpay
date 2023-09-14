@@ -340,9 +340,7 @@ def process_checkoutpg_response_verification(**kwargs):
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
             qitaf_reward_point_obj = QitafCollectPointsAPIView()
-            youpay = YouPayTransactionCRUD()
-            youpay_transaction = youpay.get_youpay_transaction_data(
-                transaction_id)
+  
             response, code, qitaf_reward = qitaf_reward_point_obj.collect_reward_point(
                 youpay_transaction)
             logger.info("Checking for Reward Point for transaction : "
