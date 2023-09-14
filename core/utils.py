@@ -286,6 +286,23 @@ def process_checkoutpg_response_verification(**kwargs):
     payment_gateway = kwargs.get('payment_gateway')
     channel_code = kwargs.get('channel_code')
 
+    reference_from_checkout = response_data.get("reference")
+
+    youpay = YouPayTransactionCRUD()
+    youpay_transaction = youpay.get_youpay_transaction_data(
+        transaction_id)
+
+    youpay_payment_referance = youpay_transaction.payment_reference
+
+    if youpay_payment_referance != reference_from_checkout:
+        logger.error(
+            "Payment Referance mismatch found for transaction id {},"
+            " reference id from checkout {}, youpay referance {}"
+            "".format(transaction_id, reference_from_checkout,
+                      youpay_payment_referance))
+
+        return None, None
+
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
             response_data)
@@ -340,7 +357,7 @@ def process_checkoutpg_response_verification(**kwargs):
         {
             'transaction_id': transaction_id,
             "payment_status": payment_status,
-            "payment_reference": response_data.get("reference"),
+            "payment_reference": reference_from_checkout,
             "approved": response_data.get("approved"),
             "response_summary": response_data.get("response_summary"),
             "card_bin": response_data.get("card_bin"),
