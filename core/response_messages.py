@@ -114,6 +114,7 @@ class YouPayResponse(object):
     QITAF_VERIFICATION_FAILED = 9007
     QITAF_VERIFICATION_EXCEPTION = 9008
     QITAF_NOT_ENABLED = 9401
+    QITAF_ALREADY_COLLECTED = 9402
     QITAF_REWARD_POINT_MIN_AMT_NOT_MET = 9403
     QITAF_NOT_SUPPORTED = 9404
 
@@ -171,6 +172,7 @@ class YouPayResponse(object):
             self.QITAF_VERIFICATION_FAILED: "Verification failed",
             self.QITAF_VERIFICATION_EXCEPTION: "Verification failed.",
             self.QITAF_NOT_SUPPORTED: "Qitaf Forbidden, or partial redemption not supported.",
+            self.QITAF_ALREADY_COLLECTED: "Qitaf Reward collected Already.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
