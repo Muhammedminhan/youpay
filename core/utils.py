@@ -296,7 +296,11 @@ def process_checkoutpg_response_verification(**kwargs):
 
     youpay_payment_referance = youpay_transaction.payment_reference
 
-    if youpay_payment_referance != reference_from_checkout:
+    if ((youpay_payment_referance != reference_from_checkout) and
+            youpay_payment_referance):
+        '''during pre auth check with checkoutpg, youpay transaction data do
+         not contain payment reference'''
+
         logger.error(
             "Payment Referance mismatch found for transaction id {},"
             " reference id from checkout {}, youpay referance {}"
