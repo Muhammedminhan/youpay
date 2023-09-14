@@ -14,6 +14,8 @@ from django.conf import settings
 from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
+from core.messages import IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG, \
+    IS_SUCCESS
 from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
@@ -301,7 +303,16 @@ def process_checkoutpg_response_verification(**kwargs):
             "".format(transaction_id, reference_from_checkout,
                       youpay_payment_referance))
 
-        return None, None
+        redirect_url = (youpay_transaction.failure_url +
+                        '?transaction_id=' + transaction_id)
+        response_data = {
+            IS_REDIRECT: True,
+            REDIRECT_URL: redirect_url,
+            TRANSACTION_MSG: "Payment Failed",
+            IS_SUCCESS: False
+        }
+
+        return False, response_data
 
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
@@ -340,7 +351,7 @@ def process_checkoutpg_response_verification(**kwargs):
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
             qitaf_reward_point_obj = QitafCollectPointsAPIView()
-  
+
             response, code, qitaf_reward = qitaf_reward_point_obj.collect_reward_point(
                 youpay_transaction)
             logger.info("Checking for Reward Point for transaction : "
