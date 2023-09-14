@@ -308,7 +308,7 @@ def process_checkoutpg_response_verification(**kwargs):
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: "Payment Failed",
+            TRANSACTION_MSG: {"response_summary": "Payment Failed"},
             IS_SUCCESS: False
         }
 
