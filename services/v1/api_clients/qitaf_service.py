@@ -161,11 +161,6 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
 
         response_obj = YouPayResponse()
 
-        if not transaction_obj.is_qitaf_enabled:
-            logger.info("Failed for Reward point, Qitaf not enabled "
-                        "for ({}),".format(transaction_obj.transaction_id))
-            return None, response_obj.QITAF_NOT_ENABLED, 0
-
         if transaction_obj.earned_point:
             '''if already rewarded'''
             logger.info(
