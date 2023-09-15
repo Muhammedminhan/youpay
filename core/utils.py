@@ -352,17 +352,18 @@ def process_checkoutpg_response_verification(**kwargs):
 
         if payment_status == PAYMENT_STATUS_PAID:
             # Qitaf Reward Point
-            from services.v1.api_clients.qitaf_service import (
-                QitafCollectPointsAPIView)
-            qitaf_reward_point_obj = QitafCollectPointsAPIView()
+            if youpay_transaction.is_qitaf_enabled:
+                from services.v1.api_clients.qitaf_service import (
+                    QitafCollectPointsAPIView)
+                qitaf_reward_point_obj = QitafCollectPointsAPIView()
 
-            response, code, qitaf_reward = qitaf_reward_point_obj.collect_reward_point(
-                youpay_transaction)
-            logger.info("Checking for Reward Point for transaction : "
-                        "{}, response : {}, code : {}, Qitaf reward :"
-                        " {}".format(transaction_id,
-                                     response, code, qitaf_reward))
-            reward = qitaf_reward
+                response, code, qitaf_reward = qitaf_reward_point_obj.collect_reward_point(
+                    youpay_transaction)
+                logger.info("Checking for Reward Point for transaction : "
+                            "{}, response : {}, code : {}, Qitaf reward :"
+                            " {}".format(transaction_id,
+                                         response, code, qitaf_reward))
+                reward = qitaf_reward
 
     youpay_obj = YouPayTransactionCRUD()
 
