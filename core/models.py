@@ -1,5 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
+
+from payments.constants import PAYMENT_METHOD_CHOICES
 
 # Create your models here.
 
@@ -104,3 +107,25 @@ class Country(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return self.iso_code
+
+
+class PaymentMethod(AbstractDateTime, AbstractUserBase):
+    payment_method = models.CharField(
+        max_length=100,
+        choices=PAYMENT_METHOD_CHOICES,
+        help_text='Chosen payment method')
+    country = ArrayField(
+        models.CharField(max_length=3, null=True, blank=True, help_text=(
+            'List of store code')), null=True,
+        blank=True)
+    clients = models.ManyToManyField('services.APIClient', blank=True)
+    active = models.BooleanField(
+        default=False, help_text='Denotes whether the payment '
+                                 'method is active or not')
+    guest_user_enabled = models.BooleanField(
+        default=False, help_text='Denotes whether the payment method is '
+                                 'available for the guest user')
+    payment_gateway = models.ForeignKey(
+        'integrations.PaymentGateway', on_delete=models.CASCADE,
+        blank=True, null=True,
+        help_text='Payment gateway for the payment method')
