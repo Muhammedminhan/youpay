@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from payments.constants import PAYMENT_METHOD_CHOICES
@@ -114,10 +113,7 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
         max_length=100,
         choices=PAYMENT_METHOD_CHOICES,
         help_text='Chosen payment method')
-    country = ArrayField(
-        models.CharField(max_length=3, null=True, blank=True, help_text=(
-            'List of store code')), null=True,
-        blank=True)
+    country = models.ManyToManyField('core.Country', blank=True)
     clients = models.ManyToManyField('services.APIClient', blank=True)
     active = models.BooleanField(
         default=False, help_text='Denotes whether the payment '

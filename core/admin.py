@@ -59,12 +59,12 @@ class CountryAdmin(AdminAbstract):
 
 
 class PaymentMethodAdmin(AdminAbstract):
-    list_display = ('payment_method', 'country', 'active',
+    list_display = ('payment_method', 'active',
                     'guest_user_enabled', 'payment_gateway')
     search_fields = ('payment_method', 'country', 'clients')
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
                    'payment_gateway',)
-    filter_horizontal = ('clients',)
+    filter_horizontal = ('clients', 'country')
 
 
 admin.site.register(AppConfig, AppConfigAdmin)
