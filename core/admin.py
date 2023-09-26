@@ -1,9 +1,9 @@
 import logging
 
 from django.contrib import admin
-
-from .models import AppConfig, Currency, Country
 from django.core.cache import cache
+
+from .models import AppConfig, Currency, Country, PaymentMethod
 
 admin.site.site_header = 'YouPay Administration'
 
@@ -58,6 +58,16 @@ class CountryAdmin(AdminAbstract):
     raw_id_fields = ('currency',)
 
 
+class PaymentMethodAdmin(AdminAbstract):
+    list_display = ('payment_method', 'active',
+                    'guest_user_enabled', 'payment_gateway')
+    search_fields = ('payment_method', 'country', 'clients')
+    list_filter = ('payment_method', 'active', 'guest_user_enabled',
+                   'payment_gateway',)
+    filter_horizontal = ('clients', 'country')
+
+
 admin.site.register(AppConfig, AppConfigAdmin)
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(Country, CountryAdmin)
+admin.site.register(PaymentMethod, PaymentMethodAdmin)
