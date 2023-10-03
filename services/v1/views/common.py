@@ -177,7 +177,8 @@ class YouPayTransactionCRUD(object):
                 transaction_obj.save(update_fields=saved_fields)
                 logger.info(
                     "Transaction object updated successfully for {}"
-                    "".format(transaction_id))
+                    ", status :{}".format(transaction_id,
+                                          transaction_obj.payment_status))
 
                 if (transaction_obj.payment_status == PAYMENT_STATUS_PAID
                         and not transaction_obj.gateway_charge):
