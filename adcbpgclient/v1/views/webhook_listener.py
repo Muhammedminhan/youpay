@@ -110,7 +110,7 @@ class WebhookListener(APIView, WebhookDataFormat):
                     transaction_obj.cvv_check = self.get_cvv_check(
                         request_data.get('checkoutpg_response_data'))
                     transaction_obj.card_type = self.get_card_type(
-                        request_data.get('api_response_data'))
+                        request_data.get('checkoutpg_response_data'))
                 transaction_obj.save()
             else:
                 transaction_obj = ADCBTransactionData.objects.create(
