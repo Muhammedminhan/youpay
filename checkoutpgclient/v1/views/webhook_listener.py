@@ -155,14 +155,9 @@ class WebhookListener(APIView, WebhookDataFormat):
                 track_info = (track_info +
                               ",New Record created in checkoutpg client")
 
-            logger.info("Payment scheme set is {0} for transaction"
-                        " {1}".format(transaction_obj.payment_scheme,
-                                      transaction_obj.payment_reference))
             response_data = {'message': "Checkout webhook listener "
                                         "successfully processed data",
                              'status': True}
-            logger.info("Checkoutpg webhook successfully processed "
-                        "for invoice {}".format(invoice_pk))
 
             return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
