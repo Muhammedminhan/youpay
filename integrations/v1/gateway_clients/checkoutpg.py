@@ -408,8 +408,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 IS_REDIRECT):
             # pre-auth case
             logger.info(
-                "card payment pre auth response data {}".format(
-                    response_data))
+                "card payment pre auth response data {} for transaction {}"
+                "".format(response_data, self.transaction_id))
             is_pre_auth = True
             redirect, response_data = (
                 process_checkoutpg_response_verification(

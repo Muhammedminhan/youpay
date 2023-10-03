@@ -14,6 +14,8 @@ from django.conf import settings
 from django.core.cache import cache
 
 from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
+from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
+                           IS_SUCCESS)
 from core.models import AppConfig
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
@@ -286,6 +288,36 @@ def process_checkoutpg_response_verification(**kwargs):
     payment_gateway = kwargs.get('payment_gateway')
     channel_code = kwargs.get('channel_code')
 
+    reference_from_checkout = response_data.get("reference")
+
+    youpay = YouPayTransactionCRUD()
+    youpay_transaction = youpay.get_youpay_transaction_data(
+        transaction_id)
+
+    youpay_payment_referance = youpay_transaction.payment_reference
+
+    if ((youpay_payment_referance != reference_from_checkout) and
+            youpay_payment_referance):
+        '''during pre auth check with checkoutpg, youpay transaction data do
+         not contain payment reference'''
+
+        logger.error(
+            "Payment Referance mismatch found for transaction id {},"
+            " reference id from checkout {}, youpay referance {}"
+            "".format(transaction_id, reference_from_checkout,
+                      youpay_payment_referance))
+
+        redirect_url = (youpay_transaction.failure_url +
+                        '?transaction_id=' + transaction_id)
+        response_data = {
+            IS_REDIRECT: True,
+            REDIRECT_URL: redirect_url,
+            TRANSACTION_MSG: {"response_summary": "Payment Failed"},
+            IS_SUCCESS: False
+        }
+
+        return False, response_data
+
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
             response_data)
@@ -320,19 +352,19 @@ def process_checkoutpg_response_verification(**kwargs):
 
         if payment_status == PAYMENT_STATUS_PAID:
             # Qitaf Reward Point
-            from services.v1.api_clients.qitaf_service import (
-                QitafCollectPointsAPIView)
-            qitaf_reward_point_obj = QitafCollectPointsAPIView()
-            youpay = YouPayTransactionCRUD()
-            youpay_transaction = youpay.get_youpay_transaction_data(
-                transaction_id)
-            response, code, qitaf_reward = qitaf_reward_point_obj.collect_reward_point(
-                youpay_transaction)
-            logger.info("Checking for Reward Point for transaction : "
-                        "{}, response : {}, code : {}, Qitaf reward :"
-                        " {}".format(transaction_id,
-                                     response, code, qitaf_reward))
-            reward = qitaf_reward
+            if youpay_transaction.is_qitaf_enabled:
+                from services.v1.api_clients.qitaf_service import (
+                    QitafCollectPointsAPIView)
+                qitaf_reward_point_obj = QitafCollectPointsAPIView()
+
+                response, code, qitaf_reward = (
+                qitaf_reward_point_obj.collect_reward_point(
+                    youpay_transaction))
+                logger.info("Checking for Reward Point for transaction : "
+                            "{}, response : {}, code : {}, Qitaf reward :"
+                            " {}".format(transaction_id,
+                                         response, code, qitaf_reward))
+                reward = qitaf_reward
 
     youpay_obj = YouPayTransactionCRUD()
 
@@ -340,7 +372,7 @@ def process_checkoutpg_response_verification(**kwargs):
         {
             'transaction_id': transaction_id,
             "payment_status": payment_status,
-            "payment_reference": response_data.get("reference"),
+            "payment_reference": reference_from_checkout,
             "approved": response_data.get("approved"),
             "response_summary": response_data.get("response_summary"),
             "card_bin": response_data.get("card_bin"),
