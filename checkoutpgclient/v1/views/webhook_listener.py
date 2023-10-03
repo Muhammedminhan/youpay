@@ -99,6 +99,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                 data_to_update = self.prepare_youpay_transaction_update_data(
                     request_data, payment_reference)
 
+                transaction_id = data_to_update.get('transaction_id')
+
                 if data_to_update:
                     is_youpay_updated = checkout_obj.update_youpay_transaction_data(
                         data_to_update)
@@ -161,7 +163,8 @@ class WebhookListener(APIView, WebhookDataFormat):
 
             return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
-            logger.error("Checkoutpg webhook failed with error {}".format(e))
+            logger.error("Checkoutpg webhook failed with error {}".format(e),
+                         exc_info=True)
             response_data = {'message': "Data not  updated", 'status': False}
             track_info = track_info + ", Exception occurred :" + str(e)
             return self.pg_response('HTTP_500_INTERNAL_SERVER_ERROR',
@@ -200,6 +203,7 @@ class WebhookListener(APIView, WebhookDataFormat):
         payment_status, is_payment_verified = checkout_decline_check(
             request_data)
         try:
+            print("\n\npayment reference ", payment_reference)
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(
                     payment_reference))
@@ -223,7 +227,7 @@ class WebhookListener(APIView, WebhookDataFormat):
                 return data_to_update
             else:
                 logger.info(
-                    "Transaction object not found for payment referance "
+                    "Transaction object not found for payment reference "
                     "{}".format(payment_reference))
                 return None
         except Exception as e:
