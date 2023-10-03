@@ -102,7 +102,7 @@ class WebhookListener(APIView, WebhookDataFormat):
                 if data_to_update:
                     is_youpay_updated = checkout_obj.update_youpay_transaction_data(
                         data_to_update)
-                    track_info = (track_info + ", youpay update status :{}" +
+                    track_info = (track_info + ", youpay update status :" +
                                   str(is_youpay_updated))
             else:
                 transaction_obj = TransactionData.objects.create(
