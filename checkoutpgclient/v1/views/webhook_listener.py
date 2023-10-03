@@ -203,7 +203,6 @@ class WebhookListener(APIView, WebhookDataFormat):
         payment_status, is_payment_verified = checkout_decline_check(
             request_data)
         try:
-            print("\n\npayment reference ", payment_reference)
             transaction_obj = (
                 self.get_youpay_transaction_data_with_payment_reference(
                     payment_reference))
