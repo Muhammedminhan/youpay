@@ -155,6 +155,10 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         help_text='cvv check info.'
     )
     three_ds_check = models.BooleanField(default=False, null=True, blank=True)
+    card_type = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text='Card type info from checkout.com'
+    )
 
 
 @receiver(post_save, sender=ADCBTransactionData)

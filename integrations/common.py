@@ -11,3 +11,7 @@ class WebhookDataFormat(object):
     def get_cvv_check(self, response_data):
         cvv_check = response_data.get("source", {}).get("cvv_check")
         return cvv_check
+
+    def get_card_type(self, response_data):
+        card_type = response_data.get("source", {}).get("card_type")
+        return card_type

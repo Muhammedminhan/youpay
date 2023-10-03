@@ -88,6 +88,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     request_data.get('api_response_data'))
                 transaction_obj.cvv_check = self.get_cvv_check(
                     request_data.get('api_response_data'))
+                transaction_obj.card_type = self.get_card_type(
+                    request_data.get('api_response_data'))
                 transaction_obj.save()
                 data_to_update = self.prepare_youpay_transaction_update_data(
                     request_data, payment_reference)
@@ -140,6 +142,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     three_ds_check=self.get_three_ds(request_data.get(
                         'api_response_data')),
                     cvv_check=self.get_cvv_check(request_data.get(
+                        'api_response_data')),
+                    card_type=self.get_card_type(request_data.get(
                         'api_response_data'))
                 )
 
