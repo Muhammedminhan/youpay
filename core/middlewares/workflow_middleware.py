@@ -68,8 +68,9 @@ class PaymentStatusCheckMiddleware(object):
                     transaction_id = decrypt_string(
                         data.get('transaction_id', None))
 
-                    logger.info("Middleware : {} Started for {}".format(
-                        view_name, transaction_id))
+                    logger.info(
+                        "Middleware : {} Request {} Started for {}".format(
+                            request.method, view_name, transaction_id))
 
                     transaction_obj = youpay_obj.get_youpay_transaction_data(
                         transaction_id)
@@ -117,8 +118,8 @@ class PaymentStatusCheckMiddleware(object):
                 self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
 
             finally:
-                logger.info("Middleware : {} Ended for {}".format(
-                    view_name, transaction_id))
+                logger.info("Middleware : {} Request {} Ended for {}".format(
+                    request.method, view_name, transaction_id))
 
     def get_payment_response(
             self, redirect_url, transaction_message, youpay_message_obj,
