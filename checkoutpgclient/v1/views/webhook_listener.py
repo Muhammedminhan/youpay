@@ -11,6 +11,7 @@ from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 from core.utils import checkout_decline_check
+from integrations.common import WebhookDataFormat
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
 
@@ -30,13 +31,19 @@ def get_transaction_object(payment_reference):
         return transaction_obj
 
 
-class WebhookListener(APIView):
+class WebhookListener(APIView, WebhookDataFormat):
     authentication_classes = (
         YoupayAuthentication,
     )
 
     def post(self, request):
         request_data = json.loads(request.data)
+        transaction_id = None
+        invoice_id = None
+        payment_status = None
+        payment_reference = None
+        track_info = None
+        is_youpay_updated = False
         try:
             checkout_obj = CheckoutpgManager()
 
@@ -48,14 +55,13 @@ class WebhookListener(APIView):
 
             payment_reference = request_data.get('payment_reference', None)
             transaction_obj = get_transaction_object(payment_reference)
+            payment_status = str(request_data.get('status', None))
+
+            track_info = "Webhook received "
 
             if transaction_obj:
-                logger.info(
-                    "In Webhook listner payment scheme for invoice {0}"
-                    " is {1}".format(invoice_pk,
-                                     transaction_obj.payment_scheme))
                 transaction_obj.approved = request_data.get('approved')
-                transaction_obj.status = str(request_data.get('status'))
+                transaction_obj.status = payment_status
                 transaction_obj.auth_code = str(
                     request_data.get('auth_code'))
                 transaction_obj.response_summary = str(
@@ -82,12 +88,24 @@ class WebhookListener(APIView):
                 transaction_obj.payment_scheme = request_data.get(
                     'payment_scheme',
                     None)
+                transaction_obj.issuer_bank = self.get_issuer_bank(
+                    request_data.get('api_response_data'))
+                transaction_obj.three_ds_check = self.get_three_ds(
+                    request_data.get('api_response_data'))
+                transaction_obj.cvv_check = self.get_cvv_check(
+                    request_data.get('api_response_data'))
                 transaction_obj.save()
+                track_info = track_info + ", checkoutpg client updated"
                 data_to_update = self.prepare_youpay_transaction_update_data(
                     request_data, payment_reference)
+
+                transaction_id = data_to_update.get('transaction_id')
+
                 if data_to_update:
-                    checkout_obj.update_youpay_transaction_data(
+                    is_youpay_updated = checkout_obj.update_youpay_transaction_data(
                         data_to_update)
+                    track_info = (track_info + ", youpay update status :" +
+                                  str(is_youpay_updated))
             else:
                 transaction_obj = TransactionData.objects.create(
                     invoice_id=invoice_pk,
@@ -111,7 +129,7 @@ class WebhookListener(APIView):
                     is_notification=request_data.get('is_notification',
                                                      None),
                     approved=request_data.get('approved', None),
-                    status=str(request_data.get('status', None)),
+                    status=payment_status,
                     auth_code=str(request_data.get('auth_code', None)),
                     response_summary=str(
                         request_data.get('response_summary', None)),
@@ -128,24 +146,37 @@ class WebhookListener(APIView):
                     payment_id=request_data.get('payment_id',
                                                 None),
                     financial_action_response_data=request_data.get(
-                        'financial_action_response_data', None)
+                        'financial_action_response_data', None),
+                    issuer_bank=self.get_issuer_bank(request_data.get(
+                        'api_response_data')),
+                    three_ds_check=self.get_three_ds(request_data.get(
+                        'api_response_data')),
+                    cvv_check=self.get_cvv_check(request_data.get(
+                        'api_response_data'))
                 )
+                track_info = (track_info +
+                              ",New Record created in checkoutpg client")
 
-            logger.info("Payment scheme set is {0} for transaction"
-                        " {1}".format(transaction_obj.payment_scheme,
-                                      transaction_obj.payment_reference))
             response_data = {'message': "Checkout webhook listener "
                                         "successfully processed data",
                              'status': True}
-            logger.info("Checkoutpg webhook successfully processed "
-                        "for invoice {}".format(invoice_pk))
 
             return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
-            logger.error("Checkoutpg webhook failed with error {}".format(e))
+            logger.error("Checkoutpg webhook failed with error {}".format(e),
+                         exc_info=True)
             response_data = {'message': "Data not  updated", 'status': False}
+            track_info = track_info + ", Exception occurred :" + str(e)
             return self.pg_response('HTTP_500_INTERNAL_SERVER_ERROR',
                                     data=response_data)
+        finally:
+            logger.info(
+                "Checkoutpg Webhook received for transaction id :{}, "
+                "payment_reference :{}, invoice :{}, status :{}, request data"
+                " :{}, is_youpay_updated :{}, Track info : {}".format(
+                    transaction_id, payment_reference, invoice_id,
+                    payment_status, request_data, is_youpay_updated,
+                    track_info))
 
     def get_invoice_id(self, paymentrefernce):
         paymentrefernce = paymentrefernce.split('-')
@@ -195,7 +226,7 @@ class WebhookListener(APIView):
                 return data_to_update
             else:
                 logger.info(
-                    "Transaction object not found for payment referance "
+                    "Transaction object not found for payment reference "
                     "{}".format(payment_reference))
                 return None
         except Exception as e:
@@ -209,7 +240,7 @@ class WebhookListener(APIView):
                 payment_reference=payment_reference)
             return transaction_obj
         except YouPayTransactionData.DoesNotExist:
-            logger.error(
+            logger.info(
                 "Unable to find youpay transaction object with payment"
                 "_reference {}".format(payment_reference))
             return None

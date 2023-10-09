@@ -206,12 +206,13 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
         ('Payment details', {
-            'fields': ('amount', 'currency', 'country_code', 'transaction_id',
-                       'payment_reference', 'settlement_entity',
-                       'payment_gateway', 'channel_code', 'payment_method',
-                       'payment_scheme', 'platform', 'response_summary',
-                       'service_fee', 'base_amount', 'VAT_amount',
-                       'gateway_charge', 'is_payment_verified'
+            'fields': ('amount', 'amount_in_aed', 'currency', 'country_code',
+                       'transaction_id', 'payment_reference',
+                       'settlement_entity', 'payment_gateway',
+                       'channel_code', 'payment_method', 'payment_scheme',
+                       'platform', 'response_summary', 'service_fee',
+                       'base_amount', 'VAT_amount', 'gateway_charge',
+                       'is_payment_verified'
                        )
         }),
         ('URLs', {
@@ -227,6 +228,12 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
                        'is_full_redemption',
+                       )
+        }),
+        ('CITI transaction details', {
+            'fields': ('maximum_redeemable_points',
+                       'minimum_redeemable_points', 'amount_conversion_rate',
+                       'citi_order_id', 'citi_phone_number'
                        )
         }),
         ('Happycredits transaction details', {

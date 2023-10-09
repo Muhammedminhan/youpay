@@ -1,15 +1,16 @@
 import logging
+
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from payments.constants import MODEL_NAME_TRANSACTIONDATA
-from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
-                        PAYMENT_STATUS_PAID, PAYMENT_METHOD_CHOICES,
-                        PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
-                        PAYMENT_SCHEME_NONE)
 from payments.tasks import (calculate_checkoutpg_gateway_charge,
                             common_update_financial_action_charges)
+from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
+                        PAYMENT_METHOD_CHOICES,
+                        PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
+                        PAYMENT_SCHEME_NONE)
 
 logger = logging.getLogger(__name__)
 
@@ -132,20 +133,36 @@ class TransactionData(models.Model):
     entity_id = models.CharField(
         max_length=40, null=True, blank=True,
         help_text='The unique id related to the merchant account')
+    issuer_bank = models.CharField(
+        max_length=200, null=True, blank=True,
+        help_text='Denotes the card issued bank.'
+    )
+    cvv_check = models.CharField(
+        max_length=10, null=True, blank=True,
+        help_text='cvv check info.'
+    )
+    three_ds_check = models.BooleanField(default=False, null=True, blank=True)
 
 
 @receiver(post_save, sender=TransactionData)
 def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
-    logger.info("checkoutpg gateway charge calculating signal executing")
-    if instance.financial_action_response_data:
+    try:
+        logger.info(
+            "checkoutpg gateway charge calculating signal executing for"
+            " {}".format(instance.payment_reference))
         dct_args = {
-            "payment_reference": instance.payment_reference,
-            "financial_action_data": instance.financial_action_response_data
+            "payment_reference": instance.payment_reference
         }
         calculate_checkoutpg_gateway_charge.delay(**dct_args)
-        financial_kwargs = {
-            "pk": instance.id,
-            "financial_action_data": instance.financial_action_response_data,
-            "model_name": MODEL_NAME_TRANSACTIONDATA
-        }
-        common_update_financial_action_charges.delay(**financial_kwargs)
+        if instance.financial_action_response_data:
+            financial_kwargs = {
+                "pk": instance.id,
+                "financial_action_data": instance.financial_action_response_data,
+                "model_name": MODEL_NAME_TRANSACTIONDATA
+            }
+            common_update_financial_action_charges.delay(**financial_kwargs)
+    except Exception as e:
+        logger.error(
+            "Exception on calculate_checkout_gateway_charge for "
+            "payment reference {}, error :{}".format(
+                instance.payment_reference, str(e)), exc_info=True)

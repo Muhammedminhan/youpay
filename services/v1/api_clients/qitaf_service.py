@@ -6,7 +6,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import QITAF_REWARD_POINT_MIN_AMT
-from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN
+from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN, \
+    COMMON_ERROR_MESSAGE_EN_CODE
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
@@ -32,7 +33,7 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
                 data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'qitaf_phone_number': qitaf_phone_number,
-                    'is_qitaf_enabled': str(True)
+                    'is_qitaf_enabled': True
                 }
                 qitaf_service = QitafServiceManager()
                 result = qitaf_service.update_qitaf_phone_number(data)
@@ -159,17 +160,15 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
         }
 
         response_obj = YouPayResponse()
-        if not (transaction_obj.is_qitaf_enabled and
-                (not transaction_obj.earned_point)):
-            '''if qitaf not enabled or already rewarded, this will check for
-             already rewarded or qitaf is enabled'''
 
-            logger.error(
-                "Failed for Reward point, qitaf enabled ({}) or already "
-                "rewarded ({}) {}".format(transaction_obj.is_qitaf_enabled,
-                                          transaction_obj.transaction_id,
-                                          transaction_obj.earned_point))
-            return None, response_obj.QITAF_NOT_ENABLED, 0
+        if transaction_obj.earned_point:
+            '''if already rewarded'''
+            logger.info(
+                "Failed for Reward point, reward already collected "
+                "for ({}), rewarded point {}".format(
+                    transaction_obj.transaction_id,
+                    transaction_obj.earned_point))
+            return None, response_obj.QITAF_ALREADY_COLLECTED, 0
 
         if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
             logger.info("Qitaf RewardPoint Failed for {} ".format(
@@ -192,29 +191,8 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
     def post(self, request):
         """
         request for handling qitaf points redemption api
-
         1.full redemption
         2.partial redemption
-
-        body:
-
-        amount through card -- can take remaining balance from transaction amt
-
-        transaction_id
-        selected_amount
-        checkout_amount
-        pin_number
-
-
-        for card
-        is_save_user_token
-        card holder name
-        token  -- generated card token (eg:tok_4ysrgucqwwpero7rasfcprtevq)
-
-        for saved cards
-        token  -- saved card token (eg:src_4ysrgucqwwpero7rasfcprtevq)
-        cvv
-
         """
         try:
             logger.info("QitafRedeemPointsAPIView API triggered, request data"
@@ -237,7 +215,6 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "referance_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
                     "pin_number": validated_data.get('pin_number'),
                     "selected_amount": base_amount,
-                    # "selected_amount": validated_data.get('selected_amount'),
                     "checkout_amount": validated_data.get('checkout_amount'),
                     "is_save_user_token": validated_data.get(
                         'is_save_user_token'),
@@ -277,6 +254,7 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            logger.error("Exception {}".format(str(e)), exc_info=True)
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
@@ -364,14 +342,15 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
                 logger.info(
                     "Qitaf Verification successful, payment status true for"
                     " transaction {}".format(transaction_id))
-                response['message'] = "Transaction successful"
+
+                response['message'] = self.response_obj.PAYMENT_SUCCESS
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
             else:
-                response["message"] = "Transaction failed"
+                response["message"] = self.response_obj.PAYMENT_FAILED
                 message = (
-                    "couldnt process qitaf Verification for transaction id {}, "
-                    "response : {}".format(transaction_id, response))
+                    "couldnt process qitaf Verification for transaction id {}"
+                    ", response : {}".format(transaction_id, response))
 
                 logger.error(message)
 
@@ -404,8 +383,8 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
 
     def format_b2c_response(self, data, code):
 
-        errors = data.get('errors')
-        results = data.get('results')
+        errors = data.get('errors', None)
+        results = data.get('results', None)
 
         if results:
             data.pop('results')
@@ -439,5 +418,5 @@ def qitaf_response_formatter(data, code):
 
     if not data.get('message'):
         data['message'] = COMMON_ERROR_MESSAGE_EN
-        data['code'] = 11111
+        data['code'] = COMMON_ERROR_MESSAGE_EN_CODE
     return data

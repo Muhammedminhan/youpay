@@ -23,6 +23,7 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
     card_type = serializers.SerializerMethodField()
     token = serializers.SerializerMethodField()
     channel_code = serializers.SerializerMethodField()
+    amount_in_aed = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -98,6 +99,17 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
                 data.get('transaction_data').get("currency")).get(
                 data.get('transaction_data').get("platform").upper())
         return channel_code
+
+    def get_amount_in_aed(self, data):
+        """
+        method to fetch the amount in aed value from the transaction data
+        """
+        amount = data.get("transaction_data", {}).get("amount_in_aed")
+        if not amount:
+            amount = 0
+        else:
+            amount = str(amount)
+        return amount
 
 
 class ApplepayPaymentDataSerializer(serializers.ModelSerializer):

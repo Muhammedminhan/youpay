@@ -196,98 +196,106 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             logger.error("Error in saving response data for : {}".format(e))
 
     def verify_transaction(self, data, **kwargs):
+        try:
 
-        payment_method = kwargs.get("payment_method")
+            payment_method = kwargs.get("payment_method")
 
-        serializer = PaymentVerifyDataSerializer(data=data)
-        if serializer.is_valid():
-            """Validate transaction data with youpay client"""
-            transaction_id = serializer.validated_data.get(
-                'transaction_id')
-            transaction_obj = self.get_youpay_transaction_data(
-                transaction_id)
+            serializer = PaymentVerifyDataSerializer(data=data)
+            if serializer.is_valid():
+                """Validate transaction data with youpay client"""
+                transaction_id = serializer.validated_data.get(
+                    'transaction_id')
+                transaction_obj = self.get_youpay_transaction_data(
+                    transaction_id)
 
-            if transaction_obj.api_client is None:
-                """Client does not exist"""
-                return_data = self.get_400_message(
-                    message="API Client Does Not Exist or Inactive")
-                return return_data, status.HTTP_400_BAD_REQUEST
+                if transaction_obj.api_client is None:
+                    """Client does not exist"""
+                    return_data = self.get_400_message(
+                        message="API Client Does Not Exist or Inactive")
+                    return return_data, status.HTTP_400_BAD_REQUEST
 
-            if transaction_obj.api_client.is_active is False:
-                '''Skip verification if client is inactive'''
-                dummy_response = {
-                    "is_verified": True,
-                }
-                logger.info(
-                    "Client is inactive, skipping payment verification with "
-                    "API Client for : {}".format(transaction_id))
-
-                return dummy_response, status.HTTP_200_OK
-
-            client_verify_url = transaction_obj.verify_url
-            if client_verify_url is None or client_verify_url == "":
-                return_data = self.get_400_message(
-                    message="Please configure client verify url")
-                return return_data, status.HTTP_400_BAD_REQUEST
-            else:
-                """
-                Verify transaction with client by calling verify url
-                """
-
-                verify_headers = {
-                    'Accept': 'application/json',
-                    "API-KEY": transaction_obj.api_client.api_key,
-                    "API-SECRET": transaction_obj.api_client.api_secret,
-                }
-
-                verify_body = self.prepair_client_verify_data(payment_method,
-                                                              transaction_obj)
-
-                logger.info("Client verification request data {} ".format(
-                    verify_body))
-                response = self.verify_transaction_with_client(
-                    url=client_verify_url, body=json.dumps(verify_body),
-                    headers=verify_headers)
-                logger.info(
-                    "Client verify request send data : {} response "
-                    "data{} for transaction {}".format(
-                        verify_body, response.text,
-                        transaction_obj.transaction_id))
-
-                if response:
-                    return_data = self.get_success_dict(
-                        code=self.SUCCESS,
-                        success_dict=response.json()
-                    )
-                    return return_data, status.HTTP_200_OK
-                else:
-                    logger.info(
-                        "Client verify url {} not "
-                        "responding".format(client_verify_url))
-                    """Client verify url not responding"""
-                    redirect_url = get_redirect_url(
-                        transaction_obj.cancel_url, transaction_id)
-
-                    # Preparing response data as per the payment API response
-                    data = {
-                        "is_redirect": True,
-                        "is_success": False,
-                        "redirect_url": redirect_url,
-                        "message": self.MESSAGE.get(
-                            self.CLIENT_TRANSACTION_VERIFICATION_FAILED),
-                        "code": self.CLIENT_TRANSACTION_VERIFICATION_FAILED,
+                if transaction_obj.api_client.is_active is False:
+                    '''Skip verification if client is inactive'''
+                    dummy_response = {
+                        "is_verified": True,
                     }
-                    return data, status.HTTP_400_BAD_REQUEST
+                    logger.info(
+                        "Client is inactive, skipping payment verification with "
+                        "API Client for : {}".format(transaction_id))
+                    return dummy_response, status.HTTP_200_OK
 
-        else:
-            response_data = self.get_error_dict(
-                error_code=self.UNKNOWN_ERR,
-                serializer_error=serializer.errors,
-            )
-            return response_data.get('errors'), status.HTTP_400_BAD_REQUEST
+                client_verify_url = transaction_obj.verify_url
+                if client_verify_url is None or client_verify_url == "":
+                    return_data = self.get_400_message(
+                        message="Please configure client verify url")
+                    return return_data, status.HTTP_400_BAD_REQUEST
+                else:
+                    """
+                    Verify transaction with client by calling verify url
+                    """
 
-    def prepair_client_verify_data(self, payment_method, transaction_obj):
-        # For payment methods = citi/Qitaf base amount is verified
+                    verify_headers = {
+                        'Accept': 'application/json',
+                        "API-KEY": transaction_obj.api_client.api_key,
+                        "API-SECRET": transaction_obj.api_client.api_secret,
+                    }
+
+                    verify_body = self.prepare_client_verify_data(
+                        payment_method, transaction_obj)
+
+                    logger.info("Client verification request data {} ".format(
+                        verify_body))
+                    response = self.verify_transaction_with_client(
+                        url=client_verify_url, body=json.dumps(verify_body),
+                        headers=verify_headers)
+                    logger.info(
+                        "Client verifying on {}, request send data : {}"
+                        " response data{} for transaction {}".format(
+                            client_verify_url, verify_body, response.text,
+                            transaction_obj.transaction_id))
+
+                    if response:
+                        return_data = self.get_success_dict(
+                            code=self.SUCCESS,
+                            success_dict=response.json()
+                        )
+                        return return_data, status.HTTP_200_OK
+                    else:
+                        logger.info(
+                            "Client verify url {} not "
+                            "responding".format(client_verify_url))
+                        redirect_url = get_redirect_url(
+                            transaction_obj.cancel_url, transaction_id)
+
+                        # Preparing response data as per the payment API response
+                        data = {
+                            "is_redirect": True,
+                            "is_success": False,
+                            "redirect_url": redirect_url,
+                            "message": self.MESSAGE.get(
+                                self.CLIENT_TRANSACTION_VERIFICATION_FAILED),
+                            "code": self.CLIENT_TRANSACTION_VERIFICATION_FAILED,
+                        }
+                        return data, status.HTTP_400_BAD_REQUEST
+
+            else:
+                response_data = self.get_error_dict(
+                    error_code=self.UNKNOWN_ERR,
+                    serializer_error=serializer.errors,
+                )
+                return response_data.get(
+                    'errors'), status.HTTP_400_BAD_REQUEST
+        except Exception as e:
+            logger.error(
+                "Excepction occured during client verification {}".format(
+                    str(e)))
+            return None, status.HTTP_400_BAD_REQUEST
+
+    def prepare_client_verify_data(self, payment_method, transaction_obj):
+        """
+        For payment methods citi/Qitaf there is no service charge and extra
+        charges so base amount is to be verified instead of amount
+        """
 
         amount = transaction_obj.amount
         if payment_method in [PAYMENT_METHOD_CITI_REWARDS,

@@ -488,6 +488,16 @@ class ArchivedYouPayTransactionData(models.Model):
         decimal_places=4, max_digits=12, null=True, blank=True)
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True)
+    maximum_redeemable_points = models.IntegerField(
+        null=True, blank=True)
+    minimum_redeemable_points = models.IntegerField(
+        null=True, blank=True)
+    amount_conversion_rate = models.DecimalField(
+        null=True, blank=True, decimal_places=10, max_digits=12)
+    citi_order_id = models.CharField(
+        max_length=300, null=True, blank=True)
+    citi_phone_number = models.CharField(
+        max_length=20, null=True, blank=True)
 
     cart_amount = models.DecimalField(decimal_places=4, max_digits=12,
                                       null=True, blank=True)
@@ -525,6 +535,8 @@ class ArchivedYouPayTransactionData(models.Model):
         choices=SETTLEMENT_ENTITY_CHOICES)
     is_guest = models.BooleanField(default=False, db_index=True)
     is_payment_verified = models.BooleanField(default=False, db_index=True)
+    amount_in_aed = models.DecimalField(decimal_places=4, max_digits=12,
+                                        null=True, blank=True, db_index=True)
     qitaf_phone_number = models.CharField(max_length=20, null=True,
                                           blank=True, db_index=True)
     is_qitaf_enabled = models.BooleanField(default=False, db_index=True, )

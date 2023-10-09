@@ -76,7 +76,8 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'TabbyPGCreateSession',
     'AmazonPGAuthentication',
     'HappyCreditsDebitBalance',
-    'CitiGenerateOTPAPIView'
+    'CitiGenerateOTPAPIView',
+    'QitafRedeemPointsAPIView'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
@@ -87,3 +88,8 @@ VERIFY_PAYMENT_CLASSES = [
 ]
 
 QITAF_REWARD_POINT_MIN_AMT = 10
+
+QITAF_AVAILABLE_PLATFORM = [
+    PURCHASE_PLATFORM_WEB,
+    PURCHASE_PLATFORM_MWEB
+]

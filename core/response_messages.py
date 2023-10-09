@@ -19,7 +19,7 @@ class YouPayResponse(object):
 
     SUCCESS = 1000
     UNKNOWN_ERR = 1002
-
+    PAYMENT_SUCCESS = 1003
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
     DUPLICATE_PAYMENT_VERIFICATION = 1006
@@ -114,6 +114,7 @@ class YouPayResponse(object):
     QITAF_VERIFICATION_FAILED = 9007
     QITAF_VERIFICATION_EXCEPTION = 9008
     QITAF_NOT_ENABLED = 9401
+    QITAF_ALREADY_COLLECTED = 9402
     QITAF_REWARD_POINT_MIN_AMT_NOT_MET = 9403
     QITAF_NOT_SUPPORTED = 9404
 
@@ -131,6 +132,9 @@ class YouPayResponse(object):
             self.UNKNOWN_ERR: "Something went wrong",
             self.DATA_CORRUPTED: "Data corrupted",
             self.SUCCESS: "API request completed successfully",
+            self.PAYMENT_SUCCESS: "Transaction success",
+            self.PAYMENT_FAILED: "Payment failed",
+
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
             self.DUPLICATE_PAYMENT_VERIFICATION: (
@@ -149,9 +153,6 @@ class YouPayResponse(object):
             self.APPLE_PAY_STATUS_UPDATED_PAID: "Apple pay payment status "
                                                 "updated to paid",
             self.APPLE_PAY_REDIRECT: "Apple pay redirect",
-
-            self.PAYMENT_FAILED: "Payment failed",
-
             self.TABBYPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.TABBYPG_VERIFICATION_FAILED: "Tabbypg verification failed",
             self.TABBYPG_PAYMENT_REJECTED: (
@@ -171,6 +172,7 @@ class YouPayResponse(object):
             self.QITAF_VERIFICATION_FAILED: "Verification failed",
             self.QITAF_VERIFICATION_EXCEPTION: "Verification failed.",
             self.QITAF_NOT_SUPPORTED: "Qitaf Forbidden, or partial redemption not supported.",
+            self.QITAF_ALREADY_COLLECTED: "Qitaf Reward collected Already.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),

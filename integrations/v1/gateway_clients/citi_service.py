@@ -64,10 +64,10 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
             return None
 
     def generate_otp(self, data):
-        logger.info("generate otp triggered at the client")
         """
         calls citi rewards point otp generating api and returns the balance
         """
+        logger.info("generate otp triggered at the client")
         transaction_data = data.get('transaction_data')
         self.transaction_id = transaction_data.get('transaction_id')
         self.payment_status = transaction_data.get('payment_status')
@@ -80,13 +80,13 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
         """if transaction is verified then proceed with payment"""
         try:
             if verify_status == status.HTTP_200_OK and is_verified:
-                logger.info("generate otp verified ")
                 if self.citi_reward_config:
-                    logger.info("generate otp got configurations ")
                     payment_data = self.get_generate_otp_data(data)
                     logger.info(
-                        "Youpay sending payment data to citi rewards point"
-                        " generate otp api is {}".format(payment_data))
+                        "Youpay sending payment data for {} to citi rewards "
+                        "point generate otp api is {}".format(
+                            self.transaction_id, payment_data))
+
                     payload = json.dumps(payment_data)
                     url = (self.citi_reward_config.domain +
                            CITI_GENERATE_OTP_API)
@@ -112,7 +112,6 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
 
                     if response:
                         response_data = response.json()
-
                         logger.info("citi rewards generate otp api "
                                     "response: {}".format(response_data))
                         if (response.status_code == 200 and
@@ -161,8 +160,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                         ),
                         "citi_phone_number": self.otp_mobile
                     })
-                    return (None,
-                            self.CITI_REWARDS_CONNECTION_ERROR)
+                    return None, self.CITI_REWARDS_CONNECTION_ERROR
                 else:
                     logger.error(CITI_REWARDS_CONNECTION_ERROR_MESSAGE)
                     return None, self.CITI_REWARDS_CONNECTION_ERROR

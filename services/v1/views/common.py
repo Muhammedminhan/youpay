@@ -5,7 +5,7 @@ from rest_framework import status
 
 from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
-    PAYMENT_GATEWAY_B2CPAYBACK, PURCHASE_PLATFORM_IOS,
+    PURCHASE_PLATFORM_IOS,
     PURCHASE_PLATFORM_ANDROID
 )
 from core.messages import (
@@ -27,7 +27,7 @@ from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import RESPONSE_CODE_LIST
+from services.constants import RESPONSE_CODE_LIST, CURRENCY_UAE, CURRENCY_KSA
 from services.models import APIClient
 
 logger = logging.getLogger(__name__)
@@ -144,16 +144,15 @@ class YouPayTransactionCRUD(object):
             'minimum_redeemable_points', None)
         data_dict['amount_conversion_rate'] = data.get(
             'amount_conversion_rate', None)
-        data_dict['citi_order_id'] = data.get(
-            'citi_order_id', None)
+        data_dict['citi_order_id'] = data.get('citi_order_id', None)
         data_dict['citi_phone_number'] = data.get('citi_phone_number', None)
         data_dict['qitaf_phone_number'] = data.get('qitaf_phone_number', None)
         data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', False)
         data_dict['earned_point'] = data.get('earned_point', 0)
 
         if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
-            #     Amount is updating only in qitaf
-            amount = data.get('amount', )
+            # Amount is updating only for qitaf
+            amount = data.get('amount', None)
             if amount:
                 data_dict['amount'] = amount
 
@@ -178,7 +177,8 @@ class YouPayTransactionCRUD(object):
                 transaction_obj.save(update_fields=saved_fields)
                 logger.info(
                     "Transaction object updated successfully for {}"
-                    "".format(transaction_id))
+                    ", status :{}".format(transaction_id,
+                                          transaction_obj.payment_status))
 
                 if (transaction_obj.payment_status == PAYMENT_STATUS_PAID
                         and not transaction_obj.gateway_charge):
@@ -204,8 +204,6 @@ class YouPayTransactionCRUD(object):
 
         If the currency is SAR then the entity value will be Yougotagift KSA
 
-        For ADCB → It will always be Yougotagift UAE
-
         For Happy Credits → It will be blank.
         """
         transaction_id = kwargs.get('transaction_id', None)
@@ -223,9 +221,9 @@ class YouPayTransactionCRUD(object):
         if payment_gateway == PAYMENT_GATEWAY_HAPPYCREDITS:
             settlement_entity = None
             return settlement_entity
-        elif currency == "AED" or payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+        elif currency == CURRENCY_UAE:
             settlement_entity = YOUGOTAGIFT_UAE
-        elif currency == "SAR":
+        elif currency == CURRENCY_KSA:
             settlement_entity = YOUGOTAGIFT_KSA
         else:
             logger.error("Settlement entity not found for currency {}"
