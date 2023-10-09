@@ -126,6 +126,9 @@ class ConfigViewSet(ViewSet):
                         qitaf_config = self.get_qitaf_config(
                             qitaf_obj, transaction)
 
+                        citi_config = self.get_citi_config(payment_options,
+                                                           transaction)
+
                         response_data = self.retrieve_response(
                             api_client=api_client,
                             payment_options=payment_options,
@@ -137,7 +140,8 @@ class ConfigViewSet(ViewSet):
                             announcements_dict=announcements_dict,
                             status_code=status_code,
                             paypal_config=paypal_config,
-                            qitaf_config=qitaf_config
+                            qitaf_config=qitaf_config,
+                            citi_config=citi_config
                         )
 
                         data = self.response_obj.get_success_dict(
@@ -189,6 +193,7 @@ class ConfigViewSet(ViewSet):
         applepay_config = kwargs.get('applepay_config', None)
         paypal_config = kwargs.get('paypal_config', None)
         qitaf_config = kwargs.get('qitaf_config', None)
+        citi_config = kwargs.get('citi_config', None)
 
         amount = None
         currency = None
@@ -257,6 +262,7 @@ class ConfigViewSet(ViewSet):
                 "cart_base_amount": cart_base_amount,
 
                 "qitaf_config": qitaf_config,
+                "citi_config": citi_config,
 
                 "redirect_url": redirect_url,
                 "announcements": announcements_dict,
@@ -341,6 +347,20 @@ class ConfigViewSet(ViewSet):
             return qitaf_config
         else:
             return None
+
+    def get_citi_config(self, payment_option, transaction):
+        """
+        returns citi configurations
+        """
+        base_value = transaction.base_amount
+        citi_allowed = False
+        if base_value % 100 == 0:
+            citi_allowed = True
+        citi_config = {
+            'citi_allowed': citi_allowed
+        }
+        return citi_config
+
 
 class ClientStaticFilesAPI(APIView):
     """
