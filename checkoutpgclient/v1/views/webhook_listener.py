@@ -94,6 +94,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     request_data.get('api_response_data'))
                 transaction_obj.cvv_check = self.get_cvv_check(
                     request_data.get('api_response_data'))
+                transaction_obj.card_type = self.get_card_type(
+                    request_data.get('api_response_data'))
                 transaction_obj.save()
                 track_info = track_info + ", checkoutpg client updated"
                 data_to_update = self.prepare_youpay_transaction_update_data(
@@ -152,6 +154,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     three_ds_check=self.get_three_ds(request_data.get(
                         'api_response_data')),
                     cvv_check=self.get_cvv_check(request_data.get(
+                        'api_response_data')),
+                    card_type=self.get_card_type(request_data.get(
                         'api_response_data'))
                 )
                 track_info = (track_info +
