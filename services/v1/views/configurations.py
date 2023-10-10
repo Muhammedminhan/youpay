@@ -126,8 +126,9 @@ class ConfigViewSet(ViewSet):
                         qitaf_config = self.get_qitaf_config(
                             qitaf_obj, transaction)
 
-                        citi_config = self.get_citi_config(payment_options,
-                                                           transaction)
+                        citi_config = self.check_citi_allowed_denominations(
+                            payment_options,
+                            transaction)
 
                         response_data = self.retrieve_response(
                             api_client=api_client,
@@ -348,7 +349,7 @@ class ConfigViewSet(ViewSet):
         else:
             return None
 
-    def get_citi_config(self, payment_option, transaction):
+    def check_citi_allowed_denominations(self, payment_option, transaction):
         """
         returns citi configurations
         """
