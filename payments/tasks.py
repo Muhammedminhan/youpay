@@ -149,22 +149,31 @@ def calculate_checkoutpg_gateway_charge(**kwargs):
 def update_calculated_gateway_charges(transaction_id):
     logger.info("storing gateway charge for id {} started"
                 "".format(transaction_id))
+    message = None
     if transaction_id:
-        transaction_crud_obj = YouPayTransactionCRUD()
-        transaction_obj = transaction_crud_obj.get_youpay_transaction_data(
-            transaction_id)
         try:
+            transaction_crud_obj = YouPayTransactionCRUD()
+            transaction_obj = transaction_crud_obj.get_youpay_transaction_data(
+                transaction_id)
             if transaction_obj:
                 gateway_charges = calculate_gateway_charges(transaction_obj)
                 if gateway_charges:
                     transaction_obj.gateway_charge = gateway_charges
                     transaction_obj.save()
+                    message = "Transaction object saved"
+                else:
+                    message = "No Gateway charges"
+            else:
+                message = "No transaction_obj"
+
         except Exception as e:
-            logger.error(
-                "Unable to store gateway charges for transaction "
-                "{} with error {}".format(
-                    transaction_obj.transaction_id, str(e)))
-        logger.info("storing gateway charge to transaction table completed")
+            message = ("Unable to store gateway charges for transaction "
+                       "{} with error {}".format(transaction_id, str(e)))
+            logger.error(message)
+
+    logger.info(
+        "storing gateway charge to transaction table completed, {}".format(
+            message))
 
 
 def get_gateway_charges(payment_mode):
@@ -210,12 +219,15 @@ def calculate_gateway_charges(transaction_obj):
                     ))
                 # total amount = adcb charge + card charge
                 logger.info("adcb card and points fee charges {} and "
-                            "{}".format(checkoutpg_gateway_charges,
-                                        points_charges))
+                            "{} for transaction {}".format(
+                    checkoutpg_gateway_charges,
+                    points_charges, transaction_obj.transaction_id))
                 total_charges = (Decimal(points_charges) +
                                  Decimal(checkoutpg_gateway_charges))
-                logger.info("total charges for card and points "
-                            "{}".format(total_charges))
+                logger.info(
+                    "total charges for card and points for transaction  "
+                    "{} is {}".format(transaction_obj.transaction_id,
+                                      total_charges))
                 return total_charges
             if (payment_method == PAYMENT_METHOD_ADCB_CARD_ONLY and
                     adcb_obj.financial_action_response_data):
