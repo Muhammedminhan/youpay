@@ -10,7 +10,6 @@ from django.dispatch import receiver
 from core.constants import (PAYMENT_GATEWAY_CHOICES,
                             PURCHASE_PLATFORM_CHOICES,
                             PAYMENT_REQUEST_LANGUAGE_CHOICES)
-from core.exceptions import ClientWebhookFailed
 from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
 from payments.constants import (
@@ -290,26 +289,20 @@ def update_client(sender, instance, created, **kwargs):
     """
     Signal to send webhook for client on each transaction
     """
-    try:
-        from services.v1.views.client_webhook import ClientService
-        service = ClientService()
-        payment_transaction = YouPayTransactionData.objects.get(
-            id=instance.id)
+    from services.v1.views.client_webhook import ClientService
+    service = ClientService()
+    payment_transaction = YouPayTransactionData.objects.get(
+        id=instance.id)
 
-        if instance.previous_status != instance.payment_status:
-            # logger for youpay status update
-            logger.info(
-                "Payment status updated for transaction ({}) : {} --> {}"
-                "".format(instance.transaction_id,
-                          instance.previous_status,
-                          instance.payment_status))
+    if instance.previous_status != instance.payment_status:
+        # logger for youpay status update
+        logger.info("Payment status updated for transaction ({}) : {} --> {}"
+                    "".format(instance.transaction_id,
+                              instance.previous_status,
+                              instance.payment_status))
 
-        transaction.on_commit(
-            lambda: service.webhook_service(payment_transaction))
-
-    except ClientWebhookFailed as e:
-        logger.error("Excepction occured  {} on send webhook to client for "
-                     "{}, ".format(str(e), instance.transaction_id))
+    transaction.on_commit(
+        lambda: service.webhook_service(payment_transaction))
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):
