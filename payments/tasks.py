@@ -172,8 +172,8 @@ def update_calculated_gateway_charges(transaction_id):
             logger.error(message)
 
     logger.info(
-        "storing gateway charge to transaction table completed, {}".format(
-            message))
+        "storing gateway charge to transaction table completed for {}, {}"
+        "".format(transaction_id, message))
 
 
 def get_gateway_charges(payment_mode):
