@@ -47,8 +47,3 @@ class TransactionAlreadyVerified(Exception):
 class TransactionMaxAttemptReached(Exception):
     """Exception to be raised when transaction Max attempt reached."""
     pass
-
-
-class ClientWebhookFailed(Exception):
-    """Exception to be raised when validation fails."""
-    pass
