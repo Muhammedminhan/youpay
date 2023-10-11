@@ -101,9 +101,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                 data_to_update = self.prepare_youpay_transaction_update_data(
                     request_data, payment_reference)
 
-                transaction_id = data_to_update.get('transaction_id')
-
                 if data_to_update:
+                    transaction_id = data_to_update.get('transaction_id')
                     is_youpay_updated = checkout_obj.update_youpay_transaction_data(
                         data_to_update)
                     track_info = (track_info + ", youpay update status :" +
