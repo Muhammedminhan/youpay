@@ -308,7 +308,11 @@ def update_client(sender, instance, created, **kwargs):
             lambda: service.webhook_service(payment_transaction))
 
     except ClientWebhookFailed as e:
-        logger.error("Excepction occured  {} on send webhook to client for "
+        logger.error("Exception occurred  {} on send webhook to client for "
+                     "{}, ".format(str(e), instance.transaction_id))
+
+    except Exception as e:
+        logger.error("Exception occurred  {} on signal update_client for "
                      "{}, ".format(str(e), instance.transaction_id))
 
 
