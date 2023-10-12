@@ -5,6 +5,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from payments.constants import MODEL_NAME_TRANSACTIONDATA
+from payments.models import YouPayTransactionData
 from payments.tasks import (calculate_checkoutpg_gateway_charge,
                             common_update_financial_action_charges)
 from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
@@ -146,6 +147,11 @@ class TransactionData(models.Model):
         max_length=20, null=True, blank=True,
         help_text='Card type info from checkout.com'
     )
+    checkout_response_code = models.CharField(
+        max_length=50, null=True, blank=True,
+        help_text='response code from checkoutpg'
+    )
+    is_gcc_card = models.BooleanField(default=False, null=True, blank=True)
 
 
 @receiver(post_save, sender=TransactionData)
@@ -170,3 +176,89 @@ def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
             "Exception on calculate_checkout_gateway_charge for "
             "payment reference {}, error :{}".format(
                 instance.payment_reference, str(e)), exc_info=True)
+
+
+@receiver(post_save, sender=TransactionData)
+def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
+                                                 **kwargs):
+    payment_reference = None
+    transaction_id = None
+    is_success, is_youpay_updated = False, False
+
+    try:
+        payment_reference = instance.payment_reference
+
+        data_to_update = prepare_youpay_transaction_update_data(
+            instance, payment_reference)
+
+        if data_to_update:
+            transaction_id = data_to_update.get('transaction_id')
+            from integrations.v1.gateway_clients.checkoutpg import (
+                CheckoutpgManager)
+
+            checkout_obj = CheckoutpgManager()
+            is_youpay_updated = checkout_obj.update_youpay_transaction_data(
+                data_to_update)
+            is_success = True
+    except Exception as e:
+        logger.error(
+            "Exception : Checkoutpg TransactionData post_save for "
+            "payment reference {}, error :{}".format(
+                payment_reference, str(e)), exc_info=True)
+        is_success = False
+    finally:
+        logger.info(
+            "Checkoutpg TransactionData post_save Triggered for tid {}, "
+            "reference {}, is_completed {}, youpay updated {}".format(
+                transaction_id, payment_reference, is_success,
+                is_youpay_updated))
+
+
+def prepare_youpay_transaction_update_data(instance, payment_reference):
+
+    from core.utils import checkout_decline_check
+    payment_status, is_payment_verified = checkout_decline_check(
+        {'response_code': instance.checkout_response_code,
+         'status': instance.status})
+
+    try:
+        transaction_obj = (get_youpay_transaction_data_with_payment_reference(
+            payment_reference))
+        if transaction_obj:
+            data_to_update = {
+                'transaction_id': transaction_obj.transaction_id,
+                "payment_status": (
+                    payment_status.lower() if payment_status else None),
+                "payment_reference": instance.payment_reference,
+                "approved": instance.approved,
+                "response_summary": instance.response_summary,
+                "card_bin": instance.card_bin,
+                "card_last4": instance.card_last4,
+                'payment_scheme': instance.payment_scheme,
+                'is_gcc_card': instance.is_gcc_card,
+                'card_issuer_country': instance.card_issuer_country,
+                'is_fraud': instance.is_fraud,
+                'is_flagged': instance.is_flagged,
+                'gateway_charge': 0
+            }
+            return data_to_update
+        else:
+            logger.info(
+                "Transaction object not found for payment reference "
+                "{}".format(payment_reference))
+            return None
+    except Exception as e:
+        logger.error("Error while preparing data for youpay transaction "
+                     "update {}".format(e), exc_info=True)
+
+
+def get_youpay_transaction_data_with_payment_reference(payment_reference):
+    try:
+        transaction_obj = YouPayTransactionData.objects.get(
+            payment_reference=payment_reference)
+        return transaction_obj
+    except YouPayTransactionData.DoesNotExist:
+        logger.info(
+            "Unable to find youpay transaction object with payment"
+            "_reference {}".format(payment_reference))
+        return None

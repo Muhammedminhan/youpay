@@ -12,7 +12,6 @@ from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 from core.utils import checkout_decline_check
 from integrations.common import WebhookDataFormat
-from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
@@ -43,15 +42,10 @@ class WebhookListener(APIView, WebhookDataFormat):
         payment_status = None
         payment_reference = None
         track_info = None
-        is_youpay_updated = False
         try:
-            checkout_obj = CheckoutpgManager()
 
             invoice_pk = self.get_invoice_id(
                 str(request_data.get('payment_reference', None)))
-
-            logger.info("Checkoutpg webhook received {} for invoice :{}"
-                        "".format(request_data, invoice_pk))
 
             payment_reference = request_data.get('payment_reference', None)
             transaction_obj = get_transaction_object(payment_reference)
@@ -62,10 +56,13 @@ class WebhookListener(APIView, WebhookDataFormat):
             if transaction_obj:
                 transaction_obj.approved = request_data.get('approved')
                 transaction_obj.status = payment_status
+                transaction_obj.is_gcc_card = request_data.get('is_gcc_card')
                 transaction_obj.auth_code = str(
                     request_data.get('auth_code'))
                 transaction_obj.response_summary = str(
                     request_data.get('response_summary'))
+                transaction_obj.checkout_response_code = str(request_data.get(
+                    'checkout_response_code'))
                 transaction_obj.api_response_data = request_data.get(
                     'api_response_data')
                 transaction_obj.payment_reference = str(
@@ -98,16 +95,7 @@ class WebhookListener(APIView, WebhookDataFormat):
                     request_data.get('api_response_data'))
                 transaction_obj.save()
                 track_info = track_info + ", checkoutpg client updated"
-                data_to_update = self.prepare_youpay_transaction_update_data(
-                    request_data, payment_reference)
 
-                transaction_id = data_to_update.get('transaction_id')
-
-                if data_to_update:
-                    is_youpay_updated = checkout_obj.update_youpay_transaction_data(
-                        data_to_update)
-                    track_info = (track_info + ", youpay update status :" +
-                                  str(is_youpay_updated))
             else:
                 transaction_obj = TransactionData.objects.create(
                     invoice_id=invoice_pk,
@@ -177,10 +165,9 @@ class WebhookListener(APIView, WebhookDataFormat):
             logger.info(
                 "Checkoutpg Webhook received for transaction id :{}, "
                 "payment_reference :{}, invoice :{}, status :{}, request data"
-                " :{}, is_youpay_updated :{}, Track info : {}".format(
+                " :{}, Track info : {}".format(
                     transaction_id, payment_reference, invoice_id,
-                    payment_status, request_data, is_youpay_updated,
-                    track_info))
+                    payment_status, request_data, track_info))
 
     def get_invoice_id(self, paymentrefernce):
         paymentrefernce = paymentrefernce.split('-')
