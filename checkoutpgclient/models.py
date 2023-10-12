@@ -6,8 +6,7 @@ from django.dispatch import receiver
 
 from payments.constants import MODEL_NAME_TRANSACTIONDATA
 from payments.models import YouPayTransactionData
-from payments.tasks import (calculate_checkoutpg_gateway_charge,
-                            common_update_financial_action_charges)
+from payments.tasks import (common_update_financial_action_charges)
 from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_METHOD_CHOICES,
                         PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
@@ -160,10 +159,7 @@ def calculate_checkout_gateway_charge(sender, instance, created, **kwargs):
         logger.info(
             "checkoutpg gateway charge calculating signal executing for"
             " {}".format(instance.payment_reference))
-        dct_args = {
-            "payment_reference": instance.payment_reference
-        }
-        calculate_checkoutpg_gateway_charge.delay(**dct_args)
+
         if instance.financial_action_response_data:
             financial_kwargs = {
                 "pk": instance.id,

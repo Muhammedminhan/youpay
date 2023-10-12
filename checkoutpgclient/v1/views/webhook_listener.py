@@ -10,9 +10,7 @@ from rest_framework.views import APIView
 from checkoutpgclient.constants import PAYMENT_METHOD_CARD
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
-from core.utils import checkout_decline_check
 from integrations.common import WebhookDataFormat
-from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
 
@@ -185,53 +183,3 @@ class WebhookListener(APIView, WebhookDataFormat):
             },
             content_type='application/json'
         )
-
-    def prepare_youpay_transaction_update_data(self, request_data,
-                                               payment_reference):
-        request_data['response_code'] = request_data.get(
-            'checkout_response_code', None)
-
-        payment_status, is_payment_verified = checkout_decline_check(
-            request_data)
-        try:
-            transaction_obj = (
-                self.get_youpay_transaction_data_with_payment_reference(
-                    payment_reference))
-            if transaction_obj:
-                data_to_update = {
-                    'transaction_id': transaction_obj.transaction_id,
-                    "payment_status": (
-                        payment_status.lower() if payment_status else None),
-                    "payment_reference": request_data.get("reference"),
-                    "approved": request_data.get("approved"),
-                    "response_summary": request_data.get("response_summary"),
-                    "card_bin": request_data.get("card_bin"),
-                    "card_last4": request_data.get("card_last4"),
-                    'payment_scheme': request_data.get("payment_scheme"),
-                    'is_gcc_card': request_data.get("is_gcc_card"),
-                    'card_issuer_country': request_data.get(
-                        "card_issuer_country"),
-                    'is_fraud': request_data.get("is_fraud"),
-                    'is_flagged': request_data.get("is_flagged"),
-                }
-                return data_to_update
-            else:
-                logger.info(
-                    "Transaction object not found for payment reference "
-                    "{}".format(payment_reference))
-                return None
-        except Exception as e:
-            logger.error("Error while preparing data for youpay transaction "
-                         "update {}".format(e))
-
-    def get_youpay_transaction_data_with_payment_reference(self,
-                                                           payment_reference):
-        try:
-            transaction_obj = YouPayTransactionData.objects.get(
-                payment_reference=payment_reference)
-            return transaction_obj
-        except YouPayTransactionData.DoesNotExist:
-            logger.info(
-                "Unable to find youpay transaction object with payment"
-                "_reference {}".format(payment_reference))
-            return None
