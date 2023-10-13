@@ -42,7 +42,8 @@ class PaymentStatusCheckMiddleware(object):
 
     def process_view(self, request, view_func, view_args, view_kwargs):
 
-        if request.resolver_match.view_name in CHECK_PAYMENT_STATUS_CLASSES:
+        view_name = request.resolver_match.view_name
+        if view_name in CHECK_PAYMENT_STATUS_CLASSES:
             '''
             checks for
             1. transaction exist or not
@@ -59,12 +60,17 @@ class PaymentStatusCheckMiddleware(object):
             youpay_message_obj = YouPayResponse()
             log_message = ""
             code = None
+            transaction_id = None
             try:
                 # this will check for only post requests
                 if request.method == 'POST':
                     data = json.loads(request.body)
                     transaction_id = decrypt_string(
                         data.get('transaction_id', None))
+
+                    logger.info(
+                        "Middleware : {} Request {} Started for {}".format(
+                            request.method, view_name, transaction_id))
 
                     transaction_obj = youpay_obj.get_youpay_transaction_data(
                         transaction_id)
@@ -110,6 +116,10 @@ class PaymentStatusCheckMiddleware(object):
                 code = youpay_message_obj.UNKNOWN_ERR
                 logger.error(log_message)
                 self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
+
+            finally:
+                logger.info("Middleware : {} Request {} Ended for {}".format(
+                    request.method, view_name, transaction_id))
 
     def get_payment_response(
             self, redirect_url, transaction_message, youpay_message_obj,
@@ -280,8 +290,8 @@ class PaymentVerificationCheckMiddleware(object):
         return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-
-        if request.resolver_match.view_name in VERIFY_PAYMENT_CLASSES:
+        view_name = request.resolver_match.view_name
+        if view_name in VERIFY_PAYMENT_CLASSES:
             from core.utils import decrypt_string
             from services.v1.views.common import (YouPayTransactionCRUD)
 
@@ -289,6 +299,9 @@ class PaymentVerificationCheckMiddleware(object):
             youpay_message_obj = YouPayResponse()
 
             transaction_id = decrypt_string(request.GET.get('id'))
+
+            logger.info("Middleware : {} Started for {}".format(
+                view_name, transaction_id))
 
             try:
                 transaction_obj = youpay_obj.get_youpay_transaction_data(
@@ -310,6 +323,9 @@ class PaymentVerificationCheckMiddleware(object):
                 code = youpay_message_obj.TRANSACTION_NOT_FOUND
                 logger.error(log_message)
                 self.common_error_response(COMMON_ERROR_MESSAGE_EN, code)
+            finally:
+                logger.info("Middleware : {} Ended for {}".format(
+                    view_name, transaction_id))
 
     def common_error_response(self, message, code):
         return JsonResponse(

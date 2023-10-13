@@ -105,7 +105,7 @@ HAPPYCREDITS_CACHE_KEY = 'happycredits_config'
 APPLE_PAY_CACHE_KEY = "apple_pay_config"
 QITAF_CACHE_KEY = 'qitaf_config'
 
-ADCB_POINT_BALANCE_API = "/payback/api/v1/touchpoint/point-balance/"
+ADCB_POINT_BALANCE_API = "/payback/api/v2/touchpoint/point-balance/"
 ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
 ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
 ADCB_VERIFY_API = "/payback/api/v1/verify"

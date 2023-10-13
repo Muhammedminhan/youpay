@@ -1,8 +1,13 @@
 import json
 import logging
 
+from django.db.models import Q
+
 from core.constants import PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS
+from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
+                            QITAF_AVAILABLE_PLATFORM)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
+from core.models import Country, PaymentMethod
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
@@ -15,6 +20,7 @@ from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
                                 AMAZONPG_STORE_CURRENCIES,
                                 QITAF_STORE_CURRENCIES, CITI_STORE_CURRENCIES)
+from services.models import APIClient
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +138,8 @@ def get_payment_options(transaction_obj, gateways):
             code, gateway, is_guest, response_payment_options)
 
         response_payment_options = get_b2cpayback_payment_options(
-            code, gateway, store_currency, response_payment_options)
+            code, gateway, store_currency, response_payment_options,
+            transaction_obj=transaction_obj)
 
         response_payment_options = get_tabbypg_payment_options(
             code, store_currency, response_payment_options)
@@ -177,7 +184,8 @@ def get_checkoutpg_payment_options(code, gateway, is_guest,
 
 
 def get_b2cpayback_payment_options(code, gateway, store_currency,
-                                   response_payment_options):
+                                   response_payment_options, **kwargs):
+    transaction_obj = kwargs.get('transaction_obj')
     if code == B2CPAYBACK_HUB_CODE:
         """This will check only B2CPayback gateway"""
         response_payment_options['adcb'] = False
@@ -197,7 +205,8 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
              response_payment_options['citi_rewards']) = (False, False)
 
             if store_currency in QITAF_STORE_CURRENCIES and is_qitaf_enabled:
-                response_payment_options['qitaf'] = True
+                response_payment_options['qitaf'] = is_qitaf_available(
+                    transaction_obj=transaction_obj)
 
             if store_currency in CITI_STORE_CURRENCIES and is_citi_rewards_enabled:
                 response_payment_options['citi_rewards'] = True
@@ -205,6 +214,21 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
             logger.error("validation_json not setup for {}".format(
                 gateway.gateway_name))
     return response_payment_options
+
+
+def is_qitaf_available(**kwargs):
+    transaction_obj = kwargs.get('transaction_obj')
+    platform = transaction_obj.platform
+    if platform and transaction_obj:
+        if platform in QITAF_AVAILABLE_PLATFORM:
+            return True
+        else:
+            logger.info(
+                "Qitaf Not enabled: platform {}, API_client {} for "
+                "transaction id {}".format(
+                    platform, transaction_obj.api_client,
+                    transaction_obj.transaction_id))
+            return False
 
 
 def get_tabbypg_payment_options(code, store_currency,
@@ -286,3 +310,47 @@ def get_payment_options_announcements(announcement_objs):
         'payment_option__name', 'offer_message',
         'offer_message_arabic').distinct()
     return options_values_dict
+
+
+def get_country_for_configuration(transaction):
+    try:
+        country = Country.objects.get(iso_code=transaction.country_code)
+    except Exception as e:
+        logger.error("Country not found for transaction {}".format(
+            transaction.transaction_id))
+        country = None
+    return country
+
+
+def get_client_for_configuration(transaction):
+    try:
+        client = APIClient.objects.get(id=transaction.api_client_id)
+    except Exception as e:
+        logger.error("Client not found for transaction {}".format(
+            transaction.transaction_id))
+        client = None
+    return client
+
+
+def get_payment_methods(transaction, client, country):
+    logger.info("Getting payment methods for transaction {}".format(
+        transaction.transaction_id))
+
+    try:
+        payment_method_query = Q(clients=client, country=country, active=True)
+        if transaction.is_guest:
+            payment_method_query = Q(clients=client, country=country,
+                                     guest_user_enabled=True)
+
+        payment_methods = PaymentMethod.objects.filter(payment_method_query)
+        payment_options = {payment_method.payment_method: True for
+                           payment_method in
+                           payment_methods}
+
+    except Exception as e:
+        payment_options = None
+        logger.error(
+            "Error occurred while getting payment options for "
+            "transaction, {}".format(transaction.transaction_id))
+
+    return payment_options

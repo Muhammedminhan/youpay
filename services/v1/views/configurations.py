@@ -22,12 +22,14 @@ from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
                                 APPLEPAY_LABEL)
 from services.constants import TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY
-from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
-from services.v1.views.utils import (get_payment_options, get_announcements,
-                                     get_session_id_from_header
+from services.v1.views.utils import (get_announcements,
+                                     get_session_id_from_header,
+                                     get_country_for_configuration,
+                                     get_client_for_configuration,
+                                     get_payment_methods
                                      )
 
 logger = logging.getLogger(__name__)
@@ -101,59 +103,70 @@ class ConfigViewSet(ViewSet):
                 if not transaction.api_client.validate_session:
                     session_id = transaction.session_id
 
+                country = get_country_for_configuration(transaction)
+                if not country:
+                    message = "Not available for this country"
+                    data = self.response_obj.get_404_message(message=message)
+
+                    return Response(data,
+                                    status=status.HTTP_404_NOT_FOUND)
+
+                client = get_client_for_configuration(transaction)
+                if not client:
+                    message = "Client doesn't exists"
+                    data = self.response_obj.get_404_message(
+                        message=message)
+
+                    return Response(data,
+                                    status=status.HTTP_404_NOT_FOUND)
+
                 if transaction.session_id == session_id:
-                    client = APIClient.objects.get(
-                        id=transaction.api_client_id)
-                    if client:
-                        gateways = client.payment_gateway.filter(
-                            is_active=True)
-                        payback_config = b2c_payback_obj.get_configurations(
-                            transaction.amount, transaction.currency,
-                            transaction.transaction_id)
-                        payment_options = get_payment_options(
-                            transaction, gateways)
-                        announcements_dict = get_announcements(
-                            transaction.platform)
-                        api_client = {'color': client.color_code,
-                                      'mobile_logo': get_mobile_logo_url(
-                                          client),
-                                      'logo': get_logo_url(client)}
-                        paypal_config = self.get_paypal_config(
-                            payment_options)
-                        applepay_config = (
-                            self.get_applepay_config(payment_options))
+                    payback_config = b2c_payback_obj.get_configurations(
+                        transaction.amount, transaction.currency,
+                        transaction.transaction_id)
+                    payment_options = get_payment_methods(
+                        transaction, client, country)
+                    announcements_dict = get_announcements(
+                        transaction.platform)
+                    api_client = {'color': client.color_code,
+                                  'mobile_logo': get_mobile_logo_url(
+                                      client),
+                                  'logo': get_logo_url(client)}
+                    paypal_config = self.get_paypal_config(
+                        payment_options)
+                    applepay_config = (
+                        self.get_applepay_config(payment_options))
 
-                        qitaf_config = self.get_qitaf_config(
-                            qitaf_obj, transaction)
+                    qitaf_config = self.get_qitaf_config(
+                        qitaf_obj, transaction)
 
-                        response_data = self.retrieve_response(
-                            api_client=api_client,
-                            payment_options=payment_options,
-                            tabbypg_config=tabbypg_config,
-                            checkoutpg_config=checkout_config,
-                            payback_config=payback_config,
-                            applepay_config=applepay_config,
-                            transaction=transaction,
-                            announcements_dict=announcements_dict,
-                            status_code=status_code,
-                            paypal_config=paypal_config,
-                            qitaf_config=qitaf_config
-                        )
+                    citi_config = self.check_citi_allowed_denominations(
+                        payment_options,
+                        transaction)
 
-                        data = self.response_obj.get_success_dict(
-                            code=status_code,
-                            success_dict=response_data
-                        )
+                    response_data = self.retrieve_response(
+                        api_client=api_client,
+                        payment_options=payment_options,
+                        tabbypg_config=tabbypg_config,
+                        checkoutpg_config=checkout_config,
+                        payback_config=payback_config,
+                        applepay_config=applepay_config,
+                        transaction=transaction,
+                        announcements_dict=announcements_dict,
+                        status_code=status_code,
+                        paypal_config=paypal_config,
+                        qitaf_config=qitaf_config,
+                        citi_config=citi_config
+                    )
 
-                        return Response(data,
-                                        status=status.HTTP_200_OK)
-                    else:
-                        message = "Client doesn't exists"
-                        data = self.response_obj.get_404_message(
-                            message=message)
+                    data = self.response_obj.get_success_dict(
+                        code=status_code,
+                        success_dict=response_data
+                    )
 
-                        return Response(data,
-                                        status=status.HTTP_404_NOT_FOUND)
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
+
                 else:
                     message = "Session expired or doesn't match"
                     data = self.response_obj.get_404_message(message=message)
@@ -189,6 +202,7 @@ class ConfigViewSet(ViewSet):
         applepay_config = kwargs.get('applepay_config', None)
         paypal_config = kwargs.get('paypal_config', None)
         qitaf_config = kwargs.get('qitaf_config', None)
+        citi_config = kwargs.get('citi_config', None)
 
         amount = None
         currency = None
@@ -257,6 +271,7 @@ class ConfigViewSet(ViewSet):
                 "cart_base_amount": cart_base_amount,
 
                 "qitaf_config": qitaf_config,
+                "citi_config": citi_config,
 
                 "redirect_url": redirect_url,
                 "announcements": announcements_dict,
@@ -341,6 +356,20 @@ class ConfigViewSet(ViewSet):
             return qitaf_config
         else:
             return None
+
+    def check_citi_allowed_denominations(self, payment_option, transaction):
+        """
+        returns citi configurations
+        """
+        base_value = transaction.base_amount
+        citi_allowed = False
+        if base_value % 100 == 0:
+            citi_allowed = True
+        citi_config = {
+            'citi_allowed': citi_allowed
+        }
+        return citi_config
+
 
 class ClientStaticFilesAPI(APIView):
     """
