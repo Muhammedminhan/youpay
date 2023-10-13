@@ -3,7 +3,6 @@ import logging
 
 from django.db.models import Q
 
-from core.constants import PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
                             QITAF_AVAILABLE_PLATFORM)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
@@ -336,6 +335,8 @@ def get_payment_methods(transaction, client, country):
     logger.info("Getting payment methods for transaction {}".format(
         transaction.transaction_id))
 
+    platform = transaction.platform
+
     try:
         payment_method_query = Q(clients=client, country=country, active=True)
         if transaction.is_guest:
@@ -346,6 +347,11 @@ def get_payment_methods(transaction, client, country):
         payment_options = {payment_method.payment_method: True for
                            payment_method in
                            payment_methods}
+
+        if payment_options.get('happy_credits') is not None:
+            if platform not in [PURCHASE_PLATFORM_ANDROID,
+                                PURCHASE_PLATFORM_IOS]:
+                payment_options['happy_credits'] = False
 
     except Exception as e:
         payment_options = None
