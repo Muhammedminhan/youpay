@@ -232,12 +232,10 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                 'payment_scheme': instance.payment_scheme,
                 'card_issuer_country': instance.card_issuer_country,
                 'gateway_charge': 0,
-
                 "approved": instance.approved,
                 'is_gcc_card': instance.is_gcc_card,
                 'is_fraud': instance.is_fraud,
                 'is_flagged': instance.is_flagged,
-
             }
             return data_to_update
         else:
