@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 def get_saved_fields(saved_fields, data_dict, transaction_obj):
     for key, value in data_dict.items():
-        if value:
+        if str(value) not in ['', 'None']:
             transaction_obj.__dict__[key] = value
             saved_fields.append(key)
 
@@ -149,6 +149,7 @@ class YouPayTransactionCRUD(object):
         data_dict['qitaf_phone_number'] = data.get('qitaf_phone_number', None)
         data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', False)
         data_dict['earned_point'] = data.get('earned_point', 0)
+        data_dict['gateway_charge'] = data.get('gateway_charge', 0)
 
         if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
             # Amount is updating only for qitaf
@@ -174,6 +175,7 @@ class YouPayTransactionCRUD(object):
                 if data_dict.get('is_full_redemption') == False:
                     transaction_obj.is_full_redemption = False
                     saved_fields.append('is_full_redemption')
+                print("DATA FIELDS ", saved_fields)
                 transaction_obj.save(update_fields=saved_fields)
                 logger.info(
                     "Transaction object updated successfully for {}"
