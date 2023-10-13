@@ -226,16 +226,18 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                 "payment_status": (
                     payment_status.lower() if payment_status else None),
                 "payment_reference": instance.payment_reference,
-                "approved": instance.approved,
                 "response_summary": instance.response_summary,
                 "card_bin": instance.card_bin,
                 "card_last4": instance.card_last4,
                 'payment_scheme': instance.payment_scheme,
-                'is_gcc_card': instance.is_gcc_card,
                 'card_issuer_country': instance.card_issuer_country,
+                'gateway_charge': 0,
+
+                "approved": instance.approved,
+                'is_gcc_card': instance.is_gcc_card,
                 'is_fraud': instance.is_fraud,
                 'is_flagged': instance.is_flagged,
-                'gateway_charge': 0
+
             }
             return data_to_update
         else:
