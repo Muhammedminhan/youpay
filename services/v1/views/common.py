@@ -175,7 +175,6 @@ class YouPayTransactionCRUD(object):
                 if data_dict.get('is_full_redemption') == False:
                     transaction_obj.is_full_redemption = False
                     saved_fields.append('is_full_redemption')
-                print("DATA FIELDS ", saved_fields)
                 transaction_obj.save(update_fields=saved_fields)
                 logger.info(
                     "Transaction object updated successfully for {}"
