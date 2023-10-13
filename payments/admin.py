@@ -230,6 +230,12 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
                        'is_full_redemption',
                        )
         }),
+        ('CITI transaction details', {
+            'fields': ('maximum_redeemable_points',
+                       'minimum_redeemable_points', 'amount_conversion_rate',
+                       'citi_order_id', 'citi_phone_number'
+                       )
+        }),
         ('Happycredits transaction details', {
             'fields': ('credit_balance_amount', 'available_credit_balance',
                        )

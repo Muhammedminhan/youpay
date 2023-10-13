@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from payments.constants import PAYMENT_METHOD_CHOICES
+from payments.constants import PAYMENT_OPTION_CHOICES
 
 # Create your models here.
 
@@ -111,7 +111,7 @@ class Country(AbstractDateTime, AbstractUserBase):
 class PaymentMethod(AbstractDateTime, AbstractUserBase):
     payment_method = models.CharField(
         max_length=100,
-        choices=PAYMENT_METHOD_CHOICES,
+        choices=PAYMENT_OPTION_CHOICES,
         help_text='Chosen payment method')
     country = models.ManyToManyField('core.Country', blank=True)
     clients = models.ManyToManyField('services.APIClient', blank=True)
