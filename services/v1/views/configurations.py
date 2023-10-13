@@ -140,6 +140,10 @@ class ConfigViewSet(ViewSet):
                     qitaf_config = self.get_qitaf_config(
                         qitaf_obj, transaction)
 
+                    citi_config = self.check_citi_allowed_denominations(
+                        payment_options,
+                        transaction)
+
                     response_data = self.retrieve_response(
                         api_client=api_client,
                         payment_options=payment_options,
@@ -151,26 +155,9 @@ class ConfigViewSet(ViewSet):
                         announcements_dict=announcements_dict,
                         status_code=status_code,
                         paypal_config=paypal_config,
-                        qitaf_config=qitaf_config
+                        qitaf_config=qitaf_config,
+                        citi_config=citi_config
                     )
-                        citi_config = self.check_citi_allowed_denominations(
-                            payment_options,
-                            transaction)
-
-                        response_data = self.retrieve_response(
-                            api_client=api_client,
-                            payment_options=payment_options,
-                            tabbypg_config=tabbypg_config,
-                            checkoutpg_config=checkout_config,
-                            payback_config=payback_config,
-                            applepay_config=applepay_config,
-                            transaction=transaction,
-                            announcements_dict=announcements_dict,
-                            status_code=status_code,
-                            paypal_config=paypal_config,
-                            qitaf_config=qitaf_config,
-                            citi_config=citi_config
-                        )
 
                     data = self.response_obj.get_success_dict(
                         code=status_code,
