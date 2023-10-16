@@ -14,8 +14,8 @@ from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
-    PAYMENT_STATUS_PAID, PAYMENT_METHOD_PAYPAL, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_END_STATUS_LIST
+    PAYMENT_STATUS_PAID, PAYMENT_END_STATUS_LIST, PAYMENT_OPTION_APPLEPAY,
+    PAYMENT_OPTION_PAYPAL
 )
 from payments.models import YouPayTransactionData
 from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
@@ -124,8 +124,8 @@ class ConfigViewSet(ViewSet):
                     payback_config = b2c_payback_obj.get_configurations(
                         transaction.amount, transaction.currency,
                         transaction.transaction_id)
-                    payment_options = get_payment_methods(
-                        transaction, client, country)
+                    payment_options, payment_options_guest_user = (
+                        get_payment_methods(transaction, client, country))
                     announcements_dict = get_announcements(
                         transaction.platform)
                     api_client = {'color': client.color_code,
@@ -136,10 +136,8 @@ class ConfigViewSet(ViewSet):
                         payment_options)
                     applepay_config = (
                         self.get_applepay_config(payment_options))
-
                     qitaf_config = self.get_qitaf_config(
                         qitaf_obj, transaction)
-
                     citi_config = self.check_citi_allowed_denominations(
                         payment_options,
                         transaction)
@@ -147,6 +145,7 @@ class ConfigViewSet(ViewSet):
                     response_data = self.retrieve_response(
                         api_client=api_client,
                         payment_options=payment_options,
+                        payment_options_guest_user=payment_options_guest_user,
                         tabbypg_config=tabbypg_config,
                         checkoutpg_config=checkout_config,
                         payback_config=payback_config,
@@ -192,6 +191,8 @@ class ConfigViewSet(ViewSet):
     def retrieve_response(self, **kwargs):
 
         payment_options = kwargs.get('payment_options', None)
+        payment_options_guest_user = kwargs.get('payment_options_guest_user',
+                                                None)
         api_client = kwargs.get('api_client', None)
         checkoutpg_config = kwargs.get('checkoutpg_config', None)
         tabbypg_config = kwargs.get('tabbypg_config', None)
@@ -251,6 +252,7 @@ class ConfigViewSet(ViewSet):
             "data": {
                 "api_client": api_client,
                 "payment_options": payment_options,
+                'payment_options_guest_user': payment_options_guest_user,
                 "checkoutpg_config": checkoutpg_config,
                 "b2cpayback_config": payback_config,
                 "tabbypg_config": tabbypg_config,
@@ -322,7 +324,7 @@ class ConfigViewSet(ViewSet):
             "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
         applepay_config["label"] = APPLEPAY_LABEL
 
-        applepay_enabled = payment_option.get(PAYMENT_METHOD_APPLEPAY, False)
+        applepay_enabled = payment_option.get(PAYMENT_OPTION_APPLEPAY, False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
             applepay_config.update(self.get_additional_config(additional_fee,
@@ -335,7 +337,7 @@ class ConfigViewSet(ViewSet):
         only if paypal is enabled
         """
         paypal_config = {}
-        paypal_enabled = payment_option.get(PAYMENT_METHOD_PAYPAL, False)
+        paypal_enabled = payment_option.get(PAYMENT_OPTION_PAYPAL, False)
         if paypal_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
             paypal_config = self.get_additional_config(additional_fee,
