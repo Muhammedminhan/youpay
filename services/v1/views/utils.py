@@ -1,8 +1,6 @@
 import json
 import logging
 
-from django.db.models import Q
-
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
                             QITAF_AVAILABLE_PLATFORM)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
@@ -338,10 +336,11 @@ def get_payment_methods(transaction, client, country):
     platform = transaction.platform
 
     try:
-        payment_method_query = Q(clients=client, country=country, active=True)
         payment_options_guest_user = None
 
-        payment_methods = PaymentMethod.objects.filter(payment_method_query)
+        payment_methods = PaymentMethod.objects.filter(clients=client,
+                                                       country=country,
+                                                       active=True)
         payment_options = {payment_method.payment_method: True for
                            payment_method in
                            payment_methods}
