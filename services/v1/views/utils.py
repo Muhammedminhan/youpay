@@ -1,6 +1,8 @@
 import json
 import logging
 
+from django.db.models import Q
+
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
                             QITAF_AVAILABLE_PLATFORM)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
@@ -336,22 +338,15 @@ def get_payment_methods(transaction, client, country):
     platform = transaction.platform
 
     try:
-        payment_options_guest_user = None
+        payment_method_query = Q(clients=client, country=country, active=True)
+        if transaction.is_guest:
+            payment_method_query = Q(clients=client, country=country,
+                                     guest_user_enabled=True)
 
-        payment_methods = PaymentMethod.objects.filter(clients=client,
-                                                       country=country,
-                                                       active=True)
+        payment_methods = PaymentMethod.objects.filter(payment_method_query)
         payment_options = {payment_method.payment_method: True for
                            payment_method in
                            payment_methods}
-
-        if transaction.is_guest:
-            guest_user_payment_methods = payment_methods.filter(
-                guest_user_enabled=False)
-
-            payment_options_guest_user = {payment_method.payment_method: False
-                                          for payment_method in
-                                          guest_user_payment_methods}
 
         if payment_options.get('happy_credits') is not None:
             if platform not in [PURCHASE_PLATFORM_ANDROID,
@@ -360,9 +355,8 @@ def get_payment_methods(transaction, client, country):
 
     except Exception as e:
         payment_options = None
-        payment_options_guest_user = None
         logger.error(
             "Error occurred while getting payment options for "
             "transaction, {}".format(transaction.transaction_id))
 
-    return payment_options, payment_options_guest_user
+    return payment_options
