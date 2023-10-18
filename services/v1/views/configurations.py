@@ -145,7 +145,7 @@ class ConfigViewSet(ViewSet):
                     )
 
                     data = self.response_obj.get_success_dict(
-                        code=1000,
+                        code=self.response_obj.SUCCESS,
                         success_dict=response_data
                     )
 
