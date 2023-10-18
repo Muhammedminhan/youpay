@@ -341,7 +341,7 @@ def get_payment_methods(transaction, client, country):
         payment_method_query = Q(clients=client, country=country, active=True)
         if transaction.is_guest:
             payment_method_query = Q(clients=client, country=country,
-                                     guest_user_enabled=True)
+                                     active=True, guest_user_enabled=True)
 
         payment_methods = PaymentMethod.objects.filter(payment_method_query)
         payment_options = {payment_method.payment_method: True for
