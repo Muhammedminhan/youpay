@@ -8,12 +8,15 @@ from os import urandom
 from time import sleep
 
 import redis
+import requests
 from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
 
-from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
+from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY, STATUS_CODE_200, \
+    STATUS_CODE_500, STATUS_CODE_600, STATUS_CODE_300, STATUS_CODE_401, \
+    STATUS_CODE_404
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig
@@ -439,3 +442,57 @@ def format_pre_auth_payment_response_for_verify(response_data):
     logger.info(
         "structured dict for pre auth case {} ".format(structured_dict))
     return structured_dict
+
+
+def handle_request(hint=None, url="http://testasddasads.com/", method="GET",
+                   headers=None, data=None, params=None):
+    status_code = None
+    response_data = None
+    message = None
+    url = "http://localhost:8000/services/api/v1/test-payment/"
+    headers = {
+        'content-type': 'application/json'
+    }
+    try:
+        response = requests.request(method, url, headers=headers,
+                                    data=json.dumps({"status": 500}),
+                                    params=params)
+
+        status_code = response.status_code
+        content_type = response.headers.get('Content-Type', '')
+
+        if content_type == "application/json":
+            response_data = response.json()
+            logger.info("API Response from {} for {} is {}".format(
+                url, hint, response_data))
+
+        if STATUS_CODE_200 <= status_code < STATUS_CODE_300:
+
+            return response.status_code, response_data
+
+        elif status_code == STATUS_CODE_401:
+            message = ("Unauthorized. Please check your credentials. for {}"
+                       "".format(hint))
+
+        elif status_code == STATUS_CODE_404:
+            message = "Resource not found."
+
+        elif STATUS_CODE_500 <= status_code < STATUS_CODE_600:
+            message = ("Server error for {}: Status code {}".format(
+                hint, status_code))
+            logger.error("Server error for {}: Status code {}".format(
+                hint, status_code))
+        else:
+            message = ("Received unexpected status code: {} for ".format(
+                status_code, hint))
+
+        logger.error(message)
+        return response_data, status_code
+
+    except requests.exceptions.RequestException as e:
+        logger.error("Request error: {} ".format(str(e)), exc_info=True)
+        return response_data, status_code
+    except Exception as e:
+        logger.error(
+            "Something went wrong with request logic {} ".format(str(e)))
+        return None, None

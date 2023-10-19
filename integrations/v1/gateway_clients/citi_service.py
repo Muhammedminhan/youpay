@@ -1,10 +1,12 @@
 import json
 import logging
-import requests
 from decimal import Decimal
+
+import requests
 from rest_framework import status
+
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK
-from core.utils import get_payment_gateway_config
+from core.utils import get_payment_gateway_config, handle_request
 from integrations.constants import (
     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE, CITI_GENERATE_OTP_API,
     PAYMENT_REQUEST_GENERATE_OTP, CITI_REWARDS_CONNECTION_ERROR_MESSAGE,
@@ -353,3 +355,25 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
             error = "Error in citi rewards point redemption api: {}".format(e)
             logger.error(error)
             return None, self.CITI_REWARDS_CONNECTION_ERROR
+
+    def get_citi_balance_check(self):
+        # TODO - need to add citi balance check api
+        """
+        Usage : This method is used to check the citi balance, on configuration and during redemption
+
+        1.Wrap with try except
+        2.pass payment reference id if available, this will help to get the points in b2c side with out checking the balance
+        3.pass customer email, this will help to release the points in b2c side if customer not paid
+        4.need to add citi balance check api with the payload
+        5.handle the response, error cases and return the response
+        """
+
+        status_code, response, = handle_request(
+            self.transaction_id,
+            url="CITI_BALANCE_CHECK_URL",
+            method="POST",
+            headers=None,
+            data=None,
+            params=None)
+
+        return 1
