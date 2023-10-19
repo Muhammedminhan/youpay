@@ -356,8 +356,18 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
             logger.error(error)
             return None, self.CITI_REWARDS_CONNECTION_ERROR
 
-    def get_citi_balance(self):
-        # todo - in progress
+    def get_citi_balance_check(self):
+        # TODO - need to add citi balance check api
+        """
+        Usage : This method is used to check the citi balance, on configuration and during redemption
+
+        1.Wrap with try except
+        2.pass payment reference id if available, this will help to get the points in b2c side with out checking the balance
+        3.pass customer email, this will help to release the points in b2c side if customer not paid
+        4.need to add citi balance check api with the payload
+        5.handle the response, error cases and return the response
+        """
+
         status_code, response, = handle_request(
             self.transaction_id,
             url="CITI_BALANCE_CHECK_URL",
