@@ -148,7 +148,7 @@ class YouPayTransactionCRUD(object):
         data_dict['citi_phone_number'] = data.get('citi_phone_number', None)
         data_dict['qitaf_phone_number'] = data.get('qitaf_phone_number', None)
         data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', None)
-        data_dict['earned_point'] = data.get('earned_point', 0)
+        data_dict['earned_point'] = data.get('earned_point', None)
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
 
         if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
