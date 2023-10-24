@@ -55,8 +55,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
         if currency != CHECKOUT_UAE_CURRENCY:
             logger.info(
                 "Skipping config api call to b2cpayback for non AED "
-                "transaction {} received currency {}".format(transaction_id,
-                                                             currency))
+                "transaction {}".format(transaction_id))
             return None
         else:
             config_request_data = {
@@ -72,50 +71,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
 
                 response = requests.post(url, data=request_data_json,
                                          headers=ADCB_HEADERS)
-
                 if response:
-                    # todo - clear
-                    sample_response = {
-                        "results": [
-                            {
-                                "name": "ADCB",
-                                "code": "ADCBTP",
-                                "display_name": "Pay with ADCB TouchPoints",
-                                "logo": "http://localhost:8005/media/redemption/partner/logos/fa93fd0f-c813-419c-ad1b-6cfa54058ed6.png",
-                                "currency": "AED",
-                                "currency_decimal_notation": 2,
-                                "redemption_amount": {
-                                    "AED": {
-                                        "max": 10000,
-                                        "min": 50
-                                    },
-                                    "SAR": {
-                                        "max": 10000,
-                                        "min": 50
-                                    }
-                                },
-                                "checkout_public_key": "pk_sbox_avl55pfskacaahesqzy3zgsm6e5",
-                                "checkout_tokens_api_endpoint": "https://api.sandbox.checkout.com/tokens",
-                                "terms_conditions_url": "https://www.adcb.com/en/terms-conditions/default.aspx",
-                                "is_active": False,
-                                "validation_message": "Please add more to your cart in order to use ADCB TouchPoints as a payment method. Minimum amount is required.",
-                                "countries": [
-                                    "AE"
-                                ],
-                                # Sample
-                                "citi_balance": {
-                                    "available_balance": 10000,
-                                    "low_balance": 5000,
-                                    "min_balance": 0,
-                                    # disable in front end if the available balance below min_balance case 1
-                                    "negative_balance": -1,
-                                }
-                            }
-                        ],
-                        "message": "API request completed successfully.",
-                        "code": 1000
-                    }
-
                     return response.json()
                 else:
                     logger.error(

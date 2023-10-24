@@ -11,7 +11,7 @@ from core.response_messages import YouPayResponse
 from core.utils import (decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
-                        decimal_rounded, handle_request)
+                        decimal_rounded, encrypt_payment_data)
 from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
@@ -342,15 +342,9 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 
     def post(self, request):
         data = self.request.data
-        print("Body : ", data)
-        # enc_data = eval(encrypt_payment_data(data))
-
-        if data.get('status') == 500:
-            a = 1 / 0
-        else:
-            handle_request()
+        enc_data = eval(encrypt_payment_data(data))
         return Response({
-            "response": "enc_data",
+            "response": enc_data,
         })
 
 
