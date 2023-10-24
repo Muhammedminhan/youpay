@@ -22,7 +22,7 @@ class PointBalanceRequestSerializer(serializers.Serializer):
     def get_expiry(self, data):
         return data.get('data', {}).get('expiry')
     def get_customer_name(self, data):
-        return data.get('transaction_data', {}).get('customer_name')
+        return data.get('data', {}).get('name_on_card')
 
     def get_client_code(self, data):
         return ADCB_CLIENT_CODE
