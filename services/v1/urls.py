@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
+from integrations.v1.gateway_clients.order_details import OrderDetailsManage
 from integrations.v1.gateway_clients.tabbypg import TabbyPaymentCancel
 from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
@@ -31,6 +32,7 @@ from .views.payment import (PaymentRequestView, TestPaymentRequestView,
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
 router.register('youpay_configuration', ConfigViewSet, basename='conf')
+router.register('order-details', OrderDetailsManage, basename='order-details')
 
 urlpatterns = [
     path("", include(router.urls)),
