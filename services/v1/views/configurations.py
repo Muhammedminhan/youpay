@@ -11,7 +11,6 @@ from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
-from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
@@ -351,23 +350,15 @@ class ConfigViewSet(ViewSet):
             citi_allowed = False
             if base_value % 100 == 0:
                 citi_allowed = True
+            if citi_allowed:
+                citi_obj = CitiRewardsManager()
+                cit_available_balance = citi_obj.get_citi_account_balance(
+                    transaction)
+                if cit_available_balance < base_value:
+                    citi_allowed = False
             citi_config = {
                 'citi_allowed': citi_allowed
             }
-
-        base_value = transaction.base_amount
-        citi_allowed = False
-        if base_value % 100 == 0:
-            citi_allowed = True
-        if citi_allowed:
-            citi_obj = CitiRewardsManager()
-            cit_available_balance = citi_obj.get_citi_account_balance(
-                transaction)
-            if cit_available_balance < base_value:
-                citi_allowed = False
-        citi_config = {
-            'citi_allowed': citi_allowed
-        }
         return citi_config
 
     def get_checkout_config(self, payment_option, transaction):
