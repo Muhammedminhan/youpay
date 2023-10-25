@@ -102,7 +102,7 @@ class YouPayTransactionCRUD(object):
         data_dict['channel_code'] = data.get('channel_code', None)
         data_dict['payment_method'] = data.get('payment_method', None)
         data_dict['payment_scheme'] = data.get('payment_scheme', None)
-        data_dict['is_gcc_card'] = data.get('is_gcc_card', False)
+        data_dict['is_gcc_card'] = data.get('is_gcc_card', None)
         data_dict['card_bin'] = data.get('card_bin', None)
         data_dict['card_last4'] = data.get('card_last4', None)
         data_dict['card_issuer_country'] = data.get('card_issuer_country',
@@ -147,7 +147,7 @@ class YouPayTransactionCRUD(object):
         data_dict['citi_order_id'] = data.get('citi_order_id', None)
         data_dict['citi_phone_number'] = data.get('citi_phone_number', None)
         data_dict['qitaf_phone_number'] = data.get('qitaf_phone_number', None)
-        data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', False)
+        data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', None)
         data_dict['earned_point'] = data.get('earned_point', 0)
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
 
