@@ -59,7 +59,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Cart details', {
             'fields': ('cart_amount', 'cart_currency', 'cart_service_fee',
-                       'cart_base_amount', 'cart_VAT_amount',
+                       'cart_base_amount', 'cart_VAT_amount', 'brand_details'
                        )
         }),
         ('Payment details', {
@@ -202,7 +202,7 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Cart details', {
             'fields': ('cart_amount', 'cart_currency', 'cart_service_fee',
-                       'cart_base_amount', 'cart_VAT_amount',
+                       'cart_base_amount', 'cart_VAT_amount', 'brand_details'
                        )
         }),
         ('Payment details', {
