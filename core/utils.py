@@ -14,9 +14,9 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
 
-from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY, STATUS_CODE_200, \
-    STATUS_CODE_500, STATUS_CODE_600, STATUS_CODE_300, STATUS_CODE_401, \
-    STATUS_CODE_404
+from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
+                            STATUS_CODE_200, STATUS_CODE_500, STATUS_CODE_600,
+                            STATUS_CODE_300, STATUS_CODE_401, STATUS_CODE_404)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig
