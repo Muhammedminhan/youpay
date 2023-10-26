@@ -125,3 +125,6 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
         'integrations.PaymentGateway', on_delete=models.CASCADE,
         blank=True, null=True,
         help_text='Payment gateway for the payment method')
+
+    def __str__(self):
+        return self.payment_method
