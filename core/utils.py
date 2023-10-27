@@ -444,18 +444,14 @@ def format_pre_auth_payment_response_for_verify(response_data):
     return structured_dict
 
 
-def handle_request(hint=None, url="http://testasddasads.com/", method="GET",
+def handle_request(hint=None, url=None, method="GET",
                    headers=None, data=None, params=None):
     status_code = None
     response_data = None
     message = None
-    url = "http://localhost:8000/services/api/v1/test-payment/"
-    headers = {
-        'content-type': 'application/json'
-    }
     try:
         response = requests.request(method, url, headers=headers,
-                                    data=json.dumps({"status": 500}),
+                                    data=json.dumps(data),
                                     params=params)
 
         status_code = response.status_code
@@ -473,19 +469,21 @@ def handle_request(hint=None, url="http://testasddasads.com/", method="GET",
         elif status_code == STATUS_CODE_401:
             message = ("Unauthorized. Please check your credentials. for {}"
                        "".format(hint))
+            response_data = response.text
 
         elif status_code == STATUS_CODE_404:
             message = "Resource not found."
+            response_data = response.text
 
         elif STATUS_CODE_500 <= status_code < STATUS_CODE_600:
             message = ("Server error for {}: Status code {}".format(
                 hint, status_code))
             logger.error("Server error for {}: Status code {}".format(
                 hint, status_code))
+            response_data = response.text
         else:
-            message = ("Received unexpected status code: {} for ".format(
+            message = ("Received unexpected status code: {} for {}".format(
                 status_code, hint))
-
         logger.error(message)
         return response_data, status_code
 
@@ -496,3 +494,9 @@ def handle_request(hint=None, url="http://testasddasads.com/", method="GET",
         logger.error(
             "Something went wrong with request logic {} ".format(str(e)))
         return None, None
+
+    finally:
+        logger.info(
+            "{} : Sending request to url : {}, data/Params : {}, request "
+            "method : {} , and response {} ".format(hint, url, data, method,
+                                                    response_data))
