@@ -175,5 +175,3 @@ QITAF_VERIFY_API = "/qitaf/api/v1/verify/"
 QITAF_HEADERS = {'Content-Type': 'application/json'}
 
 ORDER_DETAILS_API = "core/api/v1/order/item-details/"
-
-ECOM_API_CLIENT_CODE = 'ECOM'
