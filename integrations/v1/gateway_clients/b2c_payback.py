@@ -1,6 +1,5 @@
 import json
 import logging
-
 import requests
 from rest_framework import status
 
