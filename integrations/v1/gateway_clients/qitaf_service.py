@@ -9,12 +9,14 @@ from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
 from integrations.constants import (
-    QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
+    QITAF_CALCULATE_BALANCE_API, QITAF_OTP_GENERATION_API,
+    QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS
+    CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
+    SAMPLE_ITEM_DETAILS_DATA
 )
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
@@ -528,3 +530,37 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Invalid transaction id ({}) received for Qitaf "
                          "verify api".format(request_transaction_id))
             return None, None
+
+    def calculate_qitaf_balance(self, payload):
+        """
+        Calculate qitaf service charge
+        """
+
+        try:
+            transaction_obj = payload.get('transaction_obj')
+            selected_amount = payload.get('selected_amount')
+
+            payment_reference = transaction_obj.payment_reference
+
+            # make request to qitaf to get service charge for remaning card amount
+            payload = json.dumps({
+                "payment_reference": payment_reference,
+                "item_details_list": SAMPLE_ITEM_DETAILS_DATA,
+                "selected_amount": selected_amount,
+            })
+
+            url = self.qitaf_config.domain + QITAF_CALCULATE_BALANCE_API
+            headers = self.get_payment_header()
+            response = requests.post(url, data=payload, headers=headers)
+
+            logger.info("Response from qitaf calculate service charge api {}"
+                        "".format(response.json()))
+            if response:
+                calculated_balance = response.json()
+                return calculated_balance, 1000
+            else:
+                return None, 2000
+        except Exception as e:
+            logger.error("Exception in calculate_qitaf_balance: "
+                         "{}".format(e))
+            return None, 0

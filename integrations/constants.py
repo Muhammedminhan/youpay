@@ -172,4 +172,45 @@ QITAF_REDEEM_POINTS_API = "/qitaf/api/v1/burn/redeem-qitafpoints/"
 QITAF_REVERSE_POINTS_API = "/qitaf/api/v1/burn/reverse-qitafpoints/"
 QITAF_REWARD_UPDATE_API = "/qitaf/api/v1/collect/reward-update/"
 QITAF_VERIFY_API = "/qitaf/api/v1/verify/"
+QITAF_CALCULATE_BALANCE_API = "/qitaf/api/v1/calculate-balance/"
+
 QITAF_HEADERS = {'Content-Type': 'application/json'}
+
+SAMPLE_ITEM_DETAILS_DATA = [
+                                        {
+                                            "id": 1,
+                                            "brand_id": 1,
+                                            "brand_code": "Jarir",
+                                            "gift_base_value": 50,
+                                            "quantity": 1,
+                                            "service_charge": 7.41,
+                                            "%_paid_on_card": None,
+                                            "payment": None,
+                                            "applied_service_charge": None,
+                                            "applied_vat": None
+                                        },
+                                        {
+                                            "id": 2,
+                                            "brand_id": 11,
+                                            "brand_code": "HappyYOU",
+                                            "gift_base_value": 100,
+                                            "quantity": 1,
+                                            "service_charge": 8.84,
+                                            "%_paid_on_card": None,
+                                            "payment": None,
+                                            "applied_service_charge": None,
+                                            "applied_vat": None
+                                        },
+                                        {
+                                            "id": 1,
+                                            "brand_id": 111,
+                                            "brand_code": "Amazon",
+                                            "gift_base_value": 100,
+                                            "quantity": 1,
+                                            "service_charge": 0,
+                                            "%_paid_on_card": None,
+                                            "payment": None,
+                                            "applied_service_charge": None,
+                                            "applied_vat": None
+                                        }
+                                    ]
