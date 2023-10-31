@@ -46,21 +46,26 @@ def update_brand_details(transaction_id):
                 'API-KEY': api_key,
                 'API-SECRET': api_secret
             }
-            logger.info("Fetching brand details from client started for "
-                        "transaction  {}".format(transaction_id))
 
             url = client.client_domain + ORDER_DETAILS_API + invoice
+            logger.info("Fetching brand details from client {} started for "
+                        "transaction {}".format(url, transaction_id))
             response = requests.get(url, headers=headers)
 
             if response:
                 response_data = response.json()
+                logger.info(
+                    "Brand details response for transaction {} is {}".format(
+                        transaction_id, response_data
+                    ))
                 transaction.brand_details = response_data
                 transaction.save()
                 return True
             else:
                 logger.error(
                     "Unable to get response on brand details for "
-                    "transaction {}".format(transaction_id))
+                    "transaction {}, error : {}".format(transaction_id,
+                                                        response.text))
                 return False
         else:
             logger.error(
