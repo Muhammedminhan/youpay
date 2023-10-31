@@ -545,7 +545,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             # make request to qitaf to get service charge for remaning card amount
             payload = json.dumps({
                 "payment_reference": payment_reference,
-                "item_details_list": SAMPLE_ITEM_DETAILS_DATA,
+                "item_details_list": SAMPLE_ITEM_DETAILS_DATA,  # TODO
                 "selected_amount": selected_amount,
             })
 

@@ -1,8 +1,11 @@
 import json
 import logging
 
+from django.db.models import Q
+
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
+from core.models import Country, PaymentMethod
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
@@ -15,6 +18,7 @@ from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
                                 AMAZONPG_STORE_CURRENCIES,
                                 QITAF_STORE_CURRENCIES, CITI_STORE_CURRENCIES)
+from services.models import APIClient
 
 logger = logging.getLogger(__name__)
 
@@ -288,3 +292,54 @@ def get_payment_options_announcements(announcement_objs):
         'payment_option__name', 'offer_message',
         'offer_message_arabic').distinct()
     return options_values_dict
+
+
+def get_country_for_configuration(transaction):
+    try:
+        country = Country.objects.get(iso_code=transaction.country_code)
+    except Exception as e:
+        logger.error("Country not found for transaction {}".format(
+            transaction.transaction_id))
+        country = None
+    return country
+
+
+def get_client_for_configuration(transaction):
+    try:
+        client = APIClient.objects.get(id=transaction.api_client_id)
+    except Exception as e:
+        logger.error("Client not found for transaction {}".format(
+            transaction.transaction_id))
+        client = None
+    return client
+
+
+def get_payment_methods(transaction, client, country):
+    logger.info("Getting payment methods for transaction {}".format(
+        transaction.transaction_id))
+
+    platform = transaction.platform
+
+    try:
+        payment_method_query = Q(clients=client, country=country, active=True)
+        if transaction.is_guest:
+            payment_method_query = Q(clients=client, country=country,
+                                     active=True, guest_user_enabled=True)
+
+        payment_methods = PaymentMethod.objects.filter(payment_method_query)
+        payment_options = {payment_method.payment_method: True for
+                           payment_method in
+                           payment_methods}
+
+        if payment_options.get('happy_credits') is not None:
+            if platform not in [PURCHASE_PLATFORM_ANDROID,
+                                PURCHASE_PLATFORM_IOS]:
+                payment_options['happy_credits'] = False
+
+    except Exception as e:
+        payment_options = None
+        logger.error(
+            "Error occurred while getting payment options for "
+            "transaction, {}".format(transaction.transaction_id))
+
+    return payment_options
