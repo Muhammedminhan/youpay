@@ -13,7 +13,6 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
 
-from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig
