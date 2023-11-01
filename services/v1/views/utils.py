@@ -2,8 +2,8 @@ import json
 import logging
 
 from django.db.models import Q
-from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
-                            QITAF_AVAILABLE_PLATFORM)
+
+from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, PaymentMethod
 from integrations.constants import (
