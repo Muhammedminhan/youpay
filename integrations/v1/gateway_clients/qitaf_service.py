@@ -576,13 +576,13 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             if response:
                 response_data = response.json()
                 if response_data.get('status', False):
-                    calculated_balance = response_data
+                    calculated_balance = response_data.get(
+                        'calculated_item_details')
                     update_data = {
                         'transaction_id': transaction_obj.transaction_id,
                         "brand_calculations": calculated_balance
                     }
                     self.update_youpay_transaction_data(update_data)
-                    response_data = calculated_balance
                     response_code = self.SUCCESS
             return response_data, response_code
 
