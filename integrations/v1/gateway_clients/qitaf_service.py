@@ -560,6 +560,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             payload = json.dumps({
                 "payment_reference": payment_reference,
                 "item_details_list": items_array,
+                "currency": brand_details.get("currency"),
                 "selected_amount": selected_amount,
             })
 
@@ -584,7 +585,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     response_data = calculated_balance
                     response_code = self.SUCCESS
             return response_data, response_code
-        
+
         except Exception as e:
             logger.error("Exception in calculate_qitaf_balance: "
                          "{}".format(e))
