@@ -364,11 +364,15 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
 
         available_balance = 0
         try:
+            payload = {
+                'customer_email': transaction.customer_email,
+            }
+            account_balance_payload = json.dumps(payload)
             url = self.citi_reward_config.domain + CITI_ACCOUNT_BALANCE
             headers = self.get_payment_header()
 
-            response = requests.get(url,
-                                    headers=headers)
+            response = requests.post(url, data=account_balance_payload,
+                                     headers=headers)
 
             if response:
                 response_data = response.json()
