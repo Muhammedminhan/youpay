@@ -168,7 +168,7 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 "for ({}), rewarded point {}".format(
                     transaction_obj.transaction_id,
                     transaction_obj.earned_point))
-            return None, response_obj.QITAF_ALREADY_COLLECTED, 0
+            return None, response_obj.QITAF_ALREADY_COLLECTED, transaction_obj.earned_point
 
         if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
             logger.info("Qitaf RewardPoint Failed for {} ".format(

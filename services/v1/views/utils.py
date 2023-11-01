@@ -3,8 +3,7 @@ import logging
 
 from django.db.models import Q
 
-from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
-                            QITAF_AVAILABLE_PLATFORM)
+from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, PaymentMethod
 from integrations.constants import (
@@ -204,8 +203,7 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
              response_payment_options['citi_rewards']) = (False, False)
 
             if store_currency in QITAF_STORE_CURRENCIES and is_qitaf_enabled:
-                response_payment_options['qitaf'] = is_qitaf_available(
-                    transaction_obj=transaction_obj)
+                response_payment_options['qitaf'] = True
 
             if store_currency in CITI_STORE_CURRENCIES and is_citi_rewards_enabled:
                 response_payment_options['citi_rewards'] = True
@@ -213,21 +211,6 @@ def get_b2cpayback_payment_options(code, gateway, store_currency,
             logger.error("validation_json not setup for {}".format(
                 gateway.gateway_name))
     return response_payment_options
-
-
-def is_qitaf_available(**kwargs):
-    transaction_obj = kwargs.get('transaction_obj')
-    platform = transaction_obj.platform
-    if platform and transaction_obj:
-        if platform in QITAF_AVAILABLE_PLATFORM:
-            return True
-        else:
-            logger.info(
-                "Qitaf Not enabled: platform {}, API_client {} for "
-                "transaction id {}".format(
-                    platform, transaction_obj.api_client,
-                    transaction_obj.transaction_id))
-            return False
 
 
 def get_tabbypg_payment_options(code, store_currency,
