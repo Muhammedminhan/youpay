@@ -212,8 +212,13 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    brand_details = models.JSONField(null=True, blank=True,
+                                     help_text="used to store brand details "
+                                               "from the ecom side")
+    brand_calculations = models.JSONField(null=True, blank=True,
+                                          help_text="Calculated brand details")
     happy_credit_reference = models.CharField(max_length=120, null=True,
-                                         blank=True)
+                                              blank=True)
     credit_balance_amount = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
@@ -279,6 +284,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         decimal_places=4, max_digits=12, null=True, blank=True,
         help_text='Earned point for the transaction via corresponding payment'
                   ' method')
+
 
 @receiver(post_init, sender=YouPayTransactionData)
 def set_previous_status(sender, instance, **kwargs):
@@ -519,6 +525,8 @@ class ArchivedYouPayTransactionData(models.Model):
                                            null=True, blank=True)
     cart_VAT_amount = models.DecimalField(decimal_places=4, max_digits=12,
                                           null=True, blank=True)
+    brand_details = models.JSONField(null=True, blank=True)
+    brand_calculations = models.JSONField(null=True, blank=True)
     happy_credit_reference = models.CharField(max_length=120, null=True,
                                               blank=True)
     credit_balance_amount = models.DecimalField(

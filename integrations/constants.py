@@ -172,4 +172,8 @@ QITAF_REDEEM_POINTS_API = "/qitaf/api/v1/burn/redeem-qitafpoints/"
 QITAF_REVERSE_POINTS_API = "/qitaf/api/v1/burn/reverse-qitafpoints/"
 QITAF_REWARD_UPDATE_API = "/qitaf/api/v1/collect/reward-update/"
 QITAF_VERIFY_API = "/qitaf/api/v1/verify/"
+QITAF_CALCULATE_BALANCE_API = "/qitaf/api/v1/calculate-balance/"
+
 QITAF_HEADERS = {'Content-Type': 'application/json'}
+
+ORDER_DETAILS_API = "core/api/v1/order/item-details/"

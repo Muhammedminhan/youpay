@@ -23,6 +23,7 @@ class YouPayResponse(object):
     PAYMENT_FAILED = 1004
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
     DUPLICATE_PAYMENT_VERIFICATION = 1006
+    BRAND_DETAILS_MISSING = 1007
 
     MIDDLEWARE_REDIRECTED = 1307
 
@@ -113,6 +114,7 @@ class YouPayResponse(object):
     QITAF_VERIFICATION_FAILED_TO_PROCESS = 9006
     QITAF_VERIFICATION_FAILED = 9007
     QITAF_VERIFICATION_EXCEPTION = 9008
+    QITAF_BALANCE_CALCULATION_FAILED = 9009
     QITAF_NOT_ENABLED = 9401
     QITAF_ALREADY_COLLECTED = 9402
     QITAF_REWARD_POINT_MIN_AMT_NOT_MET = 9403
@@ -134,6 +136,7 @@ class YouPayResponse(object):
             self.SUCCESS: "API request completed successfully",
             self.PAYMENT_SUCCESS: "Transaction success",
             self.PAYMENT_FAILED: "Payment failed",
+            self.BRAND_DETAILS_MISSING: "Brand details missing",
 
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
@@ -161,6 +164,7 @@ class YouPayResponse(object):
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
+
             self.QITAF_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.QITAF_PHONE_NUMBER_SAVE_FAILED: (
                 "Qitaf Phone number failed to save"),
@@ -173,6 +177,7 @@ class YouPayResponse(object):
             self.QITAF_VERIFICATION_EXCEPTION: "Verification failed.",
             self.QITAF_NOT_SUPPORTED: "Qitaf Forbidden, or partial redemption not supported.",
             self.QITAF_ALREADY_COLLECTED: "Qitaf Reward collected Already.",
+            self.QITAF_BALANCE_CALCULATION_FAILED: "Qitaf Balance calculation failed.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),

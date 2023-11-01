@@ -398,6 +398,51 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         return data
 
 
+class CalculateQitafBalance(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        try:
+            transaction_id = request.data.get('transaction_id')
+            selected_amount = request.data.get('selected_amount')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+                payload = {
+                    'transaction_obj': transaction_obj,
+                    "selected_amount": selected_amount,
+                }
+
+                qitaf_service = QitafServiceManager()
+                response_data, code = qitaf_service.calculate_qitaf_balance(
+                    payload)
+
+                logger.info("Reward Point(Collect Points) API response {}, "
+                            "code : {}".format(response_data, code, ))
+                if response_data:
+
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                logger.error(
+                    "QitafCollectPointsAPIView : Transaction not found for {}"
+                    "".format(transaction_id))
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
 def qitaf_response_formatter(data, code):
     """
     Qitaf Response format method
