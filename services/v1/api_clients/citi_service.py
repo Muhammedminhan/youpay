@@ -31,7 +31,7 @@ class CitiGenerateOTPAPIView(YouPayTransactionCRUD, APIView, ClientValidator):
                 decrypt_string(transaction_id))
             if transaction_obj:
                 brand_details = update_brand_details(
-                    transaction_obj.transaction_id)
+                    transaction_obj)
                 if brand_details:
                     serializer = YouPayTransactionDataSerializer(
                         transaction_obj)
