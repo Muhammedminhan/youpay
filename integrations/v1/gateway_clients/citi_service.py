@@ -12,7 +12,8 @@ from integrations.constants import (
     PAYMENT_REQUEST_GENERATE_OTP, CITI_REWARDS_CONNECTION_ERROR_MESSAGE,
     CITI_REWARDS_SUCCESS_CODE, CITI_REWARDS_MFA_REQUIRED_CODE,
     CITI_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
-    CITI_REDEMPTION_API, PAYMENT_REQUEST_REDEMPTION, CITI_ACCOUNT_BALANCE
+    CITI_REDEMPTION_API, PAYMENT_REQUEST_REDEMPTION, CITI_ACCOUNT_BALANCE,
+    CITI_REVERT_ACCOUNT_BALANCE
 )
 from integrations.v1.gateway_clients.utils import (
     get_citi_converted_amount, format_citi_service_error_response)
@@ -390,3 +391,27 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                 "Error while getting CITI account balance for transaction "
                 "{}".format(transaction.transaction_id))
             return available_balance
+
+    def revert_citi_account_balance(self, transaction):
+        try:
+            url = self.citi_reward_config.domain + CITI_REVERT_ACCOUNT_BALANCE
+            headers = self.get_payment_header()
+            payload = {
+                'reference_id': transaction.payment_reference,
+            }
+            revert_account_balance_payload = json.dumps(payload)
+            response = requests.post(url, data=revert_account_balance_payload,
+                                     headers=headers)
+            if response:
+                logger.info(
+                    "Reverting account balance success for transaction {}"
+                    .format(transaction.transaction_id))
+            else:
+                logger.error(
+                    "Reverting account balance failed for transaction {}"
+                    .format(transaction.transaction_id))
+
+        except Exception as e:
+            logger.error(
+                "Reverting account balance failed with error {}".format(
+                    str(e)))

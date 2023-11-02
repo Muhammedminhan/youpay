@@ -165,6 +165,7 @@ CITI_GENERATE_OTP_API = "/citi/api/v1/generate-otp/"
 CITI_POINT_BALANCE_API = "/citi/api/v1/get-point-balance/"
 CITI_REDEMPTION_API = "/citi/api/v1/point-redemption/"
 CITI_ACCOUNT_BALANCE = "/citi/api/v1/account-balance/"
+CITI_REVERT_ACCOUNT_BALANCE = "/citi/api/v1/revert-citi-account-balance/"
 
 # Qitaf related constants
 QITAF_OTP_GENERATION_API = "/qitaf/api/v1/burn/generate-otp/"
@@ -174,3 +175,5 @@ QITAF_REVERSE_POINTS_API = "/qitaf/api/v1/burn/reverse-qitafpoints/"
 QITAF_REWARD_UPDATE_API = "/qitaf/api/v1/collect/reward-update/"
 QITAF_VERIFY_API = "/qitaf/api/v1/verify/"
 QITAF_HEADERS = {'Content-Type': 'application/json'}
+
+ORDER_DETAILS_API = "core/api/v1/order/item-details/"
