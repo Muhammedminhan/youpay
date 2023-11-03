@@ -455,8 +455,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
         if request_transaction_id:
             try:
+                transaction_id = decrypt_string(request_transaction_id)
                 transaction_obj = self.get_youpay_transaction_data(
-                    decrypt_string(request_transaction_id))
+                    transaction_id)
+
                 formatted_data = format_qitaf_verify_data(
                     request_data, transaction_obj)
                 gateway_obj = get_payment_gateway_config(
@@ -478,14 +480,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     #     Redemption verified successfully
                     logger.info(
                         "Qitaf Verification with b2c completed for "
-                        "transaction {}".format(
-                            transaction_obj.transaction_id))
+                        "transaction {}".format(transaction_id))
 
                     response_data = response.json()
                     return_response_data["is_redirect"] = True
                     redirect_url = (transaction_obj.success_url +
-                                    '?transaction_id=' +
-                                    transaction_obj.transaction_id)
+                                    '?transaction_id=' + transaction_id)
 
                     return_response_data["redirect_url"] = redirect_url
 
