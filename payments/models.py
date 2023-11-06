@@ -169,12 +169,12 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True,
         help_text='Denotes whether the redemption is full or not.')
-    maximum_redeemable_points = models.IntegerField(
-        null=True, blank=True, help_text=('Maximum points used for citi '
-                                          'rewards point redemption'))
-    minimum_redeemable_points = models.IntegerField(
-        null=True, blank=True, help_text=('Minimum points used for citi '
-                                          'rewards point redemption'))
+    maximum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15,
+        help_text='Maximum points used for citi rewards point redemption')
+    minimum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15,
+        help_text='Minimum points used for citi rewards point redemption')
     amount_conversion_rate = models.DecimalField(
         null=True, blank=True, decimal_places=10, max_digits=12,
         help_text=('Conversion rate received from citi '
@@ -502,10 +502,10 @@ class ArchivedYouPayTransactionData(models.Model):
         decimal_places=4, max_digits=12, null=True, blank=True)
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True)
-    maximum_redeemable_points = models.IntegerField(
-        null=True, blank=True)
-    minimum_redeemable_points = models.IntegerField(
-        null=True, blank=True)
+    maximum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15)
+    minimum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15)
     amount_conversion_rate = models.DecimalField(
         null=True, blank=True, decimal_places=10, max_digits=12)
     citi_order_id = models.CharField(
