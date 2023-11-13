@@ -26,18 +26,18 @@ class WebhookDataFormat(object):
         return card_type
 
 
-def update_brand_details(transaction):
+def update_brand_details(transaction_obj):
     """
     to get the order details from the client
     """
     try:
 
-        if transaction:
-            client = transaction.api_client
+        if transaction_obj:
+            client = transaction_obj.api_client
             api_key = client.api_key
             api_secret = client.api_secret
-            invoice = transaction.invoice_id
-            transaction_id = transaction.transaction_id
+            invoice = transaction_obj.invoice_id
+            transaction_id = transaction_obj.transaction_id
 
             headers = {
                 'API-KEY': api_key,
@@ -51,8 +51,8 @@ def update_brand_details(transaction):
 
             if response:
                 response_data = response.json()
-                transaction.brand_details = response_data
-                transaction.save()
+                transaction_obj.brand_details = response_data
+                transaction_obj.save()
                 return True
             else:
                 logger.error(
