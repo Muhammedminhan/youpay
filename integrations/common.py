@@ -52,7 +52,7 @@ def update_brand_details(transaction_obj):
             if response:
                 response_data = response.json()
                 transaction_obj.brand_details = response_data
-                  logger.info(
+                logger.info(
                     "Brand details response for transaction {} is {}".format(
                         transaction_id, response_data
                     ))
