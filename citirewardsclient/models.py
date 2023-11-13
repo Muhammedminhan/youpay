@@ -63,17 +63,17 @@ class CitiRedemptionData(PaybackRedemptionData):
         max_length=300, null=True, blank=True,
         help_text=('Store citi rewards control flow id received '
                    'from otp generation api.'))
-    maximum_redeemable_points = models.IntegerField(
-        null=True, blank=True, help_text=('Maximum points used for citi '
-                                          'rewards point redemption'))
-    minimum_redeemable_points = models.IntegerField(
-        null=True, blank=True, help_text=('Minimum points used for citi '
-                                          'rewards point redemption'))
+    maximum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15,
+        help_text='Maximum points used for citi rewards point redemption')
+    minimum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15,
+        help_text='Minimum points used for citi rewards point redemption')
     amount_conversion_rate = models.FloatField(
         null=True, blank=True, help_text=('Conversion rate received from '
                                           'citi rewards point balance api'))
     card_id = models.CharField(
-        max_length=500, null=True, blank=True,
+        max_length=1000, null=True, blank=True,
         help_text=('Store citi rewards card id received from '
                    'point balance api.'))
     point_transfer_enabled = models.BooleanField(
@@ -86,7 +86,7 @@ class CitiRedemptionData(PaybackRedemptionData):
         default=False,
         help_text='stores citi rewards convert to cash eligible flag')
     citi_access_token = models.CharField(
-        max_length=500, null=True, blank=True,
+        max_length=1000, null=True, blank=True,
         help_text='stores citi rewards access token')
     citi_token_type = models.CharField(
         max_length=10, null=True, blank=True,
