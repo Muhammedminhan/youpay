@@ -2,8 +2,6 @@ import logging
 
 import requests
 
-from integrations.constants import ORDER_DETAILS_API
-
 logger = logging.getLogger(__name__)
 
 
@@ -35,14 +33,22 @@ def update_brand_details(transaction_obj):
             client = transaction_obj.api_client
             api_key = client.api_key
             api_secret = client.api_secret
+            brand_details_path = client.brand_details_path
             invoice = transaction_obj.invoice_id
             transaction_id = transaction_obj.transaction_id
+
+            if not brand_details_path:
+                logger.error("Brand details path not found for client {} for"
+                             " transaction {}".format(client.name,
+                                                      transaction_id))
+                return False
+            
             headers = {
                 'API-KEY': api_key,
                 'API-SECRET': api_secret
             }
 
-            url = client.client_domain + ORDER_DETAILS_API + invoice
+            url = client.client_domain + brand_details_path + invoice
             logger.info("Fetching brand details from client {} started for "
                         "transaction {}".format(url, transaction_id))
             response = requests.get(url, headers=headers)
