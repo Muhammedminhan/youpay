@@ -34,15 +34,15 @@ def update_brand_details(transaction_obj):
             api_key = client.api_key
             api_secret = client.api_secret
             brand_details_path = client.brand_details_path
-
-            if not brand_details_path:
-                logger.error(
-                    "Brand details path not found for client {}".format(
-                        client.client_name))
-                return False
-
             invoice = transaction_obj.invoice_id
             transaction_id = transaction_obj.transaction_id
+
+            if not brand_details_path:
+                logger.error("Brand details path not found for client {} for"
+                             " transaction {}".format(client.name,
+                                                      transaction_id))
+                return False
+            
             headers = {
                 'API-KEY': api_key,
                 'API-SECRET': api_secret
