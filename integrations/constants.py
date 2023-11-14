@@ -176,4 +176,3 @@ QITAF_CALCULATE_BALANCE_API = "/qitaf/api/v1/calculate-balance/"
 
 QITAF_HEADERS = {'Content-Type': 'application/json'}
 
-ORDER_DETAILS_API = "core/api/v1/order/item-details/"
