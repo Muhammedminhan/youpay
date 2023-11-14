@@ -547,7 +547,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             transaction_id = transaction_obj.transaction_id
 
-            is_updated = update_brand_details(transaction_id)
+            is_updated = update_brand_details(transaction_obj)
             if is_updated:
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
