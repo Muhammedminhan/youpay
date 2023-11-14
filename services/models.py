@@ -32,6 +32,9 @@ class APIClient(AbstractDateTime, AbstractUserBase):
         null=True, blank=True, max_length=100,
         help_text='Client Domain, '
                   'example :  https://youpay-api-client-domain.com/')
+    brand_calculation_path = models.CharField(
+        null=True, blank=True, max_length=100,
+        help_text='Brand Calculation Path, example :  brand-calculation-sample/')
     logo_file = models.ImageField(
         upload_to='logo_files', blank=True, null=True,
         help_text='Logo for the client. Note that the max height, width of '
