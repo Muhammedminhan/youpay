@@ -3,7 +3,6 @@ import re
 from django import forms
 
 from services.models import APIClient
-from services.utils import api_client_logo_validate
 
 
 class APIClientForm(forms.ModelForm):
@@ -18,16 +17,6 @@ class APIClientForm(forms.ModelForm):
     class Meta:
         model = APIClient
         fields = '__all__'
-
-    def clean_logo_file(self):
-        if "logo_file" in self.changed_data:
-            picture = self.cleaned_data.get("logo_file")
-            return api_client_logo_validate(picture)
-
-    def clean_mobile_logo_file(self):
-        if "mobile_logo_file" in self.changed_data:
-            mobile_logo = self.cleaned_data.get("mobile_logo_file")
-            return api_client_logo_validate(mobile_logo)
 
     def clean_color_code(self):
         color_code = self.cleaned_data.get("color_code")
