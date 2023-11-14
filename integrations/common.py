@@ -3,7 +3,6 @@ import logging
 import requests
 
 from integrations.constants import ORDER_DETAILS_API
-from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
 
@@ -27,21 +26,17 @@ class WebhookDataFormat(object):
         return card_type
 
 
-def update_brand_details(transaction_id):
+def update_brand_details(transaction_obj):
     """
     to get the order details from the client
     """
     try:
-        transaction = YouPayTransactionData.objects.get(
-            transaction_id=transaction_id)
-
-        if transaction:
-            client = transaction.api_client
+        if transaction_obj:
+            client = transaction_obj.api_client
             api_key = client.api_key
             api_secret = client.api_secret
-            invoice = transaction.invoice_id
-            transaction_id = transaction.transaction_id
-
+            invoice = transaction_obj.invoice_id
+            transaction_id = transaction_obj.transaction_id
             headers = {
                 'API-KEY': api_key,
                 'API-SECRET': api_secret
@@ -54,12 +49,12 @@ def update_brand_details(transaction_id):
 
             if response:
                 response_data = response.json()
+                transaction_obj.brand_details = response_data
                 logger.info(
                     "Brand details response for transaction {} is {}".format(
                         transaction_id, response_data
                     ))
-                transaction.brand_details = response_data
-                transaction.save()
+                transaction_obj.save()
                 return True
             else:
                 logger.error(
