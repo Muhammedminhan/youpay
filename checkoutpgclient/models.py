@@ -10,7 +10,7 @@ from payments.tasks import (common_update_financial_action_charges)
 from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_METHOD_CHOICES,
                         PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
-                        PAYMENT_SCHEME_NONE)
+                        PAYMENT_SCHEME_NONE, ALLOWED_STATUS_FOR_YOUPAY_UPDATE)
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +182,27 @@ def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
     is_success, is_youpay_updated = False, False
 
     try:
+        financial_action_data = instance.financial_action_response_data
+        if financial_action_data:
+            """
+            Blocking youpay update if financial action data is present and
+            status is not in ALLOWED_STATUS_FOR_YOUPAY_UPDATE
+            """
+            status = instance.status
+            if status not in ALLOWED_STATUS_FOR_YOUPAY_UPDATE:
+                logger.info(
+                    "Checkoutpg TransactionData post_save Not Triggered for "
+                    "reference {}, status {}".format(
+                        instance.payment_reference,
+                        instance.status))
+                return
+            else:
+                logger.info(
+                    "Checkoutpg TransactionData post_save Triggering for "
+                    "reference {}, status {}".format(
+                        instance.payment_reference,
+                        instance.status))
+
         payment_reference = instance.payment_reference
 
         data_to_update = prepare_youpay_transaction_update_data(
