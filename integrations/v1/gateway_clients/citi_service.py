@@ -225,7 +225,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                     self.payment_reference = response_data.get(
                         "reference_id")
                     deducting_points = get_citi_converted_amount(
-                        response_data, transaction_obj.amount)
+                        response_data, transaction_obj.base_amount)
                     response_data.update({
                         'is_success': True,
                         'redeem_points': deducting_points
