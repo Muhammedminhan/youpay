@@ -5,8 +5,8 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from payments.constants import MODEL_NAME_TRANSACTIONDATA
-from payments.models import YouPayTransactionData
 from payments.tasks import (common_update_financial_action_charges)
+from services.v1.views.common import YouPayTransactionCRUD
 from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_METHOD_CHOICES,
                         PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
@@ -238,9 +238,11 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
     payment_status, is_payment_verified = checkout_decline_check(
         {'response_code': instance.checkout_response_code,
          'status': instance.status})
+    youpay_obj = YouPayTransactionCRUD()
 
     try:
-        transaction_obj = (get_youpay_transaction_data_with_payment_reference(
+        transaction_obj = (
+        youpay_obj.get_youpay_transaction_data_with_payment_reference(
             payment_reference))
         if transaction_obj:
             data_to_update = {
@@ -269,14 +271,3 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
         logger.error("Error while preparing data for youpay transaction "
                      "update {}".format(e), exc_info=True)
 
-
-def get_youpay_transaction_data_with_payment_reference(payment_reference):
-    try:
-        transaction_obj = YouPayTransactionData.objects.get(
-            payment_reference=payment_reference)
-        return transaction_obj
-    except YouPayTransactionData.DoesNotExist:
-        logger.info(
-            "Unable to find youpay transaction object with payment"
-            "_reference {}".format(payment_reference))
-        return None
