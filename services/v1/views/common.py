@@ -162,6 +162,7 @@ class YouPayTransactionCRUD(object):
         data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', None)
         data_dict['earned_point'] = data.get('earned_point', None)
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
+        data_dict['brand_calculations'] = data.get('brand_calculations', None)
 
         if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
             # Amount is updating only for qitaf

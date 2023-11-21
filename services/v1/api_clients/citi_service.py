@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
 from core.utils import get_site_domain, decrypt_string
+from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
@@ -29,26 +30,37 @@ class CitiGenerateOTPAPIView(YouPayTransactionCRUD, APIView, ClientValidator):
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
-                serializer = YouPayTransactionDataSerializer(transaction_obj)
-                transaction_data = serializer.data
-                generate_otp_data = {
-                    'transaction_data': transaction_data,
-                    'request_data': request.data,
-                    'site_domain': site_domain
-                }
-                citi_rewards = CitiRewardsManager()
-                response_data, code = citi_rewards.generate_otp(
-                    generate_otp_data)
+                brand_details = update_brand_details(
+                    transaction_obj)
+                if brand_details:
+                    serializer = YouPayTransactionDataSerializer(
+                        transaction_obj)
+                    transaction_data = serializer.data
+                    generate_otp_data = {
+                        'transaction_data': transaction_data,
+                        'request_data': request.data,
+                        'site_domain': site_domain
+                    }
+                    citi_rewards = CitiRewardsManager()
 
-                if response_data:
-                    data = self.response_obj.get_success_dict(
-                        code=code,
-                        success_dict=response_data
-                    )
-                    return Response(data, status=status.HTTP_200_OK)
+                    response_data, code = citi_rewards.generate_otp(
+                        generate_otp_data)
+
+                    if response_data:
+                        data = self.response_obj.get_success_dict(
+                            code=code,
+                            success_dict=response_data
+                        )
+                        return Response(data, status=status.HTTP_200_OK)
+                    else:
+                        data = self.response_obj.get_error_dict(
+                            error_code=code)
+                        return Response(data,
+                                        status=status.HTTP_400_BAD_REQUEST)
                 else:
-                    data = self.response_obj.get_error_dict(error_code=code)
-                    return Response(data, status=status.HTTP_400_BAD_REQUEST)
+                    data = self.response_obj.get_404_message(
+                        message="Brand details not found")
+                    return Response(data, status=status.HTTP_404_NOT_FOUND)
             else:
                 data = self.response_obj.get_404_message(
                     message="Transaction doesn't exists")
