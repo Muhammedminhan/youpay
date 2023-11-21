@@ -16,7 +16,7 @@ from core.validators import DecimalValidator
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
-    PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES)
+    PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST)
 
 logger = logging.getLogger(__name__)
 
@@ -169,12 +169,12 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True,
         help_text='Denotes whether the redemption is full or not.')
-    maximum_redeemable_points = models.IntegerField(
-        null=True, blank=True, help_text=('Maximum points used for citi '
-                                          'rewards point redemption'))
-    minimum_redeemable_points = models.IntegerField(
-        null=True, blank=True, help_text=('Minimum points used for citi '
-                                          'rewards point redemption'))
+    maximum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15,
+        help_text='Maximum points used for citi rewards point redemption')
+    minimum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15,
+        help_text='Minimum points used for citi rewards point redemption')
     amount_conversion_rate = models.DecimalField(
         null=True, blank=True, decimal_places=10, max_digits=12,
         help_text=('Conversion rate received from citi '
@@ -215,6 +215,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     brand_details = models.JSONField(null=True, blank=True,
                                      help_text="used to store brand details "
                                                "from the ecom side")
+    brand_calculations = models.JSONField(null=True, blank=True,
+                                          help_text="Calculated brand details")
     happy_credit_reference = models.CharField(max_length=120, null=True,
                                               blank=True)
     credit_balance_amount = models.DecimalField(
@@ -283,15 +285,28 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         help_text='Earned point for the transaction via corresponding payment'
                   ' method')
 
+
 @receiver(post_init, sender=YouPayTransactionData)
 def set_previous_status(sender, instance, **kwargs):
     instance.previous_status = instance.payment_status
 
 
 @receiver(post_save, sender=YouPayTransactionData)
-def update_client(sender, instance, created, **kwargs):
+def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
     """
-    Signal to send webhook for client on each transaction
+    Signal handler for YouPayTransactionData post-save actions
+    1.Handle actions for updating client on status changes
+    2.Handle actions for reverting citi blocked balance
+    """
+    youpay_update_client(instance)
+
+    if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
+        revert_citi_blocked_balance(instance)
+
+
+def youpay_update_client(instance):
+    """
+    Handle actions to send webhook for client on each transaction
     """
     try:
         from services.v1.views.client_webhook import ClientService
@@ -317,6 +332,24 @@ def update_client(sender, instance, created, **kwargs):
     except Exception as e:
         logger.error("Exception occurred  {} on signal update_client for "
                      "{}, ".format(str(e), instance.transaction_id))
+
+
+def revert_citi_blocked_balance(instance):
+    """
+    Handle actions to revert citi blocked balance
+    """
+    try:
+        logger.info(
+            "revert_citi_blocked_balance signal initiated for {}".format(
+                instance.transaction_id))
+        from integrations.v1.gateway_clients.citi_service import (
+            CitiRewardsManager)
+        citi_manager = CitiRewardsManager()
+        citi_manager.revert_citi_account_balance(instance)
+    except Exception as e:
+        logger.error(
+            "Exception occurred {} on signal while reverting citi blocked "
+            "balance for {}, ".format(str(e), instance.transaction_id))
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):
@@ -502,10 +535,10 @@ class ArchivedYouPayTransactionData(models.Model):
         decimal_places=4, max_digits=12, null=True, blank=True)
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True)
-    maximum_redeemable_points = models.IntegerField(
-        null=True, blank=True)
-    minimum_redeemable_points = models.IntegerField(
-        null=True, blank=True)
+    maximum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15)
+    minimum_redeemable_points = models.DecimalField(
+        null=True, blank=True, decimal_places=4, max_digits=15)
     amount_conversion_rate = models.DecimalField(
         null=True, blank=True, decimal_places=10, max_digits=12)
     citi_order_id = models.CharField(
@@ -523,6 +556,7 @@ class ArchivedYouPayTransactionData(models.Model):
     cart_VAT_amount = models.DecimalField(decimal_places=4, max_digits=12,
                                           null=True, blank=True)
     brand_details = models.JSONField(null=True, blank=True)
+    brand_calculations = models.JSONField(null=True, blank=True)
     happy_credit_reference = models.CharField(max_length=120, null=True,
                                               blank=True)
     credit_balance_amount = models.DecimalField(

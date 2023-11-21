@@ -1,8 +1,10 @@
 import json
 import logging
-import requests
 from decimal import Decimal
+
+import requests
 from rest_framework import status
+
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
@@ -10,7 +12,8 @@ from integrations.constants import (
     PAYMENT_REQUEST_GENERATE_OTP, CITI_REWARDS_CONNECTION_ERROR_MESSAGE,
     CITI_REWARDS_SUCCESS_CODE, CITI_REWARDS_MFA_REQUIRED_CODE,
     CITI_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
-    CITI_REDEMPTION_API, PAYMENT_REQUEST_REDEMPTION
+    CITI_REDEMPTION_API, PAYMENT_REQUEST_REDEMPTION, CITI_ACCOUNT_BALANCE,
+    CITI_REVERT_ACCOUNT_BALANCE
 )
 from integrations.v1.gateway_clients.utils import (
     get_citi_converted_amount, format_citi_service_error_response)
@@ -222,7 +225,7 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
                     self.payment_reference = response_data.get(
                         "reference_id")
                     deducting_points = get_citi_converted_amount(
-                        response_data, transaction_obj.amount)
+                        response_data, transaction_obj.base_amount)
                     response_data.update({
                         'is_success': True,
                         'redeem_points': deducting_points
@@ -353,3 +356,62 @@ class CitiRewardsManager(PaymentHandlers, PaymentRequestView):
             error = "Error in citi rewards point redemption api: {}".format(e)
             logger.error(error)
             return None, self.CITI_REWARDS_CONNECTION_ERROR
+
+    def get_citi_account_balance(self, transaction):
+        """
+        To get CITI Account balance from b2c-payback
+        """
+
+        available_balance = 0
+        try:
+            payload = {
+                'customer_email': transaction.customer_email,
+            }
+            account_balance_payload = json.dumps(payload)
+            url = self.citi_reward_config.domain + CITI_ACCOUNT_BALANCE
+            headers = self.get_payment_header()
+
+            response = requests.post(url, data=account_balance_payload,
+                                     headers=headers)
+
+            if response:
+                response_data = response.json()
+                available_balance = response_data.get('available_balance')
+
+                return available_balance
+
+            else:
+                logger.error("Unable to get CITI account balance for "
+                             "transaction {}".format(
+                    transaction.transaction_id))
+                return available_balance
+
+        except Exception as e:
+            logger.error(
+                "Error while getting CITI account balance for transaction "
+                "{}".format(transaction.transaction_id))
+            return available_balance
+
+    def revert_citi_account_balance(self, transaction):
+        try:
+            url = self.citi_reward_config.domain + CITI_REVERT_ACCOUNT_BALANCE
+            headers = self.get_payment_header()
+            payload = {
+                'reference_id': transaction.payment_reference,
+            }
+            revert_account_balance_payload = json.dumps(payload)
+            response = requests.post(url, data=revert_account_balance_payload,
+                                     headers=headers)
+            if response:
+                logger.info(
+                    "Reverting account balance success for transaction {}"
+                    .format(transaction.transaction_id))
+            else:
+                logger.error(
+                    "Reverting account balance failed for transaction {}"
+                    .format(transaction.transaction_id))
+
+        except Exception as e:
+            logger.error(
+                "Reverting account balance failed with error {}".format(
+                    str(e)))
