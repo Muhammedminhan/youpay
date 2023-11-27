@@ -173,6 +173,8 @@ class YouPayTransactionCRUD(object):
                 transaction_id=transaction_id)
 
         try:
+            logger.info("Updating transaction data for {} tid {}".format(
+                data_dict, transaction_id))
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
                 saved_fields = [
@@ -187,8 +189,9 @@ class YouPayTransactionCRUD(object):
                 transaction_obj.save(update_fields=saved_fields)
                 logger.info(
                     "Transaction object updated successfully for {}"
-                    ", status :{}".format(transaction_id,
-                                          transaction_obj.payment_status))
+                    ", status :{}, updated fields {}".format(
+                        transaction_id, transaction_obj.payment_status,
+                        saved_fields))
 
                 if (transaction_obj.payment_status == PAYMENT_STATUS_PAID
                         and not transaction_obj.gateway_charge):
