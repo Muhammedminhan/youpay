@@ -323,9 +323,6 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         response, transaction_obj = manager_obj.verification(payment_data)
         transaction_id = (transaction_obj.transaction_id if transaction_obj
                           else None)
-        logger.info(
-            "QitafVerify Request {} and response {} for tid {}".format(
-                payment_data, response, transaction_id))
         if response:
             logger.info("QitafVerify Response {}".format(response))
             if response.get('is_success') and response.get('is_redirect'):
@@ -438,18 +435,6 @@ def get_calculated_youpay_transaction_data_with_qitaf_balance(
     """
     The idea is to replace the additional_data with the qitaf balance
      calculation response from the qitaf service
-    {
-    "currency": "SAR",
-    "sum_net_amount": 107.96,
-    "sum_applied_vat": 1.04,
-    "sum_gift_base_value": 100.0,
-    "sum_redemption_points": 10,
-    "sum_card_payment_amount": 97.96,
-    "sum_applied_service_charge": 6.92,
-    "service_fee_eligible_amount": 100.0
-    }
-
-
     """
 
     brand_calculations = transaction_obj.brand_calculations
