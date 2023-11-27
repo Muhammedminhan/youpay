@@ -22,7 +22,8 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
                                 PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_REJECTED_RETRY,
-                                PAYMENT_METHOD_QITAF)
+                                PAYMENT_METHOD_QITAF,
+                                PAYMENT_METHOD_QITAFAND_CARD)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -152,7 +153,8 @@ class YouPayTransactionCRUD(object):
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
 
-        if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
+        if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
+                                           PAYMENT_METHOD_QITAFAND_CARD]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
             service_fee = data.get('service_fee', None)
