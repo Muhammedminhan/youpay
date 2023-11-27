@@ -475,7 +475,8 @@ def get_calculated_youpay_transaction_data_with_qitaf_balance(
             'payable_amount': payable_amount,
             'service_fee': service_fee,
             'base_amount': base_amount,
-            'VAT_amount': vat_amount
+            'VAT_amount': vat_amount,
+            'payment_method': transaction_obj.payment_method,
         }
     else:
         logger.error("Brand calculation is empty for transaction {}".format(
