@@ -416,15 +416,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 self.redeemed_point = response_data.get('redeemed_point')
 
                 # on full redemption case
+                self.amount = 0
                 self.payable_amount = 0
                 self.service_fee = 0
                 self.base_amount = 0
                 self.VAT_amount = 0
-
-                youpay_update_data['payable_amount'] = self.payable_amount
-                youpay_update_data['service_fee'] = self.service_fee
-                youpay_update_data['base_amount'] = self.base_amount
-                youpay_update_data['VAT_amount'] = self.VAT_amount
+                self.payable_amount = 0
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
@@ -436,17 +433,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.payment_method = (
             PAYMENT_METHOD_QITAF if is_full_redemption
             else PAYMENT_METHOD_QITAFAND_CARD)
-        # TODO REmove
-        logger.info(
-            "Qitaf Calculated values after paid {} for tid {}:".format(
 
-                {'payable amt ': self.payable_amount,
-                 'service_fee': self.service_fee,
-                 'base_amount': self.base_amount,
-                 'VAT_amount': self.VAT_amount,
-                 },
-                self.transaction_id
-            ))
 
         youpay_update_data = {
             **update_data,
@@ -459,6 +446,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 "payment_gateway": self.payment_gateway,
                 "redeemed_amount": self.redeemed_amount,
                 "redeemed_points": self.redeemed_point,
+                "amount": self.amount,
+                "payable_amount": self.payable_amount,
+                "service_fee": self.service_fee,
+                "base_amount": self.base_amount,
+                "VAT_amount": self.VAT_amount,
                 "response_summary": response_data.get(
                     'reason')
             }
