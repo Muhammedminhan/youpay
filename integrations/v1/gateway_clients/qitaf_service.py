@@ -554,7 +554,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     transaction_obj)
 
                 update_data = {
-                    'transaction_id': transaction_obj.transaction_id,
+                    'transaction_id': str(transaction_obj.transaction_id),
                     'payment_status': payment_status,
                     'is_flagged': is_flagged,
                     'approved': approved,
