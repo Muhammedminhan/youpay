@@ -388,6 +388,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             return {"error": error}, self.QITAF_CONNECTION_ERROR
 
     def handle_qitaf_response(self, response_data, payment_data):
+        youpay_update_data = {}
         logger.info(
             "\n\n\nhandle_qitaf_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
@@ -414,10 +415,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 self.redeemed_amount = response_data.get('redeemed_amount')
                 self.redeemed_point = response_data.get('redeemed_point')
 
+                # on full redemption case
                 self.payable_amount = 0
                 self.service_fee = 0
                 self.base_amount = 0
                 self.VAT_amount = 0
+
+                youpay_update_data['payable_amount'] = self.payable_amount
+                youpay_update_data['service_fee'] = self.service_fee
+                youpay_update_data['base_amount'] = self.base_amount
+                youpay_update_data['VAT_amount'] = self.VAT_amount
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
@@ -538,6 +545,14 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     request_method=REQUEST_METHOD_GET,
                     request_type=PAYMENT_REQUEST_VERIFY
                 )
+
+                from services.v1.api_clients.qitaf_service import (
+                    get_calculated_youpay_transaction_data_with_qitaf_balance)
+
+                # update youpay transaction data with qitaf balance calculation on successfull payment
+                calculated_youpay_transaction_data = get_calculated_youpay_transaction_data_with_qitaf_balance(
+                    transaction_obj)
+
                 update_data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'payment_status': payment_status,
@@ -545,6 +560,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
                 }
+                update_data.update(calculated_youpay_transaction_data)
+
+                logger.info("Qitaf Verification with b2c completed for "
+                            "transaction {}, data to be updating {}".format(
+                    transaction_id, update_data))
                 self.update_youpay_transaction_data(update_data)
                 return return_response_data, transaction_obj
 
