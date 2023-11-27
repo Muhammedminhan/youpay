@@ -390,7 +390,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
     def handle_qitaf_response(self, response_data, payment_data):
         youpay_update_data = {}
         logger.info(
-            "\n\n\nhandle_qitaf_response data {}".format(response_data))
+            "handle_qitaf_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
 
@@ -493,7 +493,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 formatted_data = format_qitaf_verify_data(
                     request_data, transaction_obj)
                 gateway_obj = get_payment_gateway_config(
-                    # QITAF_CACHE_KEY, QITAF_HUB_CODE)
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
 
                 qitaf_domain = gateway_obj.domain
