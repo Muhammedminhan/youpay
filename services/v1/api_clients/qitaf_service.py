@@ -323,6 +323,9 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         response, transaction_obj = manager_obj.verification(payment_data)
         transaction_id = (transaction_obj.transaction_id if transaction_obj
                           else None)
+        logger.info(
+            "QitafVerify Request {} and response {} for tid {}".format(
+                payment_data, response, transaction_id))
         if response:
             logger.info("QitafVerify Response {}".format(response))
             if response.get('is_success') and response.get('is_redirect'):
