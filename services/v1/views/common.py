@@ -165,10 +165,16 @@ class YouPayTransactionCRUD(object):
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
 
         if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
-            # Amount is updating only for qitaf
+            # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
-            if amount:
-                data_dict['amount'] = amount
+            service_fee = data.get('service_fee', None)
+            base_amount = data.get('base_amount', None)
+            VAT_amount = data.get('VAT_amount', None)
+
+            data_dict['amount'] = amount
+            data_dict['service_fee'] = service_fee
+            data_dict['base_amount'] = base_amount
+            data_dict['VAT_amount'] = VAT_amount
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
