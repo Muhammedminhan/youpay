@@ -56,6 +56,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.amount = None
         self.redeemed_point = None
         self.redeemed_amount = None
+        self.redeemed_points = None
+        self.payable_amount = None
+        self.service_fee = None
+        self.base_amount = None
+        self.VAT_amount = None
         self.payment_gateway = PAYMENT_GATEWAY_B2CPAYBACK
 
     def get_qitaf_payment_data(self, data):
@@ -383,6 +388,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             return {"error": error}, self.QITAF_CONNECTION_ERROR
 
     def handle_qitaf_response(self, response_data, payment_data):
+        logger.info(
+            "\n\n\nhandle_qitaf_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
 
@@ -406,6 +413,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 self.redeemed_amount = response_data.get('redeemed_amount')
                 self.redeemed_point = response_data.get('redeemed_point')
+
+                self.payable_amount = 0
+                self.service_fee = 0
+                self.base_amount = 0
+                self.VAT_amount = 0
+
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
                 is_success, is_redirect = True, True
@@ -416,6 +429,17 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.payment_method = (
             PAYMENT_METHOD_QITAF if is_full_redemption
             else PAYMENT_METHOD_QITAFAND_CARD)
+        # TODO REmove
+        logger.info(
+            "Qitaf Calculated values after paid {} for tid {}:".format(
+
+                {'payable amt ': self.payable_amount,
+                 'service_fee': self.service_fee,
+                 'base_amount': self.base_amount,
+                 'VAT_amount': self.VAT_amount,
+                 },
+                self.transaction_id
+            ))
 
         youpay_update_data = {
             **update_data,
