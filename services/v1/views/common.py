@@ -171,12 +171,12 @@ class YouPayTransactionCRUD(object):
             amount = data.get('amount', None)
             service_fee = data.get('service_fee', None)
             base_amount = data.get('base_amount', None)
-            VAT_amount = data.get('VAT_amount', None)
+            vat_amount = data.get('VAT_amount', None)
 
             data_dict['amount'] = amount
             data_dict['service_fee'] = service_fee
             data_dict['base_amount'] = base_amount
-            data_dict['VAT_amount'] = VAT_amount
+            data_dict['VAT_amount'] = vat_amount
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
@@ -185,8 +185,6 @@ class YouPayTransactionCRUD(object):
                 transaction_id=transaction_id)
 
         try:
-            logger.info("Updating transaction data for {} tid {}".format(
-                data_dict, transaction_id))
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
                 saved_fields = [
@@ -199,11 +197,10 @@ class YouPayTransactionCRUD(object):
                     transaction_obj.is_full_redemption = False
                     saved_fields.append('is_full_redemption')
                 transaction_obj.save(update_fields=saved_fields)
-                logger.info(
-                    "Transaction object updated successfully for {}"
-                    ", status :{}, updated fields {}".format(
-                        transaction_id, transaction_obj.payment_status,
-                        saved_fields))
+                logger.info("Transaction object updated successfully for {}"
+                            ", status :{}, updated fields {}".format(
+                    transaction_id, transaction_obj.payment_status,
+                    saved_fields))
 
                 if (transaction_obj.payment_status == PAYMENT_STATUS_PAID
                         and not transaction_obj.gateway_charge):
