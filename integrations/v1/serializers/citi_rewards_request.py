@@ -23,6 +23,7 @@ class GenerateOTPRequestSerializer(serializers.Serializer):
     amount = serializers.SerializerMethodField()
     currency = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
+    brand_details = serializers.SerializerMethodField()
 
     def get_reference_id(self, data):
         random_payment_reference = (
@@ -68,3 +69,6 @@ class GenerateOTPRequestSerializer(serializers.Serializer):
 
     def get_customer_email(self, data):
         return data.get('transaction_data', {}).get('customer_email')
+
+    def get_brand_details(self, data):
+        return data.get('transaction_data', {}).get('brand_details')
