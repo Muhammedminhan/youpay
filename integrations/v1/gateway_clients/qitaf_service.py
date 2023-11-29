@@ -418,7 +418,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 self.redeemed_point = response_data.get('redeemed_point')
 
                 # on full redemption case
-                self.amount = 0
                 self.payable_amount = 0
                 self.service_fee = 0
                 self.base_amount = 0
