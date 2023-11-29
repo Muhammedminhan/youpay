@@ -572,8 +572,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_flagged': is_flagged,
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
-                    'reward': reward,
-                    'is_qitaf_enabled': is_qitaf_enabled
+                    'reward': reward
                 }
                 update_data.update(calculated_youpay_transaction_data)
 
