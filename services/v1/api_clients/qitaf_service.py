@@ -455,7 +455,7 @@ def get_calculated_youpay_transaction_data_with_qitaf_balance(
 
         youpay_update_data = {
             'redeemed_amount': redeemed_amount,
-            'redeemed_point': redeemed_point,
+            'redeemed_points': redeemed_point,
             'amount': amount,
             'payable_amount': payable_amount,
             'service_fee': service_fee,
