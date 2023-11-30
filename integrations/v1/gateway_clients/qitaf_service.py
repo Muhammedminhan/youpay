@@ -420,9 +420,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 # on full redemption case
                 self.payable_amount = 0
                 self.service_fee = 0
-                self.base_amount = 0
                 self.VAT_amount = 0
-                self.payable_amount = 0
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
