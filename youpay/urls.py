@@ -49,6 +49,3 @@ if settings.DEBUG:
     # static files (images, css, javascript, etc.)
     urlpatterns += [re_path(r'^media/(?P<path>.*)$', serve)]
     urlpatterns += [re_path(r'^static/(?P<path>.*)$', serve)]
-
-print("hi")
-
