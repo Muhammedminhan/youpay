@@ -78,6 +78,18 @@ class YouPayTransactionCRUD(object):
                              "".format(payment_reference))
                 return None
 
+    def get_youpay_transaction_data_with_payment_reference(self,
+                                                           payment_reference):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=payment_reference)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            logger.info(
+                "Unable to find youpay transaction object with payment"
+                "_reference {}".format(payment_reference))
+            return None
+
     def get_youpay_transaction_data(self, transaction_id):
         with transaction.atomic():
             try:
