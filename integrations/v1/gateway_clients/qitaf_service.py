@@ -17,7 +17,7 @@ from integrations.constants import (
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
     CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
-)
+    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, )
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -29,6 +29,8 @@ from payments.constants import (PAYMENT_STATUS_PAID,
                                 LANGUAGE_CODE_AR)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
+from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
+                                   B2C_PAYBACK_CONFIG_ENDPOINT)
 from services.v1.views.common import add_payment_gateway_info_in_url
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -63,6 +65,42 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.base_amount = None
         self.VAT_amount = None
         self.payment_gateway = PAYMENT_GATEWAY_B2CPAYBACK
+
+    def get_configurations(self, amount, currency, transaction_id):
+        product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
+        amount = str(amount)
+        currency = str(currency)
+        if currency != CHECKOUT_SAUDI_CURRENCY:
+            logger.info(
+                "Skipping config api call to qitaf for non SAR "
+                "transaction {}".format(transaction_id))
+            return None
+        else:
+            config_request_data = {
+                "amount": amount, "currency": currency,
+                "product_code": product_code
+            }
+            request_data_json = json.dumps(config_request_data)
+            gateway_obj = get_payment_gateway_config(QITAF_CACHE_KEY,
+                                                     B2CPAYBACK_HUB_CODE)
+            payback_domain = gateway_obj.domain
+            try:
+                url = payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
+
+                response = requests.post(url, data=request_data_json,
+                                         headers=QITAF_HEADERS)
+                if response:
+                    return response.json()
+                else:
+                    logger.error(
+                        "No configuration received from qitaf configuration"
+                        " api call to b2cpayback for transaction {}, response"
+                        " {}".format(transaction_id, response.text))
+                    return None
+            except Exception as e:
+                logger.error("config api call to b2cpayback failed",
+                             exc_info=e)
+                return None
 
     def get_qitaf_payment_data(self, data):
         if data.get('transaction_obj'):
