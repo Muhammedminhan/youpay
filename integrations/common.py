@@ -2,6 +2,8 @@ import logging
 
 import requests
 
+from core.constants import PRODUCT_GROUP_GIFT_CODE
+
 logger = logging.getLogger(__name__)
 
 
@@ -37,12 +39,22 @@ def update_brand_details(transaction_obj):
             invoice = transaction_obj.invoice_id
             transaction_id = transaction_obj.transaction_id
 
+            if transaction_obj.api_client.client_code == PRODUCT_GROUP_GIFT_CODE:
+                brand_details = prepare_brand_item_set(transaction_obj)
+                transaction_obj.brand_details = brand_details
+                logger.info(
+                    "Brand details prepaired for transaction {} is {}".format(
+                        transaction_id, brand_details
+                    ))
+                transaction_obj.save()
+                return True
+
             if not brand_details_path:
                 logger.error("Brand details path not found for client {} for"
                              " transaction {}".format(client.name,
                                                       transaction_id))
                 return False
-            
+
             headers = {
                 'API-KEY': api_key,
                 'API-SECRET': api_secret
@@ -77,3 +89,43 @@ def update_brand_details(transaction_obj):
         logger.error(
             "Getting brand details failed with error {}".format(str(e)))
         return False
+
+
+def prepare_brand_item_set(transaction_obj):
+    """
+    This method will prepare brand item set, for now Groupgift has only
+    one brand item set, so no need to call brand item details api
+    instead just prepare an item set with the data which we have
+
+    item set structure :
+    {
+        "currency": "SAR",
+        "item_set": [
+            {
+                "vat": 0.97,
+                "item_id": "#line-TCYSA-14_39_58-a9817764-f0c5-4d37-9e56-e171088f36cd",
+                "quantity": 1,
+                "brand_code": "TCYSA",
+                "service_charge": 6.44,
+                "gift_base_value": 50.0
+            }
+        ]
+    }
+
+    """
+    brand_details = {
+        "currency": transaction_obj.currency,
+        "item_set": [
+            {
+                "vat": float(transaction_obj.VAT_amount),
+                "item_id": "",
+                "quantity": 1,
+                "brand_code": "",
+                "service_charge": float(transaction_obj.service_fee),
+                "gift_base_value": float(transaction_obj.base_amount)
+            }
+        ],
+        "comments": "calulated by youpay"
+    }
+
+    return brand_details
