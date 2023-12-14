@@ -1,9 +1,11 @@
 import logging
 
+from django import forms
 from django.contrib import admin
 from django.core.cache import cache
 
-from .models import AppConfig, Currency, Country, PaymentMethod
+from .models import (AppConfig, Currency, Country, PaymentMethod,
+                     PaymentMethodConfig)
 
 admin.site.site_header = 'YouPay Administration'
 
@@ -47,7 +49,7 @@ class CurrencyAdmin(AdminAbstract):
     list_display = ('iso_code', 'name', 'decimal_notation',
                     'created_at', 'updated_at')
     search_fields = ('iso_code', 'name',)
-    list_filter = ('created_by', )
+    list_filter = ('created_by',)
 
 
 class CountryAdmin(AdminAbstract):
@@ -58,8 +60,36 @@ class CountryAdmin(AdminAbstract):
     raw_id_fields = ('currency',)
 
 
+class SliderCheckboxInput(forms.CheckboxInput):
+    template_name = 'core/admin/widgets/slider_checkbox.html'
+
+    def get_context(self, name, value, attrs):
+        context = super().get_context(name, value, attrs)
+        return context
+
+
+class PaymentMethodConfigAdminForm(forms.ModelForm):
+    class Meta:
+        model = PaymentMethodConfig
+        fields = '__all__'
+        widgets = {
+            'active': SliderCheckboxInput(),
+            'guest_user_enabled': SliderCheckboxInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class PaymentMethodConfigInline(admin.TabularInline):
+    model = PaymentMethodConfig
+    extra = 0
+
+    form = PaymentMethodConfigAdminForm
+
+
 class PaymentMethodAdmin(AdminAbstract):
-    fields = ('payment_method', 'country', 'clients', 'active',
+    fields = ('payment_method', 'active',
               'guest_user_enabled', 'payment_gateway', 'created_at',
               'updated_at', 'created_by', 'modified_by')
     list_display = ('payment_method', 'active',
@@ -67,11 +97,18 @@ class PaymentMethodAdmin(AdminAbstract):
     search_fields = ('payment_method', 'country', 'clients')
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
                    'payment_gateway',)
-    filter_horizontal = ('clients', 'country')
+
+    inlines = [PaymentMethodConfigInline]
+
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        print("Formset initialized with data:", formset.data)
+        return formset
 
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
-            return ('created_at', 'updated_at', 'created_by', 'modified_by')
+            return (
+                'created_at', 'updated_at', 'created_by', 'modified_by')
         return (
             'payment_method', 'payment_gateway', 'created_at', 'updated_at',
             'created_by', 'modified_by')

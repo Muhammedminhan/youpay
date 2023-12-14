@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from core.constants import PURCHASE_PLATFORM_CHOICES
 from payments.constants import PAYMENT_OPTION_CHOICES
 
 # Create your models here.
@@ -113,8 +114,6 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
         max_length=100,
         choices=PAYMENT_OPTION_CHOICES,
         help_text='Chosen payment method')
-    country = models.ManyToManyField('core.Country', blank=True)
-    clients = models.ManyToManyField('services.APIClient', blank=True)
     active = models.BooleanField(
         default=False, help_text='Denotes whether the payment '
                                  'method is active or not')
@@ -128,3 +127,24 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return self.payment_method
+
+
+class PaymentMethodConfig(models.Model):
+    payment_method = models.ForeignKey(
+        'PaymentMethod', on_delete=models.CASCADE)
+    country = models.ForeignKey(
+        'core.Country', on_delete=models.CASCADE)
+    platform = models.CharField(
+        choices=PURCHASE_PLATFORM_CHOICES, max_length=200, null=True,
+        blank=True)
+    client = models.ForeignKey(
+        'services.APIClient', on_delete=models.CASCADE)
+    active = models.BooleanField(
+        default=False, help_text='Denotes whether the payment method '
+                                 'configuration is active or not')
+    guest_user_enabled = models.BooleanField(
+        default=False, help_text='Denotes whether the payment method is '
+                                 'available for the guest user')
+
+    def __str__(self):
+        return f"{self.country} - {self.platform} - {self.client}"
