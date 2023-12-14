@@ -2,7 +2,8 @@ import logging
 
 import requests
 
-from core.constants import PRODUCT_GROUP_GIFT_CODE, QTY_ONE
+from core.constants import PRODUCT_GROUP_GIFT_CODE, QTY_ONE, \
+    SOURCE_FROM_YOUPAY
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,7 @@ def prepare_brand_item_set(transaction_obj):
                 "gift_base_value": float(transaction_obj.base_amount)
             }
         ],
-        "comments": "calulated by youpay"
+        "comments": SOURCE_FROM_YOUPAY
     }
 
     return brand_details
