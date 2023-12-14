@@ -2,7 +2,8 @@ import logging
 
 import requests
 
-from core.constants import PRODUCT_GROUP_GIFT_CODE
+from core.constants import (PRODUCT_GROUP_GIFT_CODE, QTY_ONE,
+                            SOURCE_FROM_YOUPAY)
 
 logger = logging.getLogger(__name__)
 
@@ -96,22 +97,6 @@ def prepare_brand_item_set(transaction_obj):
     This method will prepare brand item set, for now Groupgift has only
     one brand item set, so no need to call brand item details api
     instead just prepare an item set with the data which we have
-
-    item set structure :
-    {
-        "currency": "SAR",
-        "item_set": [
-            {
-                "vat": 0.97,
-                "item_id": "#line-TCYSA-14_39_58-a9817764-f0c5-4d37-9e56-e171088f36cd",
-                "quantity": 1,
-                "brand_code": "TCYSA",
-                "service_charge": 6.44,
-                "gift_base_value": 50.0
-            }
-        ]
-    }
-
     """
     brand_details = {
         "currency": transaction_obj.currency,
@@ -119,13 +104,13 @@ def prepare_brand_item_set(transaction_obj):
             {
                 "vat": float(transaction_obj.VAT_amount),
                 "item_id": "",
-                "quantity": 1,
+                "quantity": QTY_ONE,
                 "brand_code": "",
                 "service_charge": float(transaction_obj.service_fee),
                 "gift_base_value": float(transaction_obj.base_amount)
             }
         ],
-        "comments": "calulated by youpay"
+        "comments": SOURCE_FROM_YOUPAY
     }
 
     return brand_details
