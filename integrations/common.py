@@ -2,8 +2,8 @@ import logging
 
 import requests
 
-from core.constants import PRODUCT_GROUP_GIFT_CODE, QTY_ONE, \
-    SOURCE_FROM_YOUPAY
+from core.constants import (PRODUCT_GROUP_GIFT_CODE, QTY_ONE,
+                            SOURCE_FROM_YOUPAY)
 
 logger = logging.getLogger(__name__)
 
