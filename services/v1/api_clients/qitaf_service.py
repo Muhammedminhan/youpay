@@ -306,7 +306,7 @@ class QitafRewardUpdateAPIView(APIView):
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 
- 
+
 class QitafVerify(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
