@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from core.constants import PURCHASE_PLATFORM_CHOICES
+from core.constants import PURCHASE_PLATFORM_CHOICES, GUEST_USER_OPTIONS
 from payments.constants import PAYMENT_OPTION_CHOICES
 
 # Create your models here.
@@ -117,9 +117,9 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
     active = models.BooleanField(
         default=False, help_text='Denotes whether the payment '
                                  'method is active or not')
-    guest_user_enabled = models.BooleanField(
-        default=False, help_text='Denotes whether the payment method is '
-                                 'available for the guest user')
+    guest_user_enabled = models.CharField(
+        choices=GUEST_USER_OPTIONS, max_length=200, null=True,
+        blank=True)
     payment_gateway = models.ForeignKey(
         'integrations.PaymentGateway', on_delete=models.CASCADE,
         blank=True, null=True,
