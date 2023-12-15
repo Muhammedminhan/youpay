@@ -102,7 +102,6 @@ class PaymentMethodAdmin(AdminAbstract):
 
     def get_formset(self, request, obj=None, **kwargs):
         formset = super().get_formset(request, obj, **kwargs)
-        print("Formset initialized with data:", formset.data)
         return formset
 
     def get_readonly_fields(self, request, obj=None):

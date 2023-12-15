@@ -140,11 +140,11 @@ class PaymentMethodConfig(models.Model):
     client = models.ForeignKey(
         'services.APIClient', on_delete=models.CASCADE)
     active = models.BooleanField(
-        default=False, help_text='Denotes whether the payment method '
-                                 'configuration is active or not')
+        default=True, help_text='Denotes whether the payment method '
+                                'configuration is active or not')
     guest_user_enabled = models.BooleanField(
-        default=False, help_text='Denotes whether the payment method is '
-                                 'available for the guest user')
+        default=True, help_text='Denotes whether the payment method is '
+                                'available for the guest user')
 
     def __str__(self):
         return f"{self.country} - {self.platform} - {self.client}"

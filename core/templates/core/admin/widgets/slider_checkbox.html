@@ -3,9 +3,54 @@
 <!-- templates/admin/widgets/slider_checkbox.html -->
 
 <div class="slider-container">
-  <input type="checkbox" class="slider" id={{widget.name}} name="{{ widget.name }}" {% if widget.attrs.checked %}checked{% endif %}>
+  <input type="checkbox" class="slider" id={{widget.name}} name="{{ widget.name }}"
+         {% if widget.attrs.checked%}
+         checked
+         {% endif %}>
   <label for={{widget.name}} class="switch round"></label>
 </div>
+
+<script>
+(function($) {
+    $(document).ready(function() {
+        // Function to toggle the visibility of the guest user slider based on the active status
+        function toggleGuestUserSlider(widgetName) {
+            // Extract the prefix and field name from the widget ID
+            var parts = widgetName.split('-');
+
+            var id = parts[1];
+            var fieldName = parts[2];
+
+            // Build the ID of the corresponding guest user slider
+            var guestUserSliderId = '#paymentmethodconfig_set-' + id + '-guest_user_enabled';
+
+            var guestUserSliderContainer = $(guestUserSliderId).closest('.slider-container');
+
+            if (guestUserSliderContainer.length) {
+                if ($('#paymentmethodconfig_set-' + id + '-active').prop('checked')) {
+                    guestUserSliderContainer.show();
+                } else {
+                    guestUserSliderContainer.hide();
+                }
+            }
+        }
+
+        // Call the function for each widget on page load
+        $('.slider-container').each(function() {
+            var widgetName = $(this).find('input[type="checkbox"]').attr('name');
+            toggleGuestUserSlider(widgetName);
+        });
+
+        // Attach an event listener to each active checkbox to update the visibility dynamically
+        $(document).on('change', 'input[type="checkbox"].slider', function() {
+            var widgetName = $(this).attr('name');
+            toggleGuestUserSlider(widgetName);
+        });
+    });
+})(django.jQuery || jQuery);
+
+
+</script>
 
 <style>
 .slider-container {
@@ -51,5 +96,3 @@ input:checked + .switch:before {
   transform: translateX(26px);
 }
 </style>
-
-
