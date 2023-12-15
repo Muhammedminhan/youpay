@@ -120,7 +120,6 @@ def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
             "Citi Redemption Data post_save Triggering for "
             "reference {}, status {}".format(
                 instance.reference_id, instance.payment_status))
-        # breakpoint()
 
         payment_reference = instance.reference_id
 
