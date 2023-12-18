@@ -13,22 +13,28 @@
 <script>
 (function($) {
     $(document).ready(function() {
-        // Function to toggle the visibility of the guest user slider based on the active status
-        function toggleGuestUserSlider(widgetName) {
-            // Extract the prefix and field name from the widget ID
+        // Function to toggle the visibility and state of the guest user slider
+        function toggleGuestUserSlider(widgetName, guestUserEnabledStatus) {
             var parts = widgetName.split('-');
-
             var id = parts[1];
-            var fieldName = parts[2];
 
-            // Build the ID of the corresponding guest user slider
             var guestUserSliderId = '#paymentmethodconfig_set-' + id + '-guest_user_enabled';
-
             var guestUserSliderContainer = $(guestUserSliderId).closest('.slider-container');
+            var guestUserSliderCheckbox = guestUserSliderContainer.find('input[type="checkbox"]');
 
             if (guestUserSliderContainer.length) {
                 if ($('#paymentmethodconfig_set-' + id + '-active').prop('checked')) {
                     guestUserSliderContainer.show();
+
+                    // Check if 'guest_user_enabled' is set to 'Enable' or 'Disable'
+                    if (guestUserEnabledStatus === 'Enable') {
+                        guestUserSliderCheckbox.prop('checked', true).prop('disabled', true);
+                    } else if (guestUserEnabledStatus === 'Disable') {
+                        guestUserSliderCheckbox.prop('checked', false).prop('disabled', true);
+                    } else {
+                        // For 'Custom' option, enable and leave it editable
+                        guestUserSliderCheckbox.prop('disabled', false);
+                    }
                 } else {
                     guestUserSliderContainer.hide();
                 }
@@ -38,19 +44,27 @@
         // Call the function for each widget on page load
         $('.slider-container').each(function() {
             var widgetName = $(this).find('input[type="checkbox"]').attr('name');
-            toggleGuestUserSlider(widgetName);
+            toggleGuestUserSlider(widgetName, $('#id_guest_user_enabled').val());
         });
 
         // Attach an event listener to each active checkbox to update the visibility dynamically
         $(document).on('change', 'input[type="checkbox"].slider', function() {
             var widgetName = $(this).attr('name');
-            toggleGuestUserSlider(widgetName);
+            toggleGuestUserSlider(widgetName, $('#id_guest_user_enabled').val());
+        });
+
+        // Attach an event listener to the dropdown to update the visibility and state dynamically
+        $(document).on('change', '#id_guest_user_enabled', function() {
+            var selectedValue = $(this).val();
+            $('.slider-container').each(function() {
+                var widgetName = $(this).find('input[type="checkbox"]').attr('name');
+                toggleGuestUserSlider(widgetName, selectedValue);
+            });
         });
     });
 })(django.jQuery || jQuery);
-
-
 </script>
+
 
 <style>
 .slider-container {
