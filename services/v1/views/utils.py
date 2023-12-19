@@ -1,6 +1,8 @@
 import json
 import logging
 
+from django.db.models import Q
+
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS)
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, PaymentMethodConfig
@@ -319,14 +321,17 @@ def get_payment_methods(transaction, client, country):
     platform = transaction.platform
 
     try:
+        payment_method_query = Q(payment_method__active=True, client=client,
+                                 country=country, active=True,
+                                 platform=platform)
+        if transaction.is_guest:
+            payment_method_query = Q(payment_method__active=True,
+                                     client=client,
+                                     country=country, active=True,
+                                     guest_user_enabled=True,
+                                     platform=platform)
         payment_method_configs = PaymentMethodConfig.objects.filter(
-            payment_method__active=True,
-            client=client,
-            country=country,
-            active=True,
-            guest_user_enabled=True if transaction.is_guest else False,
-            platform=platform
-        )
+            payment_method_query)
 
         payment_options = {config.payment_method.payment_method: True for
                            config in payment_method_configs}

@@ -3,6 +3,7 @@ import logging
 from django import forms
 from django.contrib import admin
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 
 from .models import (AppConfig, Currency, Country, PaymentMethod,
                      PaymentMethodConfig)
@@ -79,6 +80,9 @@ class PaymentMethodConfigAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['country'].required = True
+        self.fields['platform'].required = True
+        self.fields['payment_method'].required = True
 
 
 class PaymentMethodConfigInline(admin.TabularInline):
@@ -100,9 +104,20 @@ class PaymentMethodAdmin(AdminAbstract):
 
     inlines = [PaymentMethodConfigInline]
 
-    def get_formset(self, request, obj=None, **kwargs):
-        formset = super().get_formset(request, obj, **kwargs)
-        return formset
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        total_guest_user_enabled = 0
+
+        for instance in instances:
+            if instance.guest_user_enabled:
+                total_guest_user_enabled += 1
+        super().save_formset(request, form, formset, change)
+        total_inlines_count = formset.total_form_count()
+        if total_guest_user_enabled == 0 or total_guest_user_enabled == total_inlines_count:
+            raise ValidationError(
+                'Configuration does not match custom. Please toggle the '
+                'guest sliders to make your custom setting.'
+            )
 
     def get_readonly_fields(self, request, obj=None):
         if obj is None:

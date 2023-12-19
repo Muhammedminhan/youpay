@@ -15,9 +15,11 @@ from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
-    PAYMENT_STATUS_PAID, PAYMENT_END_STATUS_LIST, PAYMENT_OPTION_APPLEPAY,
+    PAYMENT_STATUS_PAID, PAYMENT_END_STATUS_LIST,
+    PAYMENT_OPTION_CHECKOUT_APPLEPAY,
     PAYMENT_OPTION_PAYPAL, PAYMENT_OPTION_CITI_REWARDS, PAYMENT_OPTION_QITAF,
-    PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CARD, PAYMENT_OPTION_SAVED_CARD,
+    PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
+    PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB
 )
 from payments.models import YouPayTransactionData
@@ -306,7 +308,8 @@ class ConfigViewSet(ViewSet):
             "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
         applepay_config["label"] = APPLEPAY_LABEL
 
-        applepay_enabled = payment_option.get(PAYMENT_OPTION_APPLEPAY, False)
+        applepay_enabled = payment_option.get(
+            PAYMENT_OPTION_CHECKOUT_APPLEPAY, False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
             applepay_config.update(self.get_additional_config(additional_fee,
@@ -389,9 +392,11 @@ class ConfigViewSet(ViewSet):
         return citi_config
 
     def get_checkout_config(self, payment_option, transaction):
-        card__enabled = payment_option.get(PAYMENT_OPTION_CARD, False)
-        saved_card__enabled = payment_option.get(PAYMENT_OPTION_SAVED_CARD,
-                                                 False)
+        card__enabled = payment_option.get(PAYMENT_OPTION_CHECKOUT_CARD,
+                                           False)
+        saved_card__enabled = payment_option.get(
+            PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
+            False)
         checkout_config = {}
         if True in [card__enabled, saved_card__enabled]:
             checkout_obj = CheckoutpgManager()
