@@ -3,8 +3,8 @@ import logging
 from django import forms
 from django.contrib import admin
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
 
+from .constants import GUEST_USER_CUSTOM
 from .models import (AppConfig, Currency, Country, PaymentMethod,
                      PaymentMethodConfig)
 
@@ -85,11 +85,33 @@ class PaymentMethodConfigAdminForm(forms.ModelForm):
         self.fields['payment_method'].required = True
 
 
+class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+
+        parent_instance = self.instance
+        if parent_instance.guest_user_enabled == GUEST_USER_CUSTOM:
+            total_guest_user_enabled = sum(
+                1 for form in self.forms
+                if form.cleaned_data.get('guest_user_enabled')
+            )
+
+            total_forms = self.total_form_count()
+
+            if (total_guest_user_enabled == 0) or (
+                    total_guest_user_enabled == total_forms):
+                raise forms.ValidationError(
+                    'Configuration does not match custom. Please toggle the '
+                    'guest sliders to make your custom setting.'
+                )
+
+
 class PaymentMethodConfigInline(admin.TabularInline):
     model = PaymentMethodConfig
     extra = 0
 
     form = PaymentMethodConfigAdminForm
+    formset = PaymentMethodConfigInlineFormset
 
 
 class PaymentMethodAdmin(AdminAbstract):
@@ -103,21 +125,6 @@ class PaymentMethodAdmin(AdminAbstract):
                    'payment_gateway',)
 
     inlines = [PaymentMethodConfigInline]
-
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        total_guest_user_enabled = 0
-
-        for instance in instances:
-            if instance.guest_user_enabled:
-                total_guest_user_enabled += 1
-        super().save_formset(request, form, formset, change)
-        total_inlines_count = formset.total_form_count()
-        if total_guest_user_enabled == 0 or total_guest_user_enabled == total_inlines_count:
-            raise ValidationError(
-                'Configuration does not match custom. Please toggle the '
-                'guest sliders to make your custom setting.'
-            )
 
     def get_readonly_fields(self, request, obj=None):
         if obj is None:

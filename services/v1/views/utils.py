@@ -12,7 +12,23 @@ from integrations.constants import (
 )
 from payments.constants import (PAYMENT_STATUS_INITIATED,
                                 LANGUAGE_CODE_EN,
-                                LANGUAGE_CODE_AR)
+                                LANGUAGE_CODE_AR,
+                                PAYMENT_OPTION_CHECKOUT_CARD,
+                                PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
+                                PAYMENT_OPTION_CHECKOUT_APPLEPAY,
+                                PAYMENT_OPTION_AMAZON_CARD,
+                                PAYMENT_OPTION_AMAZON_SAVED_CARD,
+                                PAYMENT_OPTION_AMAZON_APPLEPAY,
+                                PAYMENT_METHOD_CARD,
+                                PAYMENT_METHOD_SAVED_CARD,
+                                PAYMENT_METHOD_APPLEPAY, PAYMENT_METHOD_ADCB,
+                                PAYMENT_METHOD_CITI, PAYMENT_METHOD_TABBYPG,
+                                PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_ADCB,
+                                PAYMENT_OPTION_CITI_REWARDS,
+                                PAYMENT_METHOD_QITAF, PAYMENT_OPTION_QITAF,
+                                PAYMENT_METHOD_HAPPY_CREDITS,
+                                PAYMENT_OPTION_HAPPY_CREDITS,
+                                PAYMENT_METHOD_PAYPAL, PAYMENT_OPTION_PAYPAL)
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
@@ -333,8 +349,13 @@ def get_payment_methods(transaction, client, country):
         payment_method_configs = PaymentMethodConfig.objects.filter(
             payment_method_query)
 
-        payment_options = {config.payment_method.payment_method: True for
-                           config in payment_method_configs}
+        payment_options = {}
+        for config in payment_method_configs:
+            payment_option_key = get_payment_option_constant(
+                config.payment_method.payment_gateway,
+                config.payment_method.payment_method
+            )
+            payment_options[payment_option_key] = True
 
     except Exception as e:
         payment_options = None
@@ -343,3 +364,45 @@ def get_payment_methods(transaction, client, country):
             "transaction, {}".format(transaction.transaction_id))
 
     return payment_options
+
+
+def get_payment_option_constant(payment_gateway, payment_method):
+    # breakpoint()
+    payment_gateway_value = payment_gateway.code
+    payment_method_lower = payment_method.lower()
+
+    payment_option_mapping = {
+
+        (CHECKOUTPG_HUB_CODE,
+         PAYMENT_METHOD_CARD): PAYMENT_OPTION_CHECKOUT_CARD,
+        (CHECKOUTPG_HUB_CODE,
+         PAYMENT_METHOD_SAVED_CARD): PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
+        (CHECKOUTPG_HUB_CODE,
+         PAYMENT_METHOD_APPLEPAY): PAYMENT_OPTION_CHECKOUT_APPLEPAY,
+        (CHECKOUTPG_HUB_CODE,
+         PAYMENT_METHOD_PAYPAL): PAYMENT_OPTION_PAYPAL,
+
+        (AMAZONPG_HUB_CODE, PAYMENT_METHOD_CARD): PAYMENT_OPTION_AMAZON_CARD,
+        (AMAZONPG_HUB_CODE,
+         PAYMENT_METHOD_SAVED_CARD): PAYMENT_OPTION_AMAZON_SAVED_CARD,
+        (AMAZONPG_HUB_CODE,
+         PAYMENT_METHOD_APPLEPAY): PAYMENT_OPTION_AMAZON_APPLEPAY,
+
+        (B2CPAYBACK_HUB_CODE,
+         PAYMENT_METHOD_ADCB): PAYMENT_OPTION_ADCB,
+        (B2CPAYBACK_HUB_CODE,
+         PAYMENT_METHOD_CITI): PAYMENT_OPTION_CITI_REWARDS,
+        (B2CPAYBACK_HUB_CODE,
+         PAYMENT_METHOD_QITAF): PAYMENT_OPTION_QITAF,
+
+        (TABBYPG_HUB_CODE,
+         PAYMENT_METHOD_TABBYPG): PAYMENT_OPTION_TABBYPG,
+
+        (HAPPYCREDITS_HUB_CODE,
+         PAYMENT_METHOD_HAPPY_CREDITS): PAYMENT_OPTION_HAPPY_CREDITS,
+    }
+
+    constant = payment_option_mapping.get(
+        (payment_gateway_value, payment_method_lower), None)
+
+    return constant

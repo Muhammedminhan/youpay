@@ -25,10 +25,15 @@
             if (guestUserSliderContainer.length) {
                 if ($('#paymentmethodconfig_set-' + id + '-active').prop('checked')) {
                     guestUserSliderContainer.show();
-
                     // Check if 'guest_user_enabled' is set to 'Enable' or 'Disable'
                     if (guestUserEnabledStatus === 'Enable') {
-                        guestUserSliderCheckbox.prop('checked', true).prop('disabled', true);
+                        guestUserSliderCheckbox.prop('checked', true);
+
+                        if (guestUserSliderCheckbox.prop('checked') == true) {
+                            console.log('true');
+                        } else {
+                            console.log('false');
+                        }
                     } else if (guestUserEnabledStatus === 'Disable') {
                         guestUserSliderCheckbox.prop('checked', false).prop('disabled', true);
                     } else {
@@ -63,6 +68,7 @@
         });
     });
 })(django.jQuery || jQuery);
+
 </script>
 
 
