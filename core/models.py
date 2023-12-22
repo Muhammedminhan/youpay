@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 
 from core.constants import PURCHASE_PLATFORM_CHOICES, GUEST_USER_OPTIONS
-from payments.constants import PAYMENT_OPTION_CHOICES
+from payments.constants import PAYMENT_METHOD_MODEL_CHOICES
 
 # Create your models here.
 
@@ -112,7 +112,7 @@ class Country(AbstractDateTime, AbstractUserBase):
 class PaymentMethod(AbstractDateTime, AbstractUserBase):
     payment_method = models.CharField(
         max_length=100,
-        choices=PAYMENT_OPTION_CHOICES,
+        choices=PAYMENT_METHOD_MODEL_CHOICES,
         help_text='Chosen payment method')
     active = models.BooleanField(
         default=False, help_text='Denotes whether the payment '
