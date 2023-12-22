@@ -4,7 +4,8 @@ from django import forms
 from django.contrib import admin
 from django.core.cache import cache
 
-from .constants import GUEST_USER_CUSTOM
+from .constants import (GUEST_USER_CUSTOM, GUEST_USER_ENABLE,
+                        GUEST_USER_DISABLE)
 from .models import (AppConfig, Currency, Country, PaymentMethod,
                      PaymentMethodConfig)
 
@@ -104,6 +105,21 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
                     'Configuration does not match custom. Please toggle the '
                     'guest sliders to make your custom setting.'
                 )
+
+    def save(self, commit=True):
+        parent_instance = self.instance
+        if parent_instance.guest_user_enabled == GUEST_USER_ENABLE:
+            for form in self.forms:
+                form.instance.guest_user_enabled = True
+                form.cleaned_data['guest_user_enabled'] = True
+                form.instance.save()
+        elif parent_instance.guest_user_enabled == GUEST_USER_DISABLE:
+            for form in self.forms:
+                form.instance.guest_user_enabled = False
+                form.cleaned_data['guest_user_enabled'] = False
+                form.instance.save()
+
+        return super().save(commit)
 
 
 class PaymentMethodConfigInline(admin.TabularInline):
