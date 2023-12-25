@@ -124,6 +124,11 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
         'integrations.PaymentGateway', on_delete=models.CASCADE,
         blank=True, null=True,
         help_text='Payment gateway for the payment method')
+    partial_redemption_allowed = models.BooleanField(
+        default=False,
+        help_text='Indicates whether the payment method allows partial '
+                  'redemption. Only affects payment methods that support '
+                  'partial redemption.')
 
     def __str__(self):
         return self.payment_method
@@ -145,11 +150,6 @@ class PaymentMethodConfig(models.Model):
     guest_user_enabled = models.BooleanField(
         default=True, help_text='Denotes whether the payment method is '
                                 'available for the guest user')
-    partial_redemption_allowed = models.BooleanField(
-        default=False,
-        help_text='Indicates whether the payment method allows partial '
-                  'redemption. Only affects payment methods that support '
-                  'partial redemption.')
 
     def __str__(self):
         return f"{self.country} - {self.platform} - {self.client}"
