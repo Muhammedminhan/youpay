@@ -411,13 +411,16 @@ class ConfigViewSet(ViewSet):
         This is for ADCB payback
         """
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
+        partial_redemption_allowed = partial_redemption_allowed_options.get(
+            PAYMENT_OPTION_ADCB, False)
         adcb_config = {}
         if adcb_enabled:
             b2c_payback_obj = B2CPaybackManager()
             adcb_config = b2c_payback_obj.get_configurations(
                 transaction.amount, transaction.currency,
                 transaction.transaction_id)
-
+        adcb_config[
+            'partial_redemption_allowed'] = partial_redemption_allowed
         return adcb_config
 
 
