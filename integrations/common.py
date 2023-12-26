@@ -2,9 +2,6 @@ import logging
 
 import requests
 
-from core.constants import (PRODUCT_GROUP_GIFT_CODE, QTY_ONE,
-                            SOURCE_FROM_YOUPAY)
-
 logger = logging.getLogger(__name__)
 
 
@@ -39,16 +36,6 @@ def update_brand_details(transaction_obj):
             brand_details_path = client.brand_details_path
             invoice = transaction_obj.invoice_id
             transaction_id = transaction_obj.transaction_id
-
-            if transaction_obj.api_client.client_code == PRODUCT_GROUP_GIFT_CODE:
-                brand_details = prepare_brand_item_set(transaction_obj)
-                transaction_obj.brand_details = brand_details
-                logger.info(
-                    "Brand details prepaired for transaction {} is {}".format(
-                        transaction_id, brand_details
-                    ))
-                transaction_obj.save()
-                return True
 
             if not brand_details_path:
                 logger.error("Brand details path not found for client {} for"
@@ -90,27 +77,3 @@ def update_brand_details(transaction_obj):
         logger.error(
             "Getting brand details failed with error {}".format(str(e)))
         return False
-
-
-def prepare_brand_item_set(transaction_obj):
-    """
-    This method will prepare brand item set, for now Groupgift has only
-    one brand item set, so no need to call brand item details api
-    instead just prepare an item set with the data which we have
-    """
-    brand_details = {
-        "currency": transaction_obj.currency,
-        "item_set": [
-            {
-                "vat": float(transaction_obj.VAT_amount),
-                "item_id": "",
-                "quantity": QTY_ONE,
-                "brand_code": "",
-                "service_charge": float(transaction_obj.service_fee),
-                "gift_base_value": float(transaction_obj.base_amount)
-            }
-        ],
-        "comments": SOURCE_FROM_YOUPAY
-    }
-
-    return brand_details
