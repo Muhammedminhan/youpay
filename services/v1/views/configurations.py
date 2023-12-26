@@ -10,8 +10,8 @@ from core.utils import decrypt_string, get_gateway_additional_fee
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
-from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
+from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
@@ -325,20 +325,6 @@ class ConfigViewSet(ViewSet):
             paypal_config = self.get_additional_config(additional_fee,
                                                        TOKEN_TYPE_PAYPAL)
         return paypal_config
-
-    def get_qitaf_config(self, payment_option, transaction_data):
-        """
-        returns qitaf configurations
-        """
-        qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
-        if qitaf_enabled:
-            qitaf_config = {
-                'qitaf_phone_number': transaction_data.qitaf_phone_number,
-                'is_qitaf_enabled': transaction_data.is_qitaf_enabled
-            }
-            return qitaf_config
-        else:
-            return None
 
     def get_qitaf_config(self, payment_option, transaction_data):
         """
