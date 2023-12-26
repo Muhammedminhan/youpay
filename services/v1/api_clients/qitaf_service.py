@@ -169,6 +169,9 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             "platform": transaction_obj.platform,
         }
 
+        logger.info("QitafCollectPointsAPIView request data : {}".format(
+            data))
+
         response_obj = YouPayResponse()
 
         if transaction_obj.earned_point:
