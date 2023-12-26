@@ -124,6 +124,11 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
         'integrations.PaymentGateway', on_delete=models.CASCADE,
         blank=True, null=True,
         help_text='Payment gateway for the payment method')
+    partial_redemption_allowed = models.BooleanField(
+        default=False,
+        help_text='Indicates whether the payment method allows partial '
+                  'redemption. Only affects payment methods that support '
+                  'partial redemption.')
 
     def __str__(self):
         return self.payment_method
