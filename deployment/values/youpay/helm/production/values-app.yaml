@@ -12,8 +12,8 @@ service:
 
 hpa:
   name: 'youpay-app-hpa'
-  minReplicas: 5
-  maxReplicas: 10
+  minReplicas: 10
+  maxReplicas: 50
   targetCPUUtilizationPercentage: 80
 
 pdb:
@@ -22,7 +22,7 @@ pdb:
 
 deployment:
   name: 'youpay-app-deployment'
-  replicas: 5
+  replicas: 10
   maxSurge: 100%
   maxUnavailable: 0%
   serviceAccountName: 'ygag-youpay-vault'
