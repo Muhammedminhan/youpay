@@ -350,6 +350,8 @@ def get_payment_methods(transaction, client, country):
             payment_method_query)
 
         payment_options = {}
+        partial_redemption_allowed_options = {}
+
         for config in payment_method_configs:
             payment_option_key = get_payment_option_constant(
                 config.payment_method.payment_gateway,
@@ -357,13 +359,17 @@ def get_payment_methods(transaction, client, country):
             )
             payment_options[payment_option_key] = True
 
+            partial_redemption_allowed_options[payment_option_key] = (
+                config.payment_method.partial_redemption_allowed)
+
     except Exception as e:
         payment_options = None
+        partial_redemption_allowed_options = None
         logger.error(
             "Error occurred while getting payment options for "
             "transaction, {}".format(transaction.transaction_id))
 
-    return payment_options
+    return payment_options, partial_redemption_allowed_options
 
 
 def get_payment_option_constant(payment_gateway, payment_method):
