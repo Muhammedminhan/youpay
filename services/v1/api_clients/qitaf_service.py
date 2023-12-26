@@ -157,7 +157,8 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             PAYMENT_METHOD_QITAF,
             PAYMENT_METHOD_QITAFAND_CARD
         ]:
-            paid_amount = transaction_obj.payable_amount
+            paid_amount = transaction_obj.brand_calculations.get(
+                'sum_card_payment_amount', 0)
         else:
             paid_amount = transaction_obj.amount
 
