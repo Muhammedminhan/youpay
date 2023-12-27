@@ -353,14 +353,13 @@ class ConfigViewSet(ViewSet):
                     'is_qitaf_enabled': transaction_data.is_qitaf_enabled
                 }
                 qitaf_config.update(additional_config)
-                qitaf_config[
-                    'partial_redemption_allowed'] = partial_redemption_allowed
-
             else:
                 logger.error(
                     "Qitaf configuration not found for transaction id: "
                     "{}".format(transaction_data.transaction_id))
                 qitaf_config = {}
+            qitaf_config[
+                'partial_redemption_allowed'] = partial_redemption_allowed
             return qitaf_config
         else:
             return None
