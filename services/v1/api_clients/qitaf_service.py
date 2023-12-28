@@ -6,13 +6,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import QITAF_REWARD_POINT_MIN_AMT
-from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN, \
-    COMMON_ERROR_MESSAGE_EN_CODE
+from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
+                           COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
+from payments.constants import (PAYMENT_METHOD_QITAF,
+                                PAYMENT_METHOD_QITAFAND_CARD)
 from services.v1.serializers.payment_request import QitafOTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
 
@@ -151,13 +153,24 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
     def collect_reward_point(self, transaction_obj):
+        if transaction_obj.payment_method in [
+            PAYMENT_METHOD_QITAF,
+            PAYMENT_METHOD_QITAFAND_CARD
+        ]:
+            paid_amount = transaction_obj.brand_calculations.get(
+                'sum_card_payment_amount', 0)
+        else:
+            paid_amount = transaction_obj.amount
 
         data = {
             "mobile_number": transaction_obj.qitaf_phone_number,
             "transaction_obj": transaction_obj,
-            "amount": int(transaction_obj.amount),
+            "amount": int(paid_amount),
             "platform": transaction_obj.platform,
         }
+
+        logger.info("QitafCollectPointsAPIView request data : {}".format(
+            data))
 
         response_obj = YouPayResponse()
 
