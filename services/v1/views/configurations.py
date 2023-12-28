@@ -11,6 +11,7 @@ from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
+from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
@@ -332,12 +333,24 @@ class ConfigViewSet(ViewSet):
         """
         returns qitaf configurations
         """
+
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
         if qitaf_enabled:
-            qitaf_config = {
-                'qitaf_phone_number': transaction_data.qitaf_phone_number,
-                'is_qitaf_enabled': transaction_data.is_qitaf_enabled
-            }
+            qitaf_obj = QitafServiceManager()
+            qitaf_config = qitaf_obj.get_configurations(
+                transaction_data.amount, transaction_data.currency,
+                transaction_data.transaction_id)
+            if qitaf_config:
+                additional_config = {
+                    'qitaf_phone_number': transaction_data.qitaf_phone_number,
+                    'is_qitaf_enabled': transaction_data.is_qitaf_enabled
+                }
+                qitaf_config.update(additional_config)
+            else:
+                logger.error(
+                    "Qitaf configuration not found for transaction id: "
+                    "{}".format(transaction_data.transaction_id))
+                qitaf_config = {}
             return qitaf_config
         else:
             return None
@@ -383,6 +396,9 @@ class ConfigViewSet(ViewSet):
         return checkout_config
 
     def get_b2cpayback_config(self, payment_option, transaction):
+        """
+        This is for ADCB payback
+        """
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
         payback_config = {}
         if adcb_enabled:

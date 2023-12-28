@@ -42,7 +42,7 @@ def update_brand_details(transaction_obj):
                              " transaction {}".format(client.name,
                                                       transaction_id))
                 return False
-            
+
             headers = {
                 'API-KEY': api_key,
                 'API-SECRET': api_secret

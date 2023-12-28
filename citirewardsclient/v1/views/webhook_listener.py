@@ -6,8 +6,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from citirewardsclient.models import CitiRedemptionData
 from adcbpgclient.libs.authentication import SignatureAuthentication
+from citirewardsclient.models import CitiRedemptionData
 from citirewardsclient.v1.serializers.citi_redemption_data_serializer import (
     CitiRedemptionDataSerializer)
 

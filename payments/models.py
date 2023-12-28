@@ -152,10 +152,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     # adcb related data
     redeemed_amount = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
-        help_text='amount which is redeemed on ADCB')
+        help_text='amount which is redeemed on B2C_Payback')
     redeemed_points = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
-        help_text='points which is redeemed on ADCB')
+        help_text='points which is redeemed on B2C_Payback')
     payable_amount = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
         help_text='amount which is paid using credit/debit card by the'
