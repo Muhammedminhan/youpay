@@ -6,13 +6,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import QITAF_REWARD_POINT_MIN_AMT
-from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN, \
-    COMMON_ERROR_MESSAGE_EN_CODE
+from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
+                           COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
+from payments.constants import (PAYMENT_METHOD_QITAF,
+                                PAYMENT_METHOD_QITAFAND_CARD)
 from services.v1.serializers.payment_request import QitafOTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
 
@@ -151,13 +153,24 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
     def collect_reward_point(self, transaction_obj):
+        if transaction_obj.payment_method in [
+            PAYMENT_METHOD_QITAF,
+            PAYMENT_METHOD_QITAFAND_CARD
+        ]:
+            paid_amount = transaction_obj.brand_calculations.get(
+                'sum_card_payment_amount', 0)
+        else:
+            paid_amount = transaction_obj.amount
 
         data = {
             "mobile_number": transaction_obj.qitaf_phone_number,
             "transaction_obj": transaction_obj,
-            "amount": int(transaction_obj.amount),
+            "amount": int(paid_amount),
             "platform": transaction_obj.platform,
         }
+
+        logger.info("QitafCollectPointsAPIView request data : {}".format(
+            data))
 
         response_obj = YouPayResponse()
 
@@ -428,6 +441,47 @@ class CalculateQitafBalance(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+def get_calculated_youpay_transaction_data_with_qitaf_balance(
+        transaction_obj):
+    """
+    The idea is to replace the additional_data with the qitaf balance
+     calculation response from the qitaf service
+    """
+
+    brand_calculations = transaction_obj.brand_calculations
+    youpay_update_data = {}
+    if brand_calculations:
+        amount = brand_calculations.get('sum_net_amount', None)
+        base_amount = brand_calculations.get('sum_gift_base_value',
+                                             None)
+        redeemed_amount = brand_calculations.get(
+            'sum_redemption_points', None)
+        redeemed_point = brand_calculations.get(
+            'sum_redemption_points', None)
+        payable_amount = brand_calculations.get(
+            'sum_card_payment_amount', None)
+        service_fee = brand_calculations.get(
+            'sum_applied_service_charge', None)
+        vat_amount = brand_calculations.get('sum_applied_vat', None)
+
+        youpay_update_data = {
+            'redeemed_amount': redeemed_amount,
+            'redeemed_points': redeemed_point,
+            'amount': amount,
+            'payable_amount': payable_amount,
+            'service_fee': service_fee,
+            'base_amount': base_amount,
+            'VAT_amount': vat_amount,
+            'payment_method': transaction_obj.payment_method,
+        }
+    else:
+        logger.error("Brand calculation is empty for transaction {}".format(
+            transaction_obj.transaction_id
+        ))
+
+    return youpay_update_data
 
 
 def qitaf_response_formatter(data, code):
