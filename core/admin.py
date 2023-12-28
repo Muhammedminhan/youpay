@@ -105,6 +105,24 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
                     'Configuration does not match custom. Please toggle the '
                     'guest sliders to make your custom setting.'
                 )
+        existing_configs = set()
+        for form in self.forms:
+            payment_method = form.cleaned_data.get('payment_method')
+            country = form.cleaned_data.get('country')
+            platform = form.cleaned_data.get('platform')
+            client = form.cleaned_data.get('client')
+
+            if (
+                    payment_method, country, platform,
+                    client) in existing_configs:
+                form.add_error(
+                    None,
+                    forms.ValidationError(
+                        'A configuration already exists for this combination.'
+                    )
+                )
+
+            existing_configs.add((payment_method, country, platform, client))
 
     def save(self, commit=True):
         parent_instance = self.instance
