@@ -122,12 +122,9 @@ def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
                 instance.reference_id, instance.payment_status))
 
         payment_reference = instance.reference_id
-
         youpay_obj = YouPayTransactionCRUD()
-
         data_to_update = prepare_youpay_transaction_update_data(
             instance, payment_reference, youpay_obj)
-
         if data_to_update:
             transaction_id = data_to_update.get('transaction_id')
             is_youpay_updated = youpay_obj.update_youpay_transaction_data(
