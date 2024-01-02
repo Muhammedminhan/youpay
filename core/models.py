@@ -132,7 +132,7 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
         return self.payment_method
 
 
-class PaymentConfigurations(AbstractDateTime, AbstractUserBase):
+class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
     payment_method = models.CharField(
         max_length=100,
         choices=PAYMENT_METHOD_MODEL_CHOICES,
@@ -159,7 +159,7 @@ class PaymentConfigurations(AbstractDateTime, AbstractUserBase):
 
 class PaymentMethodConfig(models.Model):
     payment_method = models.ForeignKey(
-        'PaymentMethod', on_delete=models.CASCADE)
+        'PaymentConfiguration', on_delete=models.CASCADE)
     country = models.ForeignKey(
         'core.Country', on_delete=models.CASCADE)
     platform = models.CharField(
