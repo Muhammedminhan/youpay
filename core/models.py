@@ -153,3 +153,6 @@ class PaymentMethodConfig(models.Model):
 
     def __str__(self):
         return f"{self.country} - {self.platform} - {self.client}"
+
+    class Meta:
+        unique_together = ('payment_method', 'country', 'platform', 'client')
