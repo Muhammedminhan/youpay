@@ -149,6 +149,22 @@ class PaymentMethodConfigInline(admin.TabularInline):
     formset = PaymentMethodConfigInlineFormset
 
 
+class PaymentConfigurationAdminForm(forms.ModelForm):
+    def clean(self):
+        cleaned_data = super().clean()
+        payment_method = cleaned_data.get('payment_method')
+        active = cleaned_data.get('active')
+
+        if active:
+            existing_active_payment_method = PaymentConfiguration.objects.filter(
+                payment_method=payment_method, active=True)
+
+            if existing_active_payment_method:
+                raise forms.ValidationError(
+                    "A payment method with the same name is already active. "
+                    "Please deactivate it before activating a new one.")
+
+
 class PaymentConfigurationAdmin(AdminAbstract):
     fields = ('payment_method', 'active',
               'guest_user_enabled', 'partial_redemption_allowed',
@@ -160,6 +176,7 @@ class PaymentConfigurationAdmin(AdminAbstract):
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
                    'payment_gateway',)
 
+    form = PaymentConfigurationAdminForm
     inlines = [PaymentMethodConfigInline]
 
     def get_readonly_fields(self, request, obj=None):
