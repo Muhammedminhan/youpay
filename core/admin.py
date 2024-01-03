@@ -125,8 +125,7 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
                     total_guest_user_enabled == total_active_configs):
                 raise forms.ValidationError(
                     'Configuration does not match custom. Please toggle the '
-                    'guest sliders to make your custom setting.'
-                )
+                    'guest sliders to make your custom setting.')
 
     def save(self, commit=True):
         parent_instance = self.instance
