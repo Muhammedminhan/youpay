@@ -4,78 +4,52 @@ app_name: 'youpay'
 environment: 'production'
 
 service:
-  name: 'youpay-app'
+  name: 'youpay-cron'
   default:
     port: 8000
     protocol: 'TCP'
     targetPort: 8000
 
 hpa:
-  name: 'youpay-app-hpa'
-  minReplicas: 10
-  maxReplicas: 50
+  name: 'youpay-cron-hpa'
+  minReplicas: 1
+  maxReplicas: 1
   targetCPUUtilizationPercentage: 80
 
 pdb:
-  name: 'youpay-app-pdb'
-  minAvailable: 80%
+  name: 'youpay-cron-pdb'
+  minAvailable: 0%
 
 deployment:
-  name: 'youpay-app-deployment'
-  replicas: 10
+  name: 'youpay-cron-deployment'
+  replicas: 1
   maxSurge: 100%
   maxUnavailable: 0%
   serviceAccountName: 'ygag-youpay-vault'
 
   containers:
     default:
-      name: 'app'
+      name: 'cron'
       imagePullPolicy: 'Always'
       image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
-      command: '["sh", "/ygag/deployment/app/app-entrypoint.sh"]'
-      env:
-        - name: 'DJANGO_SETTINGS_MODUL'
-          value: 'DJANGO_SETTINGS_MODULE'
-      port: 8000
+      command: '["sh", "-c", "source /vault/secrets/application.env ; sh /ygag/deployment/app/cron-entrypoint.sh"]'
       memory:
-        requests: 300Mi
-        limits: 350Mi
+        requests: 200Mi
+        limits: 300Mi
       cpu:
-        requests: 100m
-      health:
-        path: '/health/'
-        port: 8000
-        scheme: 'HTTP'
-      startupProbe:
-        initialDelaySeconds: 10
-        periodSeconds: 5
-        timeoutSeconds: 5
-        successThreshold: 1
-        failureThreshold: 7
-      readinessProbe:
-        initialDelaySeconds: 0
-        periodSeconds: 15
-        timeoutSeconds: 5
-        successThreshold: 1
-        failureThreshold: 3
-      livenessProbe:
-        initialDelaySeconds: 0
-        periodSeconds: 15
-        timeoutSeconds: 5
-        successThreshold: 1
-        failureThreshold: 4
+        requests: 50m
       volumeMounts:
         - mountPath: '/ygag/logs/'
-          name: 'ygag-youpay-production-app-logs'
+          name: 'ygag-youpay-production-cron-logs'
         - name: 'youpay-app-env-volume'
           mountPath: "/vault/secrets"
         - name: 'youpay-certs-applepay-volume'
           mountPath: "/ygag/certs/applepay"
 
   volumes:
-    - name: 'ygag-youpay-production-app-logs'
+    - name: 'ygag-youpay-production-cron-logs'
       hostPath:
-        path: '/home/ec2-user/ygag-logs/ygag-youpay-production/app'
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-production/cron'
     - name: 'youpay-app-env-volume'
       csi:
         driver: secrets-store.csi.k8s.io
@@ -100,14 +74,14 @@ deployment:
       labelSelector:
         matchLabels:
           app: 'youpay'
-          tier: app
+          tier: cron
     - maxSkew: 1
       topologyKey: 'karpenter.sh/capacity-type'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
           app: 'youpay'
-          tier: app
+          tier: cron
 
-  priorityClassName: 'production-medium'
+  priorityClassName: 'production-critical'
   terminationGracePeriodSeconds: 60

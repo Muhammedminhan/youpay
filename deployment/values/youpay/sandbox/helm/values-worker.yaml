@@ -4,52 +4,52 @@ app_name: 'youpay'
 environment: 'sandbox'
 
 service:
-  name: 'youpay-cron'
+  name: 'youpay-worker'
   default:
     port: 8000
     protocol: 'TCP'
     targetPort: 8000
 
 hpa:
-  name: 'youpay-cron-hpa'
+  name: 'youpay-worker-hpa'
   minReplicas: 1
   maxReplicas: 1
   targetCPUUtilizationPercentage: 80
 
 pdb:
-  name: 'youpay-cron-pdb'
-  minAvailable: 0%
+  name: 'youpay-worker-pdb'
+  minAvailable: 50%
 
 deployment:
-  name: 'youpay-cron-deployment'
+  name: 'youpay-worker-deployment'
   replicas: 1
   maxSurge: 100%
-  maxUnavailable: 0
+  maxUnavailable: 0%
   serviceAccountName: 'ygag-youpay-vault'
 
   containers:
     default:
-      name: 'cron'
+      name: 'worker'
       imagePullPolicy: 'Always'
       image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
-      command: '["sh", "/ygag/deployment/app/cron-entrypoint.sh"]'
+      command: '["sh", "-c", "source /vault/secrets/application.env ; sh /ygag/deployment/app/worker-entrypoint.sh"]'
       memory:
-        requests: 200Mi
-        limits: 300Mi
+        requests: 300Mi
+        limits: 400Mi
       cpu:
-        requests: 50m
+        requests: 150m
       volumeMounts:
-        - mountPath: '/ygag/logs/'
-          name: 'ygag-youpay-sandbox-cron-logs'
+        - mountPath: /ygag/logs/
+          name: 'ygag-youpay-sandbox-worker-logs'
         - name: 'youpay-app-env-volume'
           mountPath: "/vault/secrets"
         - name: 'youpay-certs-applepay-volume'
           mountPath: "/ygag/certs/applepay"
 
   volumes:
-    - name: 'ygag-youpay-sandbox-cron-logs'
+    - name: 'ygag-youpay-sandbox-worker-logs'
       hostPath:
-        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/cron'
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/worker'
     - name: 'youpay-app-env-volume'
       csi:
         driver: secrets-store.csi.k8s.io
@@ -74,14 +74,7 @@ deployment:
       labelSelector:
         matchLabels:
           app: 'youpay'
-          tier: cron
-    - maxSkew: 1
-      topologyKey: 'karpenter.sh/capacity-type'
-      whenUnsatisfiable: DoNotSchedule
-      labelSelector:
-        matchLabels:
-          app: 'youpay'
-          tier: cron
+          tier: worker
 
-  priorityClassName: 'sandbox-critical'
+  priorityClassName: 'sandbox-medium'
   terminationGracePeriodSeconds: 60

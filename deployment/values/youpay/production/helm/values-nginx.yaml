@@ -22,11 +22,11 @@ hpa:
 
 pdb:
   name: 'youpay-nginx-pdb'
-  minAvailable: 80%
+  minAvailable: 50%
 
 deployment:
   name: 'youpay-nginx-deployment'
-  replicas: 5
+  replicas: 3
   maxSurge: 100%
   maxUnavailable: 0%
 

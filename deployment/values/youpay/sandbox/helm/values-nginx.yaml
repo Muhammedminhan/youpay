@@ -17,12 +17,12 @@ service:
 hpa:
   name: 'youpay-nginx-hpa'
   minReplicas: 3
-  maxReplicas: 6
+  maxReplicas: 5
   targetCPUUtilizationPercentage: 80
 
 pdb:
   name: 'youpay-nginx-pdb'
-  minAvailable: 80%
+  minAvailable: 50%
 
 deployment:
   name: 'youpay-nginx-deployment'
@@ -78,13 +78,6 @@ deployment:
   topologySpreadConstraints:
     - maxSkew: 1
       topologyKey: 'topology.kubernetes.io/zone'
-      whenUnsatisfiable: DoNotSchedule
-      labelSelector:
-        matchLabels:
-          app: 'youpay'
-          tier: nginx
-    - maxSkew: 1
-      topologyKey: 'karpenter.sh/capacity-type'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
