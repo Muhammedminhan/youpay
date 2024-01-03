@@ -4,8 +4,9 @@ from django import forms
 from django.contrib import admin
 from django.core.cache import cache
 
+from services.models import APIClient
 from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
-                        GUEST_USER_CUSTOM)
+                        GUEST_USER_CUSTOM, PURCHASE_PLATFORM_CHOICES)
 from .models import (AppConfig, Currency, Country, PaymentMethod,
                      PaymentConfiguration, PaymentMethodConfig)
 
@@ -180,6 +181,35 @@ class PaymentConfigurationAdmin(AdminAbstract):
 
     form = PaymentConfigurationAdminForm
     inlines = [PaymentMethodConfigInline]
+
+    actions = ['create_payment_method_configs']
+
+    def create_payment_method_configs(self, request, queryset):
+        for payment_configuration in queryset:
+            countries = Country.objects.all()
+            clients = APIClient.objects.all()
+            platforms = PURCHASE_PLATFORM_CHOICES
+
+            for country in countries:
+                for client in clients:
+                    for platform_choice in platforms:
+                        platform_value, platform_display = platform_choice
+                        PaymentMethodConfig.objects.get_or_create(
+                            payment_method=payment_configuration,
+                            country=country,
+                            client=client,
+                            platform=platform_value,
+                            defaults={'active': True,
+                                      'guest_user_enabled': True}
+                        )
+
+        self.message_user(request, 'Successfully created '
+                                   'PaymentMethodConfig instances for '
+                                   'selected PaymentConfiguration objects.')
+
+    create_payment_method_configs.short_description = ('Create '
+                                                       'PaymentMethodConfig'
+                                                       ' instances')
 
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
