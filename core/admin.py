@@ -92,15 +92,18 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
 
         parent_instance = self.instance
         if parent_instance.guest_user_enabled == GUEST_USER_CUSTOM:
-            total_guest_user_enabled = sum(
-                1 for form in self.forms
-                if form.cleaned_data.get('guest_user_enabled')
-            )
+            total_guest_user_enabled = 0
+            total_active_configs = 0
 
-            total_forms = self.total_form_count()
+            for form in self.forms:
+                if form.cleaned_data.get('guest_user_enabled'):
+                    total_guest_user_enabled += 1
+
+                if form.cleaned_data.get('active'):
+                    total_active_configs += 1
 
             if (total_guest_user_enabled == 0) or (
-                    total_guest_user_enabled == total_forms):
+                    total_guest_user_enabled == total_active_configs):
                 raise forms.ValidationError(
                     'Configuration does not match custom. Please toggle the '
                     'guest sliders to make your custom setting.'
@@ -132,8 +135,9 @@ class PaymentMethodConfigInline(admin.TabularInline):
 
 class PaymentMethodAdmin(AdminAbstract):
     fields = ('payment_method', 'active',
-              'guest_user_enabled', 'payment_gateway', 'created_at',
-              'updated_at', 'created_by', 'modified_by')
+              'guest_user_enabled', 'partial_redemption_allowed',
+              'payment_gateway', 'created_at', 'updated_at', 'created_by',
+              'modified_by')
     list_display = ('payment_method', 'active',
                     'guest_user_enabled', 'payment_gateway')
     search_fields = ('payment_method', 'country', 'clients')
