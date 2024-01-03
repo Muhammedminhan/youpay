@@ -1,0 +1,43 @@
+name: QA Build Base youpay
+
+on: workflow_dispatch
+env:
+  APPLICATION_NAME:  youpay
+  APP_IMAGE_REPOSITORY: qa/ygag/youpay/backend-app
+  ECR_REGISTRY: 420360167813
+  ECR_REGION: us-east-2
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2.2.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH_QA }}
+          aws-region: ${{ env.ECR_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1.6.0
+        with:
+          registries: ${{ env.ECR_REGISTRY }}
+          registry-type: private
+          region: ${{ env.ECR_REGION }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v3.0.2
+        with:
+         ref: main
+
+      - name: Docker Build and push
+        env:
+          CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
+        run: |
+          IMAGE_TAG=$(git rev-parse --short HEAD)
+    
+          docker build -f deployment/app/Dockerfile.base -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:base-$IMAGE_TAG -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:base-v2 .
+          docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:base-$IMAGE_TAG"
+          docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:base-v2"

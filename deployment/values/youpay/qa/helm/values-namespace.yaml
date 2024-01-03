@@ -1,0 +1,9 @@
+namespace:
+  - name: 'youpay-[JIRA_ID]'
+    annotations:
+      field.cattle.io/projectId: 'local:p-79b8q'
+
+    resource_quota_disabled:
+      requests.cpu: "3340m"
+      requests.memory: 6856Mi
+      limits.memory: 10080Mi

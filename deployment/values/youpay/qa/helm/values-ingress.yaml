@@ -1,0 +1,32 @@
+ingress:
+  apiVersion: 'networking.k8s.io/v1'
+
+  namespace: 'youpay-[JIRA_ID]'
+  name: 'youpay-[JIRA_ID]-ingress'
+
+  annotations:
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/backend-protocol: 'HTTP'
+    alb.ingress.kubernetes.io/certificate-arn: '[CERTIFICATE_ARN]'
+    alb.ingress.kubernetes.io/group.name: 'default-2'
+    alb.ingress.kubernetes.io/healthcheck-path: '/health/'
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/scheme: 'internet-facing'
+    alb.ingress.kubernetes.io/tags: 'Name=ygg-qa-default-alb-eks-tf, Platform=EKS, Environment=qa'
+    alb.ingress.kubernetes.io/wafv2-acl-arn: '[WAF_ARN]'
+    alb.ingress.kubernetes.io/target-type: 'ip'
+    alb.ingress.kubernetes.io/subnets: 'ygg-qa-public-us-east-2a, ygg-qa-public-us-east-2b, ygg-qa-public-us-east-2c'
+    alb.ingress.kubernetes.io/load-balancer-attributes: 'idle_timeout.timeout_seconds=120'
+    kubernetes.io/ingress.class: 'alb'
+
+  rules:
+    - host: 'youpay-[JIRA_ID].sit.yougotagift.co'
+      http:
+        paths:
+          - backend:
+              service:
+                name: 'youpay-[JIRA_ID]-nginx'
+                port:
+                  number: 80
+            path: '/*'
+            pathType: 'ImplementationSpecific'

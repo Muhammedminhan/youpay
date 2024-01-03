@@ -1,0 +1,76 @@
+namespace: 'youpay-[JIRA_ID]'
+
+app_name: 'youpay-[JIRA_ID]'
+
+job:
+  name: 'youpay-[JIRA_ID]-migration-job'
+  backoffLimit: 0
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 30
+  serviceAccountName: 'ygag-youpay-vault'
+
+  containers:
+    - name: 'migration'
+      imagePullPolicy: 'Always'
+      image: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/ygag/youpay/backend-app:[BUILD_TAG]'
+      command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; source /etc/profile.d/application-env.sh ; python3.9 manage.py migrate --noinput >> /ygag/logs/app.out.migration.log 2>&1"]'
+      memory:
+        requests: 1000Mi
+        limits: 1500Mi
+      cpu:
+        requests: 1000m
+        limits: 1500m
+      volumeMounts:
+        - mountPath: '/ygag/logs/'
+          name: 'ygag-youpay-[JIRA_ID]-qa-migration-logs'
+        - name: 'youpay-app-env-volume'
+          mountPath: "/vault/secrets"
+        - name: 'youpay-certs-sample1-volume'
+          mountPath: "/ygag/certs/sample1dir"
+        - name: 'youpay-certs-sample2-volume'
+          mountPath: "/ygag/certs/sample2dir"
+        - name: 'youpay-certs-sample-client3-volume'
+          mountPath: "/ygag/certs/sample-client3dir"
+
+  volumes:
+    - name: 'ygag-youpay-[JIRA_ID]-qa-migration-logs'
+      hostPath:
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-[JIRA_ID]-qa/migration'
+    - name: 'youpay-app-env-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-envs"
+    - name: 'youpay-certs-sample1-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-sample1"
+    - name: 'youpay-certs-sample2-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-sample2"
+    - name: 'youpay-certs-sample-client3-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-sample-client3"
+
+  initContainers:
+    database:
+      - image: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/postgres:13.11'
+        cmd: 'pg_isready -p 5432'
+        host: 'youpay-[JIRA_ID]-database'
+        name: 'init-database'
+
+  nodeSelector:
+    key: 'karpenter.sh/nodepool'
+    value: 'default'
+  priorityClassName: 'qa-medium'
+  restartPolicy: 'Never'
+  terminationGracePeriodSeconds: 120
