@@ -19,7 +19,7 @@ term_handler() {
 trap 'term_handler' SIGTERM
 
 gunicorn youpay.wsgi -b :8000 --keep-alive 10 --graceful-timeout 30 --thread 10 \
-  --max-requests 300 --timeout 120 --log-level=debug \
+  --max-requests 300 --max-requests-jitter 1000 --timeout 120 --log-level=debug \
   --worker-class eventlet --backlog 500 -w 3 --worker-connections 300 \
   --access-logfile /ygag/logs/app.out.gunicorn.access.log \
   --error-logfile /ygag/logs/app.out.gunicorn.error.log >> /ygag/logs/app.out.gunicorn.console.log 2>&1 &
