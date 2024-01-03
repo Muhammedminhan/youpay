@@ -4,10 +4,10 @@ from django import forms
 from django.contrib import admin
 from django.core.cache import cache
 
-from .constants import (GUEST_USER_CUSTOM, GUEST_USER_ENABLE,
-                        GUEST_USER_DISABLE)
+from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
+                        GUEST_USER_CUSTOM)
 from .models import (AppConfig, Currency, Country, PaymentMethod,
-                     PaymentMethodConfig)
+                     PaymentConfiguration, PaymentMethodConfig)
 
 admin.site.site_header = 'YouPay Administration'
 
@@ -51,7 +51,7 @@ class CurrencyAdmin(AdminAbstract):
     list_display = ('iso_code', 'name', 'decimal_notation',
                     'created_at', 'updated_at')
     search_fields = ('iso_code', 'name',)
-    list_filter = ('created_by',)
+    list_filter = ('created_by', )
 
 
 class CountryAdmin(AdminAbstract):
@@ -60,6 +60,25 @@ class CountryAdmin(AdminAbstract):
     search_fields = ('name', 'iso_code', 'currency')
     list_filter = ('currency', 'is_gcc', 'three_letter_code',)
     raw_id_fields = ('currency',)
+
+
+class PaymentMethodAdmin(AdminAbstract):
+    fields = ('payment_method', 'country', 'clients', 'active',
+              'guest_user_enabled', 'payment_gateway', 'created_at',
+              'updated_at', 'created_by', 'modified_by')
+    list_display = ('payment_method', 'active',
+                    'guest_user_enabled', 'payment_gateway')
+    search_fields = ('payment_method', 'country', 'clients')
+    list_filter = ('payment_method', 'active', 'guest_user_enabled',
+                   'payment_gateway',)
+    filter_horizontal = ('clients', 'country')
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj is None:
+            return ('created_at', 'updated_at', 'created_by', 'modified_by')
+        return (
+            'payment_method', 'payment_gateway', 'created_at', 'updated_at',
+            'created_by', 'modified_by')
 
 
 class SliderCheckboxInput(forms.CheckboxInput):
@@ -92,18 +111,15 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
 
         parent_instance = self.instance
         if parent_instance.guest_user_enabled == GUEST_USER_CUSTOM:
-            total_guest_user_enabled = 0
-            total_active_configs = 0
+            total_guest_user_enabled = sum(
+                1 for form in self.forms
+                if form.cleaned_data.get('guest_user_enabled')
+            )
 
-            for form in self.forms:
-                if form.cleaned_data.get('guest_user_enabled'):
-                    total_guest_user_enabled += 1
-
-                if form.cleaned_data.get('active'):
-                    total_active_configs += 1
+            total_forms = self.total_form_count()
 
             if (total_guest_user_enabled == 0) or (
-                    total_guest_user_enabled == total_active_configs):
+                    total_guest_user_enabled == total_forms):
                 raise forms.ValidationError(
                     'Configuration does not match custom. Please toggle the '
                     'guest sliders to make your custom setting.'
@@ -133,7 +149,23 @@ class PaymentMethodConfigInline(admin.TabularInline):
     formset = PaymentMethodConfigInlineFormset
 
 
-class PaymentMethodAdmin(AdminAbstract):
+class PaymentConfigurationAdminForm(forms.ModelForm):
+    def clean(self):
+        cleaned_data = super().clean()
+        payment_method = cleaned_data.get('payment_method')
+        active = cleaned_data.get('active')
+
+        if active:
+            existing_active_payment_method = PaymentConfiguration.objects.filter(
+                payment_method=payment_method, active=True)
+
+            if existing_active_payment_method:
+                raise forms.ValidationError(
+                    "A payment method with the same name is already active. "
+                    "Please deactivate it before activating a new one.")
+
+
+class PaymentConfigurationAdmin(AdminAbstract):
     fields = ('payment_method', 'active',
               'guest_user_enabled', 'partial_redemption_allowed',
               'payment_gateway', 'created_at', 'updated_at', 'created_by',
@@ -144,6 +176,7 @@ class PaymentMethodAdmin(AdminAbstract):
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
                    'payment_gateway',)
 
+    form = PaymentConfigurationAdminForm
     inlines = [PaymentMethodConfigInline]
 
     def get_readonly_fields(self, request, obj=None):
@@ -159,3 +192,4 @@ admin.site.register(AppConfig, AppConfigAdmin)
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(Country, CountryAdmin)
 admin.site.register(PaymentMethod, PaymentMethodAdmin)
+admin.site.register(PaymentConfiguration, PaymentConfigurationAdmin)
