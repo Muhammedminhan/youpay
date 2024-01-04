@@ -19,7 +19,7 @@ service:
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "TCP"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "5432"
       service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygg-qa-private-us-east-2a, ygg-qa-private-us-east-2b, ygg-qa-private-us-east-2c"
+      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygag-qa-default-private-us-east-2a-tf, ygag-qa-default-private-us-east-2b-tf, ygag-qa-default-private-us-east-2c-tf"
 
 statefulset:
   name: 'youpay-[JIRA_ID]-database-statefulset'
@@ -79,7 +79,7 @@ deployment:
         name: 'init-ebs'
 
   nodeSelector:
-    key: 'karpenter.sh/nodepool'
+    key: 'karpenter.sh/provisioner-name'
     value: 'database'
   priorityClassName: 'qa-medium'
   terminationGracePeriodSeconds: 30

@@ -1,4 +1,4 @@
-namespace: 'youpay'
+namespace: 'youpay-[JIRA_ID]'
 
 app_name: 'youpay-[JIRA_ID]'
 environment: 'qa'
@@ -18,21 +18,21 @@ hpa:
 
 pdb:
   name: 'youpay-[JIRA_ID]-app-pdb'
-  minAvailable: 50%
+  minAvailable: 1
 
 deployment:
   name: 'youpay-[JIRA_ID]-app-deployment'
   replicas: 2
   maxSurge: 100%
   maxUnavailable: 50%
-  serviceAccountName: 'ygag-youpay-vault'
+  serviceAccountName: ygag-youpay-vault
 
   containers:
     default:
       name: 'app'
       imagePullPolicy: 'Always'
       image: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/ygag/youpay/backend-app:[BUILD_TAG]'
-      command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; source /etc/profile.d/application-env.sh ; sh /ygag/deployment/app/app-entrypoint.sh"]'
+      command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; sh /ygag/app-entrypoint.sh"]'
       env:
         - name: 'DJANGO_SETTINGS_MODUL'
           value: 'DJANGO_SETTINGS_MODULE'
@@ -65,45 +65,29 @@ deployment:
         successThreshold: 1
         failureThreshold: 4
       volumeMounts:
-        - mountPath: '/ygag/logs/'
-          name: 'ygag-youpay-[JIRA_ID]-qa-app-logs'
-        - name: 'youpay-app-env-volume'
+        - mountPath: /ygag/logs/
+          name: ygag-youpay-[JIRA_ID]-qa-app-logs
+        - name: youpay-app-env-volume
           mountPath: "/vault/secrets"
-        - name: 'youpay-certs-sample1-volume'
-          mountPath: "/ygag/certs/sample1dir"
-        - name: 'youpay-certs-sample2-volume'
-          mountPath: "/ygag/certs/sample2dir"
-        - name: 'youpay-certs-sample-client3-volume'
-          mountPath: "/ygag/certs/sample-client3dir"
+        - name: youpay-certs-applepay-volume
+          mountPath: "/ygag/certs/applepay/sandbox"
 
   volumes:
     - name: 'ygag-youpay-[JIRA_ID]-qa-app-logs'
       hostPath:
         path: '/home/ec2-user/ygag-logs/ygag-youpay-[JIRA_ID]-qa/app'
-    - name: 'youpay-app-env-volume'
+    - name: youpay-app-env-volume
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpay-envs"
-    - name: 'youpay-certs-sample1-volume'
+    - name: youpay-certs-applepay-volume
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
-          secretProviderClass: "youpay-certs-sample1"
-    - name: 'youpay-certs-sample2-volume'
-      csi:
-        driver: secrets-store.csi.k8s.io
-        readOnly: true
-        volumeAttributes:
-          secretProviderClass: "youpay-certs-sample2"
-    - name: 'youpay-certs-sample-client3-volume'
-      csi:
-        driver: secrets-store.csi.k8s.io
-        readOnly: true
-        volumeAttributes:
-          secretProviderClass: "youpay-certs-sample-client3"
+          secretProviderClass: "youpay-certs-applepay"
 
   initContainers:
     database:
@@ -117,7 +101,7 @@ deployment:
         name: 'init-redis'
 
   nodeSelector:
-    key: 'karpenter.sh/nodepool'
+    key: 'karpenter.sh/provisioner-name'
     value: 'default'
 
   topologySpreadConstraints:
@@ -138,3 +122,4 @@ deployment:
 
   priorityClassName: 'qa-medium'
   terminationGracePeriodSeconds: 60
+

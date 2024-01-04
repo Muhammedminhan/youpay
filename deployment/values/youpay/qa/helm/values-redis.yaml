@@ -41,7 +41,7 @@ deployment:
         limits: 300m
 
   nodeSelector:
-    key: 'karpenter.sh/nodepool'
+    key: 'karpenter.sh/provisioner-name'
     value: 'database'
   priorityClassName: 'qa-medium'
   terminationGracePeriodSeconds: 60

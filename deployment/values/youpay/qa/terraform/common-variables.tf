@@ -4,7 +4,7 @@ variable "global_variables" {
   default = {
     prefix      = "ygg-"
     suffix      = "-tf"
-    region      = "<QA_AWS_REGION>"
+    region      = "us-east-2"
     environment = "qa"
     account     = "ygg"
 

@@ -6,6 +6,6 @@ pvc:
       - 'ReadWriteOnce'
     resources:
       requests:
-        storage: 2Gi
-    storageClassName: 'gp3'
+        storage: 1Gi
+    storageClassName: 'ebs-sc'
 
