@@ -17,12 +17,12 @@ service:
 hpa:
   name: 'youpay-nginx-hpa'
   minReplicas: 3
-  maxReplicas: 5
+  maxReplicas: 6
   targetCPUUtilizationPercentage: 80
 
 pdb:
   name: 'youpay-nginx-pdb'
-  minAvailable: 50%
+  minAvailable: 80%
 
 deployment:
   name: 'youpay-nginx-deployment'

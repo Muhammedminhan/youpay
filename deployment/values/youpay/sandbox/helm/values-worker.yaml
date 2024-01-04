@@ -13,12 +13,12 @@ service:
 hpa:
   name: 'youpay-worker-hpa'
   minReplicas: 1
-  maxReplicas: 1
+  maxReplicas: 3
   targetCPUUtilizationPercentage: 80
 
 pdb:
   name: 'youpay-worker-pdb'
-  minAvailable: 50%
+  minAvailable: 80%
 
 deployment:
   name: 'youpay-worker-deployment'
@@ -37,7 +37,7 @@ deployment:
         requests: 300Mi
         limits: 400Mi
       cpu:
-        requests: 150m
+        requests: 50m
       volumeMounts:
         - mountPath: /ygag/logs/
           name: 'ygag-youpay-sandbox-worker-logs'
