@@ -1,4 +1,6 @@
-FROM 459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:req
+ARG REQ_IMAGE
+
+FROM $REQ_IMAGE
 
 WORKDIR /ygag
 

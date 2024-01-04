@@ -18,7 +18,7 @@ hpa:
 
 pdb:
   name: 'youpay-worker-pdb'
-  minAvailable: 50%
+  minAvailable: 80%
 
 deployment:
   name: 'youpay-worker-deployment'
@@ -34,10 +34,10 @@ deployment:
       image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "-c", "source /vault/secrets/application.env ; sh /ygag/deployment/app/worker-entrypoint.sh"]'
       memory:
-        requests: 300Mi
-        limits: 400Mi
+        requests: 250Mi
+        limits: 300Mi
       cpu:
-        requests: 150m
+        requests: 50m
       volumeMounts:
         - mountPath: /ygag/logs/
           name: 'ygag-youpay-production-worker-logs'

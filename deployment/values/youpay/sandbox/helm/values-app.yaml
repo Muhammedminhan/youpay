@@ -13,12 +13,12 @@ service:
 hpa:
   name: 'youpay-app-hpa'
   minReplicas: 3
-  maxReplicas: 5
+  maxReplicas: 6
   targetCPUUtilizationPercentage: 80
 
 pdb:
   name: 'youpay-app-pdb'
-  minAvailable: 50%
+  minAvailable: 80%
 
 deployment:
   name: 'youpay-app-deployment'

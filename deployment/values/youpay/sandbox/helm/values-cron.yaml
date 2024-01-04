@@ -24,7 +24,7 @@ deployment:
   name: 'youpay-cron-deployment'
   replicas: 1
   maxSurge: 100%
-  maxUnavailable: 0
+  maxUnavailable: 0%
   serviceAccountName: 'ygag-youpay-vault'
 
   containers:

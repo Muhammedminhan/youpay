@@ -12,17 +12,17 @@ service:
 
 hpa:
   name: 'youpay-app-hpa'
-  minReplicas: 5
+  minReplicas: 10
   maxReplicas: 50
   targetCPUUtilizationPercentage: 80
 
 pdb:
   name: 'youpay-app-pdb'
-  minAvailable: 50%
+  minAvailable: 80%
 
 deployment:
   name: 'youpay-app-deployment'
-  replicas: 5
+  replicas: 10
   maxSurge: 100%
   maxUnavailable: 0%
   serviceAccountName: 'ygag-youpay-vault'
@@ -38,8 +38,8 @@ deployment:
           value: 'DJANGO_SETTINGS_MODULE'
       port: 8000
       memory:
-        requests: 400Mi
-        limits: 500Mi
+        requests: 300Mi
+        limits: 350Mi
       cpu:
         requests: 100m
       health:

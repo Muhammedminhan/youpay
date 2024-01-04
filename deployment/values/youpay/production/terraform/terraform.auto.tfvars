@@ -23,6 +23,7 @@ application_secret_provider_class_charts = [
   # youpay-envs
   {
     create_helm_release = true
+
     namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
@@ -149,20 +150,4 @@ application_charts = [
     cleanup_on_fail  = true
     values_file_name = "values-worker.yaml"
   },
-  # consumer-name
-  {
-    create_helm_release = false
-
-    namespace        = "youpay"
-    create_namespace = false
-    repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "youpay-consumer-name"
-    # Chart name for consumer is worker
-    chart            = "worker"
-    version          = "1.0.1"
-    timeout          = 600
-    atomic           = true
-    cleanup_on_fail  = true
-    values_file_name = "values-consumer-name.yaml"
-  },
-]
+  ]
