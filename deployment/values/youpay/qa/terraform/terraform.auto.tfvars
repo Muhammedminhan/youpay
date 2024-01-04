@@ -219,22 +219,6 @@ application_charts = [
     cleanup_on_fail  = true
     values_file_name = "values-worker.yaml"
   },
-  # consumer-name
-  {
-    create_helm_release = true
-
-    namespace        = "youpay-[JIRA_ID]"
-    create_namespace = false
-    repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"
-    release_name     = "youpay-[JIRA_ID]-consumer-name"
-    # Chart name for consumer is worker
-    chart            = "worker"
-    version          = "1.0.3"
-    timeout          = 600
-    atomic           = true
-    cleanup_on_fail  = true
-    values_file_name = "values-consumer-name.yaml"
-  },
 ]
 
 # variables for application data resource finding created load balancer in above step
