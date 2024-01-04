@@ -34,7 +34,7 @@ deployment:
     default:
       name: 'nginx'
       imagePullPolicy: 'Always'
-      image: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/ygag/youpay/backend-nginx:[BUILD_TAG]'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygag/youpay/backend-nginx:[BUILD_TAG]'
       port: 80
       memory:
         requests: 32Mi
@@ -73,14 +73,14 @@ deployment:
 
   initContainers:
     app:
-      - image: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/k8s/busybox:latest'
+      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/k8s/busybox:latest'
         host: 'youpay-[JIRA_ID]-app'
         name: 'init-app'
         port: 8000
         healthPath: '/health/'
 
   nodeSelector:
-    key: 'karpenter.sh/provisioner-name'
+    key: 'karpenter.sh/nodepool'
     value: 'default'
 
   topologySpreadConstraints:

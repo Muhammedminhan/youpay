@@ -5,7 +5,7 @@ env:
   APPLICATION_NAME:  youpay
   APP_IMAGE_REPOSITORY: qa/ygag/youpay/backend-app
   ECR_REGISTRY: 420360167813
-  ECR_REGION: us-east-2
+  ECR_REGION: me-central-1
 
 
 jobs:

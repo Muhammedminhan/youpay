@@ -30,7 +30,7 @@ deployment:
     default:
       name: 'redis'
       imagePullPolicy: 'Always'
-      image: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/redis:6.2.4'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/redis:6.2.4'
       command: '[]'
       port: 6379
       memory:
@@ -41,7 +41,7 @@ deployment:
         limits: 300m
 
   nodeSelector:
-    key: 'karpenter.sh/provisioner-name'
+    key: 'karpenter.sh/nodepool'
     value: 'database'
   priorityClassName: 'qa-medium'
   terminationGracePeriodSeconds: 60

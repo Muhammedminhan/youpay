@@ -19,7 +19,7 @@ service:
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "TCP"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "5432"
       service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygag-qa-default-private-us-east-2a-tf, ygag-qa-default-private-us-east-2b-tf, ygag-qa-default-private-us-east-2c-tf"
+      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygag-qa-default-private-me-central-1a-tf, ygag-qa-default-private-me-central-1b-tf, ygag-qa-default-private-me-central-1c-tf"
 
 statefulset:
   name: 'youpay-[JIRA_ID]-database-statefulset'
@@ -39,7 +39,7 @@ deployment:
     default:
       name: 'database'
       imagePullPolicy: 'Always'
-      image: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/ygag/youpay/backend-database:latest'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygag/youpay/backend-database:latest'
       command: '[]'
       env:
         - name: 'POSTGRES_PASSWORD_FILE'
@@ -74,12 +74,12 @@ deployment:
 
   initContainers:
     ebs:
-      - image: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/k8s/busybox:latest'
+      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/k8s/busybox:latest'
         volume: 'ygag-youpay-[JIRA_ID]-qa-database-data'
         name: 'init-ebs'
 
   nodeSelector:
-    key: 'karpenter.sh/provisioner-name'
+    key: 'karpenter.sh/nodepool'
     value: 'database'
   priorityClassName: 'qa-medium'
   terminationGracePeriodSeconds: 30

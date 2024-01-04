@@ -85,7 +85,7 @@ env:
   APP_IMAGE_REPOSITORY: 'qa/ygag/youpay/backend-app'
   NGINX_IMAGE_REPOSITORY: 'qa/ygag/youpay/backend-nginx'
   ECR_REGISTRY: '420360167813'
-  ECR_REGION: 'us-east-2'
+  ECR_REGION: 'me-central-1'
   VAULT_ADDRESS: ${{ secrets.VAULT_ADDRESS }}
   PRODUCT_TEAM: 'payment'
   JIRA_ID: ${{ inputs.branch || github.event.client_payload.branch }}
@@ -94,7 +94,7 @@ env:
   WHITELABEL: ${{ inputs.whitelabel }}
   APP_DB_LB_DEPLOY: ${{ inputs.app_db_lb_deploy }}
   QA_DEPLOY_ENV: ${{ inputs.deploy_env }}
-  NGINX_BASE_IMAGE: '420360167813.dkr.ecr.us-east-2.amazonaws.com/qa/ygag/nginx:1.16.1-1'
+  NGINX_BASE_IMAGE: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygag/nginx:1.16.1-1'
 
 jobs:
   initialize:

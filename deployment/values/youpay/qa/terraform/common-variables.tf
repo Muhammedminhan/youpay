@@ -4,7 +4,7 @@ variable "global_variables" {
   default = {
     prefix      = "ygg-"
     suffix      = "-tf"
-    region      = "us-east-2"
+    region      = "me-central-1"
     environment = "qa"
     account     = "ygg"
 
