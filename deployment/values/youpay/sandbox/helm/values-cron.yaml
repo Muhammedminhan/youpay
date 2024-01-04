@@ -1,7 +1,7 @@
 namespace: 'youpay'
 
 app_name: 'youpay'
-environment: 'production'
+environment: 'sandbox'
 
 service:
   name: 'youpay-cron'
@@ -24,7 +24,7 @@ deployment:
   name: 'youpay-cron-deployment'
   replicas: 1
   maxSurge: 100%
-  maxUnavailable: 0
+  maxUnavailable: 0%
   serviceAccountName: 'ygag-youpay-vault'
 
   containers:
@@ -32,24 +32,24 @@ deployment:
       name: 'cron'
       imagePullPolicy: 'Always'
       image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
-      command: '["sh", "/ygag/deployment/app/cron-entrypoint.sh"]'
+      command: '["sh", "-c", "source /vault/secrets/application.env ; sh /ygag/deployment/app/cron-entrypoint.sh"]'
       memory:
         requests: 200Mi
-        limits: 250Mi
+        limits: 300Mi
       cpu:
         requests: 50m
       volumeMounts:
         - mountPath: '/ygag/logs/'
-          name: 'ygag-youpay-production-cron-logs'
+          name: 'ygag-youpay-sandbox-cron-logs'
         - name: 'youpay-app-env-volume'
           mountPath: "/vault/secrets"
         - name: 'youpay-certs-applepay-volume'
           mountPath: "/ygag/certs/applepay"
 
   volumes:
-    - name: 'ygag-youpay-production-cron-logs'
+    - name: 'ygag-youpay-sandbox-cron-logs'
       hostPath:
-        path: '/home/ec2-user/ygag-logs/ygag-youpay-production/cron'
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/cron'
     - name: 'youpay-app-env-volume'
       csi:
         driver: secrets-store.csi.k8s.io
@@ -75,13 +75,6 @@ deployment:
         matchLabels:
           app: 'youpay'
           tier: cron
-    - maxSkew: 1
-      topologyKey: 'karpenter.sh/capacity-type'
-      whenUnsatisfiable: DoNotSchedule
-      labelSelector:
-        matchLabels:
-          app: 'youpay'
-          tier: cron
 
-  priorityClassName: 'production-critical'
+  priorityClassName: 'sandbox-critical'
   terminationGracePeriodSeconds: 60
