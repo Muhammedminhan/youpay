@@ -39,7 +39,7 @@ deployment:
     default:
       name: 'database'
       imagePullPolicy: 'Always'
-      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygag/youpay/backend-database:latest'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-database:latest'
       command: '[]'
       env:
         - name: 'POSTGRES_PASSWORD_FILE'

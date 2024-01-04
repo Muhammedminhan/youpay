@@ -82,8 +82,8 @@ on:
 
 env:
   APPLICATION_NAME: 'youpay'
-  APP_IMAGE_REPOSITORY: 'qa/ygag/youpay/backend-app'
-  NGINX_IMAGE_REPOSITORY: 'qa/ygag/youpay/backend-nginx'
+  APP_IMAGE_REPOSITORY: 'qa/ygg/youpay/backend-app'
+  NGINX_IMAGE_REPOSITORY: 'qa/ygg/youpay/backend-nginx'
   ECR_REGISTRY: '420360167813'
   ECR_REGION: 'me-central-1'
   VAULT_ADDRESS: ${{ secrets.VAULT_ADDRESS }}
@@ -94,7 +94,7 @@ env:
   WHITELABEL: ${{ inputs.whitelabel }}
   APP_DB_LB_DEPLOY: ${{ inputs.app_db_lb_deploy }}
   QA_DEPLOY_ENV: ${{ inputs.deploy_env }}
-  NGINX_BASE_IMAGE: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygag/nginx:1.16.1-1'
+  NGINX_BASE_IMAGE: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/nginx:1.16.1-1'
 
 jobs:
   initialize:

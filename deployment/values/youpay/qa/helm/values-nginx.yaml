@@ -34,7 +34,7 @@ deployment:
     default:
       name: 'nginx'
       imagePullPolicy: 'Always'
-      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygag/youpay/backend-nginx:[BUILD_TAG]'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-nginx:[BUILD_TAG]'
       port: 80
       memory:
         requests: 32Mi

@@ -31,7 +31,7 @@ deployment:
     default:
       name: 'app'
       imagePullPolicy: 'Always'
-      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygag/youpay/backend-app:[BUILD_TAG]'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; sh /ygag/app-entrypoint.sh"]'
       env:
         - name: 'DJANGO_SETTINGS_MODUL'
