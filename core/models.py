@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from core.constants import GUEST_USER_OPTIONS, PURCHASE_PLATFORM_CHOICES
+from core.constants import GUEST_USER_OPTIONS
 from payments.constants import (PAYMENT_OPTION_CHOICES,
                                 PAYMENT_METHOD_MODEL_CHOICES)
 
@@ -162,9 +162,6 @@ class PaymentMethodConfig(models.Model):
         'PaymentConfiguration', on_delete=models.CASCADE)
     country = models.ForeignKey(
         'core.Country', on_delete=models.CASCADE)
-    platform = models.CharField(
-        choices=PURCHASE_PLATFORM_CHOICES, max_length=200, null=True,
-        blank=True)
     client = models.ForeignKey(
         'services.APIClient', on_delete=models.CASCADE)
     active = models.BooleanField(
@@ -178,4 +175,4 @@ class PaymentMethodConfig(models.Model):
         return f"{self.country} - {self.platform} - {self.client}"
 
     class Meta:
-        unique_together = ('payment_method', 'country', 'platform', 'client')
+        unique_together = ('payment_method', 'country', 'client')
