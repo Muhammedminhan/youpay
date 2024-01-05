@@ -6,7 +6,7 @@ from django.core.cache import cache
 
 from services.models import APIClient
 from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
-                        GUEST_USER_CUSTOM, PURCHASE_PLATFORM_CHOICES)
+                        GUEST_USER_CUSTOM)
 from .models import (AppConfig, Currency, Country, PaymentMethod,
                      PaymentConfiguration, PaymentMethodConfig)
 
@@ -102,7 +102,6 @@ class PaymentMethodConfigAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['country'].required = True
-        self.fields['platform'].required = True
         self.fields['payment_method'].required = True
 
 
@@ -188,20 +187,16 @@ class PaymentConfigurationAdmin(AdminAbstract):
         for payment_configuration in queryset:
             countries = Country.objects.all()
             clients = APIClient.objects.all()
-            platforms = PURCHASE_PLATFORM_CHOICES
 
             for country in countries:
                 for client in clients:
-                    for platform_choice in platforms:
-                        platform_value, platform_display = platform_choice
-                        PaymentMethodConfig.objects.get_or_create(
-                            payment_method=payment_configuration,
-                            country=country,
-                            client=client,
-                            platform=platform_value,
-                            defaults={'active': True,
-                                      'guest_user_enabled': True}
-                        )
+                    PaymentMethodConfig.objects.get_or_create(
+                        payment_method=payment_configuration,
+                        country=country,
+                        client=client,
+                        defaults={'active': True,
+                                  'guest_user_enabled': True}
+                    )
 
         self.message_user(request, 'Successfully created '
                                    'PaymentMethodConfig instances for '

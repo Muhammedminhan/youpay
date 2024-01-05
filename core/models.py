@@ -172,7 +172,7 @@ class PaymentMethodConfig(models.Model):
                                 'available for the guest user')
 
     def __str__(self):
-        return f"{self.country} - {self.platform} - {self.client}"
+        return f"{self.country} - {self.client}"
 
     class Meta:
         unique_together = ('payment_method', 'country', 'client')

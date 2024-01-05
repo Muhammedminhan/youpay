@@ -338,14 +338,12 @@ def get_payment_methods(transaction, client, country):
 
     try:
         payment_method_query = Q(payment_method__active=True, client=client,
-                                 country=country, active=True,
-                                 platform=platform)
+                                 country=country, active=True)
         if transaction.is_guest:
             payment_method_query = Q(payment_method__active=True,
                                      client=client,
                                      country=country, active=True,
-                                     guest_user_enabled=True,
-                                     platform=platform)
+                                     guest_user_enabled=True)
         payment_method_configs = PaymentMethodConfig.objects.filter(
             payment_method_query)
 
@@ -361,6 +359,10 @@ def get_payment_methods(transaction, client, country):
 
             partial_redemption_allowed_options[payment_option_key] = (
                 config.payment_method.partial_redemption_allowed)
+        if payment_options.get('happy_credits') is not None:
+            if platform not in [PURCHASE_PLATFORM_ANDROID,
+                                PURCHASE_PLATFORM_IOS]:
+                payment_options['happy_credits'] = False
 
     except Exception as e:
         payment_options = None
