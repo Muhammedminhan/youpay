@@ -15,9 +15,11 @@ from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
-    PAYMENT_STATUS_PAID, PAYMENT_END_STATUS_LIST, PAYMENT_OPTION_APPLEPAY,
+    PAYMENT_STATUS_PAID, PAYMENT_END_STATUS_LIST,
+    PAYMENT_OPTION_CHECKOUT_APPLEPAY,
     PAYMENT_OPTION_PAYPAL, PAYMENT_OPTION_CITI_REWARDS, PAYMENT_OPTION_QITAF,
-    PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CARD, PAYMENT_OPTION_SAVED_CARD,
+    PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
+    PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB
 )
 from payments.models import YouPayTransactionData
@@ -108,9 +110,11 @@ class ConfigViewSet(ViewSet):
                     return Response(data,
                                     status=status.HTTP_404_NOT_FOUND)
 
+                payment_methods, partial_redemption_allowed_options = (
+                    get_payment_methods(transaction, client, country))
+
                 if transaction.session_id == session_id:
-                    payment_options = (
-                        get_payment_methods(transaction, client, country))
+                    payment_options = payment_methods
                     announcements_dict = get_announcements(
                         transaction.platform)
                     api_client = {'color': client.color_code,
@@ -122,22 +126,25 @@ class ConfigViewSet(ViewSet):
                     applepay_config = (
                         self.get_applepay_config(payment_options))
                     qitaf_config = self.get_qitaf_config(
-                        payment_options, transaction)
+                        payment_options, transaction,
+                        partial_redemption_allowed_options,
+                    )
                     citi_config = self.check_citi_allowed_denominations(
                         payment_options,
                         transaction)
                     tabbypg_config = self.get_tabby_conf(payment_options)
                     checkout_config = self.get_checkout_config(
                         payment_options, transaction)
-                    payback_config = self.get_b2cpayback_config(
-                        payment_options, transaction)
+                    adcb_config = self.get_adcb_config(
+                        payment_options, transaction,
+                        partial_redemption_allowed_options)
 
                     response_data = self.retrieve_response(
                         api_client=api_client,
                         payment_options=payment_options,
                         tabbypg_config=tabbypg_config,
                         checkoutpg_config=checkout_config,
-                        payback_config=payback_config,
+                        adcb_config=adcb_config,
                         applepay_config=applepay_config,
                         transaction=transaction,
                         announcements_dict=announcements_dict,
@@ -182,7 +189,7 @@ class ConfigViewSet(ViewSet):
         api_client = kwargs.get('api_client', None)
         checkoutpg_config = kwargs.get('checkoutpg_config', None)
         tabbypg_config = kwargs.get('tabbypg_config', None)
-        payback_config = kwargs.get('payback_config', None)
+        adcb_config = kwargs.get('adcb_config', None)
         transaction = kwargs.get('transaction', None)
         announcements_dict = kwargs.get('announcements_dict', None)
         applepay_config = kwargs.get('applepay_config', None)
@@ -238,7 +245,7 @@ class ConfigViewSet(ViewSet):
                 "api_client": api_client,
                 "payment_options": payment_options,
                 "checkoutpg_config": checkoutpg_config,
-                "b2cpayback_config": payback_config,
+                "adcb_config": adcb_config,
                 "tabbypg_config": tabbypg_config,
                 "applepay_config": applepay_config,
                 "paypal_config": paypal_config,
@@ -306,7 +313,8 @@ class ConfigViewSet(ViewSet):
             "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
         applepay_config["label"] = APPLEPAY_LABEL
 
-        applepay_enabled = payment_option.get(PAYMENT_OPTION_APPLEPAY, False)
+        applepay_enabled = payment_option.get(
+            PAYMENT_OPTION_CHECKOUT_APPLEPAY, False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
             applepay_config.update(self.get_additional_config(additional_fee,
@@ -326,13 +334,15 @@ class ConfigViewSet(ViewSet):
                                                        TOKEN_TYPE_PAYPAL)
         return paypal_config
 
-    def get_qitaf_config(self, payment_option, transaction_data):
+    def get_qitaf_config(self, payment_option, transaction_data,
+                         partial_redemption_allowed_options):
         """
         returns qitaf configurations
         """
-
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
         if qitaf_enabled:
+            partial_redemption_allowed = partial_redemption_allowed_options.get(
+                PAYMENT_OPTION_QITAF, False)
             qitaf_obj = QitafServiceManager()
             qitaf_config = qitaf_obj.get_configurations(
                 transaction_data.amount, transaction_data.currency,
@@ -340,7 +350,8 @@ class ConfigViewSet(ViewSet):
             if qitaf_config:
                 additional_config = {
                     'qitaf_phone_number': transaction_data.qitaf_phone_number,
-                    'is_qitaf_enabled': transaction_data.is_qitaf_enabled
+                    'is_qitaf_enabled': transaction_data.is_qitaf_enabled,
+                    'partial_redemption_allowed': partial_redemption_allowed
                 }
                 qitaf_config.update(additional_config)
             else:
@@ -375,9 +386,11 @@ class ConfigViewSet(ViewSet):
         return citi_config
 
     def get_checkout_config(self, payment_option, transaction):
-        card__enabled = payment_option.get(PAYMENT_OPTION_CARD, False)
-        saved_card__enabled = payment_option.get(PAYMENT_OPTION_SAVED_CARD,
-                                                 False)
+        card__enabled = payment_option.get(PAYMENT_OPTION_CHECKOUT_CARD,
+                                           False)
+        saved_card__enabled = payment_option.get(
+            PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
+            False)
         checkout_config = {}
         if True in [card__enabled, saved_card__enabled]:
             checkout_obj = CheckoutpgManager()
@@ -390,19 +403,23 @@ class ConfigViewSet(ViewSet):
                                                       status_code))
         return checkout_config
 
-    def get_b2cpayback_config(self, payment_option, transaction):
+    def get_adcb_config(self, payment_option, transaction,
+                        partial_redemption_allowed_options):
         """
         This is for ADCB payback
         """
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
-        payback_config = {}
+        partial_redemption_allowed = partial_redemption_allowed_options.get(
+            PAYMENT_OPTION_ADCB, False)
+        adcb_config = {}
         if adcb_enabled:
             b2c_payback_obj = B2CPaybackManager()
-            payback_config = b2c_payback_obj.get_configurations(
+            adcb_config = b2c_payback_obj.get_configurations(
                 transaction.amount, transaction.currency,
                 transaction.transaction_id)
-
-        return payback_config
+        adcb_config[
+            'partial_redemption_allowed'] = partial_redemption_allowed
+        return adcb_config
 
 
 class ClientStaticFilesAPI(APIView):
