@@ -1,7 +1,7 @@
 namespace: 'youpay'
 
 app_name: 'youpay'
-environment: 'production'
+environment: 'sandbox'
 
 service:
   name: 'youpay-worker'
@@ -13,7 +13,7 @@ service:
 hpa:
   name: 'youpay-worker-hpa'
   minReplicas: 1
-  maxReplicas: 1
+  maxReplicas: 3
   targetCPUUtilizationPercentage: 80
 
 pdb:
@@ -32,24 +32,24 @@ deployment:
       name: 'worker'
       imagePullPolicy: 'Always'
       image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
-      command: '["sh", "/ygag/deployment/app/worker-entrypoint.sh"]'
+      command: '["sh", "-c", "source /vault/secrets/application.env ; sh /ygag/deployment/app/worker-entrypoint.sh"]'
       memory:
-        requests: 250Mi
-        limits: 300Mi
+        requests: 300Mi
+        limits: 400Mi
       cpu:
         requests: 50m
       volumeMounts:
         - mountPath: /ygag/logs/
-          name: 'ygag-youpay-production-worker-logs'
+          name: 'ygag-youpay-sandbox-worker-logs'
         - name: 'youpay-app-env-volume'
           mountPath: "/vault/secrets"
         - name: 'youpay-certs-applepay-volume'
           mountPath: "/ygag/certs/applepay"
 
   volumes:
-    - name: 'ygag-youpay-production-worker-logs'
+    - name: 'ygag-youpay-sandbox-worker-logs'
       hostPath:
-        path: '/home/ec2-user/ygag-logs/ygag-youpay-production/worker'
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/worker'
     - name: 'youpay-app-env-volume'
       csi:
         driver: secrets-store.csi.k8s.io
@@ -75,13 +75,6 @@ deployment:
         matchLabels:
           app: 'youpay'
           tier: worker
-    - maxSkew: 1
-      topologyKey: 'karpenter.sh/capacity-type'
-      whenUnsatisfiable: DoNotSchedule
-      labelSelector:
-        matchLabels:
-          app: 'youpay'
-          tier: worker
 
-  priorityClassName: 'production-medium'
+  priorityClassName: 'sandbox-medium'
   terminationGracePeriodSeconds: 60

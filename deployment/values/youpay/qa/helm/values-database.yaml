@@ -1,0 +1,86 @@
+namespace: 'youpay-[JIRA_ID]'
+
+app_name: 'youpay-[JIRA_ID]'
+environment: 'qa'
+
+databaseType: 'postgres'
+
+service:
+  name: 'youpay-[JIRA_ID]-database'
+  default:
+    port: 5432
+    protocol: 'TCP'
+    targetPort: 5432
+  lb:
+    enabled: '[APP_DB_LB_DEPLOY]'
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb-ip"
+      service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "TCP"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "5432"
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygag-qa-default-private-me-central-1a-tf, ygag-qa-default-private-me-central-1b-tf, ygag-qa-default-private-me-central-1c-tf"
+
+statefulset:
+  name: 'youpay-[JIRA_ID]-database-statefulset'
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+
+pdb:
+  name: 'youpay-[JIRA_ID]-database-pdb'
+  minAvailable: 100%
+
+deployment:
+  name: 'youpay-[JIRA_ID]-database-deployment'
+  replicas: 1
+
+  containers:
+    default:
+      name: 'database'
+      imagePullPolicy: 'Always'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-database:latest'
+      command: '[]'
+      env:
+        - name: 'POSTGRES_PASSWORD_FILE'
+          value: '/run/entrypoint/secrets/postgres-root-password'
+        - name: 'POSTGRES_DB_FILE'
+          value: '/run/entrypoint/secrets/postgres-database-name'
+        - name: 'POSTGRES_USER_FILE'
+          value: '/run/entrypoint/secrets/postgres-database-user'
+      port: 5432
+      memory:
+        requests: 100Mi
+        limits: 300Mi
+      cpu:
+        requests: 100m
+        limits: 1000m
+      livenessProbe:
+        command: '["pg_isready"]'
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+      readinessProbe:
+        command: '["pg_isready"]'
+        initialDelaySeconds: 5
+        periodSeconds: 2
+        timeoutSeconds: 1
+
+  volumes:
+    persistent:
+      - name: 'ygag-youpay-[JIRA_ID]-qa-database-data'
+        mountPath: '/var/lib/postgresql/data'
+        persistentVolumeClaim: 'youpay-[JIRA_ID]-ebs-database'
+
+  initContainers:
+    ebs:
+      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/k8s/busybox:latest'
+        volume: 'ygag-youpay-[JIRA_ID]-qa-database-data'
+        name: 'init-ebs'
+
+  nodeSelector:
+    key: 'karpenter.sh/nodepool'
+    value: 'database'
+  priorityClassName: 'qa-medium'
+  terminationGracePeriodSeconds: 30
+

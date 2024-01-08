@@ -6,7 +6,6 @@ from django.dispatch import receiver
 
 from payments.constants import MODEL_NAME_TRANSACTIONDATA
 from payments.tasks import (common_update_financial_action_charges)
-from services.v1.views.common import YouPayTransactionCRUD
 from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_METHOD_CHOICES,
                         PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
@@ -235,6 +234,8 @@ def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
 def prepare_youpay_transaction_update_data(instance, payment_reference):
 
     from core.utils import checkout_decline_check
+    from services.v1.views.common import YouPayTransactionCRUD
+
     payment_status, is_payment_verified = checkout_decline_check(
         {'response_code': instance.checkout_response_code,
          'status': instance.status})
@@ -242,8 +243,8 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
 
     try:
         transaction_obj = (
-        youpay_obj.get_youpay_transaction_data_with_payment_reference(
-            payment_reference))
+            youpay_obj.get_youpay_transaction_data_with_payment_reference(
+                payment_reference))
         if transaction_obj:
             data_to_update = {
                 'transaction_id': transaction_obj.transaction_id,

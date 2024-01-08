@@ -15,6 +15,7 @@ from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
+    PAYMENT_METHOD_CITI_REWARDS,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
     PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST)
 
@@ -152,10 +153,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     # adcb related data
     redeemed_amount = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
-        help_text='amount which is redeemed on ADCB')
+        help_text='amount which is redeemed on B2C_Payback')
     redeemed_points = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
-        help_text='points which is redeemed on ADCB')
+        help_text='points which is redeemed on B2C_Payback')
     payable_amount = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
         help_text='amount which is paid using credit/debit card by the'
@@ -299,9 +300,9 @@ def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
     2.Handle actions for reverting citi blocked balance
     """
     youpay_update_client(instance)
-
-    if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
-        revert_citi_blocked_balance(instance)
+    if instance.payment_method == PAYMENT_METHOD_CITI_REWARDS:
+        if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
+            revert_citi_blocked_balance(instance)
 
 
 def youpay_update_client(instance):

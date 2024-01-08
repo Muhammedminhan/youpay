@@ -5,11 +5,11 @@ variable "global_variables" {
     prefix      = "ygag-"
     suffix      = "-tf"
     region      = "ap-south-1"
-    environment = "[ENVIRONMENT]"
+    environment = "sandbox"
 
     default_tags = {
       "Region"      = "Mumbai"
-      "Environment" = "[ENVIRONMENT]"
+      "Environment" = "sandbox"
       "CreatedBy"   = "Terraform"
     }
   }
