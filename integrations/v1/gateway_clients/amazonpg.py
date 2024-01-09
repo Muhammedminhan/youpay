@@ -10,7 +10,8 @@ from core.utils import get_payment_gateway_config
 from integrations.constants import (
     AMAZONPG_AUTHENTICATE_API, AMAZONPG_VERIFY_API, AMAZONPG_CACHE_KEY,
     AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API,
-    AMAZONPG_REFUND_API, PAYMENT_REQUEST_AUTHENTICATE, PAYMENT_REQUEST_REFUND
+    AMAZONPG_REFUND_API, PAYMENT_REQUEST_AUTHENTICATE, PAYMENT_REQUEST_REFUND,
+    AMAZONPG_SAVED_CARD_API
 )
 from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.amazonpg_payment_request import (
@@ -357,3 +358,28 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             logger.error("Exception in amazonpg refund api call: {}"
                          "".format(str(e)))
             return {"error": e}, self.AMAZONPG_CONNECTION_ERROR
+
+
+    def get_saved_cards(self, email):
+            """
+            Method for getting saved cards
+            """
+            if self.amazonpg_config:
+                saved_cards = []
+                try:
+                    PARAMS = {'email': email}
+                    URL = self.amazonpg_config.domain + AMAZONPG_SAVED_CARD_API
+                    saved_cards = requests.get(url=URL, params=PARAMS)
+                    if saved_cards:
+                        saved_cards = saved_cards.json().get('message').get("cards")
+                        return saved_cards
+
+                except Exception as e:
+                    logger.error(
+                        "Unable to fetch saved card details for user {0} "
+                        "because, {1}".format(email, str(e)))
+                    return None
+            else:
+                logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
+                return None, None
+
