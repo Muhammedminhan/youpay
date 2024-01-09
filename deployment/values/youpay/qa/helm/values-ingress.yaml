@@ -15,7 +15,7 @@ ingress:
     alb.ingress.kubernetes.io/tags: 'Name=ygg-qa-default-alb-eks-tf, Platform=EKS, Environment=qa'
     alb.ingress.kubernetes.io/wafv2-acl-arn: '[WAF_ARN]'
     alb.ingress.kubernetes.io/target-type: 'ip'
-    alb.ingress.kubernetes.io/subnets: 'ygg-qa-public-me-central-1a-tf, ygg-qa-public-me-central-1b-tf, ygg-qa-public-me-central-1c-tf'
+    alb.ingress.kubernetes.io/subnets: 'ygg-qa-public-me-central-1a, ygg-qa-public-me-central-1b, ygg-qa-public-me-central-1c'
     alb.ingress.kubernetes.io/load-balancer-attributes: 'idle_timeout.timeout_seconds=120'
     kubernetes.io/ingress.class: 'alb'
 
