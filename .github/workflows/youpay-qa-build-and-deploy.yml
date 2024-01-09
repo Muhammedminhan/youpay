@@ -1,4 +1,4 @@
-name: QA Build & Deploy 'youpay'
+name: QA Build & Deploy youpay
 
 on:
   workflow_dispatch:
@@ -423,7 +423,6 @@ jobs:
          aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin 459037613883.dkr.ecr.us-east-1.amazonaws.com
          terraform version
          terraform init
-         terraform plan
          terraform apply -auto-approve
          
          if [[ ${{ env.ACTION }} == "deploy" ]];then
