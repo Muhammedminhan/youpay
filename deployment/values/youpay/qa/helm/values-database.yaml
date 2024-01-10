@@ -19,7 +19,7 @@ service:
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "TCP"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "5432"
       service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygag-qa-default-private-me-central-1a, ygag-qa-default-private-me-central-1b, ygag-qa-default-private-me-central-1c"
+      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygg-qa-private-me-central-1a, ygg-qa-private-me-central-1b, ygg-qa-private-me-central-1c"
 
 statefulset:
   name: 'youpay-[JIRA_ID]-database-statefulset'

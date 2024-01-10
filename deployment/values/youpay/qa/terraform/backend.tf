@@ -1,6 +1,5 @@
 terraform {
   backend "s3" {
-
     dynamodb_table    = "ygag-qa-terraform-state-tf"
 
     region = "us-east-1"
