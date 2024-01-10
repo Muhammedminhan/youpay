@@ -165,9 +165,9 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         try:
             if verify_status == status.HTTP_200_OK and is_verified:
                 if self.amazonpg_config:
-                    payment_method = request_data.get('payment_method')
+                    payment_method = PAYMENT_METHOD_APPLEPAY
                     payment_data = self.get_amazon_payment_data(
-                        payment_method, data)
+                        payment_method, request_data)
 
                     logger.info(
                         "Youpay sending payment data to amazonpg "
