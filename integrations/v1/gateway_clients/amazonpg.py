@@ -87,6 +87,18 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 "for amzonpg")
             return None
 
+    def get_amazon_payment_data(self, payment_method, data):
+        payment_data = {}
+        if payment_method == PAYMENT_METHOD_CARD:
+            payment_data = self.get_amazonpg_card_payment_data(
+                data)
+
+        elif payment_method == PAYMENT_METHOD_APPLEPAY:
+            payment_data = self.get_amazonpg_applepay_payment_data(
+                data)
+
+        return payment_data
+
     def get_tokenization_data(self, data):
         """
         Returns amazonpg tokenization api request data
@@ -153,15 +165,10 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         try:
             if verify_status == status.HTTP_200_OK and is_verified:
                 if self.amazonpg_config:
+                    payment_method = request_data.get('payment_method')
+                    payment_data = self.get_amazon_payment_data(
+                        payment_method, data)
 
-                    if request_data.get('payment_method') == PAYMENT_METHOD_CARD:
-                        payment_data = self.get_amazonpg_card_payment_data(data)
-
-                    elif request_data.get('payment_method') == PAYMENT_METHOD_APPLEPAY:
-                        payment_data = self.get_amazonpg_applepay_payment_data(
-                            data)
-
-                    print("payment data ------- ", payment_data)
                     logger.info(
                         "Youpay sending payment data to amazonpg "
                         "is {}".format(payment_data))
