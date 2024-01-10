@@ -104,7 +104,7 @@ jobs:
       jira_id: ${{ steps.conversion.outputs.jira_id }}
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3.0.2
+      uses: actions/checkout@v4.1.1
       with:
         ref: ''
 
@@ -136,7 +136,7 @@ jobs:
     steps:
       - name: Checkout template
         if: inputs.action == 'renew' || inputs.action == 'deploy'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           repository: yougotagift/devops-cd
           ref: 'main'
@@ -164,7 +164,7 @@ jobs:
     steps:
       - name: Checkout Code
         if: inputs.action == 'deploy'
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v4.1.1
         with:
          ref: ${{ inputs.branch }}
 
@@ -228,7 +228,7 @@ jobs:
 
       - name: Checkout Code
         if: inputs.action == 'deploy'
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v4.1.1
         with:
          ref: ${{ inputs.branch }}
 
@@ -268,7 +268,7 @@ jobs:
 
       - name: Checkout Code
         if: inputs.action == 'deploy'
-        uses: actions/checkout@v3.0.2
+        uses: actions/checkout@v4.1.1
         with:
          ref: ${{ inputs.branch }}
 
@@ -291,7 +291,7 @@ jobs:
     runs-on: self-hosted
     steps:
      - name: Checkout Code
-       uses: actions/checkout@v3.0.2
+       uses: actions/checkout@v4.1.1
        with:
          ref: ${{ inputs.branch }}
 
@@ -309,7 +309,7 @@ jobs:
         echo "ALB_ACCESS_LOG_BUCKET=${{ secrets.YGG_ME_CENTRAL_1_QA_ALB_ACCESS_LOG_BUCKET }}" >> $GITHUB_ENV
 
      - name: Checkout template
-       uses: actions/checkout@v3
+       uses: actions/checkout@v4.1.1
        with:
           repository: yougotagift/devops-cd
           ref: 'main'
@@ -458,7 +458,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout template
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
         with:
           repository: yougotagift/devops-cd
           ref: 'main'
