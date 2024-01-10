@@ -371,7 +371,8 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                     URL = self.amazonpg_config.domain + AMAZONPG_SAVED_CARD_API
                     saved_cards = requests.get(url=URL, params=PARAMS)
                     if saved_cards:
-                        saved_cards = saved_cards.json().get('message').get("cards")
+                        saved_cards = saved_cards.json().get(
+                            'message').get("cards")
                         return saved_cards
 
                 except Exception as e:
