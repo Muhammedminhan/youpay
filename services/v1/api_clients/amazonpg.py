@@ -68,7 +68,11 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
         """
         Method for handling amazonpg authentication api
         """
+        transaction_id = None
         try:
+            logger.info(
+                "AmazonPGAuthentication API called with request data: {}".format(
+                    request.data))
             transaction_id = request.data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
@@ -98,6 +102,9 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
+            logger.error(
+                "AmazonPGAuthentication api failed with error {}, "
+                "for transaction {}".format(str(e), transaction_id))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 

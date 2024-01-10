@@ -167,7 +167,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 if self.amazonpg_config:
                     payment_method = PAYMENT_METHOD_APPLEPAY
                     payment_data = self.get_amazon_payment_data(
-                        payment_method, request_data)
+                        payment_method, data)
 
                     logger.info(
                         "Youpay sending payment data to amazonpg "
