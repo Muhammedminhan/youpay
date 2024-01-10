@@ -103,6 +103,7 @@ class AmazonPGApplepayPaymentRequestSerializer(
     apple_signature = serializers.SerializerMethodField()
     apple_header = serializers.SerializerMethodField()
     apple_paymentMethod = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
 
     def get_apple_data(self, data):
         return data.get('request_data').get("data")
@@ -110,8 +111,11 @@ class AmazonPGApplepayPaymentRequestSerializer(
     def get_apple_signature(self, data):
         return data.get('request_data').get("signature")
 
+    def get_payment_method(self, data):
+        return data.get('request_data').get("payment_method")
+
     def get_apple_header(self, data):
-        return AmazonPGApplepayApplePaymentMethodSerializer(data).data
+        return AmazonPGApplepayAppleHeaderSerializer(data).data
 
     def get_apple_paymentMethod(self, data):
         return AmazonPGApplepayApplePaymentMethodSerializer(data).data
