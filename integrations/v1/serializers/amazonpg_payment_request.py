@@ -2,7 +2,6 @@ from rest_framework import serializers
 
 from core.utils import get_app_config, encrypt_string
 from integrations.constants import AMAZONPG_HUB_CODE
-from payments.constants import PAYMENT_METHOD_APPLEPAY
 from services.v1.views.common import add_payment_gateway_info_in_url
 
 
@@ -72,22 +71,14 @@ class AmazonPGApplepayAppleHeaderSerializer(serializers.Serializer):
     apple_publicKeyHash = serializers.SerializerMethodField()
 
     def get_apple_transactionId(self, data):
-        return (data.get('request_data', {})
-                .get("token", {})
-                .get("header", {})
-                .get("transactionId", {}))
+        return data.get('request_data').get("header").get("transactionId")
 
     def get_apple_ephemeralPublicKey(self, data):
-        return (data.get('request_data', {})
-                .get("token", {})
-                .get("header", {})
-                .get("ephemeralPublicKey", {}))
+        return data.get('request_data').get("header").get(
+            "ephemeralPublicKey")
 
     def get_apple_publicKeyHash(self, data):
-        return (data.get('request_data', {})
-                .get("token", {})
-                .get("header", {})
-                .get("publicKeyHash", {}))
+        return data.get('request_data').get("header").get("publicKeyHash")
 
 
 class AmazonPGApplepayApplePaymentMethodSerializer(serializers.Serializer):
@@ -96,22 +87,14 @@ class AmazonPGApplepayApplePaymentMethodSerializer(serializers.Serializer):
     apple_type = serializers.SerializerMethodField()
 
     def get_apple_displayName(self, data):
-        return (data.get('request_data', {})
-                .get("token", {})
-                .get("paymentMethod", {})
-                .get("displayName", {}))
+        return data.get('request_data').get("paymentMethod").get(
+            "displayName")
 
     def get_apple_network(self, data):
-        return (data.get('request_data', {})
-                .get("token", {})
-                .get("paymentMethod", {})
-                .get("network", {}))
+        return data.get('request_data').get("paymentMethod").get("network")
 
     def get_apple_type(self, data):
-        return (data.get('request_data', {})
-                .get("token", {})
-                .get("paymentMethod", {})
-                .get("type", {}))
+        return data.get('request_data').get("paymentMethod").get("type")
 
 
 class AmazonPGApplepayPaymentRequestSerializer(
@@ -123,15 +106,13 @@ class AmazonPGApplepayPaymentRequestSerializer(
     payment_method = serializers.SerializerMethodField()
 
     def get_apple_data(self, data):
-        return data.get('request_data', {}).get("token", {}).get(
-            "paymentData", {}).get("data")
+        return data.get('request_data').get("data")
 
     def get_apple_signature(self, data):
-        return data.get('request_data', {}).get("token", {}).get(
-            "paymentData", {}).get("signature")
+        return data.get('request_data').get("signature")
 
     def get_payment_method(self, data):
-        return PAYMENT_METHOD_APPLEPAY
+        return data.get('request_data').get("payment_method")
 
     def get_apple_header(self, data):
         return AmazonPGApplepayAppleHeaderSerializer(data).data
