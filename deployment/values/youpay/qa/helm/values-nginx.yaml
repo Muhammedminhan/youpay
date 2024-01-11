@@ -35,6 +35,7 @@ deployment:
       name: 'nginx'
       imagePullPolicy: 'Always'
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-nginx:[BUILD_TAG]'
+      command: '["sh", "-c", "sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /ygag/nginx/conf/nginx.conf ; sh /ygag/nginx/entrypoint.sh"]'
       port: 80
       memory:
         requests: 32Mi
