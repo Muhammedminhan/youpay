@@ -73,7 +73,8 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
             logger.info(
                 "AmazonPGAuthentication API called with request data: {}".format(
                     request.data))
-            transaction_id = request.data.get('transaction_id')
+            request_data = request.data.get('request_data')
+            transaction_id = request_data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
 
@@ -81,7 +82,7 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
                 payment_data = {'transaction_data': transaction_data,
-                                'request_data': request.data}
+                                'request_data': request_data}
                 amazon_pay = AmazonPGManager()
                 response_data, code = amazon_pay.payment_authentication(
                     payment_data)
