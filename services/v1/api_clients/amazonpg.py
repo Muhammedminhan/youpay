@@ -137,3 +137,36 @@ class AmazonPGVerification(APIView):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class AmazonPGSavedCard(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def get(self, request):
+        """
+        Method for getting saved card list
+        """
+        try:
+            transaction_id = request.GET['transaction_id']
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id)
+            )
+            if transaction_obj:
+                email = transaction_obj.customer_email
+
+                amazonpg = AmazonPGManager()
+                response_data = amazonpg.get_saved_cards(email)
+
+                data = self.response_obj.get_success_dict(
+                    code=YouPayResponse.SUCCESS,
+                    success_dict={'data': {"saved_cards": response_data}})
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_404_message(
+                    message=TRANSACTION_DOESNT_EXIST)
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
