@@ -170,7 +170,8 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
 
         if active:
             existing_active_payment_method = PaymentConfiguration.objects.filter(
-                payment_method=payment_method, active=True)
+                payment_method=payment_method, active=True).exclude(
+                pk=self.instance.pk)
 
             if existing_active_payment_method:
                 raise forms.ValidationError(
