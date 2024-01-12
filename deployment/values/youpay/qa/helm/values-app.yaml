@@ -1,38 +1,38 @@
-namespace: 'youpay'
+namespace: 'youpay-[JIRA_ID]'
 
-app_name: 'youpay'
-environment: 'sandbox'
+app_name: 'youpay-[JIRA_ID]'
+environment: 'qa'
 
 service:
-  name: 'youpay-app'
+  name: 'youpay-[JIRA_ID]-app'
   default:
     port: 8000
     protocol: 'TCP'
     targetPort: 8000
 
 hpa:
-  name: 'youpay-app-hpa'
-  minReplicas: 3
-  maxReplicas: 6
+  name: 'youpay-[JIRA_ID]-app-hpa'
+  minReplicas: 2
+  maxReplicas: 2
   targetCPUUtilizationPercentage: 80
 
 pdb:
-  name: 'youpay-app-pdb'
-  minAvailable: 80%
+  name: 'youpay-[JIRA_ID]-app-pdb'
+  minAvailable: 1
 
 deployment:
-  name: 'youpay-app-deployment'
-  replicas: 3
+  name: 'youpay-[JIRA_ID]-app-deployment'
+  replicas: 2
   maxSurge: 100%
-  maxUnavailable: 0%
-  serviceAccountName: 'ygag-youpay-vault'
+  maxUnavailable: 50%
+  serviceAccountName: ygag-youpay-vault
 
   containers:
     default:
       name: 'app'
       imagePullPolicy: 'Always'
-      image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
-      command: '["sh", "/ygag/deployment/app/app-entrypoint.sh"]'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-app:[BUILD_TAG]'
+      command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; source /etc/profile.d/application-env.sh ; sh /ygag/deployment/app/app-entrypoint.sh"]'
       env:
         - name: 'DJANGO_SETTINGS_MODUL'
           value: 'DJANGO_SETTINGS_MODULE'
@@ -65,49 +65,61 @@ deployment:
         successThreshold: 1
         failureThreshold: 4
       volumeMounts:
-        - mountPath: '/ygag/logs/'
-          name: 'ygag-youpay-sandbox-app-logs'
-        - name: 'youpay-app-env-volume'
+        - mountPath: /ygag/logs/
+          name: ygag-youpay-[JIRA_ID]-qa-app-logs
+        - name: youpay-app-env-volume
           mountPath: "/vault/secrets"
-        - name: 'youpay-certs-applepay-volume'
-          mountPath: "/ygag/certs/applepay"
+        - name: youpay-certs-applepay-volume
+          mountPath: "/ygag/certs/applepay/sandbox"
 
   volumes:
-    - name: 'ygag-youpay-sandbox-app-logs'
+    - name: 'ygag-youpay-[JIRA_ID]-qa-app-logs'
       hostPath:
-        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/app'
-    - name: 'youpay-app-env-volume'
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-[JIRA_ID]-qa/app'
+    - name: youpay-app-env-volume
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpay-envs"
-    - name: 'youpay-certs-applepay-volume'
+    - name: youpay-certs-applepay-volume
       csi:
         driver: secrets-store.csi.k8s.io
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpay-certs-applepay"
 
+  initContainers:
+    database:
+      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/postgres:13.11'
+        cmd: 'pg_isready -p 5432'
+        host: 'youpay-[JIRA_ID]-database'
+        name: 'init-database'
+    redis:
+      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/redis:6.2.4'
+        host: 'youpay-[JIRA_ID]-redis'
+        name: 'init-redis'
+
   nodeSelector:
-    key: 'karpenter.sh/provisioner-name'
+    key: 'karpenter.sh/nodepool'
     value: 'default'
 
   topologySpreadConstraints:
-    - maxSkew: 1
+    - maxSkew: 2
       topologyKey: 'topology.kubernetes.io/zone'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: 'youpay'
+          app: 'youpay-[JIRA_ID]'
           tier: app
-    - maxSkew: 1
-      topologyKey: 'karpenter.sh/capacity-type'
+    - maxSkew: 2
+      topologyKey: 'kubernetes.io/hostname'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
-          app: 'youpay'
+          app: 'youpay-[JIRA_ID]'
           tier: app
 
-  priorityClassName: 'sandbox-medium'
+  priorityClassName: 'qa-medium'
   terminationGracePeriodSeconds: 60
+

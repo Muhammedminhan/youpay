@@ -23,6 +23,7 @@ application_secret_provider_class_charts = [
   # youpay-envs
   {
     create_helm_release = true
+
     namespace        = "youpay"
     create_namespace = false
     repository       = "oci://459037613883.dkr.ecr.us-east-1.amazonaws.com/production/helm/ygag"

@@ -1,4 +1,4 @@
-name: Build Base
+name: Build Base youpay
 
 on: workflow_dispatch
 env:
@@ -7,14 +7,12 @@ env:
   ECR_REGISTRY: 459037613883
   ECR_REGION: ap-south-1
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1.7.0
+        uses: aws-actions/configure-aws-credentials@v2.2.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }}
           aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }}
@@ -22,7 +20,7 @@ jobs:
 
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1.5.1
+        uses: aws-actions/amazon-ecr-login@v1.6.0
         with:
           registries: ${{ env.ECR_REGISTRY }}
           registry-type: private
