@@ -155,6 +155,11 @@ class PaymentMethodConfigInline(admin.TabularInline):
 
 
 class PaymentConfigurationAdminForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['guest_user_enabled'].required = True
+
     def clean(self):
         cleaned_data = super().clean()
         active = cleaned_data.get('active')
