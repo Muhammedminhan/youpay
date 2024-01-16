@@ -196,10 +196,9 @@ class PaymentConfigurationAdmin(AdminAbstract):
     actions = ['create_payment_method_configs']
 
     def create_payment_method_configs(self, request, queryset):
+        countries = Country.objects.all()
+        clients = APIClient.objects.all()
         for payment_configuration in queryset:
-            countries = Country.objects.all()
-            clients = APIClient.objects.all()
-
             for country in countries:
                 for client in clients:
                     PaymentMethodConfig.objects.get_or_create(
