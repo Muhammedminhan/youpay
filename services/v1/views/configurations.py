@@ -417,8 +417,9 @@ class ConfigViewSet(ViewSet):
             adcb_config = b2c_payback_obj.get_configurations(
                 transaction.amount, transaction.currency,
                 transaction.transaction_id)
-        adcb_config[
-            'partial_redemption_allowed'] = partial_redemption_allowed
+            if adcb_config:
+                adcb_config[
+                    'partial_redemption_allowed'] = partial_redemption_allowed
         return adcb_config
 
 
