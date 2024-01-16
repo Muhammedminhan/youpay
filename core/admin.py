@@ -52,7 +52,7 @@ class CurrencyAdmin(AdminAbstract):
     list_display = ('iso_code', 'name', 'decimal_notation',
                     'created_at', 'updated_at')
     search_fields = ('iso_code', 'name',)
-    list_filter = ('created_by', )
+    list_filter = ('created_by',)
 
 
 class CountryAdmin(AdminAbstract):
@@ -106,26 +106,29 @@ class PaymentMethodConfigAdminForm(forms.ModelForm):
 
 
 class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
+
     def clean(self):
         super().clean()
 
         parent_instance = self.instance
-        if parent_instance.guest_user_enabled == GUEST_USER_CUSTOM:
-            total_guest_user_enabled = 0
-            total_active_configs = 0
 
-            for form in self.forms:
-                if form.cleaned_data.get('guest_user_enabled'):
-                    total_guest_user_enabled += 1
+        if parent_instance.active:
 
-                if form.cleaned_data.get('active'):
-                    total_active_configs += 1
+            total_active_configs = sum(
+                form.cleaned_data.get('active', False) for form in self.forms)
+            if parent_instance.guest_user_enabled == GUEST_USER_CUSTOM:
+                total_guest_user_enabled = sum(
+                    form.cleaned_data.get('guest_user_enabled', False) for
+                    form in
+                    self.forms)
+                if (total_guest_user_enabled == 0) or (
+                        total_guest_user_enabled == total_active_configs):
+                    raise forms.ValidationError(
+                        'Configuration does not match custom. Please toggle '
+                        'the guest sliders to make your custom setting.')
 
-            if (total_guest_user_enabled == 0) or (
-                    total_guest_user_enabled == total_active_configs):
-                raise forms.ValidationError(
-                    'Configuration does not match custom. Please toggle the '
-                    'guest sliders to make your custom setting.')
+            if total_active_configs == 0:
+                raise forms.ValidationError('No active configurations')
 
     def save(self, commit=True):
         parent_instance = self.instance
@@ -152,14 +155,23 @@ class PaymentMethodConfigInline(admin.TabularInline):
 
 
 class PaymentConfigurationAdminForm(forms.ModelForm):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['guest_user_enabled'].required = True
+
     def clean(self):
         cleaned_data = super().clean()
-        payment_method = cleaned_data.get('payment_method')
         active = cleaned_data.get('active')
+        if self.instance.id:
+            payment_method = self.instance.payment_method
+        else:
+            payment_method = cleaned_data.get('payment_method')
 
         if active:
             existing_active_payment_method = PaymentConfiguration.objects.filter(
-                payment_method=payment_method, active=True)
+                payment_method=payment_method, active=True).exclude(
+                pk=self.instance.pk)
 
             if existing_active_payment_method:
                 raise forms.ValidationError(
