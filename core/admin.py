@@ -111,9 +111,7 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
         super().clean()
 
         parent_instance = self.instance
-
         if parent_instance.active:
-
             total_active_configs = sum(
                 form.cleaned_data.get('active', False) for form in self.forms)
             if parent_instance.guest_user_enabled == GUEST_USER_CUSTOM:
