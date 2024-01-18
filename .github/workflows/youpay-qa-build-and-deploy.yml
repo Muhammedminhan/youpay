@@ -65,20 +65,68 @@ on:
           - true
 
   repository_dispatch:
-    types: [ "QA Cleanup" ]
+    types: [ "QA Cleanup" , "QA Build & Deploy youpay" ]
     inputs:
       branch:
-        description: 'Branch Name'
+        description: 'Branch'
         required: true
         type: string
       action:
-        description: 'Deployment action'
+        description: 'Action'
         required: true
-        default: 'renew'
+        default: 'deploy'
         type: choice
         options:
+          - deploy
           - renew
           - destroy
+      unit_test:
+        description: 'Unit Test'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
+      whitelabel:
+        description: 'Whitelabel'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
+      app_db_lb_deploy:
+        description: 'Quick sight DB expose'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
+      rebuild_req:
+        description: 'Force reinstall requirement'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
+      deploy_env:
+        description: 'Deploy Env'
+        required: true
+        default: 'qa'
+        type: choice
+        options:
+          - qa
+      debug:
+        description: 'Debug'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - false
+          - true
 
 env:
   APPLICATION_NAME: 'youpay'
@@ -90,10 +138,11 @@ env:
   PRODUCT_TEAM: 'payment'
   JIRA_ID: ${{ inputs.branch || github.event.client_payload.branch }}
   ACTION: ${{ inputs.action || github.event.client_payload.action }}
-  UNIT_TEST: ${{ inputs.unit_test }}
-  WHITELABEL: ${{ inputs.whitelabel }}
-  APP_DB_LB_DEPLOY: ${{ inputs.app_db_lb_deploy }}
-  QA_DEPLOY_ENV: ${{ inputs.deploy_env }}
+  UNIT_TEST: ${{ inputs.unit_test || github.event.client_payload.unit_test || false }}
+  WHITELABEL: ${{ inputs.whitelabel || github.event.client_payload.whitelabel || false }}
+  APP_DB_LB_DEPLOY: ${{ inputs.app_db_lb_deploy || github.event.client_payload.app_db_lb_deploy || false }}
+  QA_DEPLOY_ENV: ${{ inputs.deploy_env || github.event.client_payload.deploy_env || 'qa' }}
+  DEBUG: ${{ inputs.debug || github.event.client_payload.debug || false }}
   NGINX_BASE_IMAGE: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/nginx:1.16.1-1'
 
 jobs:
@@ -119,7 +168,7 @@ jobs:
     - name: Validating Branch Name
       run: |
          if [[ ${{ env.JIRA_ID }} == "master" || ${{ env.JIRA_ID }} == "main" || ! ${{ env.JIRA_ID }} =~ ^[[:alnum:]]*(-[[:alnum:]]+)*$ ]] ; then
-           echo -e "\n$(date) Deployment forbidden for branch: ${{ inputs.branch }}\n"
+           echo -e "\n$(date) Deployment forbidden for branch: ${{ inputs.branch || github.event.client_payload.branch }}\n"
            exit 1
          fi
 
@@ -135,7 +184,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout template
-        if: inputs.action == 'renew' || inputs.action == 'deploy'
+        if: inputs.action == 'renew' || inputs.action == 'deploy' || github.event.client_payload.action == 'renew' || github.event.client_payload.action == 'deploy'
         uses: actions/checkout@v3
         with:
           repository: yougotagift/devops-cd
@@ -144,7 +193,7 @@ jobs:
           path: devops-cd
 
       - name: Configure AWS credentials
-        if: inputs.action == 'renew' || inputs.action == 'deploy'
+        if: inputs.action == 'renew' || inputs.action == 'deploy' || github.event.client_payload.action == 'renew' || github.event.client_payload.action == 'deploy'
         uses: aws-actions/configure-aws-credentials@v2.2.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
@@ -152,10 +201,10 @@ jobs:
           aws-region: ${{ env.ECR_REGION }}
 
       - name: renew deployment
-        if: inputs.action == 'renew' || inputs.action == 'deploy'
+        if: inputs.action == 'renew' || inputs.action == 'deploy' || github.event.client_payload.action == 'renew' || github.event.client_payload.action == 'deploy'
         run: |
           cd devops-cd/scripts
-          bash qa-expiry.sh ${{ env.ACTION }} ${{ env.APPLICATION_NAME }} ${{needs.initialize.outputs.jira_id}}
+          bash qa-expiry.sh ${{ env.ACTION }} ${{ github.repository }} ${{ env.APPLICATION_NAME }} ${{needs.initialize.outputs.jira_id}}
 
   build-app-req:
     needs: [initialize]
@@ -163,13 +212,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: actions/checkout@v3.0.2
         with:
-         ref: ${{ inputs.branch }}
+          ref: ${{ inputs.branch || github.event.client_payload.branch }}
 
       - name: Paths Filter
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: yougotagift/paths-filter@v2
         id: filter
         with:
@@ -179,7 +228,7 @@ jobs:
               - 'requirements.txt'
 
       - name: Configure AWS credentials
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: aws-actions/configure-aws-credentials@v2.2.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
@@ -187,7 +236,7 @@ jobs:
           aws-region: ${{ env.ECR_REGION }}
 
       - name: Login to Amazon ECR
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1.6.0
         with:
@@ -196,7 +245,7 @@ jobs:
           region: ${{ env.ECR_REGION }}
 
       - name: Docker Build and push
-        if: (steps.filter.outputs.requirements == 'true' && inputs.action == 'deploy') || inputs.rebuild_req == 'true'
+        if: (steps.filter.outputs.requirements == 'true' && (inputs.action == 'deploy' || github.event.client_payload.action == 'deploy') ) || inputs.rebuild_req == 'true'
         env:
           CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
         run: |
@@ -210,7 +259,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Configure AWS credentials
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: aws-actions/configure-aws-credentials@v2.2.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
@@ -218,7 +267,7 @@ jobs:
           aws-region: ${{ env.ECR_REGION }}
 
       - name: Login to Amazon ECR
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1.6.0
         with:
@@ -227,13 +276,13 @@ jobs:
           region: ${{ env.ECR_REGION }}
 
       - name: Checkout Code
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: actions/checkout@v3.0.2
         with:
-         ref: ${{ inputs.branch }}
+          ref: ${{ inputs.branch || github.event.client_payload.branch }}
 
       - name: Docker Build and push
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         env:
           CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
         run: |
@@ -250,7 +299,7 @@ jobs:
     steps:
 
       - name: Configure AWS credentials
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: aws-actions/configure-aws-credentials@v2.2.0
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
@@ -258,7 +307,7 @@ jobs:
           aws-region: ${{ env.ECR_REGION }}
 
       - name: Login to Amazon ECR
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1.6.0
         with:
@@ -267,13 +316,13 @@ jobs:
           region: ${{ env.ECR_REGION }}
 
       - name: Checkout Code
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: actions/checkout@v3.0.2
         with:
-         ref: ${{ inputs.branch }}
+          ref: ${{ inputs.branch || github.event.client_payload.branch }}
 
       - name: Docker Build and push
-        if: inputs.action == 'deploy'
+        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         env:
           CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
         run: |
@@ -287,13 +336,13 @@ jobs:
   deploy-app-nginx:
     needs: [ build-app , build-nginx , renew , initialize ]
     name: Deploy
-    if: ( inputs.action == 'deploy' || inputs.action == 'destroy' || github.event.client_payload.action == 'destroy' )
+    if: ( inputs.action == 'deploy' || github.event.client_payload.action == 'deploy' || inputs.action == 'destroy' || github.event.client_payload.action == 'destroy' )
     runs-on: self-hosted
     steps:
      - name: Checkout Code
        uses: actions/checkout@v3.0.2
        with:
-         ref: ${{ inputs.branch }}
+         ref: ${{ inputs.branch || github.event.client_payload.branch }}
 
      - name: Setup Dynamic env variables
        run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)-${GITHUB_RUN_ID}-qa" >> $GITHUB_ENV
@@ -413,7 +462,7 @@ jobs:
        run: |
          cd devops-cd/build/${{ env.APPLICATION_NAME }}
 
-         if [[ ${{ inputs.debug }} == "true" ]] ; then
+         if [[ ${{ env.DEBUG }} == "true" ]] ; then
           ls -lt
           cat *.tfvars
           cat *.tf
