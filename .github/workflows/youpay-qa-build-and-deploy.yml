@@ -65,7 +65,7 @@ on:
           - true
 
   repository_dispatch:
-    types: [ "QA Cleanup" , "QA Build & Deploy <APPLICATION_NAME>" ]
+    types: [ "QA Cleanup" , "QA Build & Deploy youpay" ]
     inputs:
       branch:
         description: 'Branch'
