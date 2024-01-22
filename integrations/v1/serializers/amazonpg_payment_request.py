@@ -18,6 +18,8 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
     platform = serializers.SerializerMethodField()
     token = serializers.SerializerMethodField()
     return_url = serializers.SerializerMethodField()
+    cvv = serializers.SerializerMethodField()
+    customer_id = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -51,6 +53,12 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
 
     def get_card_number(self, data):
         return data.get('request_data').get("card_number")
+
+    def get_cvv(self, data):
+        return data.get('request_data').get("cvv")
+
+    def get_customer_id(self, data):
+        return data.get('request_data').get('customer_id')
 
     def get_return_url(self, data):
         app_config = get_app_config()
