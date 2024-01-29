@@ -198,8 +198,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         response_data = response.json()
                         logger.info("amazonpg payment response: {}"
                                     .format(response_data))
-                        if (response_data.get('status') == 200 and
-                                response_data.get('redirect_url')):
+                        if response_data.get('status') == 200:
                             self.payment_reference = response_data.get(
                                 "payment_reference")
                             self.payment_status = PAYMENT_STATUS_PENDING
@@ -207,7 +206,6 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                                 "payment_scheme")
                             self.name_on_card = response_data.get(
                                 "name_on_card")
-
                             self.update_youpay_transaction_data(
                                 self.prepare_data_to_update())
                             return response.json(), self.SUCCESS

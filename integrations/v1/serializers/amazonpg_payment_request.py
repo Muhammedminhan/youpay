@@ -33,7 +33,7 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("customer_phone")
 
     def get_amount(self, data):
-        return "100"
+        return str(data.get('transaction_data').get("amount"))
 
     def get_order_reference(self, data):
         return data.get('transaction_data').get("order_reference")

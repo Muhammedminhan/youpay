@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.amazonpg import AmazonPGManager
+from payments.constants import PAYMENT_METHOD_APPLEPAY
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -87,6 +88,18 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
                 response_data, code = amazon_pay.payment_authentication(
                     payment_data)
                 if response_data:
+                    if request_data.get(
+                            'payment_method') == PAYMENT_METHOD_APPLEPAY:
+                        if response_data.get('is_authorised'):
+                            verify_payment_data = {
+                                'transaction_id': decrypt_string(
+                                    transaction_id),
+                                'payment_reference': response_data.get(
+                                    "payment_reference")
+                            }
+                            response_data, code = amazon_pay.verify_payment(
+                                verify_payment_data)
+
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
