@@ -312,7 +312,7 @@ def get_payment_options_announcements(announcement_objs):
 
 def get_country_for_configuration(transaction):
     try:
-        country = Country.objects.get(iso_code=transaction.country_code)
+        country = Country.objects.get(currency__iso_code=transaction.currency)
     except Exception as e:
         logger.error("Country not found for transaction {}".format(
             transaction.transaction_id))
