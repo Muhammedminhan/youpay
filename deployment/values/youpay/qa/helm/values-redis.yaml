@@ -1,0 +1,48 @@
+namespace: 'youpay-[JIRA_ID]'
+
+app_name: 'youpay-[JIRA_ID]'
+environment: 'qa'
+
+service:
+  name: 'youpay-[JIRA_ID]-redis'
+  default:
+    port: 6379
+    protocol: 'TCP'
+    targetPort: 6379
+
+hpa:
+  name: 'youpay-[JIRA_ID]-redis-hpa'
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+
+pdb:
+  name: 'youpay-[JIRA_ID]-redis-pdb'
+  minAvailable: 100%
+
+deployment:
+  name: 'youpay-[JIRA_ID]-redis-deployment'
+  replicas: 1
+  maxSurge: 100%
+  maxUnavailable: 0
+
+  containers:
+    default:
+      name: 'redis'
+      imagePullPolicy: 'Always'
+      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/redis:6.2.4'
+      command: '[]'
+      port: 6379
+      memory:
+        requests: 150Mi
+        limits: 500Mi
+      cpu:
+        requests: 250m
+        limits: 300m
+
+  nodeSelector:
+    key: 'karpenter.sh/nodepool'
+    value: 'database'
+  priorityClassName: 'qa-medium'
+  terminationGracePeriodSeconds: 60
+

@@ -1,5 +1,4 @@
 #!/bin/bash
-source /vault/secrets/application.env
 
 set -m
 

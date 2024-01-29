@@ -111,9 +111,7 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
         super().clean()
 
         parent_instance = self.instance
-
         if parent_instance.active:
-
             total_active_configs = sum(
                 form.cleaned_data.get('active', False) for form in self.forms)
             if parent_instance.guest_user_enabled == GUEST_USER_CUSTOM:
@@ -196,10 +194,9 @@ class PaymentConfigurationAdmin(AdminAbstract):
     actions = ['create_payment_method_configs']
 
     def create_payment_method_configs(self, request, queryset):
+        countries = Country.objects.all()
+        clients = APIClient.objects.all()
         for payment_configuration in queryset:
-            countries = Country.objects.all()
-            clients = APIClient.objects.all()
-
             for country in countries:
                 for client in clients:
                     PaymentMethodConfig.objects.get_or_create(

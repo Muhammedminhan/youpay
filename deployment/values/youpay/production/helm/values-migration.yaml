@@ -1,0 +1,53 @@
+namespace: 'youpay'
+
+app_name: 'youpay'
+
+job:
+  name: 'youpay-migration-job'
+  backoffLimit: 0
+  activeDeadlineSeconds: 900
+  ttlSecondsAfterFinished: 30
+  serviceAccountName: 'ygag-youpay-vault'
+
+  containers:
+    - name: 'migration'
+      imagePullPolicy: 'Always'
+      image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
+      command: '["sh", "-c", "source /vault/secrets/application.env ; python3.9 manage.py migrate --noinput >> /ygag/logs/app.out.migration.log 2>&1"]'
+      memory:
+        requests: 1000Mi
+        limits: 1500Mi
+      cpu:
+        requests: 1000m
+        limits: 1500m
+      volumeMounts:
+        - mountPath: '/ygag/logs/'
+          name: 'ygag-youpay-production-migration-logs'
+        - name: 'youpay-app-env-volume'
+          mountPath: "/vault/secrets"
+        - name: 'youpay-certs-applepay-volume'
+          mountPath: "/ygag/certs/applepay"
+
+  volumes:
+    - name: 'ygag-youpay-production-migration-logs'
+      hostPath:
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-production/migration'
+    - name: 'youpay-app-env-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-envs"
+    - name: 'youpay-certs-applepay-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-applepay"
+
+  nodeSelector:
+    key: 'karpenter.sh/provisioner-name'
+    value: 'default'
+  priorityClassName: 'production-critical'
+  restartPolicy: 'Never'
+  terminationGracePeriodSeconds: 120
