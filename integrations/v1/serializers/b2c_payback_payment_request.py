@@ -52,6 +52,7 @@ class AuthenticateRequestSerializer(serializers.Serializer):
     response_url = serializers.SerializerMethodField()
     amount_in_aed = serializers.SerializerMethodField()
     invoice_currency = serializers.SerializerMethodField()
+    order_reference = serializers.SerializerMethodField()
 
     def get_is_save_user_token(self, data):
         return False
@@ -113,3 +114,6 @@ class AuthenticateRequestSerializer(serializers.Serializer):
 
     def get_invoice_currency(self, data):
         return ADCB_REDEMPTION_CURRENCY
+
+    def get_order_reference(self, data):
+        return str(data.get('transaction_data', {}).get('order_reference'))
