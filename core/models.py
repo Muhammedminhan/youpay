@@ -1,7 +1,9 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from payments.constants import PAYMENT_OPTION_CHOICES
+from core.constants import GUEST_USER_OPTIONS
+from payments.constants import (PAYMENT_OPTION_CHOICES,
+                                PAYMENT_METHOD_MODEL_CHOICES)
 
 # Create your models here.
 
@@ -128,3 +130,49 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
 
     def __str__(self):
         return self.payment_method
+
+
+class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
+    payment_method = models.CharField(
+        max_length=100,
+        choices=PAYMENT_METHOD_MODEL_CHOICES,
+        help_text='Chosen payment method')
+    active = models.BooleanField(
+        default=False, help_text='Denotes whether the payment '
+                                 'method is active or not')
+    guest_user_enabled = models.CharField(
+        choices=GUEST_USER_OPTIONS, max_length=200, null=True,
+        blank=True)
+    payment_gateway = models.ForeignKey(
+        'integrations.PaymentGateway', on_delete=models.CASCADE,
+        blank=True, null=True,
+        help_text='Payment gateway for the payment method')
+    partial_redemption_allowed = models.BooleanField(
+        default=False,
+        help_text='Indicates whether the payment method allows partial '
+                  'redemption. Only affects payment methods that support '
+                  'partial redemption.')
+
+    def __str__(self):
+        return self.payment_method
+
+
+class PaymentMethodConfig(models.Model):
+    payment_method = models.ForeignKey(
+        'PaymentConfiguration', on_delete=models.CASCADE)
+    country = models.ForeignKey(
+        'core.Country', on_delete=models.CASCADE)
+    client = models.ForeignKey(
+        'services.APIClient', on_delete=models.CASCADE)
+    active = models.BooleanField(
+        default=True, help_text='Denotes whether the payment method '
+                                'configuration is active or not')
+    guest_user_enabled = models.BooleanField(
+        default=True, help_text='Denotes whether the payment method is '
+                                'available for the guest user')
+
+    def __str__(self):
+        return f"{self.country} - {self.client}"
+
+    class Meta:
+        unique_together = ('payment_method', 'country', 'client')
