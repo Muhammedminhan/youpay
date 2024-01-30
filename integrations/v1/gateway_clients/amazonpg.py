@@ -14,11 +14,12 @@ from integrations.constants import (
 )
 from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.amazonpg_payment_request import (
-    AmazonPGPaymentRequestSerializer, AmazonPGTokenizationSerializer)
+    AmazonPGCardPaymentRequestSerializer, AmazonPGTokenizationSerializer,
+    AmazonPGApplepayPaymentRequestSerializer)
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON,
-    PAYMENT_STATUS_REFUNDED)
+    PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD, PAYMENT_METHOD_APPLEPAY)
 from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -60,18 +61,43 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         }
         return data_to_update
 
-    def get_amazonpg_payment_data(self, data):
+    def get_amazonpg_card_payment_data(self, data):
         """
-        Returns amazonpg payment request data
+        Returns amazonpg card payment request data
         """
         if data.get('transaction_data') and data.get('request_data'):
-            payment_data = AmazonPGPaymentRequestSerializer(data)
+            payment_data = AmazonPGCardPaymentRequestSerializer(data)
             return payment_data.data
         else:
             logger.error(
                 "transaction_data or request_data is not available "
                 "for amzonpg")
             return None
+
+    def get_amazonpg_applepay_payment_data(self, data):
+        """
+        Returns amazonpg applepay payment request data
+        """
+        if data.get('transaction_data') and data.get('request_data'):
+            payment_data = AmazonPGApplepayPaymentRequestSerializer(data)
+            return payment_data.data
+        else:
+            logger.error(
+                "transaction_data or request_data is not available "
+                "for amzonpg")
+            return None
+
+    def get_amazon_payment_data(self, payment_method, data):
+        payment_data = {}
+        if payment_method == PAYMENT_METHOD_CARD:
+            payment_data = self.get_amazonpg_card_payment_data(
+                data)
+
+        elif payment_method == PAYMENT_METHOD_APPLEPAY:
+            payment_data = self.get_amazonpg_applepay_payment_data(
+                data)
+
+        return payment_data
 
     def get_tokenization_data(self, data):
         """
@@ -126,6 +152,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         Calls amazonpg authentication api
         """
         transaction_data = data.get('transaction_data')
+        request_data = data.get('request_data')
         self.transaction_id = transaction_data.get('transaction_id')
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
@@ -138,7 +165,10 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         try:
             if verify_status == status.HTTP_200_OK and is_verified:
                 if self.amazonpg_config:
-                    payment_data = self.get_amazonpg_payment_data(data)
+                    payment_method = request_data.get('payment_method')
+                    payment_data = self.get_amazon_payment_data(
+                        payment_method, data)
+
                     logger.info(
                         "Youpay sending payment data to amazonpg "
                         "is {}".format(payment_data))
@@ -168,8 +198,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         response_data = response.json()
                         logger.info("amazonpg payment response: {}"
                                     .format(response_data))
-                        if (response_data.get('status') == 200 and
-                                response_data.get('redirect_url')):
+                        if response_data.get('status') == 200:
                             self.payment_reference = response_data.get(
                                 "payment_reference")
                             self.payment_status = PAYMENT_STATUS_PENDING
@@ -177,7 +206,6 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                                 "payment_scheme")
                             self.name_on_card = response_data.get(
                                 "name_on_card")
-
                             self.update_youpay_transaction_data(
                                 self.prepare_data_to_update())
                             return response.json(), self.SUCCESS

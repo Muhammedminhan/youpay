@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.amazonpg import AmazonPGManager
+from payments.constants import PAYMENT_METHOD_APPLEPAY
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -68,8 +69,13 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
         """
         Method for handling amazonpg authentication api
         """
+        transaction_id = None
         try:
-            transaction_id = request.data.get('transaction_id')
+            logger.info(
+                "AmazonPGAuthentication API called with request data: {}".format(
+                    request.data))
+            request_data = request.data.get('request_data')
+            transaction_id = request_data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
 
@@ -77,11 +83,23 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
                 payment_data = {'transaction_data': transaction_data,
-                                'request_data': request.data}
+                                'request_data': request_data}
                 amazon_pay = AmazonPGManager()
                 response_data, code = amazon_pay.payment_authentication(
                     payment_data)
                 if response_data:
+                    if request_data.get(
+                            'payment_method') == PAYMENT_METHOD_APPLEPAY:
+                        if response_data.get('is_authorised'):
+                            verify_payment_data = {
+                                'transaction_id': decrypt_string(
+                                    transaction_id),
+                                'payment_reference': response_data.get(
+                                    "payment_reference")
+                            }
+                            response_data, code = amazon_pay.verify_payment(
+                                verify_payment_data)
+
                     data = self.response_obj.get_success_dict(
                         code=code,
                         success_dict=response_data
@@ -98,6 +116,9 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
+            logger.error(
+                "AmazonPGAuthentication api failed with error {}, "
+                "for transaction {}".format(str(e), transaction_id))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 
