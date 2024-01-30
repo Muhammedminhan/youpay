@@ -74,6 +74,79 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
             code=AMAZONPG_HUB_CODE)
 
 
+class AmazonPGCardPaymentRequestSerializer(AmazonPGPaymentRequestSerializer):
+    token = serializers.SerializerMethodField()
+    return_url = serializers.SerializerMethodField()
+
+    def get_token(self, data):
+        return data.get('request_data').get("token")
+
+    def get_return_url(self, data):
+        app_config = get_app_config()
+        params = '?id=' + encrypt_string(data.get('transaction_data').get(
+            'transaction_id'))
+        return add_payment_gateway_info_in_url(
+            transaction_data=data.get('transaction_data'),
+            app_config=app_config, params=params,
+            code=AMAZONPG_HUB_CODE)
+
+
+class AmazonPGApplepayAppleHeaderSerializer(serializers.Serializer):
+    apple_transactionId = serializers.SerializerMethodField()
+    apple_ephemeralPublicKey = serializers.SerializerMethodField()
+    apple_publicKeyHash = serializers.SerializerMethodField()
+
+    def get_apple_transactionId(self, data):
+        return data.get('request_data').get("header").get("transactionId")
+
+    def get_apple_ephemeralPublicKey(self, data):
+        return data.get('request_data').get("header").get(
+            "ephemeralPublicKey")
+
+    def get_apple_publicKeyHash(self, data):
+        return data.get('request_data').get("header").get("publicKeyHash")
+
+
+class AmazonPGApplepayApplePaymentMethodSerializer(serializers.Serializer):
+    apple_displayName = serializers.SerializerMethodField()
+    apple_network = serializers.SerializerMethodField()
+    apple_type = serializers.SerializerMethodField()
+
+    def get_apple_displayName(self, data):
+        return data.get('request_data').get("paymentMethod").get(
+            "displayName")
+
+    def get_apple_network(self, data):
+        return data.get('request_data').get("paymentMethod").get("network")
+
+    def get_apple_type(self, data):
+        return data.get('request_data').get("paymentMethod").get("type")
+
+
+class AmazonPGApplepayPaymentRequestSerializer(
+    AmazonPGPaymentRequestSerializer):
+    apple_data = serializers.SerializerMethodField()
+    apple_signature = serializers.SerializerMethodField()
+    apple_header = serializers.SerializerMethodField()
+    apple_paymentMethod = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
+
+    def get_apple_data(self, data):
+        return data.get('request_data').get("data")
+
+    def get_apple_signature(self, data):
+        return data.get('request_data').get("signature")
+
+    def get_payment_method(self, data):
+        return data.get('request_data').get("payment_method")
+
+    def get_apple_header(self, data):
+        return AmazonPGApplepayAppleHeaderSerializer(data).data
+
+    def get_apple_paymentMethod(self, data):
+        return AmazonPGApplepayApplePaymentMethodSerializer(data).data
+
+
 class AmazonPGTokenizationSerializer(serializers.Serializer):
     card_number = serializers.SerializerMethodField()
     expiry_date = serializers.SerializerMethodField()
