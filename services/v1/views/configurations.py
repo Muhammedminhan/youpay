@@ -10,24 +10,29 @@ from core.utils import decrypt_string, get_gateway_additional_fee
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
-    PAYMENT_STATUS_PAID, PAYMENT_METHOD_PAYPAL, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_END_STATUS_LIST
+    PAYMENT_STATUS_PAID, PAYMENT_END_STATUS_LIST, PAYMENT_OPTION_APPLEPAY,
+    PAYMENT_OPTION_PAYPAL, PAYMENT_OPTION_CITI_REWARDS, PAYMENT_OPTION_QITAF,
+    PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CARD, PAYMENT_OPTION_SAVED_CARD,
+    PAYMENT_OPTION_ADCB
 )
 from payments.models import YouPayTransactionData
 from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
                                 APPLEPAY_LABEL)
 from services.constants import TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY
-from services.models import APIClient
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
-from services.v1.views.utils import (get_payment_options, get_announcements,
-                                     get_session_id_from_header
+from services.v1.views.utils import (get_announcements,
+                                     get_session_id_from_header,
+                                     get_country_for_configuration,
+                                     get_client_for_configuration,
+                                     get_payment_methods
                                      )
 
 logger = logging.getLogger(__name__)
@@ -58,11 +63,6 @@ class ConfigViewSet(ViewSet):
 
         session_id = get_session_id_from_header(request)
 
-        checkout_obj = CheckoutpgManager()
-        tabbypg_obj = TabbyPGManager()
-        b2c_payback_obj = B2CPaybackManager()
-        qitaf_obj = QitafServiceManager()
-
         decrypted_transaction_id = decrypt_string(pk)
         try:
             transaction = YouPayTransactionData.objects.get(
@@ -87,78 +87,73 @@ class ConfigViewSet(ViewSet):
                     )
                     return Response(data, status=status.HTTP_200_OK)
 
-                checkout_config, status_code = (
-                    checkout_obj.get_configurations(transaction.currency)
-                )
-                tabbypg_config = self.get_tabby_conf(
-                    tabbypg_obj.tabbypg_config)
-
-                logger.info(
-                    "checkoutpg response : {}, {}".format(checkout_config,
-                                                          status_code))
-
                 # bypass session checking when api client is inactive
                 if not transaction.api_client.validate_session:
                     session_id = transaction.session_id
 
+                country = get_country_for_configuration(transaction)
+                if not country:
+                    message = "Not available for this country"
+                    data = self.response_obj.get_404_message(message=message)
+
+                    return Response(data,
+                                    status=status.HTTP_404_NOT_FOUND)
+
+                client = get_client_for_configuration(transaction)
+                if not client:
+                    message = "Client doesn't exists"
+                    data = self.response_obj.get_404_message(
+                        message=message)
+
+                    return Response(data,
+                                    status=status.HTTP_404_NOT_FOUND)
+
                 if transaction.session_id == session_id:
-                    client = APIClient.objects.get(
-                        id=transaction.api_client_id)
-                    if client:
-                        gateways = client.payment_gateway.filter(
-                            is_active=True)
-                        payback_config = b2c_payback_obj.get_configurations(
-                            transaction.amount, transaction.currency,
-                            transaction.transaction_id)
-                        payment_options = get_payment_options(
-                            transaction, gateways)
-                        announcements_dict = get_announcements(
-                            transaction.platform)
-                        api_client = {'color': client.color_code,
-                                      'mobile_logo': get_mobile_logo_url(
-                                          client),
-                                      'logo': get_logo_url(client)}
-                        paypal_config = self.get_paypal_config(
-                            payment_options)
-                        applepay_config = (
-                            self.get_applepay_config(payment_options))
+                    payment_options = (
+                        get_payment_methods(transaction, client, country))
+                    announcements_dict = get_announcements(
+                        transaction.platform)
+                    api_client = {'color': client.color_code,
+                                  'mobile_logo': get_mobile_logo_url(
+                                      client),
+                                  'logo': get_logo_url(client)}
+                    paypal_config = self.get_paypal_config(
+                        payment_options)
+                    applepay_config = (
+                        self.get_applepay_config(payment_options))
+                    qitaf_config = self.get_qitaf_config(
+                        payment_options, transaction)
+                    citi_config = self.check_citi_allowed_denominations(
+                        payment_options,
+                        transaction)
+                    tabbypg_config = self.get_tabby_conf(payment_options)
+                    checkout_config = self.get_checkout_config(
+                        payment_options, transaction)
+                    payback_config = self.get_b2cpayback_config(
+                        payment_options, transaction)
 
-                        qitaf_config = self.get_qitaf_config(
-                            qitaf_obj, transaction)
+                    response_data = self.retrieve_response(
+                        api_client=api_client,
+                        payment_options=payment_options,
+                        tabbypg_config=tabbypg_config,
+                        checkoutpg_config=checkout_config,
+                        payback_config=payback_config,
+                        applepay_config=applepay_config,
+                        transaction=transaction,
+                        announcements_dict=announcements_dict,
+                        paypal_config=paypal_config,
+                        qitaf_config=qitaf_config,
+                        citi_config=citi_config
+                    )
 
-                        citi_config = self.check_citi_allowed_denominations(
-                            payment_options,
-                            transaction)
+                    data = self.response_obj.get_success_dict(
+                        code=self.response_obj.SUCCESS,
+                        success_dict=response_data
+                    )
 
-                        response_data = self.retrieve_response(
-                            api_client=api_client,
-                            payment_options=payment_options,
-                            tabbypg_config=tabbypg_config,
-                            checkoutpg_config=checkout_config,
-                            payback_config=payback_config,
-                            applepay_config=applepay_config,
-                            transaction=transaction,
-                            announcements_dict=announcements_dict,
-                            status_code=status_code,
-                            paypal_config=paypal_config,
-                            qitaf_config=qitaf_config,
-                            citi_config=citi_config
-                        )
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
 
-                        data = self.response_obj.get_success_dict(
-                            code=status_code,
-                            success_dict=response_data
-                        )
-
-                        return Response(data,
-                                        status=status.HTTP_200_OK)
-                    else:
-                        message = "Client doesn't exists"
-                        data = self.response_obj.get_404_message(
-                            message=message)
-
-                        return Response(data,
-                                        status=status.HTTP_404_NOT_FOUND)
                 else:
                     message = "Session expired or doesn't match"
                     data = self.response_obj.get_404_message(message=message)
@@ -190,7 +185,6 @@ class ConfigViewSet(ViewSet):
         payback_config = kwargs.get('payback_config', None)
         transaction = kwargs.get('transaction', None)
         announcements_dict = kwargs.get('announcements_dict', None)
-        status_code = kwargs.get('status_code', None)
         applepay_config = kwargs.get('applepay_config', None)
         paypal_config = kwargs.get('paypal_config', None)
         qitaf_config = kwargs.get('qitaf_config', None)
@@ -270,21 +264,19 @@ class ConfigViewSet(ViewSet):
 
                 "is_guest": is_guest
             },
-            "integration_response": {
-                "checkoutpg": {
-                    "config": checkoutpg_config,
-                    "status_code": status_code
-                }
-            }
         }
 
         return response_data
 
-    def get_tabby_conf(self, tabbypg_obj=None):
+    def get_tabby_conf(self, payment_option):
+        tabby_enabled = payment_option.get(PAYMENT_OPTION_TABBYPG, False)
         tabbypg_config = {}
-        if tabbypg_obj:
-            tabbypg_config[
-                "validation_json"] = tabbypg_obj.validation_json
+        if tabby_enabled:
+            tabbypg_obj = TabbyPGManager()
+            tabbypg_obj = tabbypg_obj.tabbypg_config
+            if tabbypg_obj:
+                tabbypg_config[
+                    "validation_json"] = tabbypg_obj.validation_json
         return tabbypg_config
 
     def get_additional_config(self, additional_fee, payment_type):
@@ -314,11 +306,11 @@ class ConfigViewSet(ViewSet):
             "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
         applepay_config["label"] = APPLEPAY_LABEL
 
-        applepay_enabled = payment_option.get(PAYMENT_METHOD_APPLEPAY, False)
+        applepay_enabled = payment_option.get(PAYMENT_OPTION_APPLEPAY, False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
             applepay_config.update(self.get_additional_config(additional_fee,
-                                                         TOKEN_TYPE_APPLEPAY))
+                                                              TOKEN_TYPE_APPLEPAY))
         return applepay_config
 
     def get_paypal_config(self, payment_option):
@@ -327,24 +319,35 @@ class ConfigViewSet(ViewSet):
         only if paypal is enabled
         """
         paypal_config = {}
-        paypal_enabled = payment_option.get(PAYMENT_METHOD_PAYPAL, False)
+        paypal_enabled = payment_option.get(PAYMENT_OPTION_PAYPAL, False)
         if paypal_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
             paypal_config = self.get_additional_config(additional_fee,
                                                        TOKEN_TYPE_PAYPAL)
         return paypal_config
 
-    def get_qitaf_config(self, qitaf_obj, transaction_data):
+    def get_qitaf_config(self, payment_option, transaction_data):
         """
         returns qitaf configurations
         """
 
-        validation_json_data = qitaf_obj.qitaf_config.validation_json
-        if validation_json_data.get('is_qitaf_enabled'):
-            qitaf_config = {
-                'qitaf_phone_number': transaction_data.qitaf_phone_number,
-                'is_qitaf_enabled': transaction_data.is_qitaf_enabled
-            }
+        qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
+        if qitaf_enabled:
+            qitaf_obj = QitafServiceManager()
+            qitaf_config = qitaf_obj.get_configurations(
+                transaction_data.amount, transaction_data.currency,
+                transaction_data.transaction_id)
+            if qitaf_config:
+                additional_config = {
+                    'qitaf_phone_number': transaction_data.qitaf_phone_number,
+                    'is_qitaf_enabled': transaction_data.is_qitaf_enabled
+                }
+                qitaf_config.update(additional_config)
+            else:
+                logger.error(
+                    "Qitaf configuration not found for transaction id: "
+                    "{}".format(transaction_data.transaction_id))
+                qitaf_config = {}
             return qitaf_config
         else:
             return None
@@ -353,14 +356,53 @@ class ConfigViewSet(ViewSet):
         """
         returns citi configurations
         """
-        base_value = transaction.base_amount
-        citi_allowed = False
-        if base_value % 100 == 0:
-            citi_allowed = True
-        citi_config = {
-            'citi_allowed': citi_allowed
-        }
+        citi_config = {}
+        citi_enabled = payment_option.get(PAYMENT_OPTION_CITI_REWARDS, False)
+        if citi_enabled:
+            base_value = transaction.base_amount
+            citi_allowed = False
+            if base_value % 100 == 0:
+                citi_allowed = True
+            if citi_allowed:
+                citi_obj = CitiRewardsManager()
+                cit_available_balance = citi_obj.get_citi_account_balance(
+                    transaction)
+                if cit_available_balance < base_value:
+                    citi_allowed = False
+            citi_config = {
+                'citi_allowed': citi_allowed
+            }
         return citi_config
+
+    def get_checkout_config(self, payment_option, transaction):
+        card__enabled = payment_option.get(PAYMENT_OPTION_CARD, False)
+        saved_card__enabled = payment_option.get(PAYMENT_OPTION_SAVED_CARD,
+                                                 False)
+        checkout_config = {}
+        if True in [card__enabled, saved_card__enabled]:
+            checkout_obj = CheckoutpgManager()
+            checkout_config, status_code = (
+                checkout_obj.get_configurations(transaction.currency)
+            )
+
+            logger.info(
+                "checkoutpg response : {}, {}".format(checkout_config,
+                                                      status_code))
+        return checkout_config
+
+    def get_b2cpayback_config(self, payment_option, transaction):
+        """
+        This is for ADCB payback
+        """
+        adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
+        payback_config = {}
+        if adcb_enabled:
+            b2c_payback_obj = B2CPaybackManager()
+            payback_config = b2c_payback_obj.get_configurations(
+                transaction.amount, transaction.currency,
+                transaction.transaction_id)
+
+        return payback_config
 
 
 class ClientStaticFilesAPI(APIView):

@@ -6,13 +6,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import QITAF_REWARD_POINT_MIN_AMT
-from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN, \
-    COMMON_ERROR_MESSAGE_EN_CODE
+from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
+                           COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
+from payments.constants import (PAYMENT_METHOD_QITAF,
+                                PAYMENT_METHOD_QITAFAND_CARD)
 from services.v1.serializers.payment_request import QitafOTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
 
@@ -151,13 +153,24 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
     def collect_reward_point(self, transaction_obj):
+        if transaction_obj.payment_method in [
+            PAYMENT_METHOD_QITAF,
+            PAYMENT_METHOD_QITAFAND_CARD
+        ]:
+            paid_amount = transaction_obj.brand_calculations.get(
+                'sum_card_payment_amount', 0)
+        else:
+            paid_amount = transaction_obj.amount
 
         data = {
             "mobile_number": transaction_obj.qitaf_phone_number,
             "transaction_obj": transaction_obj,
-            "amount": int(transaction_obj.amount),
+            "amount": int(paid_amount),
             "platform": transaction_obj.platform,
         }
+
+        logger.info("QitafCollectPointsAPIView request data : {}".format(
+            data))
 
         response_obj = YouPayResponse()
 
@@ -206,15 +219,14 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             points_redemption_data = validated_data
 
             selected_amount_in_req = request.data.get("selected_amount")
-            base_amount = int(
-                qitaf_redemption_serializer.transaction_obj.base_amount)
-
+            transaction_order_reference = (
+                qitaf_redemption_serializer.transaction_obj.order_reference)
             points_redemption_data.update(
                 {
                     "transaction_obj": qitaf_redemption_serializer.transaction_obj,
                     "referance_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
                     "pin_number": validated_data.get('pin_number'),
-                    "selected_amount": base_amount,
+                    "selected_amount": selected_amount_in_req,
                     "checkout_amount": validated_data.get('checkout_amount'),
                     "is_save_user_token": validated_data.get(
                         'is_save_user_token'),
@@ -222,21 +234,10 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "cvv": validated_data.get('cvv'),
                     "token": validated_data.get('token'),
                     "token_type": validated_data.get('token_type'),
-                    "encrypted_id": request.data.get('transaction_id')
+                    "encrypted_id": request.data.get('transaction_id'),
+                    "order_reference": transaction_order_reference
                 }
             )
-
-            if selected_amount_in_req != str(base_amount):
-                logger.error(
-                    "selected amount not equal to base amount {}, {}".
-                    format(
-                        request.data.get("selected_amount"),
-                        str(int(
-                            qitaf_redemption_serializer.transaction_obj.base_amount))))
-                data = self.response_obj.get_error_dict(
-                    error_code=self.response_obj.DATA_CORRUPTED)
-                return Response(data, status=status.HTTP_400_BAD_REQUEST)
-
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.redeem_points(
                 points_redemption_data)
@@ -396,6 +397,92 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
             errors['code'] = code
 
         return data
+
+
+class CalculateQitafBalance(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        try:
+            transaction_id = request.data.get('transaction_id')
+            selected_amount = request.data.get('selected_amount')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+                payload = {
+                    'transaction_obj': transaction_obj,
+                    "selected_amount": selected_amount,
+                }
+
+                qitaf_service = QitafServiceManager()
+                response_data, code = qitaf_service.calculate_qitaf_balance(
+                    payload)
+
+                logger.info("Reward Point(Collect Points) API response {}, "
+                            "code : {}".format(response_data, code, ))
+                if response_data:
+
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                logger.error(
+                    "QitafCollectPointsAPIView : Transaction not found for {}"
+                    "".format(transaction_id))
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+def get_calculated_youpay_transaction_data_with_qitaf_balance(
+        transaction_obj):
+    """
+    The idea is to replace the additional_data with the qitaf balance
+     calculation response from the qitaf service
+    """
+
+    brand_calculations = transaction_obj.brand_calculations
+    youpay_update_data = {}
+    if brand_calculations:
+        amount = brand_calculations.get('sum_net_amount', None)
+        base_amount = brand_calculations.get('sum_gift_base_value',
+                                             None)
+        redeemed_amount = brand_calculations.get(
+            'sum_redemption_points', None)
+        redeemed_point = brand_calculations.get(
+            'sum_redemption_points', None)
+        payable_amount = brand_calculations.get(
+            'sum_card_payment_amount', None)
+        service_fee = brand_calculations.get(
+            'sum_applied_service_charge', None)
+        vat_amount = brand_calculations.get('sum_applied_vat', None)
+
+        youpay_update_data = {
+            'redeemed_amount': redeemed_amount,
+            'redeemed_points': redeemed_point,
+            'amount': amount,
+            'payable_amount': payable_amount,
+            'service_fee': service_fee,
+            'base_amount': base_amount,
+            'VAT_amount': vat_amount,
+            'payment_method': transaction_obj.payment_method,
+        }
+    else:
+        logger.error("Brand calculation is empty for transaction {}".format(
+            transaction_obj.transaction_id
+        ))
+
+    return youpay_update_data
 
 
 def qitaf_response_formatter(data, code):

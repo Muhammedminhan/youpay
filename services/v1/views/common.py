@@ -22,7 +22,8 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
                                 PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_REJECTED_RETRY,
-                                PAYMENT_METHOD_QITAF)
+                                PAYMENT_METHOD_QITAF,
+                                PAYMENT_METHOD_QITAFAND_CARD)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -76,6 +77,18 @@ class YouPayTransactionCRUD(object):
                 logger.error("Unable to find youpay transaction object for {}"
                              "".format(payment_reference))
                 return None
+
+    def get_youpay_transaction_data_with_payment_reference(self,
+                                                           payment_reference):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=payment_reference)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            logger.info(
+                "Unable to find youpay transaction object with payment"
+                "_reference {}".format(payment_reference))
+            return None
 
     def get_youpay_transaction_data(self, transaction_id):
         with transaction.atomic():
@@ -150,12 +163,20 @@ class YouPayTransactionCRUD(object):
         data_dict['is_qitaf_enabled'] = data.get('is_qitaf_enabled', None)
         data_dict['earned_point'] = data.get('earned_point', None)
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
+        data_dict['brand_calculations'] = data.get('brand_calculations', None)
 
-        if data_dict['payment_method'] == PAYMENT_METHOD_QITAF:
-            # Amount is updating only for qitaf
+        if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
+                                           PAYMENT_METHOD_QITAFAND_CARD]:
+            # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
-            if amount:
-                data_dict['amount'] = amount
+            service_fee = data.get('service_fee', None)
+            base_amount = data.get('base_amount', None)
+            vat_amount = data.get('VAT_amount', None)
+
+            data_dict['amount'] = amount
+            data_dict['service_fee'] = service_fee
+            data_dict['base_amount'] = base_amount
+            data_dict['VAT_amount'] = vat_amount
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
@@ -176,10 +197,10 @@ class YouPayTransactionCRUD(object):
                     transaction_obj.is_full_redemption = False
                     saved_fields.append('is_full_redemption')
                 transaction_obj.save(update_fields=saved_fields)
-                logger.info(
-                    "Transaction object updated successfully for {}"
-                    ", status :{}".format(transaction_id,
-                                          transaction_obj.payment_status))
+                logger.info("Transaction object updated successfully for {}"
+                            ", status :{}, updated fields {}".format(
+                    transaction_id, transaction_obj.payment_status,
+                    saved_fields))
 
                 if (transaction_obj.payment_status == PAYMENT_STATUS_PAID
                         and not transaction_obj.gateway_charge):

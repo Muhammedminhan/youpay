@@ -1,3 +1,10 @@
+import logging
+
+import requests
+
+logger = logging.getLogger(__name__)
+
+
 class WebhookDataFormat(object):
 
     def get_issuer_bank(self, response_data):
@@ -15,3 +22,58 @@ class WebhookDataFormat(object):
     def get_card_type(self, response_data):
         card_type = response_data.get("source", {}).get("card_type")
         return card_type
+
+
+def update_brand_details(transaction_obj):
+    """
+    to get the order details from the client
+    """
+    try:
+        if transaction_obj:
+            client = transaction_obj.api_client
+            api_key = client.api_key
+            api_secret = client.api_secret
+            brand_details_path = client.brand_details_path
+            invoice = transaction_obj.invoice_id
+            transaction_id = transaction_obj.transaction_id
+
+            if not brand_details_path:
+                logger.error("Brand details path not found for client {} for"
+                             " transaction {}".format(client.name,
+                                                      transaction_id))
+                return False
+
+            headers = {
+                'API-KEY': api_key,
+                'API-SECRET': api_secret
+            }
+
+            url = client.client_domain + brand_details_path + invoice
+            logger.info("Fetching brand details from client {} started for "
+                        "transaction {}".format(url, transaction_id))
+            response = requests.get(url, headers=headers)
+
+            if response:
+                response_data = response.json()
+                transaction_obj.brand_details = response_data
+                logger.info(
+                    "Brand details response for transaction {} is {}".format(
+                        transaction_id, response_data
+                    ))
+                transaction_obj.save()
+                return True
+            else:
+                logger.error(
+                    "Unable to get response on brand details for "
+                    "transaction {}, error : {}".format(transaction_id,
+                                                        response.text))
+                return False
+        else:
+            logger.error(
+                "Transaction not found while fetching brand details")
+            return False
+
+    except Exception as e:
+        logger.error(
+            "Getting brand details failed with error {}".format(str(e)))
+        return False

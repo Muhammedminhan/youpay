@@ -1,0 +1,106 @@
+namespace: 'youpay'
+
+app_name: 'youpay'
+environment: 'sandbox'
+
+service:
+  name: 'youpay-app'
+  default:
+    port: 8000
+    protocol: 'TCP'
+    targetPort: 8000
+
+hpa:
+  name: 'youpay-app-hpa'
+  minReplicas: 3
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 80
+
+pdb:
+  name: 'youpay-app-pdb'
+  minAvailable: 80%
+
+deployment:
+  name: 'youpay-app-deployment'
+  replicas: 3
+  maxSurge: 100%
+  maxUnavailable: 0%
+  serviceAccountName: 'ygag-youpay-vault'
+
+  containers:
+    default:
+      name: 'app'
+      imagePullPolicy: 'Always'
+      image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
+      command: '["sh", "-c", "source /vault/secrets/application.env ; sh /ygag/deployment/app/app-entrypoint.sh"]'
+      env:
+        - name: 'DJANGO_SETTINGS_MODUL'
+          value: 'DJANGO_SETTINGS_MODULE'
+      port: 8000
+      memory:
+        requests: 400Mi
+        limits: 500Mi
+      cpu:
+        requests: 100m
+      health:
+        path: '/health/'
+        port: 8000
+        scheme: 'HTTP'
+      startupProbe:
+        initialDelaySeconds: 10
+        periodSeconds: 5
+        timeoutSeconds: 5
+        successThreshold: 1
+        failureThreshold: 7
+      readinessProbe:
+        initialDelaySeconds: 0
+        periodSeconds: 15
+        timeoutSeconds: 5
+        successThreshold: 1
+        failureThreshold: 3
+      livenessProbe:
+        initialDelaySeconds: 0
+        periodSeconds: 15
+        timeoutSeconds: 5
+        successThreshold: 1
+        failureThreshold: 4
+      volumeMounts:
+        - mountPath: '/ygag/logs/'
+          name: 'ygag-youpay-sandbox-app-logs'
+        - name: 'youpay-app-env-volume'
+          mountPath: "/vault/secrets"
+        - name: 'youpay-certs-applepay-volume'
+          mountPath: "/ygag/certs/applepay"
+
+  volumes:
+    - name: 'ygag-youpay-sandbox-app-logs'
+      hostPath:
+        path: '/home/ec2-user/ygag-logs/ygag-youpay-sandbox/app'
+    - name: 'youpay-app-env-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-envs"
+    - name: 'youpay-certs-applepay-volume'
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-applepay"
+
+  nodeSelector:
+    key: 'karpenter.sh/provisioner-name'
+    value: 'default'
+
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: 'topology.kubernetes.io/zone'
+      whenUnsatisfiable: DoNotSchedule
+      labelSelector:
+        matchLabels:
+          app: 'youpay'
+          tier: app
+
+  priorityClassName: 'sandbox-medium'
+  terminationGracePeriodSeconds: 60

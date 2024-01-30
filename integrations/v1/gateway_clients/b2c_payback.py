@@ -1,5 +1,6 @@
 import json
 import logging
+
 import requests
 from rest_framework import status
 
@@ -173,6 +174,10 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 B2CPAYBACK_HUB_CODE)
             b2c_payback_domain = b2c_gateway_obj.domain
             url = b2c_payback_domain + ADCB_AUTHENTICATE_API
+            logger.info(
+                "Youpay requesting adcb redemption authentication for {} "
+                "with data {}".format(decrypt_string(
+                    request_transaction_id), request_data_json))
             response = requests.post(url, data=request_data_json,
                                      headers=ADCB_HEADERS)
             self.create_youpay_to_payment_gateways_data(

@@ -1,0 +1,36 @@
+name: QA Cleanup Deployed Apps youpay
+
+on:
+  schedule:
+    - cron: '15 4,12 * * *'
+
+  workflow_dispatch:
+
+env:
+  ECR_REGION: me-central-1
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout template
+        uses: actions/checkout@v3
+        with:
+          repository: yougotagift/devops-cd
+          ref: 'main'
+          ssh-key: ${{ secrets.DEVOPS_CD_DEPLOYMENT_KEY }}
+          path: devops-cd
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2.2.0
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
+          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH_QA }}
+          aws-region: ${{ env.ECR_REGION }}
+
+      - name: Cleanup
+        run: |
+          export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+
+          cd devops-cd/scripts
+          bash qa-cleanup-deployed-apps.sh ${{ github.repository }}
