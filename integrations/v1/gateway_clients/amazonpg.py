@@ -18,8 +18,8 @@ from integrations.v1.serializers.amazonpg_payment_request import (
     AmazonPGApplepayPaymentRequestSerializer)
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON,
-    PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD, PAYMENT_METHOD_APPLEPAY)
+    PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD,
+    PAYMENT_METHOD_APPLEPAY)
 from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -35,7 +35,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         self.amazonpg_config = get_payment_gateway_config(AMAZONPG_CACHE_KEY,
                                                           AMAZONPG_HUB_CODE)
         self.transaction_id = None
-        self.payment_method = PAYMENT_METHOD_AMAZON
+        self.payment_method = None
         self.payment_gateway = PAYMENT_GATEWAY_AMAZONPG
         self.payment_status = None
         self.payment_reference = None
@@ -90,10 +90,12 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
     def get_amazon_payment_data(self, payment_method, data):
         payment_data = {}
         if payment_method == PAYMENT_METHOD_CARD:
+            self.payment_method = PAYMENT_METHOD_CARD
             payment_data = self.get_amazonpg_card_payment_data(
                 data)
 
         elif payment_method == PAYMENT_METHOD_APPLEPAY:
+            self.payment_method = PAYMENT_METHOD_APPLEPAY
             payment_data = self.get_amazonpg_applepay_payment_data(
                 data)
 
