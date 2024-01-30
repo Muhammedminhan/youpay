@@ -210,9 +210,3 @@ class AmazonPGSavedCard(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_404_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
