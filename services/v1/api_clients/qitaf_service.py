@@ -219,7 +219,8 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             points_redemption_data = validated_data
 
             selected_amount_in_req = request.data.get("selected_amount")
-
+            transaction_order_reference = (
+                qitaf_redemption_serializer.transaction_obj.order_reference)
             points_redemption_data.update(
                 {
                     "transaction_obj": qitaf_redemption_serializer.transaction_obj,
@@ -233,10 +234,10 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "cvv": validated_data.get('cvv'),
                     "token": validated_data.get('token'),
                     "token_type": validated_data.get('token_type'),
-                    "encrypted_id": request.data.get('transaction_id')
+                    "encrypted_id": request.data.get('transaction_id'),
+                    "order_reference": transaction_order_reference
                 }
             )
-
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.redeem_points(
                 points_redemption_data)
