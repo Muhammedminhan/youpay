@@ -128,6 +128,10 @@ class AmazonPGTokenizationSerializer(serializers.Serializer):
     card_holder_name = serializers.SerializerMethodField()
     order_reference = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
+    remember_me = serializers.SerializerMethodField()
+    customer_email = serializers.SerializerMethodField()
+
+
 
     def get_card_number(self, data):
         return data.get('request_data').get("card_number")
@@ -148,3 +152,9 @@ class AmazonPGTokenizationSerializer(serializers.Serializer):
 
     def get_language(self, data):
         return data.get('transaction_data').get("language")
+
+    def get_remember_me(self, data):
+        return data.get('request_data').get("remember_me")
+
+    def get_customer_email(self, data):
+        return data.get('transaction_data').get('customer_email')
