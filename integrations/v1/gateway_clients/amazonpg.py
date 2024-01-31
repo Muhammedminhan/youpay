@@ -1,27 +1,30 @@
 import json
 import logging
-
 import requests
 from rest_framework import status
 
-from core.constants import (PAYMENT_GATEWAY_AMAZONPG, REQUEST_METHOD_POST,
-                            REQUEST_METHOD_GET)
+from core.constants import (
+    PAYMENT_GATEWAY_AMAZONPG, REQUEST_METHOD_POST,
+    REQUEST_METHOD_GET,
+)
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     AMAZONPG_AUTHENTICATE_API, AMAZONPG_VERIFY_API, AMAZONPG_CACHE_KEY,
     AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API,
     AMAZONPG_REFUND_API, PAYMENT_REQUEST_AUTHENTICATE, PAYMENT_REQUEST_REFUND,
-    AMAZONPG_SAVED_CARD_API, AMAZONPG_SAVED_CARD_PAYMENT_ENDPOINT
+    AMAZONPG_SAVED_CARD_API, AMAZONPG_SAVED_CARD_PAYMENT_ENDPOINT,
 )
 from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.amazonpg_payment_request import (
-     AmazonPGTokenizationSerializer, AmazonPGApplepayPaymentRequestSerializer,
-     AmazonPGPaymentRequestSerializer)
+    AmazonPGTokenizationSerializer, AmazonPGApplepayPaymentRequestSerializer,
+    AmazonPGPaymentRequestSerializer,
+)
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON,
     PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_SAVED_CARD)
+    PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_SAVED_CARD,
+)
 from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -146,7 +149,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 return response_data, self.SUCCESS
         except Exception as e:
             error = "Error in amazonpg tokenization api: {}".format(e)
-            logger.error("Exception in amazonpg payment: {}".format(e))
+            logger.error("Exception in amazonpg tokenization: {}".format(e))
             return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
 
     def payment_authentication(self, data):
@@ -237,7 +240,8 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             error = "Error in amazonpg authentication api: {}".format(e)
-            logger.error("Exception in amazonpg payment: {}".format(e))
+            logger.error("Exception in amazonpg payment_authentication: {}"
+                         "".format(e))
             return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
 
     def verify_payment(self, data):
@@ -505,7 +509,8 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             error = "Error in amazonpg authentication api: {}".format(e)
-            logger.error("Exception in amazonpg payment: {}".format(e))
+            logger.error("Exception in amazonpg saved_card_payment: {}"
+                         "".format(e))
             return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
 
 
