@@ -375,7 +375,6 @@ def get_payment_methods(transaction, client, country):
 
 
 def get_payment_option_constant(payment_gateway, payment_method):
-    # breakpoint()
     payment_gateway_value = payment_gateway.code
     payment_method_lower = payment_method.lower()
 
