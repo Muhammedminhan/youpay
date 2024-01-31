@@ -200,7 +200,7 @@ class ConfigViewSet(ViewSet):
         paypal_config = kwargs.get('paypal_config', None)
         qitaf_config = kwargs.get('qitaf_config', None)
         citi_config = kwargs.get('citi_config', None)
-        amazon_config = kwargs.get('anazon_config', None)
+        amazon_config = kwargs.get('amazon_config', None)
 
         amount = None
         currency = None
@@ -427,6 +427,19 @@ class ConfigViewSet(ViewSet):
                 adcb_config[
                     'partial_redemption_allowed'] = partial_redemption_allowed
         return adcb_config
+
+    def get_amazon_config(self, payment_option, transaction):
+        saved_card = payment_option.get(PAYMENT_OPTION_AMAZON_SAVED_CARD,
+                                            False)
+        amazon_config = {}
+        if saved_card:
+            amazon_obj = AmazonPGManager()
+            saved_cards = amazon_obj.get_saved_cards(
+                transaction.customer_email)
+
+            amazon_config.update({'saved_cards': saved_cards})
+
+        return amazon_config
 
 
 class ClientStaticFilesAPI(APIView):
