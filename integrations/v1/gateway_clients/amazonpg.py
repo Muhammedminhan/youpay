@@ -16,14 +16,13 @@ from integrations.constants import (
 )
 from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.amazonpg_payment_request import (
-    AmazonPGTokenizationSerializer, AmazonPGApplepayPaymentRequestSerializer,
-    AmazonPGPaymentRequestSerializer,
-)
+    AmazonPGCardPaymentRequestSerializer, AmazonPGTokenizationSerializer,
+    AmazonPGApplepayPaymentRequestSerializer, AmazonPGPaymentRequestSerializer)
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON,
     PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_SAVED_CARD,
+    PAYMENT_METHOD_SAVED_CARD,
 )
 from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
@@ -40,7 +39,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         self.amazonpg_config = get_payment_gateway_config(AMAZONPG_CACHE_KEY,
                                                           AMAZONPG_HUB_CODE)
         self.transaction_id = None
-        self.payment_method = PAYMENT_METHOD_AMAZON
+        self.payment_method = None
         self.payment_gateway = PAYMENT_GATEWAY_AMAZONPG
         self.payment_status = None
         self.payment_reference = None
@@ -71,7 +70,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         Returns amazonpg card payment request data
         """
         if data.get('transaction_data') and data.get('request_data'):
-            payment_data = AmazonPGPaymentRequestSerializer(data)
+            payment_data = AmazonPGCardPaymentRequestSerializer(data)
             return payment_data.data
         else:
             logger.error(
@@ -99,6 +98,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 data)
 
         elif payment_method == PAYMENT_METHOD_APPLEPAY:
+            self.payment_method = PAYMENT_METHOD_APPLEPAY
             payment_data = self.get_amazonpg_applepay_payment_data(
                 data)
 
