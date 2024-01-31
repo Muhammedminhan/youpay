@@ -74,7 +74,7 @@ class AmazonPGAuthentication(APIView, YouPayTransactionCRUD):
             logger.info(
                 "AmazonPGAuthentication API called with request data: {}".format(
                     request.data))
-            request_data = request.data.get('request_data')
+            request_data = request.data
             transaction_id = request_data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
