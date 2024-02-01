@@ -16,6 +16,11 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
     card_number = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
     platform = serializers.SerializerMethodField()
+    token = serializers.SerializerMethodField()
+    return_url = serializers.SerializerMethodField()
+    cvv = serializers.SerializerMethodField()
+    customer_id = serializers.SerializerMethodField()
+    invoice_id = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -44,8 +49,29 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
     def get_ip(self, data):
         return data.get('transaction_data').get("ip")
 
+    def get_token(self, data):
+        return data.get('request_data').get("token")
+
     def get_card_number(self, data):
         return data.get('request_data').get("card_number")
+
+    def get_cvv(self, data):
+        return data.get('request_data').get("cvv")
+
+    def get_customer_id(self, data):
+        return data.get('request_data').get("customer_id")
+
+    def get_invoice_id(self, data):
+        return data.get('transaction_data').get("invoice_id")
+
+    def get_return_url(self, data):
+        app_config = get_app_config()
+        params = '?id=' + encrypt_string(data.get('transaction_data').get(
+            'transaction_id'))
+        return add_payment_gateway_info_in_url(
+            transaction_data=data.get('transaction_data'),
+            app_config=app_config, params=params,
+            code=AMAZONPG_HUB_CODE)
 
 
 class AmazonPGCardPaymentRequestSerializer(AmazonPGPaymentRequestSerializer):

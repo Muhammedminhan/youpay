@@ -10,6 +10,7 @@ from core.utils import decrypt_string, get_gateway_additional_fee
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from integrations.v1.gateway_clients.amazonpg import AmazonPGManager
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -19,9 +20,9 @@ from payments.constants import (
     PAYMENT_OPTION_CHECKOUT_APPLEPAY,
     PAYMENT_OPTION_PAYPAL, PAYMENT_OPTION_CITI_REWARDS, PAYMENT_OPTION_QITAF,
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
-    PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
-    PAYMENT_OPTION_ADCB
-)
+    PAYMENT_OPTION_CHECKOUT_SAVED_CARD, PAYMENT_OPTION_ADCB,
+    PAYMENT_OPTION_AMAZON_SAVED_CARD)
+
 from payments.models import YouPayTransactionData
 from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
@@ -138,6 +139,8 @@ class ConfigViewSet(ViewSet):
                     adcb_config = self.get_adcb_config(
                         payment_options, transaction,
                         partial_redemption_allowed_options)
+                    amazon_config = self.get_amazon_config(
+                        payment_options, transaction)
 
                     response_data = self.retrieve_response(
                         api_client=api_client,
@@ -150,7 +153,8 @@ class ConfigViewSet(ViewSet):
                         announcements_dict=announcements_dict,
                         paypal_config=paypal_config,
                         qitaf_config=qitaf_config,
-                        citi_config=citi_config
+                        citi_config=citi_config,
+                        amazon_config=amazon_config,
                     )
 
                     data = self.response_obj.get_success_dict(
@@ -196,6 +200,7 @@ class ConfigViewSet(ViewSet):
         paypal_config = kwargs.get('paypal_config', None)
         qitaf_config = kwargs.get('qitaf_config', None)
         citi_config = kwargs.get('citi_config', None)
+        amazon_config = kwargs.get('amazon_config', None)
 
         amount = None
         currency = None
@@ -265,6 +270,7 @@ class ConfigViewSet(ViewSet):
 
                 "qitaf_config": qitaf_config,
                 "citi_config": citi_config,
+                "amazon_config": amazon_config,
 
                 "redirect_url": redirect_url,
                 "announcements": announcements_dict,
@@ -421,6 +427,19 @@ class ConfigViewSet(ViewSet):
                 adcb_config[
                     'partial_redemption_allowed'] = partial_redemption_allowed
         return adcb_config
+
+    def get_amazon_config(self, payment_option, transaction):
+        saved_card = payment_option.get(PAYMENT_OPTION_AMAZON_SAVED_CARD,
+                                            False)
+        amazon_config = {}
+        if saved_card:
+            amazon_obj = AmazonPGManager()
+            saved_cards = amazon_obj.get_saved_cards(
+                transaction.customer_email)
+
+            amazon_config.update({'saved_cards': saved_cards})
+
+        return amazon_config
 
 
 class ClientStaticFilesAPI(APIView):
