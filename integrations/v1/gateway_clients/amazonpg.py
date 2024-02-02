@@ -1,5 +1,6 @@
 import json
 import logging
+
 import requests
 from rest_framework import status
 
@@ -18,12 +19,11 @@ from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.amazonpg_payment_request import (
     AmazonPGCardPaymentRequestSerializer, AmazonPGTokenizationSerializer,
     AmazonPGApplepayPaymentRequestSerializer,
-    AmazonPGPaymentRequestSerializer,
 )
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON,
-    PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD, PAYMENT_METHOD_APPLEPAY,
+    PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD,
+    PAYMENT_METHOD_APPLEPAY,
     PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_AUTHORIZED,
 )
 from services.v1.views.common import is_redirect
@@ -98,6 +98,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         if payment_method in [PAYMENT_METHOD_CARD, PAYMENT_METHOD_SAVED_CARD]:
             payment_data = self.get_amazonpg_card_payment_data(
                 data)
+            self.payment_method = payment_method
 
         elif payment_method == PAYMENT_METHOD_APPLEPAY:
             self.payment_method = PAYMENT_METHOD_APPLEPAY
