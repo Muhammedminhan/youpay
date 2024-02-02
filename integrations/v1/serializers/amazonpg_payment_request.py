@@ -77,6 +77,10 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
 class AmazonPGCardPaymentRequestSerializer(AmazonPGPaymentRequestSerializer):
     token = serializers.SerializerMethodField()
     return_url = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
+
+    def get_payment_method(self, data):
+        return data.get('request_data').get("payment_method")
 
     def get_token(self, data):
         return data.get('request_data').get("token")
