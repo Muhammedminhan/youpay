@@ -1,5 +1,4 @@
 import logging
-
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -19,23 +18,25 @@ from payments.constants import (
     PAYMENT_OPTION_CHECKOUT_APPLEPAY,
     PAYMENT_OPTION_PAYPAL, PAYMENT_OPTION_CITI_REWARDS, PAYMENT_OPTION_QITAF,
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
-    PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
-    PAYMENT_OPTION_ADCB
+    PAYMENT_OPTION_CHECKOUT_SAVED_CARD, PAYMENT_OPTION_ADCB,
 )
 from payments.models import YouPayTransactionData
-from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
-                                APPLEPAY_MERCHANT_CAPABILITIES,
-                                APPLEPAY_LABEL)
+from services.constants import (
+    APPLEPAY_SUPPORTED_NETWORKS,
+    APPLEPAY_MERCHANT_CAPABILITIES,
+    APPLEPAY_LABEL,
+)
 from services.constants import TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
-from services.v1.views.utils import (get_announcements,
-                                     get_session_id_from_header,
-                                     get_country_for_configuration,
-                                     get_client_for_configuration,
-                                     get_payment_methods
-                                     )
+from services.v1.views.utils import (
+    get_announcements,
+    get_session_id_from_header,
+    get_country_for_configuration,
+    get_client_for_configuration,
+    get_payment_methods,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +151,7 @@ class ConfigViewSet(ViewSet):
                         announcements_dict=announcements_dict,
                         paypal_config=paypal_config,
                         qitaf_config=qitaf_config,
-                        citi_config=citi_config
+                        citi_config=citi_config,
                     )
 
                     data = self.response_obj.get_success_dict(
