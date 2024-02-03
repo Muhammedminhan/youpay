@@ -428,6 +428,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         self.payment_method = PAYMENT_METHOD_SAVED_CARD
         self.payment_status = transaction_data.get('payment status')
         self.payment_reference = transaction_data.get('payment_reference')
+        data['request_data']['payment_method'] = PAYMENT_METHOD_SAVED_CARD
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
