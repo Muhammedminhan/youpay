@@ -4,22 +4,28 @@ import logging
 import requests
 from rest_framework import status
 
-from core.constants import (PAYMENT_GATEWAY_AMAZONPG, REQUEST_METHOD_POST,
-                            REQUEST_METHOD_GET)
+from core.constants import (
+    PAYMENT_GATEWAY_AMAZONPG, REQUEST_METHOD_POST,
+    REQUEST_METHOD_GET,
+)
 from core.utils import get_payment_gateway_config
 from integrations.constants import (
     AMAZONPG_AUTHENTICATE_API, AMAZONPG_VERIFY_API, AMAZONPG_CACHE_KEY,
     AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API,
-    AMAZONPG_REFUND_API, PAYMENT_REQUEST_AUTHENTICATE, PAYMENT_REQUEST_REFUND
+    AMAZONPG_REFUND_API, PAYMENT_REQUEST_AUTHENTICATE, PAYMENT_REQUEST_REFUND,
+    AMAZONPG_SAVED_CARD_API,
 )
 from integrations.messages import AMAZONPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.amazonpg_payment_request import (
     AmazonPGCardPaymentRequestSerializer, AmazonPGTokenizationSerializer,
-    AmazonPGApplepayPaymentRequestSerializer)
+    AmazonPGApplepayPaymentRequestSerializer,
+)
 from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
-    PAYMENT_STATUS_CANCELLED, PAYMENT_METHOD_AMAZON,
-    PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD, PAYMENT_METHOD_APPLEPAY)
+    PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD,
+    PAYMENT_METHOD_APPLEPAY,
+    PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_AUTHORIZED,
+)
 from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -35,7 +41,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         self.amazonpg_config = get_payment_gateway_config(AMAZONPG_CACHE_KEY,
                                                           AMAZONPG_HUB_CODE)
         self.transaction_id = None
-        self.payment_method = PAYMENT_METHOD_AMAZON
+        self.payment_method = None
         self.payment_gateway = PAYMENT_GATEWAY_AMAZONPG
         self.payment_status = None
         self.payment_reference = None
@@ -89,11 +95,13 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
 
     def get_amazon_payment_data(self, payment_method, data):
         payment_data = {}
-        if payment_method == PAYMENT_METHOD_CARD:
+        if payment_method in [PAYMENT_METHOD_CARD, PAYMENT_METHOD_SAVED_CARD]:
             payment_data = self.get_amazonpg_card_payment_data(
                 data)
+            self.payment_method = payment_method
 
         elif payment_method == PAYMENT_METHOD_APPLEPAY:
+            self.payment_method = PAYMENT_METHOD_APPLEPAY
             payment_data = self.get_amazonpg_applepay_payment_data(
                 data)
 
@@ -144,7 +152,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 return response_data, self.SUCCESS
         except Exception as e:
             error = "Error in amazonpg tokenization api: {}".format(e)
-            logger.error("Exception in amazonpg payment: {}".format(e))
+            logger.error("Exception in amazonpg tokenization: {}".format(e))
             return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
 
     def payment_authentication(self, data):
@@ -206,6 +214,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                                 "payment_scheme")
                             self.name_on_card = response_data.get(
                                 "name_on_card")
+
                             self.update_youpay_transaction_data(
                                 self.prepare_data_to_update())
                             return response.json(), self.SUCCESS
@@ -234,7 +243,8 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
         except Exception as e:
             error = "Error in amazonpg authentication api: {}".format(e)
-            logger.error("Exception in amazonpg payment: {}".format(e))
+            logger.error("Exception in amazonpg payment_authentication: {}"
+                         "".format(e))
             return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
 
     def verify_payment(self, data):
@@ -385,3 +395,124 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             logger.error("Exception in amazonpg refund api call: {}"
                          "".format(str(e)))
             return {"error": e}, self.AMAZONPG_CONNECTION_ERROR
+
+
+    def get_saved_cards(self, email):
+            """
+            Method for getting saved cards
+            """
+            if self.amazonpg_config:
+                saved_cards = []
+                try:
+                    PARAMS = {'email': email}
+                    URL = self.amazonpg_config.domain + AMAZONPG_SAVED_CARD_API
+                    saved_cards = requests.get(url=URL, params=PARAMS)
+                    if saved_cards:
+                        saved_cards = saved_cards.json().get(
+                            'message').get("cards")
+                        return saved_cards
+
+                except Exception as e:
+                    logger.error(
+                        "Unable to fetch saved card details for user {0} "
+                        "because, {1}".format(email, str(e)))
+                    return None
+            else:
+                logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
+                return None, None
+
+    def saved_card_payment(self, data):
+
+        transaction_data = data.get('transaction_data')
+        self.transaction_id = transaction_data.get('transaction_id')
+        self.payment_method = PAYMENT_METHOD_SAVED_CARD
+        self.payment_status = transaction_data.get('payment status')
+        self.payment_reference = transaction_data.get('payment_reference')
+        data['request_data']['payment_method'] = PAYMENT_METHOD_SAVED_CARD
+
+        verify_response, verify_status = self.verify_transaction(
+            transaction_data)
+        logger.info(
+            "Verify response: {} - {}".format(verify_status,
+                                              verify_response))
+
+        is_verified = verify_response.get('is_verified', False)
+        try:
+            if verify_status == status.HTTP_200_OK and is_verified:
+
+                amazonpg_config = get_payment_gateway_config(
+                    AMAZONPG_CACHE_KEY, AMAZONPG_HUB_CODE
+                )
+
+                if amazonpg_config:
+                    payment_data = self.get_amazon_payment_data(
+                        self.payment_method, data)
+                    logger.info(
+                            "Youpay sending payment data to amazonpg "
+                            "is {}".format(payment_data))
+                    payload = json.dumps(payment_data)
+                    url = (self.amazonpg_config.domain +
+                           AMAZONPG_SAVED_CARD_API)
+                    headers = self.get_payment_header()
+
+                    transaction_obj = self.get_youpay_transaction_data(
+                            self.transaction_id)
+                    response = requests.post(url, data=payload,
+                                             headers=headers)
+                    logger.info("Response from AmazonPG {}".format(response))
+
+                    # storing Youpay to payment gateway
+                    self.create_youpay_to_payment_gateways_data(
+                        transaction_obj=transaction_obj,
+                        transaction_id=self.transaction_id,
+                        request_data=payload,
+                        response_data=response.text,
+                        request_method=REQUEST_METHOD_POST,
+                        request_type=PAYMENT_REQUEST_AUTHENTICATE
+                    )
+
+                    if response:
+                        response_data = response.json()
+                        logger.info("amazonpg payment response: {}"
+                                    .format(response_data))
+                        if (response_data.get('status') == 200 and
+                                response_data.get('redirect_url')):
+                            self.payment_reference = response_data.get(
+                                "payment_reference")
+                            self.payment_status = PAYMENT_STATUS_AUTHORIZED
+                            self.payment_scheme = response_data.get(
+                                "payment_scheme")
+                            self.name_on_card = response_data.get(
+                                "name_on_card")
+
+                            self.update_youpay_transaction_data(
+                                self.prepare_data_to_update())
+                            return response.json(), self.SUCCESS
+
+                        logger.error("Error in amazonpg payment, {}".format(
+                            response.text))
+                        self.payment_reference = response_data.get(
+                            "payment_reference")
+
+                        self.update_youpay_transaction_data(
+                            self.prepare_data_to_update())
+                        return ({"error": response.json()},
+                                self.AMAZONPG_CONNECTION_ERROR)
+
+                    return ({"error": response.text},
+                            self.AMAZONPG_CONNECTION_ERROR)
+                else:
+                    logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
+                    return {None}, self.AMAZONPG_CONNECTION_ERROR
+            else:
+                msg = (
+                    "Youpay transaction verification failed "
+                    "for transaction id {} response is : "
+                    "{} ".format(self.transaction_id, verify_response))
+                logger.error(msg)
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+        except Exception as e:
+            error = "Error in amazonpg authentication api: {}".format(e)
+            logger.error("Exception in amazonpg saved_card_payment: {}"
+                         "".format(e))
+            return {"error": error}, self.AMAZONPG_CONNECTION_ERROR

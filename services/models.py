@@ -57,6 +57,9 @@ class APIClient(AbstractDateTime, AbstractUserBase):
         default=False,
         help_text='Denotes whether the API Client session validation is'
                   ' enabled or not')
+    allow_aed_converted_amount = models.BooleanField(
+        default=False, help_text='For enabling AED converted amount for the '
+                                 'client')
 
     def __str__(self):
         return self.name
