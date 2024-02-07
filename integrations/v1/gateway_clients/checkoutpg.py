@@ -52,10 +52,12 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_reference = None
         self.channel_code = None
         self.currency = None
+        self.is_mada = False
 
     def prepare_data_to_update(self, **kwargs):
 
         name_on_card = kwargs.get('name_on_card', '')
+        is_mada = kwargs.get('is_mada')
 
         data_to_update = {
             'transaction_id': self.transaction_id,
@@ -393,8 +395,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             self.payment_status = PAYMENT_STATUS_PENDING
             if is_card:
                 name_on_card = payment_data.get('customer_name')
+                is_mada = payment_data.get('is_mada')
                 self.update_youpay_transaction_data(
-                    self.prepare_data_to_update(name_on_card=name_on_card))
+                    self.prepare_data_to_update(name_on_card=name_on_card,
+                                                is_mada=is_mada))
             else:
                 # for saved card transactions
                 self.update_youpay_transaction_data(

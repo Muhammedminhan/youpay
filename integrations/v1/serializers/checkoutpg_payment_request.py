@@ -24,6 +24,7 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
     token = serializers.SerializerMethodField()
     channel_code = serializers.SerializerMethodField()
     amount_in_aed = serializers.SerializerMethodField()
+    is_mada = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -86,7 +87,10 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
             code=CHECKOUTPG_HUB_CODE)
 
     def get_card_type(self, data):
-        return ""
+
+        is_mada = data.get('request_data').get("is_mada", False)
+
+        return "mada" if is_mada else ""
 
     def get_token(self, data):
         return data.get('request_data').get("token")
