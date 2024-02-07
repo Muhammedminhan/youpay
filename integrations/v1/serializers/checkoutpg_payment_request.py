@@ -115,6 +115,13 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
             amount = str(amount)
         return amount
 
+    def get_is_mada(self, data):
+        """
+        method to fetch is_mada from the transaction data
+        """
+        is_mada = data.get('request_data').get("is_mada", False)
+        return is_mada
+
 
 class ApplepayPaymentDataSerializer(serializers.ModelSerializer):
     class Meta:
