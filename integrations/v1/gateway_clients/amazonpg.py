@@ -1,6 +1,5 @@
 import json
 import logging
-
 import requests
 from rest_framework import status
 
@@ -516,3 +515,23 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             logger.error("Exception in amazonpg saved_card_payment: {}"
                          "".format(e))
             return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
+
+    def delete_saved_card(self, customer_id):
+
+        amazonpg_config = get_payment_gateway_config(AMAZONPG_CACHE_KEY,
+                                                     AMAZONPG_HUB_CODE)
+        if amazonpg_config:
+            try:
+                PARAMS = {'customer_id': customer_id}
+                header = self.get_payment_header()
+                URL = (self.amazonpg_config.domain + AMAZONPG_SAVED_CARD_API)
+                response = requests.delete(url=URL, headers=header,
+                                           params=PARAMS)
+                return json.loads(response.text)
+            except Exception as e:
+                logger.error(
+                    "Unable to delete saved card {0} details because, {1}"
+                    .format(customer_id, str(e)))
+        else:
+            logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
+            return None, None

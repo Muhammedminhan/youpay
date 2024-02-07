@@ -1,11 +1,10 @@
 import logging
-
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.response_messages import YouPayResponse
 from core.messages import TRANSACTION_DOESNT_EXIST
+from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.amazonpg import AmazonPGManager
 from payments.constants import PAYMENT_METHOD_APPLEPAY
@@ -13,7 +12,8 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.v1.views.common import (
-    YouPayTransactionCRUD)
+    YouPayTransactionCRUD
+)
 
 logger = logging.getLogger(__name__)
 
@@ -229,5 +229,20 @@ class AmazonPGSavedCard(APIView, YouPayTransactionCRUD):
 
         except Exception as e:
             data = self.response_obj.get_404_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request):
+        try:
+            customer_id = request.GET['id']
+            amazonpg = AmazonPGManager()
+            response_data = amazonpg.delete_saved_card(
+                customer_id=customer_id)
+            data = self.response_obj.get_success_dict(
+                code=YouPayResponse.SUCCESS,
+                success_dict={'data': response_data})
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
