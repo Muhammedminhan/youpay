@@ -285,8 +285,6 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         decimal_places=4, max_digits=12, null=True, blank=True,
         help_text='Earned point for the transaction via corresponding payment'
                   ' method')
-    is_mada = models.BooleanField(default=False, help_text="to keep card is "
-                                                           "mada or not")
 
 
 @receiver(post_init, sender=YouPayTransactionData)
@@ -600,5 +598,3 @@ class ArchivedYouPayTransactionData(models.Model):
         decimal_places=4, max_digits=12, null=True, blank=True,
         help_text='Earned point for the transaction via corresponding payment'
                   ' method')
-    is_mada = models.BooleanField(default=False, help_text="to keep card is "
-                                                           "mada or not")

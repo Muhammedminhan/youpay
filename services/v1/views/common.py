@@ -164,7 +164,6 @@ class YouPayTransactionCRUD(object):
         data_dict['earned_point'] = data.get('earned_point', None)
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
-        data_dict['is_mada'] = data.get('is_mada', None)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD]:
