@@ -1,15 +1,14 @@
-import uuid
 import logging
+import uuid
 
+from django.db import models
 from django.db.models import signals
 from django.dispatch import receiver
-from django.db import models
 
 from core.models import AbstractDateTime, CustomerProfile
+from payments.constants import PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID
 from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
                         APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
-from payments.models import YouPayTransactionData
-from payments.constants import PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID
 
 logger = logging.getLogger(__name__)
 
@@ -60,20 +59,71 @@ class AmazonPGTransactionData(AbstractDateTime, CustomerProfile):
 
 
 @receiver(signals.post_save, sender=AmazonPGTransactionData)
-def update_youpay_status(sender, instance, created, **kwargs):
+def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
+                                                 **kwargs):
+    payment_reference = None
+    transaction_id = None
+    is_success, is_youpay_updated = False, False
 
-    logger.info("Executing AmazonPGTransactionData signal")
     try:
-        transaction_obj = YouPayTransactionData.objects.get(
-            payment_reference=instance.payment_reference)
-        if instance.payment_status == PAYMENT_STATUS_CAPTURED:
-            transaction_obj.payment_status = PAYMENT_STATUS_PAID
+        logger.info(
+            "AmazonPGTransactionData post_save Triggering for "
+            "reference {}, status {}".format(
+                instance.payment_reference, instance.payment_status))
+
+        from services.v1.views.common import YouPayTransactionCRUD
+
+        payment_reference = instance.payment_reference
+        youpay_obj = YouPayTransactionCRUD()
+        data_to_update = prepare_youpay_transaction_update_data(
+            instance, payment_reference, youpay_obj)
+        if data_to_update:
+            transaction_id = data_to_update.get('transaction_id')
+            is_youpay_updated = youpay_obj.update_youpay_transaction_data(
+                data_to_update)
+            is_success = True
+            logger.info(
+                "AmazonPGTransactionData post_save success for "
+                "reference {}, status {}".format(
+                    instance.payment_reference, instance.payment_status))
+    except Exception as e:
+        logger.error(
+            "Exception : AmazonPGTransactionData post_save for "
+            "payment reference {}, error :{}".format(
+                payment_reference, str(e)), exc_info=True)
+        is_success = False
+    finally:
+        logger.info(
+            "AmazonPGTransactionData post_save Triggered for tid {}, "
+            "reference {}, is_completed {}, youpay updated {}".format(
+                transaction_id, payment_reference, is_success,
+                is_youpay_updated))
+
+
+def prepare_youpay_transaction_update_data(instance, payment_reference,
+                                           youpay_obj):
+    try:
+        transaction_obj = (
+            youpay_obj.get_youpay_transaction_data_with_payment_reference(
+                payment_reference))
+        if transaction_obj:
+            data_to_update = {
+                'transaction_id': transaction_obj.transaction_id,
+                "payment_status": (
+                    PAYMENT_STATUS_PAID if
+                    instance.payment_status == PAYMENT_STATUS_CAPTURED else
+                    instance.payment_status),
+                "payment_reference": instance.payment_reference,
+                "response_summary": instance.response_message,
+                "card_last4": instance.card_last4,
+                "card_bin": instance.card_bin,
+            }
+            return data_to_update
         else:
-            transaction_obj.payment_status = instance.payment_status
-        if not transaction_obj.card_bin:
-            transaction_obj.card_bin = instance.card_bin
-            transaction_obj.card_last4 = instance.card_last4
-        transaction_obj.save()
-    except YouPayTransactionData.DoesNotExist:
-        logger.error("Unable to find youpay transaction object for {}"
-                     "".format(instance.payment_reference))
+            logger.info(
+                "Transaction object not found for payment reference "
+                "{}".format(payment_reference))
+            return None
+    except Exception as e:
+        logger.error("Error while preparing data for youpay transaction "
+                     "update {}".format(e), exc_info=True)
