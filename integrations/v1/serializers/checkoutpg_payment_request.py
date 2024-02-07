@@ -87,9 +87,7 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
             code=CHECKOUTPG_HUB_CODE)
 
     def get_card_type(self, data):
-
         is_mada = data.get('request_data').get("is_mada", False)
-
         return "mada" if is_mada else ""
 
     def get_token(self, data):

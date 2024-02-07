@@ -396,10 +396,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             self.payment_status = PAYMENT_STATUS_PENDING
             if is_card:
                 name_on_card = payment_data.get('customer_name')
-                is_mada = payment_data.get('is_mada')
                 self.update_youpay_transaction_data(
-                    self.prepare_data_to_update(name_on_card=name_on_card,
-                                                is_mada=is_mada))
+                    self.prepare_data_to_update(name_on_card=name_on_card))
             else:
                 # for saved card transactions
                 self.update_youpay_transaction_data(
