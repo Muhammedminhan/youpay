@@ -68,6 +68,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             "payment_gateway": self.payment_gateway,
             "name_on_card": name_on_card,
             'currency': self.currency,
+            'is_mada': is_mada,
         }
 
         return data_to_update
