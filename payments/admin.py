@@ -48,7 +48,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Card details', {
             'fields': ('name_on_card', 'card_bin', 'card_last4',
-                       'card_issuer_country', 'is_gcc_card',)
+                       'card_issuer_country', 'is_gcc_card',
+                       )
         }),
         ('Order details', {
             'fields': ('invoice_id', 'order_reference', 'api_client',
@@ -191,7 +192,8 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Card details', {
             'fields': ('name_on_card', 'card_bin', 'card_last4',
-                       'card_issuer_country', 'is_gcc_card',)
+                       'card_issuer_country', 'is_gcc_card',
+                       )
         }),
         ('Order details', {
             'fields': ('invoice_id', 'order_reference', 'api_client',
