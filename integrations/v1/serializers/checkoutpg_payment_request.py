@@ -115,7 +115,7 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 
     def get_is_mada(self, data):
         """
-        method to fetch is_mada from the transaction data
+        method to fetch is_mada from the request data
         """
         is_mada = data.get('request_data').get("is_mada", False)
         return is_mada
