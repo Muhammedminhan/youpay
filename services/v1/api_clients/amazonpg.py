@@ -234,7 +234,10 @@ class AmazonPGSavedCard(APIView, YouPayTransactionCRUD):
 
     def delete(self, request):
         try:
-            customer_id = request.GET['id']
+            customer_id = request.GET.get('id')
+            if not customer_id:
+                return Response({'error': 'Customer ID is required',
+                                 'status': status.HTTP_400_BAD_REQUEST})
             amazonpg = AmazonPGManager()
             response_data = amazonpg.delete_saved_card(
                 customer_id=customer_id)
