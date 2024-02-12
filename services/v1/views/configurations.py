@@ -150,7 +150,9 @@ class ConfigViewSet(ViewSet):
                         announcements_dict=announcements_dict,
                         paypal_config=paypal_config,
                         qitaf_config=qitaf_config,
-                        citi_config=citi_config
+                        citi_config=citi_config,
+                        allow_aed_amount=(
+                            transaction.api_client.allow_aed_converted_amount)
                     )
 
                     data = self.response_obj.get_success_dict(
@@ -196,6 +198,7 @@ class ConfigViewSet(ViewSet):
         paypal_config = kwargs.get('paypal_config', None)
         qitaf_config = kwargs.get('qitaf_config', None)
         citi_config = kwargs.get('citi_config', None)
+        aed_amount_flag = kwargs.get('allow_aed_amount', False)
 
         amount = None
         currency = None
@@ -269,7 +272,8 @@ class ConfigViewSet(ViewSet):
                 "redirect_url": redirect_url,
                 "announcements": announcements_dict,
 
-                "is_guest": is_guest
+                "is_guest": is_guest,
+                "allow_aed_converted_amount": aed_amount_flag
             },
         }
 
