@@ -1,6 +1,5 @@
 import json
 import logging
-
 import requests
 from rest_framework import status
 
@@ -410,8 +409,9 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                     if saved_cards:
                         saved_cards = saved_cards.json().get(
                             'message').get("cards")
+                    for card in saved_cards:
+                        card['key'] = AMAZONPG_HUB_CODE
                         return saved_cards
-
                 except Exception as e:
                     logger.error(
                         "Unable to fetch saved card details for user {0} "
@@ -516,3 +516,28 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             logger.error("Exception in amazonpg saved_card_payment: {}"
                          "".format(e))
             return {"error": error}, self.AMAZONPG_CONNECTION_ERROR
+
+    def delete_saved_card(self, customer_id):
+
+        amazonpg_config = get_payment_gateway_config(AMAZONPG_CACHE_KEY,
+                                                     AMAZONPG_HUB_CODE)
+        if amazonpg_config:
+            try:
+                PARAMS = {'customer_id': customer_id}
+                header = self.get_payment_header()
+                URL = (self.amazonpg_config.domain + AMAZONPG_SAVED_CARD_API)
+                response = requests.delete(url=URL, headers=header,
+                                           params=PARAMS)
+                if response and response.status_code == 200:
+                    return json.loads(response.text)
+                else:
+                    logger.error(
+                        "failed to delete saved card {}".format(customer_id),
+                        extra={'response': response.text if response else ''})
+            except Exception as e:
+                logger.error(
+                    "Unable to delete saved card {0} details because, {1}"
+                    .format(customer_id, str(e)))
+        else:
+            logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
+            return None, None
