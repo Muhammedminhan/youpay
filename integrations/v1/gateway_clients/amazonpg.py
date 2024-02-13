@@ -411,7 +411,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                             'message').get("cards")
                         for card in saved_cards:
                             card['key'] = AMAZONPG_HUB_CODE
-                        return saved_cards
+                    return saved_cards
                 except Exception as e:
                     logger.error(
                         "Unable to fetch saved card details for user {0} "
