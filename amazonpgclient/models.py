@@ -62,8 +62,6 @@ class AmazonPGTransactionData(AbstractDateTime, CustomerProfile):
 def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
                                                  **kwargs):
     payment_reference = None
-    transaction_id = None
-    is_success, is_youpay_updated = False, False
 
     try:
         logger.info(
@@ -81,23 +79,16 @@ def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
             transaction_id = data_to_update.get('transaction_id')
             is_youpay_updated = youpay_obj.update_youpay_transaction_data(
                 data_to_update)
-            is_success = True
-            logger.info(
-                "AmazonPGTransactionData post_save success for "
-                "reference {}, status {}".format(
-                    instance.payment_reference, instance.payment_status))
+            if is_youpay_updated:
+                logger.info(
+                    "AmazonPGTransactionData post_save success for "
+                    "reference {}, status {}".format(
+                        instance.payment_reference, instance.payment_status))
     except Exception as e:
         logger.error(
             "Exception : AmazonPGTransactionData post_save for "
             "payment reference {}, error :{}".format(
                 payment_reference, str(e)), exc_info=True)
-        is_success = False
-    finally:
-        logger.info(
-            "AmazonPGTransactionData post_save Triggered for tid {}, "
-            "reference {}, is_completed {}, youpay updated {}".format(
-                transaction_id, payment_reference, is_success,
-                is_youpay_updated))
 
 
 def prepare_youpay_transaction_update_data(instance, payment_reference,
