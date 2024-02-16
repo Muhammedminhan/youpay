@@ -21,12 +21,11 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     PAYMENT_REQUEST_CREATE_TRANSACTION,
                                     CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2,
                                     CHECKOUTPG_HUB_CODE,
-)
+                                    )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
-    PAYMENT_REQUEST_VERIFY,
-)
+    PAYMENT_REQUEST_VERIFY, )
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer
