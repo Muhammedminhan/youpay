@@ -206,7 +206,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             try:
                 header = self.get_payment_header()
                 URL = (
-                        settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
+                        self.checkoutpg_config.domain + CHECKOUTPG_SAVED_CARD_ENDPOINT +
                         card_id + '/')
                 response = requests.delete(url=URL, headers=header)
                 return json.loads(response.text)
