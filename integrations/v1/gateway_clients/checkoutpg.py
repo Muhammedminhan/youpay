@@ -28,14 +28,13 @@ from integrations.constants import (
     PAYMENT_REQUEST_VERIFY, )
 from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
-    CheckoutPaymentRequestSerializer
-)
+    CheckoutPaymentRequestSerializer)
 from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_NONE, PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
-                                PAYMENT_METHOD_APPLEPAY,
+                                PAYMENT_METHOD_APPLEPAY
                                 )
 from services.v1.views.common import (AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
