@@ -1,6 +1,5 @@
 import json
 import logging
-from decimal import Decimal
 
 from django.db.models import Q
 
@@ -55,7 +54,7 @@ def reformat_payment_request_data(data):
     order_items = data.get('order_items')
 
     if order and payment and customer and urls:
-        data['amount'] = round(Decimal(order.get('amount')), 2)
+        data['amount'] = order.get('amount')
         data['amount_in_aed'] = order.get('amount_in_aed')
         data['service_fee'] = order.get('service_fee')
         data['base_amount'] = order.get('base_amount')
