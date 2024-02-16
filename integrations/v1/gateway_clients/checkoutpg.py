@@ -8,12 +8,9 @@ from rest_framework import status
 from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, IS_SUCCESS
-from core.utils import (
-    get_checkoutpg_config,
-    process_checkoutpg_response_verification,
-)
+from core.utils import (get_checkoutpg_config,
+                        process_checkoutpg_response_verification,)
 from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
-                                    CHECKOUTPG_HUB_CODE,
                                     CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
@@ -22,7 +19,9 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     PAYMENT_REQUEST_TYPE_PAYMENT,
                                     CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT,
                                     PAYMENT_REQUEST_CREATE_TRANSACTION,
-                                    CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2)
+                                    CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2,
+                                    CHECKOUTPG_HUB_CODE,
+)
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
@@ -32,13 +31,12 @@ from integrations.messages import CHECKOUTPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.checkoutpg_payment_request import (
     CheckoutPaymentRequestSerializer
 )
-from payments.constants import (
-    PAYMENT_STATUS_AUTHORIZED,
-    PAYMENT_STATUS_NONE, PAYMENT_STATUS_PAID,
-    PAYMENT_STATUS_PENDING,
-    PAYMENT_METHOD_SAVED_CARD,
-    PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
-    PAYMENT_METHOD_APPLEPAY,
+from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
+                                PAYMENT_STATUS_NONE, PAYMENT_STATUS_PAID,
+                                PAYMENT_STATUS_PENDING,
+                                PAYMENT_METHOD_SAVED_CARD,
+                                PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
+                                PAYMENT_METHOD_APPLEPAY,
 )
 from services.v1.views.common import (AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
