@@ -119,7 +119,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
         method for deleting saved card
         """
         try:
-            card_id = request.GET['card_id']
+            card_id = request.GET['id']
 
             checkout = CheckoutpgManager()
             response_data = checkout.delete_saved_card(card_id=card_id)
