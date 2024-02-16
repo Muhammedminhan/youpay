@@ -94,6 +94,7 @@ class AmazonPGCardPaymentRequestSerializer(AmazonPGPaymentRequestSerializer):
             app_config=app_config, params=params,
             code=AMAZONPG_HUB_CODE)
 
+
 class AmazonPGApplepayAppleHeaderSerializer(serializers.Serializer):
     apple_transactionId = serializers.SerializerMethodField()
     apple_ephemeralPublicKey = serializers.SerializerMethodField()

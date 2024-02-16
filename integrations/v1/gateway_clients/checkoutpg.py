@@ -1,31 +1,28 @@
 import json
 import logging
+
 import requests
 from django.conf import settings
 from rest_framework import status
 
-from core.constants import (
-    PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
-    REQUEST_METHOD_GET,
-)
+from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
+                            REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, IS_SUCCESS
 from core.utils import (
     get_checkoutpg_config,
     process_checkoutpg_response_verification,
 )
-from integrations.constants import (
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS,
-    CHECKOUTPG_HUB_CODE,
-    CHECKOUTPG_CONFIG_ENDPOINT_V2,
-    CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
-    CHECKOUTPG_SAVED_CARD_ENDPOINT,
-    CHECKOUTPG_PAYMENT_ENDPOINT,
-    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT,
-    PAYMENT_REQUEST_TYPE_PAYMENT,
-    CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT,
-    PAYMENT_REQUEST_CREATE_TRANSACTION,
-    CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2,
-)
+from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
+                                    CHECKOUTPG_HUB_CODE,
+                                    CHECKOUTPG_CONFIG_ENDPOINT_V2,
+                                    CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
+                                    CHECKOUTPG_SAVED_CARD_ENDPOINT,
+                                    CHECKOUTPG_PAYMENT_ENDPOINT,
+                                    CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT,
+                                    PAYMENT_REQUEST_TYPE_PAYMENT,
+                                    CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT,
+                                    PAYMENT_REQUEST_CREATE_TRANSACTION,
+                                    CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2)
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
