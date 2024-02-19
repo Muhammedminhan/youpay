@@ -5,6 +5,7 @@ import requests
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK)
 from core.utils import (get_payment_gateway_config)
+from integrations.common import update_brand_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE,
@@ -63,6 +64,20 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             self.transaction_obj = request_data.get('transaction_obj')
             self.transaction_id = str(self.transaction_obj.transaction_id)
+
+            is_updated = update_brand_details(
+                self.transaction_obj)
+            if is_updated:
+                brand_details = self.transaction_obj.brand_details
+                brand_detail_items_set = brand_details.get("item_set", None)
+                data.update({
+                    "brand_details": brand_details})
+
+                if not brand_detail_items_set or not len(
+                        brand_detail_items_set):
+                    logger.error("Brand details not found for transaction {}"
+                                 "".format(self.transaction_id))
+                    return None, self.BRAND_DETAILS_MISSING
 
             request_data.pop('transaction_obj')
 
