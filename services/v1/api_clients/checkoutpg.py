@@ -120,7 +120,9 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
         """
         try:
             card_id = request.GET['id']
-
+            if not card_id:
+                return Response({'error': 'card ID is required',
+                                 'status': status.HTTP_400_BAD_REQUEST})
             checkout = CheckoutpgManager()
             response_data = checkout.delete_saved_card(card_id=card_id)
 
