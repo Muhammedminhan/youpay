@@ -119,7 +119,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
         method for deleting saved card
         """
         try:
-            card_id = request.GET['id']
+            card_id = request.GET.get('id')
             if not card_id:
                 return Response({'error': 'card ID is required',
                                  'status': status.HTTP_400_BAD_REQUEST})
