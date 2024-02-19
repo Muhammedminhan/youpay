@@ -19,6 +19,7 @@ from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiGenerateOTPAPIView)
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
+from .api_clients.neqaty_service import NeqatyPointBalanceAPIView
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify,
@@ -99,4 +100,7 @@ urlpatterns = [
          name='QitafRedeemPointsAPIView'),
     path('qitaf/verify/', QitafVerify.as_view()),
     path('qitaf/calculate-balance/', CalculateQitafBalance.as_view()),
+
+    # Neqaty Endpoints
+    path('neqaty/point-balance/', NeqatyPointBalanceAPIView.as_view())
 ]

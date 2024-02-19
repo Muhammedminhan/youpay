@@ -17,6 +17,8 @@ class YouPayResponse(object):
     8xxx - for qitaf
     """
 
+    """Youpay related begins"""
+
     SUCCESS = 1000
     UNKNOWN_ERR = 1002
     PAYMENT_SUCCESS = 1003
@@ -24,7 +26,7 @@ class YouPayResponse(object):
     CLIENT_TRANSACTION_VERIFICATION_FAILED = 1005
     DUPLICATE_PAYMENT_VERIFICATION = 1006
     BRAND_DETAILS_MISSING = 1007
-
+    MISSING_CLIENT_INFO = 1008
     MIDDLEWARE_REDIRECTED = 1307
 
     TRANSACTION_NOT_FOUND = 1404
@@ -33,6 +35,7 @@ class YouPayResponse(object):
     TRANSACTION_ALREADY_CLOSED = 1600
     REQUIRED_DATA_MISSING = 1601
     DATA_CORRUPTED = 1602
+    """Youpay related ends"""
 
     """checkoutpg related begins"""
     CHECKOUTPG_CONNECTION_ERROR = 2003
@@ -91,9 +94,21 @@ class YouPayResponse(object):
     APPLEPAY_SUCCESS_CODES = APPLEPAY_SUCCESS_CODE_LISTS
     """Apple Pay back related ends"""
 
-    """Youpay related begins"""
-    MISSING_CLIENT_INFO = 6000
-    """Youpay related ends"""
+    """Neqaty related begins"""
+    NEQATY_CONNECTION_ERROR = 6002
+    NEQATY_PHONE_NUMBER_SAVE_FAILED = 6003
+    NEQATY_PHONE_NUMBER_SAVED = 6004
+    NEQATY_PHONE_NUMBER_FAILED_TO_FETCH = 6005
+    NEQATY_VERIFICATION_FAILED_TO_PROCESS = 6006
+    NEQATY_VERIFICATION_FAILED = 6007
+    NEQATY_VERIFICATION_EXCEPTION = 6008
+    NEQATY_BALANCE_CALCULATION_FAILED = 6009
+    NEQATY_NOT_ENABLED = 6401
+    NEQATY_ALREADY_COLLECTED = 6402
+    NEQATY_REWARD_POINT_MIN_AMT_NOT_MET = 6403
+    NEQATY_NOT_SUPPORTED = 6404
+
+    """Qitaf related ends"""
 
     """Citi rewards related begins"""
     CITI_REWARDS_CONNECTION_ERROR = 8002
@@ -178,6 +193,20 @@ class YouPayResponse(object):
             self.QITAF_NOT_SUPPORTED: "Qitaf Forbidden, or partial redemption not supported.",
             self.QITAF_ALREADY_COLLECTED: "Qitaf Reward collected Already.",
             self.QITAF_BALANCE_CALCULATION_FAILED: "Qitaf Balance calculation failed.",
+
+            self.NEQATY_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.NEQATY_PHONE_NUMBER_SAVE_FAILED: (
+                "NEQATY Phone number failed to save"),
+            self.NEQATY_PHONE_NUMBER_SAVED: (
+                "NEQATY Phone number updated"),
+            self.NEQATY_PHONE_NUMBER_FAILED_TO_FETCH: (
+                "NEQATY Phone number failed to fetch"),
+            self.NEQATY_VERIFICATION_FAILED_TO_PROCESS: "Verification failed to process",
+            self.NEQATY_VERIFICATION_FAILED: "Verification failed",
+            self.NEQATY_VERIFICATION_EXCEPTION: "Verification failed.",
+            self.NEQATY_NOT_SUPPORTED: "NEQATY Forbidden, or partial redemption not supported.",
+            self.NEQATY_ALREADY_COLLECTED: "NEQATY Reward collected Already.",
+            self.NEQATY_BALANCE_CALCULATION_FAILED: "NEQATY Balance calculation failed.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
