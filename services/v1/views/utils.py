@@ -28,7 +28,8 @@ from payments.constants import (PAYMENT_STATUS_INITIATED,
                                 PAYMENT_METHOD_QITAF, PAYMENT_OPTION_QITAF,
                                 PAYMENT_METHOD_HAPPY_CREDITS,
                                 PAYMENT_OPTION_HAPPY_CREDITS,
-                                PAYMENT_METHOD_PAYPAL, PAYMENT_OPTION_PAYPAL)
+                                PAYMENT_METHOD_PAYPAL, PAYMENT_OPTION_PAYPAL,
+                                PAYMENT_METHOD_NEQATY)
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
@@ -402,6 +403,8 @@ def get_payment_option_constant(payment_gateway, payment_method):
          PAYMENT_METHOD_CITI): PAYMENT_OPTION_CITI_REWARDS,
         (B2CPAYBACK_HUB_CODE,
          PAYMENT_METHOD_QITAF): PAYMENT_OPTION_QITAF,
+        (B2CPAYBACK_HUB_CODE,
+         PAYMENT_METHOD_NEQATY): PAYMENT_METHOD_NEQATY,
 
         (TABBYPG_HUB_CODE,
          PAYMENT_METHOD_TABBYPG): PAYMENT_OPTION_TABBYPG,
