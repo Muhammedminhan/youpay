@@ -24,6 +24,7 @@ from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD,
     PAYMENT_METHOD_APPLEPAY,
     PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_AUTHORIZED,
+    PAYMENT_STATUS_FAILED
 )
 from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
@@ -296,11 +297,11 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 if response_data.get('is_capture'):
                     payment_status = PAYMENT_STATUS_PAID
                     approved = True
-                    response_summary = "Payment successful"
+                    response_summary = response_data.get('message')
                 else:
-                    payment_status = PAYMENT_STATUS_CANCELLED
+                    payment_status = PAYMENT_STATUS_FAILED
                     approved = False
-                    response_summary = "Payment failed"
+                    response_summary = response_data.get('message')
 
                 self.update_youpay_transaction_data(
                     {
