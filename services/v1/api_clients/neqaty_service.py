@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
-from integrations.constants import QITAF_CLIENT_CODE
+from integrations.constants import NEQATY_CLIENT_CODE
 from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
 from services.v1.views.common import YouPayTransactionCRUD
@@ -30,15 +30,16 @@ class NeqatyPointBalanceAPIView(APIView, YouPayTransactionCRUD):
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
-
                 payload = {
-                    'client_code': QITAF_CLIENT_CODE,
+                    'client_code': NEQATY_CLIENT_CODE,
                     'invoice_id': transaction_obj.invoice_id,
                     'platform': transaction_obj.platform,
+                    'amount': str(transaction_obj.amount),
                     'customer_name': transaction_obj.customer_name,
                     'customer_email': transaction_obj.customer_email,
                     "msisdn": mobile_number,
-                    "transaction_obj": transaction_obj
+                    "transaction_obj": transaction_obj,
+                    "currency": transaction_obj.currency
                 }
                 neqaty_service = NeqatyServiceManager()
                 response_data, code = neqaty_service.point_balance(
@@ -67,6 +68,48 @@ class NeqatyPointBalanceAPIView(APIView, YouPayTransactionCRUD):
         except Exception as e:
             logger.error(
                 "Exception occurred on NeqatyPointBalanceAPIView : {}".format(
+                    str(e)), exc_info=True)
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class NeqatyGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        request for handling neqaty generate otp api
+        """
+        logger.info("NeqatyGenerateOTPAPIView request data : {}".format(
+            request.data))
+
+        try:
+            transaction_id = request.data.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            redeem_code = request.data.get("redeem_code")
+            payload = {
+                'client_code': NEQATY_CLIENT_CODE,
+                'reference_id': transaction_obj.payment_reference,
+                'redeem_code': redeem_code,
+                'transaction_obj': transaction_obj
+            }
+            neqaty_service = NeqatyServiceManager()
+            response_data, code = neqaty_service.generate_otp(payload)
+
+            if response_data and code == self.response_obj.SUCCESS:
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=response_data
+                )
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_error_dict(error_code=code)
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(
+                "Exception occurred on NeqatyGenerateOTPAPIView : {}".format(
                     str(e)), exc_info=True)
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),

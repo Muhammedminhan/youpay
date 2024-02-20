@@ -9,7 +9,8 @@ from integrations.common import update_brand_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE,
-    NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE, )
+    NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
+    PAYMENT_REQUEST_GENERATE_OTP, NEQATY_OTP_GENERATION_API, )
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -125,4 +126,51 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data=json.dumps(self.response_data),
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_POINT_BALANCE,
+            )
+
+    def generate_otp(self, data):
+        """
+        calls neqaty otp generating api and returns otp
+        """
+        try:
+            self.transaction_obj = data.get('transaction_obj')
+            self.transaction_id = self.transaction_obj.transaction_id
+            data.pop('transaction_obj')
+            self.request_data = data
+            logger.info(
+                "Youpay sending request data to neqaty generate otp api "
+                "is {}".format(data))
+            url = self.neqaty_config.domain + NEQATY_OTP_GENERATION_API
+            headers = self.get_payment_header()
+
+            response = requests.post(url, data=json.dumps(data),
+                                     headers=headers)
+            logger.info("Response from neqaty service {}".format(response))
+            if response:
+                response_data = response.json()
+                logger.info("neqaty payment response: {}".format(
+                    response_data))
+                self.response_data = response_data
+
+                return response_data, self.SUCCESS
+
+            logger.error("Error in neqaty otp, {}".format(response.json()))
+            self.response_data = response.json()
+
+            return ({"error": response.json()},
+                    self.NEQATY_CONNECTION_ERROR)
+
+        except Exception as e:
+            error = "Exception in neqaty generate otp api: {}".format(e)
+            logger.error(error, exc_info=True)
+            self.response_data = {}
+            return {"error": error}, self.NEQATY_CONNECTION_ERROR
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_GENERATE_OTP,
             )

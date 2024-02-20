@@ -168,7 +168,6 @@ CITI_ACCOUNT_BALANCE = "/citi/api/v1/account-balance/"
 CITI_REVERT_ACCOUNT_BALANCE = "/citi/api/v1/revert-citi-account-balance/"
 
 # Qitaf related constants
-QITAF_CLIENT_CODE = 'TEST'
 QITAF_OTP_GENERATION_API = "/qitaf/api/v1/burn/generate-otp/"
 QITAF_EARN_POINTS_API = "/qitaf/api/v1/collect/"
 QITAF_REDEEM_POINTS_API = "/qitaf/api/v1/burn/redeem-qitafpoints/"
@@ -180,4 +179,6 @@ QITAF_CALCULATE_BALANCE_API = "/qitaf/api/v1/calculate-balance/"
 QITAF_HEADERS = {'Content-Type': 'application/json'}
 
 # Neqaty related constants
+NEQATY_CLIENT_CODE = 'TEST'
 NEQATY_POINT_BALANCE_API = "/payback/api/v1/touchpoint/check-point-balance/"
+NEQATY_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
