@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
-from integrations.constants import QITAF_CLIENT_CODE
+from integrations.constants import NEQATY_CLIENT_CODE
 from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
 from services.v1.views.common import YouPayTransactionCRUD
@@ -32,13 +32,15 @@ class NeqatyPointBalanceAPIView(APIView, YouPayTransactionCRUD):
             if transaction_obj:
 
                 payload = {
-                    'client_code': QITAF_CLIENT_CODE,
+                    'client_code': NEQATY_CLIENT_CODE,
                     'invoice_id': transaction_obj.invoice_id,
                     'platform': transaction_obj.platform,
+                    'amount': str(transaction_obj.amount),
                     'customer_name': transaction_obj.customer_name,
                     'customer_email': transaction_obj.customer_email,
                     "msisdn": mobile_number,
-                    "transaction_obj": transaction_obj
+                    "transaction_obj": transaction_obj,
+                    "currency": transaction_obj.currency
                 }
                 neqaty_service = NeqatyServiceManager()
                 response_data, code = neqaty_service.point_balance(
