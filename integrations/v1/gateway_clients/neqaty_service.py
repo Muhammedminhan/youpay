@@ -11,6 +11,7 @@ from integrations.constants import (
     B2CPAYBACK_HUB_CODE,
     NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
     PAYMENT_REQUEST_GENERATE_OTP, NEQATY_OTP_GENERATION_API, )
+from payments.constants import PAYMENT_STATUS_PENDING
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -101,12 +102,18 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 self.response_data = response_data
                 logger.info("Neqaty point balance api response: {}".format(
                     response_data))
+                formatted_response = (
+                    self.format_point_balance_response(response_data))
+
                 self.update_youpay_transaction_data({
                     'transaction_id': self.transaction_obj.transaction_id,
                     'payment_reference': response_data.get(
-                        'payment_reference'),
+                        'partner_response').get('reference_id'),
+                    'brand_calculations': response_data.get(
+                        'partner_response').get('redeem_options'),
+                    'payment_status': PAYMENT_STATUS_PENDING
                 })
-                return response_data, self.SUCCESS
+                return formatted_response, self.SUCCESS
 
             logger.error("Error in Neqaty point balance api, {}"
                          "".format(response.text))
@@ -174,3 +181,23 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_GENERATE_OTP,
             )
+
+    def format_point_balance_response(self, data):
+        redeem_options = data.get("partner_response").get("redeem_options")
+        code = data.get("code")
+        message = data.get("message")
+        available_points = data.get("partner_response").get("point_balance")
+        reference_id = data.get("partner_response").get("reference_id")
+
+        for option in redeem_options:
+            option.pop('calculated_item_details')
+
+        formatted_data = {
+            "code": code,
+            "message": message,
+            "redeem_options": redeem_options,
+            "available_points": available_points,
+            "reference_id": reference_id
+        }
+        return formatted_data
+
