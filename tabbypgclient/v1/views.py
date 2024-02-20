@@ -5,6 +5,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from payments.constants import PAYMENT_STATUS_PAID
+from payments.models import YouPayTransactionData
+from services.v1.views.common import YouPayTransactionCRUD
+from tabbypgclient.constant import PAYMENT_STATUS_CLOSED, \
+    PAYMENT_STATUS_REFUNDED
 from tabbypgclient.libs.authentication import SignatureAuthentication
 from tabbypgclient.models import TabbyPaymentData
 from tabbypgclient.utils import wait_redis_lock
@@ -18,15 +23,18 @@ class TabbyPGWebhookListener(APIView):
 
     def post(self, request):
         response_data = {}
-        logger.info("webhook triggered {}".format(request))
+        logger.info("webhook triggered {}".format(request.data))
         request_data = json.loads(request.data)
         try:
+            tabby_obj = YouPayTransactionCRUD()
+
             logger.info("Tabbypg webhook received for {}".format(
                 request_data.get("payment_reference")))
 
             lock_name = 'lock:WebhookListener:invoice_%d' % (1,)
             with wait_redis_lock(lock_name=lock_name):
-
+                payment_reference = request_data.get(
+                    'payment_reference')
                 transaction_obj = self.get_tabby_payment_object(
                     request_data.get(
                         'payment_reference', None))
@@ -46,8 +54,13 @@ class TabbyPGWebhookListener(APIView):
                     transaction_obj.is_paid = request_data.get('is_paid')
                     transaction_obj.invoice_id = request_data.get(
                         'invoice_id', None)
-                    transaction_obj.save()
 
+                    transaction_obj.save()
+                    data_to_update = self.youpay_satus_update(
+                        request_data, payment_reference)
+                    if data_to_update:
+                        tabby_obj.update_youpay_transaction_data(
+                            data_to_update)
                 else:
                     transaction_obj = TabbyPaymentData.objects.create(
                         order_reference=request_data.get('order_reference'),
@@ -96,3 +109,50 @@ class TabbyPGWebhookListener(APIView):
             },
             content_type='application/json'
         )
+
+    def youpay_satus_update(self, request_data, payment_reference):
+
+        payment_status = self.tabby_to_youpay_status(request_data)
+        if payment_status:
+            try:
+                transaction_obj = (
+                    self.get_youpay_transaction_data_with_payment_reference(
+                        payment_reference))
+                if transaction_obj:
+                    data_to_update = {
+                        'transaction_id': transaction_obj.transaction_id,
+                        "payment_reference": request_data.get("reference"),
+                        "payment_status": payment_status,
+                    }
+                    return data_to_update
+                else:
+                    logger.info(
+                        "Transaction object not found for payment reference "
+                        "{} in TabbyPGWebhookListener".format(
+                            payment_reference))
+                return None
+            except Exception as e:
+                logger.error(
+                    "Error while preparing data for youpay transaction "
+                    "update {} in TabbyPGWebhookListener".format(e))
+
+    def get_youpay_transaction_data_with_payment_reference(self,
+                                                           payment_reference):
+        try:
+            transaction_obj = YouPayTransactionData.objects.get(
+                payment_reference=payment_reference)
+            return transaction_obj
+        except YouPayTransactionData.DoesNotExist:
+            logger.info(
+                "Youpay transaction object with payment_reference {} not "
+                "found in TabbyPGWebhookListener".format(payment_reference))
+            return None
+
+    def tabby_to_youpay_status(self, request_data):
+        if request_data.get('status') == PAYMENT_STATUS_CLOSED:
+            payment_status = PAYMENT_STATUS_PAID
+        elif request_data.get('status') == PAYMENT_STATUS_REFUNDED:
+            payment_status = PAYMENT_STATUS_REFUNDED
+        else:
+            payment_status = None
+        return payment_status
