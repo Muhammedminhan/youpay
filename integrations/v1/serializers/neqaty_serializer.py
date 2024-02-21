@@ -17,7 +17,7 @@ class NeqatyRedemptionSerializer(serializers.Serializer):
 
     def get_checkout_amount(self, data):
         data = self.context.get('request').data
-        return data.get('checkout_amount')
+        return data.get('checkout_amount', 0)
 
     def get_one_time_password(self, data):
         data = self.context.get('request').data
