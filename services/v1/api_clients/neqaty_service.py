@@ -9,6 +9,8 @@ from core.utils import decrypt_string
 from integrations.constants import NEQATY_CLIENT_CODE
 from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
+from integrations.v1.serializers.neqaty_serializer import (
+    NeqatyRedemptionSerializer)
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -111,6 +113,64 @@ class NeqatyGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
             logger.error(
                 "Exception occurred on NeqatyGenerateOTPAPIView : {}".format(
                     str(e)), exc_info=True)
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class NeqatyRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        request for handling neqaty points redemption api
+        1.full redemption
+        2.partial redemption
+        """
+        logger.info(
+            "NeqatyRedeemPointsAPIView API triggered, request data"
+            ": {}".format(request.data))
+
+        try:
+            transaction_id = request.data.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+
+            neqaty_redemption_serializer = NeqatyRedemptionSerializer(
+                data=request.data, context={'request': request})
+
+            neqaty_redemption_serializer.is_valid(raise_exception=True)
+            validated_data = neqaty_redemption_serializer.data
+
+            points_redemption_data = validated_data
+
+            points_redemption_data.update(
+                {
+                    "transaction_obj": transaction_obj,
+                    'client_code': NEQATY_CLIENT_CODE,
+                    "encrypted_id": request.data.get('transaction_id'),
+                    "reference_id": transaction_obj.payment_reference,
+                    "selected_amount": request.data.get("selected_amount"),
+                    "checkout_amount": request.data.get("checkout_amount"),
+                }
+            )
+            neqaty_service = NeqatyServiceManager()
+            response_data, code = neqaty_service.redeem_points(
+                points_redemption_data)
+            if response_data and code == self.response_obj.SUCCESS:
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=response_data
+                )
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                """Need to show error message to Front end
+                so data = self.response_obj.get_error_dict(error_code=code)
+                """
+                return Response(response_data,
+                                status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error("Exception {}".format(str(e)), exc_info=True)
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
