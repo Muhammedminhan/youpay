@@ -86,7 +86,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "Youpay sending request data to Neqaty point balance api "
                 "is {}".format(request_data))
 
-            request_data['transaction_id'] = "youpay|" + self.transaction_id
             self.request_data = request_data
 
             payload = json.dumps(request_data)

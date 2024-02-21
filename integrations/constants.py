@@ -179,5 +179,5 @@ QITAF_CALCULATE_BALANCE_API = "/qitaf/api/v1/calculate-balance/"
 QITAF_HEADERS = {'Content-Type': 'application/json'}
 
 # Neqaty related constants
-NEQATY_CLIENT_CODE = 'TEST'
+NEQATY_CLIENT_CODE = 'PAYMTNQTI'
 NEQATY_POINT_BALANCE_API = "/payback/api/v1/touchpoint/check-point-balance/"
