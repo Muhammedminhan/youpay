@@ -6,17 +6,7 @@ from django.dispatch import receiver
 
 from services.v1.views.common import YouPayTransactionCRUD
 from .constant import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
-                       PURCHASE_PLATFORM_CHOICES, PAYMENT_STATUS_CLOSED,
-                       PAYMENT_STATUS_REJECTED, PAYMENT_STATUS_EXPIRED,
-                       PAYMENT_STATUS_REFUNDED)
-from payments.constants import (PAYMENT_STATUS_PAID,
-                                PAYMENT_STATUS_REFUNDED as
-                                PAYMENT_STATUS_YPREFUNDED,
-                                PAYMENT_STATUS_REJECTED as
-                                PAYMENT_STATUS_YPREJECTED,
-                                PAYMENT_STATUS_EXPIRED as
-                                PAYMENT_STATUS_YPEXPIRED,
-                                PAYMENT_STATUS_NONE as PAYMENT_STATUS_YPNONE)
+                       PURCHASE_PLATFORM_CHOICES, TABBY_YOUPAY_STATUS_DICT)
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +51,7 @@ class TabbyPaymentData(models.Model):
 
 @receiver(post_save, sender=TabbyPaymentData)
 def update_youpaytransactiondata_on_webhook(sender, instance, created,
-                                                 **kwargs):
+                                            **kwargs):
     payment_status = tabby_to_youpay_status(instance.status)
     if payment_status:
         try:
@@ -77,6 +67,10 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
                 }
                 youpay_crud.update_youpay_transaction_data(
                             data_to_update)
+                logger.info(
+                    "Youpaytransactindata transaction {} updated with status"
+                    " {}".format(
+                        transaction_obj.transaction_id, payment_status))
             else:
                 logger.info(
                     "Youpaytransaction object not found for payment reference "
@@ -94,16 +88,9 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
 
 
 def tabby_to_youpay_status(tabbypg_status):
-    if tabbypg_status == PAYMENT_STATUS_CLOSED:
-        payment_status = PAYMENT_STATUS_PAID
-    elif tabbypg_status == PAYMENT_STATUS_REFUNDED:
-        payment_status = PAYMENT_STATUS_YPREFUNDED
-    elif tabbypg_status == PAYMENT_STATUS_REJECTED:
-        payment_status = PAYMENT_STATUS_YPREJECTED
-    elif tabbypg_status == PAYMENT_STATUS_EXPIRED:
-        payment_status = PAYMENT_STATUS_YPEXPIRED
-    else:
-        payment_status = PAYMENT_STATUS_YPNONE
+    payment_status = TABBY_YOUPAY_STATUS_DICT.get(tabbypg_status)
+    if not payment_status:
+        payment_status = None
         logger.error(
             "Error status at tabbypgclient while trying to update "
             "youpaytransactiondata response {}".format(tabbypg_status))

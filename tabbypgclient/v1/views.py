@@ -3,6 +3,7 @@ import logging
 import random
 import string
 
+from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,7 +13,6 @@ from tabbypgclient.models import TabbyPaymentData
 from tabbypgclient.utils import wait_redis_lock
 
 logger = logging.getLogger(__name__)
-from django.db import transaction
 
 
 class TabbyPGWebhookListener(APIView):
