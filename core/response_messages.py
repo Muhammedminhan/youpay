@@ -203,7 +203,7 @@ class YouPayResponse(object):
                 "NEQATY Phone number failed to fetch"),
             self.NEQATY_VERIFICATION_FAILED_TO_PROCESS: "Verification failed to process",
             self.NEQATY_VERIFICATION_FAILED: "Verification failed",
-            self.NEQATY_VERIFICATION_EXCEPTION: "Verification failed.",
+            self.NEQATY_VERIFICATION_EXCEPTION: "Exception on Verification",
             self.NEQATY_NOT_SUPPORTED: "NEQATY Forbidden, or partial redemption not supported.",
             self.NEQATY_ALREADY_COLLECTED: "NEQATY Reward collected Already.",
             self.NEQATY_BALANCE_CALCULATION_FAILED: "NEQATY Balance calculation failed.",
