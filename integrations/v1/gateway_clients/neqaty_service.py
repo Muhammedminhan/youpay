@@ -346,6 +346,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             self.payment_status = PAYMENT_STATUS_PENDING
             self.is_neqaty_enabled = True
         else:
+            # TODO:  Need to manage data and response as it is shared from the b2c
+
             """Handle neqaty full redemption response"""
             if str(response_data.get('response_code')) in ["0"]:
                 '''Neqaty full redemption Success case'''
