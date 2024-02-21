@@ -1,6 +1,9 @@
 import json
 import logging
+import random
+import string
 
+from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,7 +13,6 @@ from tabbypgclient.models import TabbyPaymentData
 from tabbypgclient.utils import wait_redis_lock
 
 logger = logging.getLogger(__name__)
-from django.db import transaction
 
 
 class TabbyPGWebhookListener(APIView):
@@ -18,15 +20,17 @@ class TabbyPGWebhookListener(APIView):
 
     def post(self, request):
         response_data = {}
-        logger.info("webhook triggered {}".format(request))
+        logger.info("webhook triggered {}".format(request.data))
         request_data = json.loads(request.data)
         try:
             logger.info("Tabbypg webhook received for {}".format(
                 request_data.get("payment_reference")))
-
-            lock_name = 'lock:WebhookListener:invoice_%d' % (1,)
+            invoice_id = request_data.get('invoice_id')
+            if not invoice_id:
+                invoice_id = ''.join(
+                    random.choices(string.ascii_lowercase, k=8))
+            lock_name = 'lock:WebhookListener:invoice_%s' % (str(invoice_id),)
             with wait_redis_lock(lock_name=lock_name):
-
                 transaction_obj = self.get_tabby_payment_object(
                     request_data.get(
                         'payment_reference', None))
@@ -37,17 +41,18 @@ class TabbyPGWebhookListener(APIView):
                         'customer_name')
                     transaction_obj.customer_email = request_data.get(
                         'customer_email')
-                    transaction_obj.customer_ip_address = request_data.get('')
+                    transaction_obj.customer_ip_address = request_data.get(
+                        'customer_ip_address')
                     transaction_obj.payment_id = request_data.get(
                         'payment_id')
                     transaction_obj.status = request_data.get('status')
-                    transaction_obj.request_source = request_data.get('')
+                    transaction_obj.request_source = request_data.get(
+                        'request_source')
                     transaction_obj.platform = request_data.get('platform')
                     transaction_obj.is_paid = request_data.get('is_paid')
                     transaction_obj.invoice_id = request_data.get(
                         'invoice_id', None)
                     transaction_obj.save()
-
                 else:
                     transaction_obj = TabbyPaymentData.objects.create(
                         order_reference=request_data.get('order_reference'),
@@ -55,10 +60,11 @@ class TabbyPGWebhookListener(APIView):
                         currency=request_data.get('currency'),
                         customer_name=request_data.get('customer_name'),
                         customer_email=request_data.get('customer_email'),
-                        customer_ip_address=request_data.get(''),
+                        customer_ip_address=request_data.get(
+                            'customer_ip_address'),
                         payment_id=request_data.get('payment_id'),
                         status=request_data.get('status'),
-                        request_source=request_data.get(''),
+                        request_source=request_data.get('request_source'),
                         payment_reference=request_data.get(
                             'payment_reference'),
                         platform=request_data.get('platform'),
@@ -66,12 +72,16 @@ class TabbyPGWebhookListener(APIView):
                         invoice_id=request_data.get('invoice_id', None)
                     )
                     transaction_obj.save()
+                logger.info(
+                    "Successfully processed tabbypg webhook for reference "
+                    "{}".format(request_data.get("payment_reference")))
                 response_data = {'status': True}
                 return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
-            logger.error("Tabbypg webhook failed with error {}".format(e))
+            logger.error("Tabbypg webhook failed with error {}".format(e),
+                         exc_info=e)
             response_data = {'message': "Data not  updated", 'status': False}
-            return self.pg_response('HTTP_500_INTERNAL_SERVER_ERROR',
+            return self.pg_response('HTTP_400_BAD_REQUEST',
                                     data=response_data)
 
     def get_tabby_payment_object(self, payment_reference):
