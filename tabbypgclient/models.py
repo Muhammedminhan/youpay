@@ -62,8 +62,7 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
             if transaction_obj:
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
-                    "payment_reference": instance.payment_reference,
-                    "payment_status": payment_status,
+                    "payment_status": payment_status
                 }
                 youpay_crud.update_youpay_transaction_data(
                             data_to_update)
