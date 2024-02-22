@@ -181,3 +181,5 @@ QITAF_HEADERS = {'Content-Type': 'application/json'}
 # Neqaty related constants
 NEQATY_CLIENT_CODE = 'PAYMTNQTI'
 NEQATY_POINT_BALANCE_API = "/payback/api/v1/touchpoint/check-point-balance/"
+NEQATY_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
+NEQATY_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"

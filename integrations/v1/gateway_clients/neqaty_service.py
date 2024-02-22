@@ -1,16 +1,29 @@
+import copy
 import json
 import logging
 
 import requests
+from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK)
-from core.utils import (get_payment_gateway_config)
+from core.messages import REDIRECT_URL, IS_REDIRECT
+from core.utils import (get_payment_gateway_config, get_app_config)
 from integrations.common import update_brand_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE,
-    NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE, )
-from payments.constants import PAYMENT_STATUS_PENDING
+    NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
+    PAYMENT_REQUEST_GENERATE_OTP, NEQATY_OTP_GENERATION_API,
+    NEQATY_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
+    NEQATY_CLIENT_CODE, CHECKOUTPG_PAYMENT_CONFIGURATIONS, )
+from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
+                                LANGUAGE_CODE_AR,
+                                PAYMENT_STATUS_DECLINED_RETRY,
+                                PAYMENT_METHOD_NEQATY_AND_CARD,
+                                PAYMENT_STATUS_PAID)
+from payments.serializers.youpay_payments import (
+    YouPayTransactionDataSerializer)
+from services.v1.views.common import add_payment_gateway_info_in_url
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -33,7 +46,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         self.request_type = None
         self.payment_status = None
         self.payment_method = None
-        self.is_Neqaty_enabled = None
+        self.is_neqaty_enabled = None
         self.approved = False
         self.amount = None
         self.redeemed_point = None
@@ -133,21 +146,273 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 request_type=PAYMENT_REQUEST_POINT_BALANCE,
             )
 
+    def generate_otp(self, data):
+        """
+        calls neqaty otp generating api and returns otp
+        """
+        try:
+            self.transaction_obj = data.get('transaction_obj')
+            self.transaction_id = self.transaction_obj.transaction_id
+            redeem_code = data.get('redeem_code')
+            data.pop('transaction_obj')
+            self.request_data = data
+            logger.info(
+                "Youpay sending request data to neqaty generate otp api "
+                "is {}".format(data))
+            url = self.neqaty_config.domain + NEQATY_OTP_GENERATION_API
+            headers = self.get_payment_header()
+
+            response = requests.post(url, data=json.dumps(data),
+                                     headers=headers)
+            logger.info("Response from neqaty service {}".format(response))
+            if response:
+                response_data = response.json()
+                logger.info("neqaty payment response: {}".format(
+                    response_data))
+                self.response_data = response_data
+                brand_calculations = self.transaction_obj.brand_calculations
+                updated_brand_calculations = self.update_brand_calculations(
+                    brand_calculations, redeem_code)
+                self.update_youpay_transaction_data({
+                    'transaction_id': self.transaction_obj.transaction_id,
+                    'brand_calculations': updated_brand_calculations
+                })
+
+                return response_data, self.SUCCESS
+
+            logger.error("Error in neqaty otp, {}".format(response.json()))
+            self.response_data = response.json()
+
+            return ({"error": response.json()},
+                    self.NEQATY_CONNECTION_ERROR)
+
+        except Exception as e:
+            error = "Exception in neqaty generate otp api: {}".format(e)
+            logger.error(error, exc_info=True)
+            self.response_data = {}
+            return {"error": error}, self.NEQATY_CONNECTION_ERROR
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_GENERATE_OTP,
+            )
+
+    def redeem_points(self, data):
+        """
+        calls neqaty points redeem api
+        """
+        try:
+            self.request_data = data
+            self.transaction_obj = self.request_data.get('transaction_obj')
+            self.transaction_id = self.transaction_obj.transaction_id
+            payload = self.request_data
+            language = self.transaction_obj.language
+
+            serializer = YouPayTransactionDataSerializer(self.transaction_obj)
+            transaction_data = serializer.data
+            payload.update(self.prepare_redeem_payload(transaction_data))
+            payload.pop('transaction_obj')
+
+            verify_response, verify_status = self.verify_transaction(
+                transaction_data, payment_method=PAYMENT_METHOD_NEQATY)
+            is_verified = verify_response.get('is_verified', False)
+
+            if verify_status == status.HTTP_200_OK and is_verified:
+                url = self.neqaty_config.domain + NEQATY_REDEEM_POINTS_API
+                headers = self.get_payment_header()
+
+                logger.info(
+                    "Youpay sending request data to neqaty redeem point api "
+                    "is {} headers {} ".format(payload, headers))
+
+                response = requests.post(url, data=json.dumps(payload),
+                                         headers=headers)
+
+                if response:
+                    response_data = response.json()
+                    self.response_data = response_data
+                    logger.info("Neqaty redeem point api response: {}".format(
+                        response_data))
+
+                    response_data = self.handle_neqaty_response(
+                        response_data, self.transaction_obj)
+                    return response_data, self.SUCCESS
+                elif response.status_code == 403:
+                    msg = "Neqaty Forbidden, or partial redemption not supported"
+                    logger.error("{}, {}".format(msg, response.text))
+                    return {"errors": msg}, self.NEQATY_NOT_SUPPORTED
+                else:
+                    logger.error("Error in neqaty redeem point api, {}"
+                                 "".format(response.text))
+                    self.response_data = response.json()
+                    if language == LANGUAGE_CODE_AR:
+                        message = self.response_data.get("response_text_ar")
+                    else:
+                        message = self.response_data.get("response_text")
+
+                    err_obj = {
+                        "message": message,
+                        "code": self.response_data.get("response_code"),
+                        "is_full_redemption": self.response_data.get(
+                            "is_full_redemption")
+                    }
+                    return {"errors": err_obj}, self.NEQATY_CONNECTION_ERROR
+
+
+            else:
+                msg = (
+                    "Youpay neqaty transaction verification failed for"
+                    " transaction id {} response is : {} ".format(
+                        self.transaction_id, verify_response))
+                logger.error(msg)
+                self.response_data = verify_response
+                return verify_response, self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+
+        except Exception as e:
+            error = "Exception in neqaty redeem point api: {}".format(e)
+            logger.error("Exception in neqaty redeem point api: "
+                         "{}".format(e), exc_info=True)
+            return {"errors": error}, self.NEQATY_CONNECTION_ERROR
+
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_REDEMPTION,
+            )
+
     def format_point_balance_response(self, data):
-        redeem_options = data.get("partner_response").get("redeem_options")
+        redeem_options = copy.deepcopy(
+            data.get("partner_response").get("redeem_options"))
+        options = redeem_options
         code = data.get("code")
         message = data.get("message")
         available_points = data.get("partner_response").get("point_balance")
         reference_id = data.get("partner_response").get("reference_id")
 
-        for option in redeem_options:
+        for option in options:
             option.pop('calculated_item_details')
 
         formatted_data = {
             "code": code,
             "message": message,
-            "redeem_options": redeem_options,
+            "redeem_options": options,
             "available_points": available_points,
             "reference_id": reference_id
         }
         return formatted_data
+
+    def prepare_redeem_payload(self, transaction_data):
+        """
+        prepares payload for neqaty redeem api
+        """
+        redeem_payload = {
+            "response_url": add_payment_gateway_info_in_url(
+                transaction_data=transaction_data,
+                app_config=get_app_config(),
+                params=('?id=' + self.request_data.get("encrypted_id") +
+                        "&redemption_reference_id=" + transaction_data.get(
+                            "payment_reference") + "&redemption_partner=NEQATY"),
+                code=NEQATY_CLIENT_CODE,
+            ),
+            "invoice_id": self.transaction_obj.invoice_id,
+            "customer_ip_address": self.transaction_obj.ip,
+            "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
+                transaction_data.get("currency").upper()),
+        }
+        return redeem_payload
+
+    def handle_neqaty_response(self, response_data, payment_data):
+        youpay_update_data = {}
+        logger.info(
+            "handle_neqaty_response data {}".format(response_data))
+        is_success, is_redirect, redirect_url = False, False, None
+        update_data = {}
+
+        is_full_redemption = response_data.get("partner_response").get(
+            "is_full_redemption", False)
+        if is_full_redemption is False:
+            # Handle neqaty partial redemption response
+            redirect_url = response_data.get('url')
+            is_success = True
+            is_redirect = True
+            self.payment_status = PAYMENT_STATUS_PENDING
+            self.is_neqaty_enabled = True
+        else:
+            # TODO:  Need to manage data and response as it is shared from the b2c
+
+            """Handle neqaty full redemption response"""
+            if str(response_data.get('response_code')) in ["0"]:
+                '''Neqaty full redemption Success case'''
+                self.payment_status = PAYMENT_STATUS_PAID
+                self.approved = True
+                paid_amount = response_data.get('amount')
+                if paid_amount:
+                    self.amount = paid_amount
+                    update_data['amount'] = self.amount
+
+                self.redeemed_amount = response_data.get('redeemed_amount')
+                self.redeemed_point = response_data.get('redeemed_point')
+
+                # on full redemption case
+                self.payable_amount = 0
+                self.service_fee = 0
+                self.VAT_amount = 0
+
+                redirect_url = ('{}?transaction_id={}'.format(
+                    payment_data.success_url, payment_data.transaction_id))
+                is_success, is_redirect = True, True
+            else:
+                '''Neqaty full redemption Failure case'''
+                self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                is_redirect = False
+        self.payment_method = (
+            PAYMENT_METHOD_NEQATY if is_full_redemption
+            else PAYMENT_METHOD_NEQATY_AND_CARD)
+
+        youpay_update_data = {
+            **update_data,
+            **{
+                "transaction_id": payment_data.transaction_id,
+                "is_full_redemption": is_full_redemption,
+                "payment_status": self.payment_status,
+                "approved": self.approved,
+                "payment_method": self.payment_method,
+                "payment_gateway": self.payment_gateway,
+                "redeemed_amount": self.redeemed_amount,
+                "redeemed_points": self.redeemed_point,
+                "amount": self.amount,
+                "payable_amount": self.payable_amount,
+                "service_fee": self.service_fee,
+                "base_amount": self.base_amount,
+                "VAT_amount": self.VAT_amount,
+                "is_neqaty_enabled": self.is_neqaty_enabled,
+                "response_summary": response_data.get(
+                    'reason')
+            }
+        }
+
+        update_data.update(youpay_update_data)
+
+        self.update_youpay_transaction_data(update_data)
+        return_response = {
+            "message": "API request completed successfully",
+            REDIRECT_URL: redirect_url,
+            IS_REDIRECT: is_redirect,
+            "neqaty_response": response_data,
+            "is_success": is_success
+        }
+        return return_response
+
+    def update_brand_calculations(self, data, redeem_code):
+        for item in data:
+            if item["redeemCode"] == redeem_code:
+                return item
+        return None
