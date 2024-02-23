@@ -353,7 +353,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             # TODO:  Need to manage data and response as it is shared from the b2c
 
             """Handle neqaty full redemption response"""
-            if str(response_data.get('response_code')) in ["0"]:
+            if response_data.get('code') == 1000:
                 '''Neqaty full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
                 self.approved = True
