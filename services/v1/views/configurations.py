@@ -1,4 +1,9 @@
 import logging
+import random
+import string
+
+from django.conf import settings
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -70,6 +75,14 @@ class ConfigViewSet(ViewSet):
         try:
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
+            session_key = self.get_session_key(request)
+            logger.info("browser value ========== "
+                        "{}".format(transaction.browser_value))
+            if transaction.browser_value != session_key:
+                message = "Active session already exists."
+                data = self.response_obj.get_403_message(message=message)
+
+                return Response(data, status=status.HTTP_403_FORBIDDEN)
             if transaction:
 
                 # Redirect to success url if transaction is already paid
@@ -160,9 +173,18 @@ class ConfigViewSet(ViewSet):
                         code=self.response_obj.SUCCESS,
                         success_dict=response_data
                     )
-
-                    return Response(data,
-                                    status=status.HTTP_200_OK)
+                    response = Response(data, status=status.HTTP_200_OK)
+                    response.set_cookie(
+                        key='session-key',
+                        value=self.get_browser_value(transaction),
+                        expires=10,
+                        secure=settings.SESSION_COOKIE_SECURE,
+                        httponly=settings.SESSION_COOKIE_HTTPONLY,
+                        samesite=settings.SESSION_COOKIE_SAMESITE,
+                        domain=settings.TOKEN_COOKIE_DOMAIN,
+                    )
+                    logger.info("response-----------{}".format(response))
+                    return response
 
                 else:
                     message = "Session expired or doesn't match"
@@ -177,6 +199,7 @@ class ConfigViewSet(ViewSet):
                                 status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
+            logger.error("error--------", exc_info=e)
             data = self.response_obj.get_404_message(message=str(e))
             return Response(
                 data,
@@ -368,6 +391,19 @@ class ConfigViewSet(ViewSet):
         else:
             return None
 
+    def get_browser_value(self, transaction_obj):
+        letters = string.ascii_lowercase
+        if transaction_obj.browser_value:
+            browser_value = transaction_obj.browser_value
+        else:
+            browser_value = ''.join(random.choice(letters) for i in range(15))
+            count = YouPayTransactionData.objects.filter(
+                transaction_id=transaction_obj.transaction_id).update(
+                browser_value=browser_value)
+            if count == 0:
+                browser_value = None
+        return browser_value
+
     def check_citi_allowed_denominations(self, payment_option, transaction):
         """
         returns citi configurations
@@ -426,6 +462,17 @@ class ConfigViewSet(ViewSet):
                 adcb_config[
                     'partial_redemption_allowed'] = partial_redemption_allowed
         return adcb_config
+
+    def get_session_key(self, request):
+        cookies = request.COOKIES
+        logger.info("request cookies {}".format(cookies))
+        logger.info("cookie keys {}".format(request.COOKIES.keys()))
+        session_key = request.COOKIES.get('session-key')
+        logger.info("cookie session key  {}".format(session_key))
+        if session_key == 'null':
+            session_key = None
+        return session_key
+
 
 
 class ClientStaticFilesAPI(APIView):
