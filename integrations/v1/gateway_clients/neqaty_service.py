@@ -5,9 +5,11 @@ import logging
 import requests
 from rest_framework import status
 
-from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK)
-from core.messages import REDIRECT_URL, IS_REDIRECT
-from core.utils import (get_payment_gateway_config, get_app_config)
+from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
+                            REQUEST_METHOD_GET)
+from core.messages import REDIRECT_URL, IS_REDIRECT, IS_SUCCESS
+from core.utils import (get_payment_gateway_config, get_app_config,
+                        decrypt_string)
 from integrations.common import update_brand_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
@@ -15,7 +17,9 @@ from integrations.constants import (
     NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
     PAYMENT_REQUEST_GENERATE_OTP, NEQATY_OTP_GENERATION_API,
     NEQATY_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
-    NEQATY_CLIENT_CODE, CHECKOUTPG_PAYMENT_CONFIGURATIONS, )
+    NEQATY_CLIENT_CODE, CHECKOUTPG_PAYMENT_CONFIGURATIONS,
+    CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API, CONTENT_TYPE_HEADERS,
+    PAYMENT_REQUEST_VERIFY, )
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
                                 PAYMENT_STATUS_DECLINED_RETRY,
@@ -353,18 +357,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 '''Neqaty full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
                 self.approved = True
-                paid_amount = response_data.get('amount')
-                if paid_amount:
-                    self.amount = paid_amount
-                    update_data['amount'] = self.amount
-
-                self.redeemed_amount = response_data.get('redeemed_amount')
-                self.redeemed_point = response_data.get('redeemed_point')
-
-                # on full redemption case
-                self.payable_amount = 0
-                self.service_fee = 0
-                self.VAT_amount = 0
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
@@ -384,21 +376,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "is_full_redemption": is_full_redemption,
                 "payment_status": self.payment_status,
                 "approved": self.approved,
-                "payment_method": self.payment_method,
-                "payment_gateway": self.payment_gateway,
-                "redeemed_amount": self.redeemed_amount,
-                "redeemed_points": self.redeemed_point,
-                "amount": self.amount,
-                "payable_amount": self.payable_amount,
-                "service_fee": self.service_fee,
-                "base_amount": self.base_amount,
-                "VAT_amount": self.VAT_amount,
-                "is_neqaty_enabled": self.is_neqaty_enabled,
                 "response_summary": response_data.get(
                     'reason')
             }
         }
-
         update_data.update(youpay_update_data)
 
         self.update_youpay_transaction_data(update_data)
@@ -416,3 +397,100 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             if item["redeemCode"] == redeem_code:
                 return item
         return None
+
+    def verification(self, request_data):
+        """Neqaty Verification with b2c"""
+        reward = None
+
+        request_transaction_id = request_data.get('transaction_id')
+        logger.info(
+            "Neqaty Verification with b2c started for transaction {}, data -->"
+            " {}".format(request_transaction_id, request_data))
+
+        if request_transaction_id:
+            try:
+                transaction_id = decrypt_string(request_transaction_id)
+                transaction_obj = self.get_youpay_transaction_data(
+                    transaction_id)
+
+                request_data['invoice_id'] = transaction_obj.invoice_id
+                request_data['channel_code'] = CHECKOUT_SAUDI_CHANNEL_CODE
+
+                gateway_obj = get_payment_gateway_config(
+                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+
+                neqaty_domain = gateway_obj.domain
+                url = (neqaty_domain + NEQATY_VERIFY_API +
+                       "?&redemption_partner=NEQATY")
+
+                request_data.pop("transaction_id")
+                response = requests.get(url, params=request_data,
+                                        headers=CONTENT_TYPE_HEADERS)
+                logger.info("Response from neqaty verify api : {}, params {} "
+                            "data ---> {},".format(url, request_data,
+                                                   response.text))
+                return_response_data = {}
+                if response.status_code == 200:
+                    """Redemption verified successfully"""
+                    logger.info(
+                        "Neqaty Verification with b2c completed for "
+                        "transaction {}".format(transaction_id))
+
+                    response_data = response.json()
+                    return_response_data["is_redirect"] = True
+                    redirect_url = (transaction_obj.success_url +
+                                    '?transaction_id=' + transaction_id)
+
+                    return_response_data["redirect_url"] = redirect_url
+
+                    approved = response_data.get("approved", False)
+                    is_flagged = response_data.get("is_flagged", False)
+                    is_gcc_card = response_data.get("is_gcc_card", False)
+                    payment_status = PAYMENT_STATUS_PAID
+                    return_response_data[IS_SUCCESS] = True
+
+                else:
+                    """Redemption failed"""
+                    payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                    return_response_data[IS_SUCCESS] = False
+                    return_response_data['is_redirect'] = False
+                    return_response_data['redirect_url'] = None
+                    approved = False
+                    is_flagged = False
+                    is_gcc_card = False
+                    response_data = response.json()
+
+                return_response_data["payment_status"] = payment_status
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=json.dumps(request_data),
+                    response_data=json.dumps(response_data),
+                    request_method=REQUEST_METHOD_GET,
+                    request_type=PAYMENT_REQUEST_VERIFY
+                )
+
+                update_data = {
+                    'transaction_id': str(transaction_obj.transaction_id),
+                    'payment_status': payment_status,
+                    'is_flagged': is_flagged,
+                    'approved': approved,
+                    'is_gcc_card': is_gcc_card,
+                    'earned_point': reward
+                }
+
+                logger.info("Neqaty Verification with b2c completed for "
+                            "transaction {}, data to be updating {}".format(
+                    transaction_id, update_data))
+                self.update_youpay_transaction_data(update_data)
+                return return_response_data, transaction_obj
+
+            except Exception as e:
+                logger.error(
+                    "Verify api call to Neqaty failed for transaction {}"
+                    "".format(request_transaction_id), exc_info=e)
+                return None, None
+        else:
+            logger.error("Invalid transaction id ({}) received for Neqaty "
+                         "verify api".format(request_transaction_id))
+            return None, None

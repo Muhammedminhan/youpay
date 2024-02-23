@@ -110,7 +110,7 @@ ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
 ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
 ADCB_VERIFY_API = "/payback/api/v1/verify"
 
-ADCB_HEADERS = {'Content-Type': 'application/json'}
+CONTENT_TYPE_HEADERS = {'Content-Type': 'application/json'}
 
 ADCB_CLIENT_CODE = 'ADCBTP'
 ADCB_TOKEN_TYPE = "card"
@@ -183,3 +183,4 @@ NEQATY_CLIENT_CODE = 'PAYMTNQTI'
 NEQATY_POINT_BALANCE_API = "/payback/api/v1/touchpoint/check-point-balance/"
 NEQATY_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
 NEQATY_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"
+NEQATY_VERIFY_API = "/payback/api/v1/verify"

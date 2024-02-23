@@ -1,3 +1,4 @@
+import json
 import logging
 
 from rest_framework import status
@@ -36,7 +37,7 @@ class NeqatyPointBalanceAPIView(APIView, YouPayTransactionCRUD):
                     'client_code': NEQATY_CLIENT_CODE,
                     'invoice_id': transaction_obj.invoice_id,
                     'platform': transaction_obj.platform,
-                    'amount': str(transaction_obj.amount),
+                    'amount': str(transaction_obj.base_amount),
                     'customer_name': transaction_obj.customer_name,
                     'customer_email': transaction_obj.customer_email,
                     "msisdn": mobile_number,
@@ -172,3 +173,83 @@ class NeqatyRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class NeqatyVerify(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def get(self, request, *args, **kwargs):
+        neqaty_service = NeqatyServiceManager()
+        payment_data = {
+            'transaction_id': request.query_params.get('id'),
+            'redemption_partner': request.query_params.get(
+                'redemption_partner'),
+            'redemption_reference_id': request.query_params.get(
+                'redemption_reference_id'),
+            'cko-session-id': request.query_params.get(
+                'cko-session-id')}
+        response, transaction_obj = neqaty_service.verification(payment_data)
+        transaction_id = (
+            transaction_obj.transaction_id if transaction_obj
+            else None)
+        if response:
+            logger.info("NeqatyVerify Response {}".format(response))
+            if response.get('is_success') and response.get('is_redirect'):
+                logger.info(
+                    "Neqaty Verification successful, payment status true for"
+                    " transaction {}".format(transaction_id))
+
+                response['message'] = self.response_obj.PAYMENT_SUCCESS
+                code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
+                response = self.format_b2c_response(response, code)
+            else:
+                response["message"] = self.response_obj.PAYMENT_FAILED
+                message = (
+                    "couldnt process Neqaty Verification for transaction id {}"
+                    ", response : {}".format(transaction_id, response))
+
+                logger.error(message)
+
+                code = self.response_obj.NEQATY_VERIFICATION_FAILED_TO_PROCESS
+                response = self.format_b2c_response(response, code)
+            return Response(response, status=status.HTTP_200_OK)
+        else:
+            try:
+                response_text = json.loads(response.text)
+                resp_code = response_text.get('code', False)
+                message = response_text.get('message', None)
+                response = {'errors': {
+                    'code': resp_code, 'message': message}}
+                code = self.response_obj.NEQATY_VERIFICATION_FAILED
+                logger.error("Verification failed for : {}, reason : {}"
+                             .format(transaction_id, response))
+                response = self.format_b2c_response(response, code)
+
+            except Exception as e:
+                logger.error(
+                    "Exception occurred for transaction id : {}, "
+                    "reason : {}".format(transaction_id, str(e)))
+
+                response = {'errors': {
+                    'code': "400",
+                    'message': "Unable to process verification"}
+                }
+                code = self.response_obj.NEQATY_VERIFICATION_EXCEPTION
+                response = self.format_b2c_response(response, code)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+    def format_b2c_response(self, data, code):
+
+        errors = data.get('errors', None)
+        results = data.get('results', None)
+
+        if results:
+            data.pop('results')
+            data['code'] = code
+            data['message'] = self.response_obj.MESSAGE.get(code)
+
+        if errors:
+            errors['message'] = COMMON_ERROR_MESSAGE_EN
+            errors['code'] = code
+
+        return data
