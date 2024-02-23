@@ -79,13 +79,13 @@ def update_brand_details(transaction_obj):
         return False
 
 
-def get_redemption_details(transaction_obj):
+def get_redemption_details(transaction_obj, updated_brand_calculations):
     """
     The idea is to replace the additional_data with the neqaty balance
      calculation response from the neqaty service
     """
 
-    brand_calculations = transaction_obj.brand_calculations
+    brand_calculations = updated_brand_calculations
     youpay_update_data = {}
     if brand_calculations:
         amount = brand_calculations.get('sum_net_amount', None)
@@ -116,3 +116,4 @@ def get_redemption_details(transaction_obj):
             "Brand calculation is empty for transaction {}".format(
                 transaction_obj.transaction_id
             ))
+    return youpay_update_data
