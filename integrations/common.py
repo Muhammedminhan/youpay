@@ -77,3 +77,42 @@ def update_brand_details(transaction_obj):
         logger.error(
             "Getting brand details failed with error {}".format(str(e)))
         return False
+
+
+def get_redemption_details(transaction_obj):
+    """
+    The idea is to replace the additional_data with the neqaty balance
+     calculation response from the neqaty service
+    """
+
+    brand_calculations = transaction_obj.brand_calculations
+    youpay_update_data = {}
+    if brand_calculations:
+        amount = brand_calculations.get('sum_net_amount', None)
+        base_amount = brand_calculations.get('sum_gift_base_value',
+                                             None)
+        redeemed_amount = brand_calculations.get(
+            'sum_redemption_points', None)
+        redeemed_point = brand_calculations.get(
+            'sum_redemption_points', None)
+        payable_amount = brand_calculations.get(
+            'sum_card_payment_amount', None)
+        service_fee = brand_calculations.get(
+            'sum_applied_service_charge', None)
+        vat_amount = brand_calculations.get('sum_applied_vat', None)
+
+        youpay_update_data = {
+            'redeemed_amount': redeemed_amount,
+            'redeemed_points': redeemed_point,
+            'amount': amount,
+            'payable_amount': payable_amount,
+            'service_fee': service_fee,
+            'base_amount': base_amount,
+            'VAT_amount': vat_amount,
+            'payment_method': transaction_obj.payment_method,
+        }
+    else:
+        logger.error(
+            "Brand calculation is empty for transaction {}".format(
+                transaction_obj.transaction_id
+            ))

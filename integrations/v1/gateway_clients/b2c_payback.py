@@ -12,7 +12,7 @@ from core.utils import (get_payment_gateway_config,
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
-                                    ADCB_REDEMPTION_API, ADCB_HEADERS,
+                                    ADCB_REDEMPTION_API, CONTENT_TYPE_HEADERS,
                                     ADCB_VERIFY_API,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     PAYMENT_REQUEST_AUTHENTICATE,
@@ -70,7 +70,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 url = b2c_payback_domain + B2C_PAYBACK_CONFIG_ENDPOINT
 
                 response = requests.post(url, data=request_data_json,
-                                         headers=ADCB_HEADERS)
+                                         headers=CONTENT_TYPE_HEADERS)
                 if response:
                     return response.json()
                 else:
@@ -110,10 +110,11 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     b2c_gateway_obj = get_payment_gateway_config(
                         B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                     b2c_payback_domain = b2c_gateway_obj.domain
-                    ADCB_HEADERS['X-API-KEY'] = b2c_gateway_obj.api_key
+                    CONTENT_TYPE_HEADERS[
+                        'X-API-KEY'] = b2c_gateway_obj.api_key
                     url = b2c_payback_domain + ADCB_POINT_BALANCE_API
                     response = requests.post(url, data=request_data_json,
-                                             headers=ADCB_HEADERS)
+                                             headers=CONTENT_TYPE_HEADERS)
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
                         transaction_id=transaction_obj.transaction_id,
@@ -179,7 +180,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 "with data {}".format(decrypt_string(
                     request_transaction_id), request_data_json))
             response = requests.post(url, data=request_data_json,
-                                     headers=ADCB_HEADERS)
+                                     headers=CONTENT_TYPE_HEADERS)
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
@@ -225,7 +226,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_REDEMPTION_API
                 response = requests.post(url, data=request_data_json,
-                                         headers=ADCB_HEADERS)
+                                         headers=CONTENT_TYPE_HEADERS)
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_obj.transaction_id,
@@ -270,7 +271,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 url = b2c_payback_domain + ADCB_VERIFY_API
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
-                                        headers=ADCB_HEADERS)
+                                        headers=CONTENT_TYPE_HEADERS)
                 response_data = response.json()
                 response_data["is_redirect"] = True
                 response_data[

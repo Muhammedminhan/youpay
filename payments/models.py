@@ -17,7 +17,8 @@ from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
     PAYMENT_METHOD_CITI_REWARDS,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
-    PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST)
+    PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST,
+    POINT_COLLECTION_PROGRAMS)
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +171,18 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True,
         help_text='Denotes whether the redemption is full or not.')
+    points_collected_mobile_number = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text="Mobile number associated with the collection of points")
+    points_redeemed_mobile_number = models.CharField(
+        max_length=20, null=True, blank=True,
+        help_text="Mobile number associated with the redemption of points ")
+    points_collection_enabled_program = models.CharField(
+        choices=POINT_COLLECTION_PROGRAMS, max_length=200, null=True,
+        blank=True, help_text="Program selected for the collection of points")
+    point_collection_enabled = models.BooleanField(
+        null=True, blank=True, default=False, db_index=True,
+        help_text='If the point collection enabled or not')
     maximum_redeemable_points = models.DecimalField(
         null=True, blank=True, decimal_places=4, max_digits=15,
         help_text='Maximum points used for citi rewards point redemption')
@@ -536,6 +549,14 @@ class ArchivedYouPayTransactionData(models.Model):
         decimal_places=4, max_digits=12, null=True, blank=True)
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True)
+    points_collected_mobile_number = models.CharField(
+        max_length=20, null=True, blank=True)
+    points_redeemed_mobile_number = models.CharField(
+        max_length=20, null=True, blank=True)
+    points_collection_enabled_program = models.CharField(
+        max_length=20, null=True, blank=True)
+    point_collection_enabled = models.BooleanField(
+        null=True, blank=True, default=False, db_index=True)
     maximum_redeemable_points = models.DecimalField(
         null=True, blank=True, decimal_places=4, max_digits=15)
     minimum_redeemable_points = models.DecimalField(
