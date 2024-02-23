@@ -10,7 +10,7 @@ from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
 from core.messages import REDIRECT_URL, IS_REDIRECT, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
-from integrations.common import update_brand_details
+from integrations.common import update_brand_details, get_redemption_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE,
@@ -124,9 +124,15 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'transaction_id': self.transaction_obj.transaction_id,
                     'payment_reference': response_data.get(
                         'partner_response').get('reference_id'),
-                    'brand_calculations': response_data.get(
-                        'partner_response').get('redeem_options'),
-                    'payment_status': PAYMENT_STATUS_PENDING
+                    'brand_calculations':
+                        response_data.get('partner_response').get(
+                            'redeem_options'),
+                    'payment_status': PAYMENT_STATUS_PENDING,
+                    'points_redeemed_mobile_number': self.request_data.get(
+                        'msisdn'),
+                    'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
+                    'payment_method': PAYMENT_METHOD_NEQATY
+
                 })
                 return formatted_response, self.SUCCESS
 
@@ -174,14 +180,19 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.info("neqaty payment response: {}".format(
                     response_data))
                 self.response_data = response_data
+
                 brand_calculations = self.transaction_obj.brand_calculations
                 updated_brand_calculations = self.update_brand_calculations(
                     brand_calculations, redeem_code)
-                self.update_youpay_transaction_data({
+
+                updated_dict = {
                     'transaction_id': self.transaction_obj.transaction_id,
                     'brand_calculations': updated_brand_calculations
-                })
-
+                }
+                redemption_details = get_redemption_details(
+                    self.transaction_obj, updated_brand_calculations)
+                updated_dict.update(redemption_details)
+                self.update_youpay_transaction_data(updated_dict)
                 return response_data, self.SUCCESS
 
             logger.error("Error in neqaty otp, {}".format(response.json()))
@@ -342,7 +353,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
         is_full_redemption = response_data.get("partner_response").get(
             "is_full_redemption", False)
-        if is_full_redemption is False:
+        if is_full_redemption == 'False':
             # Handle neqaty partial redemption response
             redirect_url = response_data.get('url')
             is_success = True

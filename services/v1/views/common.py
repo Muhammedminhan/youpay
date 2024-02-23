@@ -130,6 +130,14 @@ class YouPayTransactionCRUD(object):
         data_dict['available_amount'] = data.get('available_amount', None)
         data_dict['available_points'] = data.get('available_points', None)
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
+        data_dict['point_collection_enabled'] = data.get(
+            'point_collection_enabled', None)
+        data_dict['points_collected_mobile_number'] = data.get(
+            'points_collected_mobile_number', None)
+        data_dict['points_redeemed_mobile_number'] = data.get(
+            'points_redeemed_mobile_number', None)
+        data_dict['points_collection_enabled_program'] = data.get(
+            'points_collection_enabled_program', None)
 
         data_dict['additional_vat'] = data.get('additional_vat', None)
         data_dict['additional_processing_fee'] = (
