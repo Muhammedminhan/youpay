@@ -353,9 +353,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
         is_full_redemption = response_data.get("partner_response").get(
             "is_full_redemption", False)
-        if is_full_redemption == 'False':
+        if is_full_redemption is False:
             # Handle neqaty partial redemption response
-            redirect_url = response_data.get('url')
+            redirect_url = response_data.get('neqaty_response').get('url')
             is_success = True
             is_redirect = True
             self.payment_status = PAYMENT_STATUS_PENDING
@@ -398,7 +398,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "message": "API request completed successfully",
             REDIRECT_URL: redirect_url,
             IS_REDIRECT: is_redirect,
-            "neqaty_response": response_data,
             "is_success": is_success
         }
         return return_response
