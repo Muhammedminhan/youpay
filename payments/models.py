@@ -285,6 +285,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         decimal_places=4, max_digits=12, null=True, blank=True,
         help_text='Earned point for the transaction via corresponding payment'
                   ' method')
+    browser_value = models.CharField(
+        max_length=250, null=True, blank=True,
+        help_text='string generated during initial configuration call.')
 
 
 @receiver(post_init, sender=YouPayTransactionData)
