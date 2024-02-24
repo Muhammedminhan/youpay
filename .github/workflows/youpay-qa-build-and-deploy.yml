@@ -1,4 +1,5 @@
 name: QA Build & Deploy youpay
+run-name: ${{ inputs.action }} QA Branch ${{ inputs.branch }}
 
 on:
   workflow_dispatch:
@@ -39,7 +40,6 @@ on:
         type: choice
         options:
         - false
-        - true
       rebuild_req:
         description: 'Force reinstall requirement'
         required: true
@@ -77,33 +77,32 @@ on:
         default: 'deploy'
         type: choice
         options:
-          - deploy
-          - renew
-          - destroy
+        - deploy
+        - renew
+        - destroy
       unit_test:
         description: 'Unit Test'
         required: true
         default: 'false'
         type: choice
         options:
-          - false
-          - true
+        - false
+        - true
       whitelabel:
         description: 'Whitelabel'
         required: true
         default: 'false'
         type: choice
         options:
-          - false
-          - true
+        - false
+        - true
       app_db_lb_deploy:
         description: 'Quick sight DB expose'
         required: true
         default: 'false'
         type: choice
         options:
-          - false
-          - true
+        - false
       rebuild_req:
         description: 'Force reinstall requirement'
         required: true
@@ -118,7 +117,7 @@ on:
         default: 'qa'
         type: choice
         options:
-          - qa
+        - qa
       debug:
         description: 'Debug'
         required: true
@@ -215,7 +214,7 @@ jobs:
         if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: actions/checkout@v3.0.2
         with:
-          ref: ${{ inputs.branch || github.event.client_payload.branch }}
+         ref: ${{ inputs.branch || github.event.client_payload.branch }}
 
       - name: Paths Filter
         if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
@@ -279,7 +278,7 @@ jobs:
         if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: actions/checkout@v3.0.2
         with:
-          ref: ${{ inputs.branch || github.event.client_payload.branch }}
+         ref: ${{ inputs.branch || github.event.client_payload.branch }}
 
       - name: Docker Build and push
         if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
@@ -319,7 +318,7 @@ jobs:
         if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
         uses: actions/checkout@v3.0.2
         with:
-          ref: ${{ inputs.branch || github.event.client_payload.branch }}
+         ref: ${{ inputs.branch || github.event.client_payload.branch }}
 
       - name: Docker Build and push
         if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
