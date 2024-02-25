@@ -175,15 +175,12 @@ class ConfigViewSet(ViewSet):
                     )
                     response = Response(data, status=status.HTTP_200_OK)
                     response.set_cookie(
-                        key='session-key',
-                        value=self.get_browser_value(transaction),
-                        expires=10,
-                        secure=settings.SESSION_COOKIE_SECURE,
-                        httponly=settings.SESSION_COOKIE_HTTPONLY,
-                        samesite=settings.SESSION_COOKIE_SAMESITE,
-                        domain=settings.TOKEN_COOKIE_DOMAIN,
+                        'session-key',
+                        self.get_browser_value(transaction),
+                        max_age=3600
                     )
-                    logger.info("response-----------{}".format(response))
+                    logger.info("response cookies-----------"
+                                "{}".format(response.cookies))
                     return response
 
                 else:
