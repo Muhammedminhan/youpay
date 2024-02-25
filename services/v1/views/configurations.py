@@ -177,7 +177,8 @@ class ConfigViewSet(ViewSet):
                     response.set_cookie(
                         'session-key',
                         self.get_browser_value(transaction),
-                        max_age=3600
+                        max_age=3600, secure=True, samesite='None',
+                        domain='.yougotagift.co'
                     )
                     logger.info("response cookies-----------"
                                 "{}".format(response.cookies))
