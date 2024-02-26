@@ -37,7 +37,7 @@ class NeqatyRedemptionSerializer(serializers.Serializer):
 
     def get_cvv(self, data):
         data = self.context.get('request').data
-        return '100'
+        return data.get('cvv')
 
     def get_token_type(self, data):
         data = self.context.get('request').data
