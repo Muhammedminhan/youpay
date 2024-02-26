@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.constants import NEQATY_CLIENT_CODE
