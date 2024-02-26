@@ -158,24 +158,6 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['guest_user_enabled'].required = True
 
-    def clean(self):
-        cleaned_data = super().clean()
-        active = cleaned_data.get('active')
-        if self.instance.id:
-            payment_method = self.instance.payment_method
-        else:
-            payment_method = cleaned_data.get('payment_method')
-
-        if active:
-            existing_active_payment_method = PaymentConfiguration.objects.filter(
-                payment_method=payment_method, active=True).exclude(
-                pk=self.instance.pk)
-
-            if existing_active_payment_method:
-                raise forms.ValidationError(
-                    "A payment method with the same name is already active. "
-                    "Please deactivate it before activating a new one.")
-
 
 class PaymentConfigurationAdmin(AdminAbstract):
     fields = ('payment_method', 'active',
