@@ -355,7 +355,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "is_full_redemption", False)
         if is_full_redemption is False:
             # Handle neqaty partial redemption response
-            redirect_url = response_data.get('neqaty_response').get('url')
+            redirect_url = response_data.get('partner_response', {}).get(
+                'url')
             is_success = True
             is_redirect = True
             self.payment_status = PAYMENT_STATUS_PENDING
