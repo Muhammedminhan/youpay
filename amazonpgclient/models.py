@@ -9,7 +9,8 @@ from core.models import AbstractDateTime, CustomerProfile
 from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
                         APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
 from payments.models import YouPayTransactionData
-from payments.constants import PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID
+from payments.constants import (PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID,
+                                PAYMENT_STATUS_FAILED)
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ def update_youpay_status(sender, instance, created, **kwargs):
         if instance.payment_status == PAYMENT_STATUS_CAPTURED:
             transaction_obj.payment_status = PAYMENT_STATUS_PAID
         else:
-            transaction_obj.payment_status = instance.payment_status
+            transaction_obj.payment_status = PAYMENT_STATUS_FAILED
         if not transaction_obj.card_bin:
             transaction_obj.card_bin = instance.card_bin
             transaction_obj.card_last4 = instance.card_last4
