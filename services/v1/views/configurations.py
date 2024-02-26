@@ -178,7 +178,7 @@ class ConfigViewSet(ViewSet):
                         'session-key',
                         self.get_browser_value(transaction),
                         max_age=3600, secure=True, samesite='None',
-                        domain='.yougotagift.co'
+                        domain='.sit.yougotagift.co'
                     )
                     logger.info("response cookies-----------"
                                 "{}".format(response.cookies))
