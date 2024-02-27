@@ -173,22 +173,7 @@ class ConfigViewSet(ViewSet):
                         code=self.response_obj.SUCCESS,
                         success_dict=response_data
                     )
-                    response_headers = {
-                        'sessionkey': self.get_browser_value(transaction),
-                    }
-                    logger.info("response headers-----------"
-                                "{}".format(response_headers))
-                    response = Response(data, headers=response_headers,
-                                    status=status.HTTP_200_OK)
-                    response.headers[
-                        'Access-Control-Allow-Credentials'] = 'true'
-                    response.set_cookie(
-                        'sessionkey',
-                        self.get_browser_value(transaction),
-                        max_age=3600, secure=True, samesite='None',
-                        domain='.yougotagift.co', httponly=True
-                    )
-                    return response
+                    return Response(data, status=status.HTTP_200_OK)
                 else:
                     message = "Session expired or doesn't match"
                     data = self.response_obj.get_404_message(message=message)
@@ -202,7 +187,8 @@ class ConfigViewSet(ViewSet):
                                 status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
-            logger.error("error--------", exc_info=e)
+            logger.error(
+                "Error occurred during config api call", exc_info=e)
             data = self.response_obj.get_404_message(message=str(e))
             return Response(
                 data,
