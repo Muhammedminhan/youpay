@@ -173,17 +173,13 @@ class ConfigViewSet(ViewSet):
                         code=self.response_obj.SUCCESS,
                         success_dict=response_data
                     )
-                    response = Response(data, status=status.HTTP_200_OK)
-                    response.set_cookie(
-                        'session-key',
-                        self.get_browser_value(transaction),
-                        max_age=3600, secure=True, samesite='None',
-                        domain='.sit.yougotagift.co'
-                    )
-                    logger.info("response cookies-----------"
-                                "{}".format(response.cookies))
-                    return response
-
+                    response_headers = {
+                        'session-key': self.get_browser_value(transaction),
+                    }
+                    logger.info("response headers-----------"
+                                "{}".format(response_headers))
+                    return Response(data, headers=response_headers,
+                                    status=status.HTTP_200_OK)
                 else:
                     message = "Session expired or doesn't match"
                     data = self.response_obj.get_404_message(message=message)

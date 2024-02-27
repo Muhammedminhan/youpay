@@ -235,5 +235,3 @@ CACHES = {
         },
     },
 }
-
-CORS_ALLOW_CREDENTIALS = True
