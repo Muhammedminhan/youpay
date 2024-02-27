@@ -2,8 +2,6 @@ import logging
 import random
 import string
 
-from django.conf import settings
-
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -77,7 +75,7 @@ class ConfigViewSet(ViewSet):
                 transaction_id=decrypted_transaction_id)
             session_key = self.get_session_key(request)
             logger.info(
-                "initial session_key is {}  and browser value is {}".format(
+                "Initial session_key is {}  and browser value is {}".format(
                     session_key, transaction.browser_value))
             if transaction.browser_value != session_key:
                 message = "Active session already exists."
@@ -85,10 +83,7 @@ class ConfigViewSet(ViewSet):
                 return Response(data, status=status.HTTP_403_FORBIDDEN)
             if transaction:
                 # Redirect to success url if transaction is already paid
-                if (
-                        transaction.payment_status == PAYMENT_STATUS_PAID or
-                        transaction.payment_status in self.list_failure_statuses
-                ):
+                if transaction.payment_status in self.list_failure_statuses:
                     return_response = self.retrieve_response(
                         payment_options=None,
                         checkoutpg_config=None,
