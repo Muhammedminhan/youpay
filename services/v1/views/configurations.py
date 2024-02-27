@@ -239,6 +239,7 @@ class ConfigViewSet(ViewSet):
         cart_service_fee = None
         cart_base_amount = None
         cart_VAT_amount = None
+        sessionkey = None
 
         if transaction:
             amount = transaction.amount
@@ -269,6 +270,7 @@ class ConfigViewSet(ViewSet):
             if redirect_url:
                 redirect_url = (redirect_url + '?transaction_id=' +
                                 str(transaction.transaction_id))
+            sessionkey = self.get_browser_value(transaction)
 
         response_data = {
             "data": {
@@ -300,7 +302,8 @@ class ConfigViewSet(ViewSet):
                 "announcements": announcements_dict,
 
                 "is_guest": is_guest,
-                "allow_aed_converted_amount": aed_amount_flag
+                "allow_aed_converted_amount": aed_amount_flag,
+                "sessionkey": sessionkey
             },
         }
 
