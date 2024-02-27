@@ -174,12 +174,21 @@ class ConfigViewSet(ViewSet):
                         success_dict=response_data
                     )
                     response_headers = {
-                        'session-key': self.get_browser_value(transaction),
+                        'sessionkey': self.get_browser_value(transaction),
                     }
                     logger.info("response headers-----------"
                                 "{}".format(response_headers))
-                    return Response(data, headers=response_headers,
+                    response = Response(data, headers=response_headers,
                                     status=status.HTTP_200_OK)
+                    response.headers[
+                        'Access-Control-Allow-Credentials'] = 'true'
+                    response.set_cookie(
+                        'sessionkey',
+                        self.get_browser_value(transaction),
+                        max_age=3600, secure=True, samesite='None',
+                        domain='.yougotagift.co', httponly=True
+                    )
+                    return response
                 else:
                     message = "Session expired or doesn't match"
                     data = self.response_obj.get_404_message(message=message)
@@ -461,7 +470,7 @@ class ConfigViewSet(ViewSet):
         cookies = request.COOKIES
         logger.info("request cookies {}".format(cookies))
         logger.info("cookie keys {}".format(request.COOKIES.keys()))
-        session_key = request.COOKIES.get('session-key')
+        session_key = request.COOKIES.get('sessionkey')
         logger.info("cookie session key  {}".format(session_key))
         if session_key == 'null':
             session_key = None
