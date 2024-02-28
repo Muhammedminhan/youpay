@@ -6,12 +6,12 @@ from django.db.models import signals
 from django.dispatch import receiver
 
 from core.models import AbstractDateTime, CustomerProfile
-from payments.constants import PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID
 from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
                         APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
 from payments.models import YouPayTransactionData
 from payments.constants import (PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID,
-                                PAYMENT_STATUS_FAILED)
+                                PAYMENT_STATUS_FAILED,
+                                PAYMENT_STATUS_CANCELLED)
 
 logger = logging.getLogger(__name__)
 
@@ -103,8 +103,10 @@ def prepare_youpay_transaction_update_data(instance, payment_reference,
                 payment_reference))
         if instance.payment_status == PAYMENT_STATUS_CAPTURED:
             payment_status = PAYMENT_STATUS_PAID
-        else:
+        elif instance.payment_status == PAYMENT_STATUS_CANCELLED:
             payment_status = PAYMENT_STATUS_FAILED
+        else:
+            payment_status = instance.payment_status
 
         if transaction_obj:
             data_to_update = {
