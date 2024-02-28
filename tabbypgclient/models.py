@@ -10,7 +10,6 @@ from .constant import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
 
 logger = logging.getLogger(__name__)
 
-
 class TabbyPaymentData(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     modified_on = models.DateTimeField(auto_now=True)
