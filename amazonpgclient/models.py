@@ -12,7 +12,6 @@ from payments.models import YouPayTransactionData
 from payments.constants import (PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_FAILED,
                                 PAYMENT_STATUS_CANCELLED)
-
 logger = logging.getLogger(__name__)
 
 
