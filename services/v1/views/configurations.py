@@ -1,7 +1,4 @@
 import logging
-import random
-import string
-
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -73,14 +70,13 @@ class ConfigViewSet(ViewSet):
         try:
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
-            session_key = self.get_session_key(request)
-            if transaction and self.check_user_session(transaction,
-                                                       session_key):
-                logger.info(
-                    "Initial session_key is {}  and browser value is "
-                    "{}".format(session_key, transaction.browser_value))
+            if transaction:
+
                 # Redirect to success url if transaction is already paid
-                if transaction.payment_status in self.list_failure_statuses:
+                if (
+                        transaction.payment_status == PAYMENT_STATUS_PAID or
+                        transaction.payment_status in self.list_failure_statuses
+                ):
                     return_response = self.retrieve_response(
                         payment_options=None,
                         checkoutpg_config=None,
@@ -164,7 +160,10 @@ class ConfigViewSet(ViewSet):
                         code=self.response_obj.SUCCESS,
                         success_dict=response_data
                     )
-                    return Response(data, status=status.HTTP_200_OK)
+
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
+
                 else:
                     message = "Session expired or doesn't match"
                     data = self.response_obj.get_404_message(message=message)
@@ -178,8 +177,6 @@ class ConfigViewSet(ViewSet):
                                 status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
-            logger.error(
-                "Error occurred during config api call", exc_info=e)
             data = self.response_obj.get_404_message(message=str(e))
             return Response(
                 data,
@@ -216,7 +213,6 @@ class ConfigViewSet(ViewSet):
         cart_service_fee = None
         cart_base_amount = None
         cart_VAT_amount = None
-        sessionkey = None
 
         if transaction:
             amount = transaction.amount
@@ -247,7 +243,6 @@ class ConfigViewSet(ViewSet):
             if redirect_url:
                 redirect_url = (redirect_url + '?transaction_id=' +
                                 str(transaction.transaction_id))
-            sessionkey = self.get_browser_value(transaction)
 
         response_data = {
             "data": {
@@ -279,8 +274,7 @@ class ConfigViewSet(ViewSet):
                 "announcements": announcements_dict,
 
                 "is_guest": is_guest,
-                "allow_aed_converted_amount": aed_amount_flag,
-                "sessionkey": sessionkey
+                "allow_aed_converted_amount": aed_amount_flag
             },
         }
 
@@ -374,19 +368,6 @@ class ConfigViewSet(ViewSet):
         else:
             return None
 
-    def get_browser_value(self, transaction_obj):
-        letters = string.ascii_lowercase
-        if transaction_obj.browser_value:
-            browser_value = transaction_obj.browser_value
-        else:
-            browser_value = ''.join(random.choice(letters) for i in range(15))
-            count = YouPayTransactionData.objects.filter(
-                transaction_id=transaction_obj.transaction_id).update(
-                browser_value=browser_value)
-            if count == 0:
-                browser_value = None
-        return browser_value
-
     def check_citi_allowed_denominations(self, payment_option, transaction):
         """
         returns citi configurations
@@ -445,26 +426,6 @@ class ConfigViewSet(ViewSet):
                 adcb_config[
                     'partial_redemption_allowed'] = partial_redemption_allowed
         return adcb_config
-
-    def get_session_key(self, request):
-        cookies = request.COOKIES
-        logger.info("request cookies {}".format(cookies))
-        logger.info("cookie keys {}".format(request.COOKIES.keys()))
-        session_key = request.COOKIES.get('sessionkey')
-        logger.info("cookie session key  {}".format(session_key))
-        if session_key == 'null':
-            session_key = None
-        return session_key
-
-    def check_user_session(self, transaction, session_key):
-        if transaction.browser_value:
-            if transaction.browser_value == session_key:
-                return True
-            elif transaction.browser_value != session_key:
-                return False
-        else:
-            return True
-
 
 
 class ClientStaticFilesAPI(APIView):

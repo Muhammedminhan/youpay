@@ -107,9 +107,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
         ('Other Details', {
-            'fields': ('retry_count', 'session_id', 'browser_value',
-                       'loyalty_level', 'earned_point', 'created_at',
-                       'updated_at'
+            'fields': ('retry_count', 'session_id', 'loyalty_level',
+                       'earned_point', 'created_at', 'updated_at'
                        )
         }),
     )
