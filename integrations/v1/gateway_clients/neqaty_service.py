@@ -233,7 +233,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             payload.pop('transaction_obj')
 
             verify_response, verify_status = self.verify_transaction(
-                transaction_data, payment_method=PAYMENT_METHOD_NEQATY)
+                transaction_data,
+                payment_method=self.transaction_obj.payment_method)
             is_verified = verify_response.get('is_verified', False)
 
             if verify_status == status.HTTP_200_OK and is_verified:
