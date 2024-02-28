@@ -2,6 +2,9 @@ import logging
 
 import requests
 
+from payments.constants import (PAYMENT_METHOD_NEQATY,
+                                PAYMENT_METHOD_NEQATY_AND_CARD)
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,6 +104,11 @@ def get_redemption_details(transaction_obj, updated_brand_calculations):
             'sum_applied_service_charge', None)
         vat_amount = brand_calculations.get('sum_applied_vat', None)
 
+        if amount != base_amount:
+            payment_method = PAYMENT_METHOD_NEQATY_AND_CARD
+        else:
+            payment_method = PAYMENT_METHOD_NEQATY
+
         youpay_update_data = {
             'redeemed_amount': redeemed_amount,
             'redeemed_points': redeemed_point,
@@ -109,7 +117,7 @@ def get_redemption_details(transaction_obj, updated_brand_calculations):
             'service_fee': service_fee,
             'base_amount': base_amount,
             'VAT_amount': vat_amount,
-            'payment_method': transaction_obj.payment_method,
+            'payment_method': payment_method
         }
     else:
         logger.error(
