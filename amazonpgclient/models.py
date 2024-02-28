@@ -6,10 +6,12 @@ from django.db.models import signals
 from django.dispatch import receiver
 
 from core.models import AbstractDateTime, CustomerProfile
-from payments.constants import PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID
 from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
                         APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
-
+from payments.models import YouPayTransactionData
+from payments.constants import (PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID,
+                                PAYMENT_STATUS_FAILED,
+                                PAYMENT_STATUS_CANCELLED)
 logger = logging.getLogger(__name__)
 
 
@@ -63,6 +65,7 @@ def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
                                                  **kwargs):
     payment_reference = None
 
+    logger.info("Executing AmazonPGTransactionData signal")
     try:
         logger.info(
             "AmazonPGTransactionData post_save Triggering for "
@@ -97,13 +100,17 @@ def prepare_youpay_transaction_update_data(instance, payment_reference,
         transaction_obj = (
             youpay_obj.get_youpay_transaction_data_with_payment_reference(
                 payment_reference))
+        if instance.payment_status == PAYMENT_STATUS_CAPTURED:
+            payment_status = PAYMENT_STATUS_PAID
+        elif instance.payment_status == PAYMENT_STATUS_CANCELLED:
+            payment_status = PAYMENT_STATUS_FAILED
+        else:
+            payment_status = instance.payment_status
+
         if transaction_obj:
             data_to_update = {
                 'transaction_id': transaction_obj.transaction_id,
-                "payment_status": (
-                    PAYMENT_STATUS_PAID if
-                    instance.payment_status == PAYMENT_STATUS_CAPTURED else
-                    instance.payment_status),
+                "payment_status": payment_status,
                 "payment_reference": instance.payment_reference,
                 "response_summary": instance.response_message,
                 "card_last4": instance.card_last4,
