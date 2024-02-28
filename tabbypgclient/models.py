@@ -1,7 +1,14 @@
+import logging
+
 from django.db import models
-from .constant import (PAYMENT_STATUS_CHOICES,
-                       PAYMENT_STATUS_NONE,
-                       PURCHASE_PLATFORM_CHOICES)
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+from services.v1.views.common import YouPayTransactionCRUD
+from .constant import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
+                       PURCHASE_PLATFORM_CHOICES, TABBY_YOUPAY_STATUS_DICT)
+
+logger = logging.getLogger(__name__)
 
 
 class TabbyPaymentData(models.Model):
@@ -41,3 +48,50 @@ class TabbyPaymentData(models.Model):
 
     def __str__(self):
         return self.payment_reference
+
+
+@receiver(post_save, sender=TabbyPaymentData)
+def update_youpaytransactiondata_on_webhook(sender, instance, created,
+                                            **kwargs):
+    payment_status = tabby_to_youpay_status(instance.status)
+    if payment_status:
+        try:
+            youpay_crud = YouPayTransactionCRUD()
+            transaction_obj = (
+                youpay_crud.get_youpay_transaction_data_with_payment_reference(
+                    instance.payment_reference))
+            if transaction_obj:
+                data_to_update = {
+                    'transaction_id': transaction_obj.transaction_id,
+                    "payment_status": payment_status
+                }
+                youpay_crud.update_youpay_transaction_data(
+                            data_to_update)
+                logger.info(
+                    "Youpaytransactindata transaction {} updated with status"
+                    " {}".format(
+                        transaction_obj.transaction_id, payment_status))
+            else:
+                logger.info(
+                    "Youpaytransaction object not found for payment reference "
+                    "{} during update transaction from "
+                    "TabbyPaymentData".format(instance.payment_reference))
+        except Exception as e:
+            logger.error(
+                "Error while trying to update youpay transaction from "
+                "TabbyPaymentData signal {}".format(e),exc_info=e)
+    else:
+        logger.error(
+            "Unable to update youpay transaction for reference {}, tabby "
+            "payment status is {}".format(
+                instance.payment_reference, instance.status))
+
+
+def tabby_to_youpay_status(tabbypg_status):
+    payment_status = TABBY_YOUPAY_STATUS_DICT.get(tabbypg_status)
+    if not payment_status:
+        payment_status = None
+        logger.error(
+            "Error status at tabbypgclient while trying to update "
+            "youpaytransactiondata response {}".format(tabbypg_status))
+    return payment_status
