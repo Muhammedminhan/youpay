@@ -77,10 +77,11 @@ class ConfigViewSet(ViewSet):
             logger.info(
                 "Initial session_key is {}  and browser value is {}".format(
                     session_key, transaction.browser_value))
-            if transaction.browser_value != session_key:
-                message = "Active session already exists."
-                data = self.response_obj.get_403_message(message=message)
-                return Response(data, status=status.HTTP_403_FORBIDDEN)
+            if transaction.browser_value:
+                if transaction.browser_value != session_key:
+                    message = "Active session already exists."
+                    data = self.response_obj.get_403_message(message=message)
+                    return Response(data, status=status.HTTP_403_FORBIDDEN)
             if transaction:
                 # Redirect to success url if transaction is already paid
                 if transaction.payment_status in self.list_failure_statuses:
