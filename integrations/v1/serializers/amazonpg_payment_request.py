@@ -1,3 +1,5 @@
+from _decimal import Decimal
+
 from rest_framework import serializers
 
 from core.utils import get_app_config, encrypt_string
@@ -38,7 +40,8 @@ class AmazonPGPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_data').get("customer_phone")
 
     def get_amount(self, data):
-        return str(data.get('transaction_data').get("amount"))
+        amount = Decimal(data.get('transaction_data').get("amount"))
+        return str(round(amount, 2))
 
     def get_order_reference(self, data):
         return data.get('transaction_data').get("order_reference")

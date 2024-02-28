@@ -74,15 +74,11 @@ class ConfigViewSet(ViewSet):
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
             session_key = self.get_session_key(request)
-            logger.info(
-                "Initial session_key is {}  and browser value is {}".format(
-                    session_key, transaction.browser_value))
-            if transaction.browser_value:
-                if transaction.browser_value != session_key:
-                    message = "Active session already exists."
-                    data = self.response_obj.get_403_message(message=message)
-                    return Response(data, status=status.HTTP_403_FORBIDDEN)
-            if transaction:
+            if transaction and self.check_user_session(transaction,
+                                                       session_key):
+                logger.info(
+                    "Initial session_key is {}  and browser value is {}"
+                    "".format(session_key, transaction.browser_value))
                 # Redirect to success url if transaction is already paid
                 if transaction.payment_status in self.list_failure_statuses:
                     return_response = self.retrieve_response(
@@ -459,6 +455,15 @@ class ConfigViewSet(ViewSet):
         if session_key == 'null':
             session_key = None
         return session_key
+
+    def check_user_session(self, transaction, session_key):
+        if transaction.browser_value:
+            if transaction.browser_value == session_key:
+                return True
+            elif transaction.browser_value != session_key:
+                return False
+        else:
+            return True
 
 
 
