@@ -441,7 +441,6 @@ class ConfigViewSet(ViewSet):
             b2c_config = b2c_payback_obj.get_configurations(
                 transaction.amount, transaction.currency,
                 transaction.transaction_id)
-            breakpoint()
             config_list = b2c_config.get("results")
             if adcb_enabled:
                 adcb_config = self.get_each_b2c_config(config_list,
