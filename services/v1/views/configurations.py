@@ -77,8 +77,8 @@ class ConfigViewSet(ViewSet):
             if transaction and self.check_user_session(transaction,
                                                        session_key):
                 logger.info(
-                    "Initial session_key is {}  and browser value is "
-                    "{}".format(session_key, transaction.browser_value))
+                    "Initial session_key is {}  and browser value is {}"
+                    "".format(session_key, transaction.browser_value))
                 # Redirect to success url if transaction is already paid
                 if transaction.payment_status in self.list_failure_statuses:
                     return_response = self.retrieve_response(
