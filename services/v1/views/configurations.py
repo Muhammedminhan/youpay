@@ -463,9 +463,11 @@ class ConfigViewSet(ViewSet):
 
     def check_user_session(self, transaction, session_key):
         if transaction.browser_value:
-            if transaction.browser_value == session_key:
+            if (encrypt_browser_value(transaction.browser_value)
+                    == decrypt_browser_value(session_key)):
                 return True
-            elif transaction.browser_value != session_key:
+            elif (encrypt_browser_value(transaction.browser_value) !=
+                  decrypt_browser_value(session_key)):
                 return False
         else:
             return True
