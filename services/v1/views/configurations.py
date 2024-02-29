@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string, get_gateway_additional_fee
+from core.utils import (decrypt_string, get_gateway_additional_fee,
+                        encrypt_browser_value, decrypt_browser_value)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
@@ -378,11 +379,13 @@ class ConfigViewSet(ViewSet):
         letters = string.ascii_lowercase
         if transaction_obj.browser_value:
             browser_value = transaction_obj.browser_value
+            browser_value = encrypt_browser_value(browser_value)
         else:
             browser_value = ''.join(random.choice(letters) for i in range(15))
             count = YouPayTransactionData.objects.filter(
                 transaction_id=transaction_obj.transaction_id).update(
                 browser_value=browser_value)
+            browser_value = encrypt_browser_value(browser_value)
             if count == 0:
                 browser_value = None
         return browser_value
@@ -454,6 +457,8 @@ class ConfigViewSet(ViewSet):
         logger.info("cookie session key  {}".format(session_key))
         if session_key == 'null':
             session_key = None
+        else:
+            session_key = decrypt_browser_value(session_key)
         return session_key
 
     def check_user_session(self, transaction, session_key):
