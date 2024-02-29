@@ -79,7 +79,7 @@ class ConfigViewSet(ViewSet):
                                                        session_key):
                 logger.info(
                     "Initial session_key is {}  and browser value is {}"
-                    "".format(decrypt_browser_value(session_key),
+                    "".format(session_key,
                               transaction.browser_value))
                 # Redirect to success url if transaction is already paid
                 if transaction.payment_status in self.list_failure_statuses:
