@@ -380,15 +380,21 @@ class ConfigViewSet(ViewSet):
         letters = string.ascii_lowercase
         if transaction_obj.browser_value:
             browser_value = transaction_obj.browser_value
+            logger.info("subsequent returned browser value is "
+                        "{}".format(browser_value))
             browser_value = encrypt_browser_value(browser_value)
         else:
             browser_value = ''.join(random.choice(letters) for i in range(15))
             count = YouPayTransactionData.objects.filter(
                 transaction_id=transaction_obj.transaction_id).update(
                 browser_value=browser_value)
+            logger.info("first returned browser value is "
+                        "{}".format(browser_value))
             browser_value = encrypt_browser_value(browser_value)
             if count == 0:
                 browser_value = None
+        logger.info("returned encrypted browser value is "
+                    "{}".format(browser_value))
         return browser_value
 
     def check_citi_allowed_denominations(self, payment_option, transaction):
@@ -463,6 +469,8 @@ class ConfigViewSet(ViewSet):
         return session_key
 
     def check_user_session(self, transaction, session_key):
+        logger.info("User session check browser value {}, session key {}"
+                    "".format(transaction.browser_value, session_key))
         if transaction.browser_value:
             if transaction.browser_value == session_key:
                 return True
