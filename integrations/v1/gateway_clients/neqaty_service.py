@@ -113,7 +113,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             response = requests.post(url, data=payload, headers=headers)
             logger.info("Response from Neqaty point balance api {}"
                         "".format(response))
-            breakpoint()
             if response:
                 response_data = response.json()
                 self.response_data = response_data
@@ -133,7 +132,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'points_redeemed_mobile_number': self.request_data.get(
                         'msisdn'),
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
-                    'payment_method': PAYMENT_METHOD_NEQATY
+                    'payment_method': PAYMENT_METHOD_NEQATY,
+                    'available_points': response_data.get(
+                        "partner_response").get("available_points")
 
                 })
                 return formatted_response, self.SUCCESS
@@ -180,7 +181,21 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             self.transaction_id = self.transaction_obj.transaction_id
             redeem_code = data.get('redeem_code')
             data.pop('transaction_obj')
+            brand_calculations = self.transaction_obj.brand_calculations
+            updated_brand_calculations = self.update_brand_calculations(
+                brand_calculations, redeem_code)
             self.request_data = data
+
+            redemption_details = {
+                "redeemed_points": updated_brand_calculations.get(
+                    "redeemPoints"),
+                "redeemed_amount": updated_brand_calculations.get(
+                    "redeemAmount"),
+                "payable_amount": updated_brand_calculations.get(
+                    "sum_card_payment_amount")
+            }
+            data.update(redemption_details)
+
             logger.info(
                 "Youpay sending request data to neqaty generate otp api "
                 "is {}".format(data))
@@ -195,10 +210,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.info("neqaty payment response: {}".format(
                     response_data))
                 self.response_data = response_data
-
-                brand_calculations = self.transaction_obj.brand_calculations
-                updated_brand_calculations = self.update_brand_calculations(
-                    brand_calculations, redeem_code)
 
                 updated_dict = {
                     'transaction_id': self.transaction_obj.transaction_id,
