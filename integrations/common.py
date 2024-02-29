@@ -97,7 +97,7 @@ def get_redemption_details(transaction_obj, updated_brand_calculations):
         redeemed_amount = brand_calculations.get(
             'sum_redemption_points', None)
         redeemed_point = brand_calculations.get(
-            'sum_redemption_points', None)
+            'redeemPoints', None)
         payable_amount = brand_calculations.get(
             'sum_card_payment_amount', None)
         service_fee = brand_calculations.get(

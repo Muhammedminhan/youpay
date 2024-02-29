@@ -82,6 +82,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             self.transaction_obj = request_data.get('transaction_obj')
             self.transaction_id = str(self.transaction_obj.transaction_id)
+            language = self.transaction_obj.language
 
             is_updated = update_brand_details(
                 self.transaction_obj)
@@ -131,15 +132,30 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'points_redeemed_mobile_number': self.request_data.get(
                         'msisdn'),
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
-                    'payment_method': PAYMENT_METHOD_NEQATY
+                    'payment_method': PAYMENT_METHOD_NEQATY,
+                    'available_points': response_data.get(
+                        "partner_response").get("available_points")
 
                 })
                 return formatted_response, self.SUCCESS
 
-            logger.error("Error in Neqaty point balance api, {}"
-                         "".format(response.text))
-            self.response_data = response.json()
-            return {"error": response.text}, self.NEQATY_CONNECTION_ERROR
+
+            else:
+                logger.error("Error in Neqaty point balance api, {}"
+                             "".format(response.text))
+                self.response_data = response.json()
+                partner_response = self.response_data.get(
+                    "partner_response")
+                if language == LANGUAGE_CODE_AR:
+                    message = partner_response.get("response_text_ar")
+                else:
+                    message = partner_response.get("response_text")
+
+                err_obj = {
+                    "message": message,
+                    "code": self.response_data.get("code")
+                }
+                return {"errors": err_obj}, self.NEQATY_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in Neqaty point balance api: {}".format(e)
@@ -165,7 +181,21 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             self.transaction_id = self.transaction_obj.transaction_id
             redeem_code = data.get('redeem_code')
             data.pop('transaction_obj')
+            brand_calculations = self.transaction_obj.brand_calculations
+            updated_brand_calculations = self.update_brand_calculations(
+                brand_calculations, redeem_code)
             self.request_data = data
+
+            redemption_details = {
+                "redeemed_points": updated_brand_calculations.get(
+                    "redeemPoints"),
+                "redeemed_amount": updated_brand_calculations.get(
+                    "redeemAmount"),
+                "payable_amount": updated_brand_calculations.get(
+                    "sum_card_payment_amount")
+            }
+            data.update(redemption_details)
+
             logger.info(
                 "Youpay sending request data to neqaty generate otp api "
                 "is {}".format(data))
@@ -180,10 +210,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.info("neqaty payment response: {}".format(
                     response_data))
                 self.response_data = response_data
-
-                brand_calculations = self.transaction_obj.brand_calculations
-                updated_brand_calculations = self.update_brand_calculations(
-                    brand_calculations, redeem_code)
 
                 updated_dict = {
                     'transaction_id': self.transaction_obj.transaction_id,
@@ -265,14 +291,16 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     logger.error("Error in neqaty redeem point api, {}"
                                  "".format(response.text))
                     self.response_data = response.json()
+                    partner_response = self.response_data.get(
+                        "partner_response")
                     if language == LANGUAGE_CODE_AR:
-                        message = self.response_data.get("response_text_ar")
+                        message = partner_response.get("response_text_ar")
                     else:
-                        message = self.response_data.get("response_text")
+                        message = partner_response.get("response_text")
 
                     err_obj = {
                         "message": message,
-                        "code": self.response_data.get("response_code"),
+                        "code": self.response_data.get("code"),
                         "is_full_redemption": self.response_data.get(
                             "is_full_redemption")
                     }
