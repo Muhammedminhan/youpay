@@ -56,9 +56,7 @@ class NeqatyPointBalanceAPIView(APIView, YouPayTransactionCRUD):
                     )
                     return Response(data, status=status.HTTP_200_OK)
                 else:
-                    data = self.response_obj.get_error_dict(
-                        error_code=code)
-                    return Response(data,
+                    return Response(response_data,
                                     status=status.HTTP_400_BAD_REQUEST)
 
             else:

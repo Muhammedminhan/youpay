@@ -82,6 +82,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             self.transaction_obj = request_data.get('transaction_obj')
             self.transaction_id = str(self.transaction_obj.transaction_id)
+            language = self.transaction_obj.language
 
             is_updated = update_brand_details(
                 self.transaction_obj)
@@ -112,6 +113,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             response = requests.post(url, data=payload, headers=headers)
             logger.info("Response from Neqaty point balance api {}"
                         "".format(response))
+            breakpoint()
             if response:
                 response_data = response.json()
                 self.response_data = response_data
@@ -136,10 +138,23 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 })
                 return formatted_response, self.SUCCESS
 
-            logger.error("Error in Neqaty point balance api, {}"
-                         "".format(response.text))
-            self.response_data = response.json()
-            return {"error": response.text}, self.NEQATY_CONNECTION_ERROR
+
+            else:
+                logger.error("Error in Neqaty point balance api, {}"
+                             "".format(response.text))
+                self.response_data = response.json()
+                partner_response = self.response_data.get(
+                    "partner_response")
+                if language == LANGUAGE_CODE_AR:
+                    message = partner_response.get("response_text_ar")
+                else:
+                    message = partner_response.get("response_text")
+
+                err_obj = {
+                    "message": message,
+                    "code": self.response_data.get("code")
+                }
+                return {"errors": err_obj}, self.NEQATY_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in Neqaty point balance api: {}".format(e)
@@ -265,14 +280,16 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     logger.error("Error in neqaty redeem point api, {}"
                                  "".format(response.text))
                     self.response_data = response.json()
+                    partner_response = self.response_data.get(
+                        "partner_response")
                     if language == LANGUAGE_CODE_AR:
-                        message = self.response_data.get("response_text_ar")
+                        message = partner_response.get("response_text_ar")
                     else:
-                        message = self.response_data.get("response_text")
+                        message = partner_response.get("response_text")
 
                     err_obj = {
                         "message": message,
-                        "code": self.response_data.get("response_code"),
+                        "code": self.response_data.get("code"),
                         "is_full_redemption": self.response_data.get(
                             "is_full_redemption")
                     }
