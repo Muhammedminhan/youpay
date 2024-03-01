@@ -75,7 +75,7 @@ class ConfigViewSet(ViewSet):
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
             session_key = self.get_session_key(request)
-            if transaction and self.check_user_session(transaction,
+            if transaction and self.check_browser_session(transaction,
                                                        session_key):
                 logger.info(
                     "Initial session_key is {}  and browser value is {}"
@@ -468,7 +468,7 @@ class ConfigViewSet(ViewSet):
             session_key = decrypt_browser_value(session_key)
         return session_key
 
-    def check_user_session(self, transaction, session_key):
+    def check_browser_session(self, transaction, session_key):
         logger.info("User session check browser value {}, session key {}"
                     "".format(transaction.browser_value, session_key))
         if transaction.browser_value:
