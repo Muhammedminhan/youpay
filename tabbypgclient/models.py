@@ -80,22 +80,23 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
                 "Error while trying to update youpay transaction from "
                 "TabbyPaymentData signal {}".format(e),exc_info=e)
     else:
-        if payment_status == PAYMENT_STATUS_NONE:
+        if instance.status == PAYMENT_STATUS_NONE:
             logger.info(
                 "Skipped updating Youpaytransactiondata with tabbbypg status "
                 "None for transaction {}".format(instance.payment_reference))
         else:
             logger.error(
                 "Unable to update youpay transaction for reference {}, tabby"
-                "payment status is {}".format(
+                " payment status is {}".format(
                     instance.payment_reference, instance.status))
 
 
 def tabby_to_youpay_status(tabbypg_status):
     payment_status = TABBY_YOUPAY_STATUS_DICT.get(tabbypg_status)
     if not payment_status:
-        payment_status = None
+        if tabbypg_status == PAYMENT_STATUS_NONE:
+            payment_status = None
         logger.info(
             "Error status at tabbypgclient while trying to update "
-            "youpaytransactiondata response {}".format(tabbypg_status))
+            "youpaytransactiondata, status {}".format(tabbypg_status))
     return payment_status

@@ -45,8 +45,10 @@ PURCHASE_PLATFORM_CHOICES = (
     (PURCHASE_PLATFORM_ANDROID, _('Android')),
     (PURCHASE_PLATFORM_IOS, _('IOS')),
 )
-
-#tabby payment statuses and their equivalent youpay statuses
+"""
+tabby payment statuses and their equivalent youpay statuses for webhooks, 
+remove key-value pair if status update not required at youpaytransactiondata
+"""
 TABBY_YOUPAY_STATUS_DICT = {
     PAYMENT_STATUS_AUTHORIZED: YOUPAY_STATUS_AUTHORIZED,
     PAYMENT_STATUS_REFUNDED: YOUPAY_STATUS_REFUNDED,
