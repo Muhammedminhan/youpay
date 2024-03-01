@@ -216,6 +216,9 @@ class YouPayResponse(object):
     def get_400_message(self, message):
         return {'errors': {'code': 400, 'message': message}}
 
+    def get_403_message(self, message):
+        return {'errors': {'code': 403, 'message': message}}
+
     def get_404_message(self, message):
         return {'errors': {'code': 404, 'message': message}}
 
