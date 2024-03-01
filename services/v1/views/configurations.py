@@ -75,8 +75,8 @@ class ConfigViewSet(ViewSet):
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
             session_key = self.get_session_key(request)
-            if transaction and self.check_browser_session(transaction,
-                                                       session_key):
+            if transaction and self.check_browser_session(
+                    transaction, session_key):
                 logger.info(
                     "Initial session_key is {}  and browser value is {}"
                     "".format(session_key,
@@ -385,16 +385,19 @@ class ConfigViewSet(ViewSet):
             browser_value = encrypt_browser_value(browser_value)
         else:
             browser_value = ''.join(random.choice(letters) for i in range(15))
-            count = YouPayTransactionData.objects.filter(
-                transaction_id=transaction_obj.transaction_id).update(
-                browser_value=browser_value)
-            logger.info("first returned browser value is "
-                        "{}".format(browser_value))
-            browser_value = encrypt_browser_value(browser_value)
-            if count == 0:
+            try:
+                browser_value_transaction = YouPayTransactionData.objects.get(
+                    transaction_id=transaction_obj.transaction_id)
+                browser_value_transaction.browser_value = browser_value
+                browser_value_transaction.save()
+                logger.info("first returned browser value is {}".format(
+                    browser_value))
+                browser_value = encrypt_browser_value(browser_value)
+            except YouPayTransactionData.DoesNotExist:
                 browser_value = None
-        logger.info("returned encrypted browser value is "
-                    "{}".format(browser_value))
+        if browser_value:
+            logger.info("returned encrypted browser value is {}".format(
+                browser_value))
         return browser_value
 
     def check_citi_allowed_denominations(self, payment_option, transaction):
@@ -457,11 +460,11 @@ class ConfigViewSet(ViewSet):
         return adcb_config
 
     def get_session_key(self, request):
-        cookies = request.COOKIES
-        logger.info("request cookies {}".format(cookies))
-        logger.info("cookie keys {}".format(request.COOKIES.keys()))
         session_key = request.COOKIES.get('sessionkey')
-        logger.info("cookie session key  {}".format(session_key))
+        logger.info(
+            "request cookies value is {}, cookie keys are {}, cookie session "
+            "key is {}".format(
+                request.COOKIES, request.COOKIES.keys(), session_key))
         if session_key == 'null':
             session_key = None
         else:
