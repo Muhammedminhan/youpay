@@ -23,7 +23,9 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_REJECTED_RETRY,
                                 PAYMENT_METHOD_QITAF,
-                                PAYMENT_METHOD_QITAFAND_CARD)
+                                PAYMENT_METHOD_QITAFAND_CARD,
+                                PAYMENT_METHOD_NEQATY_AND_CARD,
+                                PAYMENT_METHOD_NEQATY)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -130,6 +132,14 @@ class YouPayTransactionCRUD(object):
         data_dict['available_amount'] = data.get('available_amount', None)
         data_dict['available_points'] = data.get('available_points', None)
         data_dict['is_full_redemption'] = data.get('is_full_redemption', None)
+        data_dict['point_collection_enabled'] = data.get(
+            'point_collection_enabled', None)
+        data_dict['points_collected_mobile_number'] = data.get(
+            'points_collected_mobile_number', None)
+        data_dict['points_redeemed_mobile_number'] = data.get(
+            'points_redeemed_mobile_number', None)
+        data_dict['points_collection_enabled_program'] = data.get(
+            'points_collection_enabled_program', None)
 
         data_dict['additional_vat'] = data.get('additional_vat', None)
         data_dict['additional_processing_fee'] = (
@@ -166,7 +176,9 @@ class YouPayTransactionCRUD(object):
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
-                                           PAYMENT_METHOD_QITAFAND_CARD]:
+                                           PAYMENT_METHOD_QITAFAND_CARD,
+                                           PAYMENT_METHOD_NEQATY_AND_CARD,
+                                           PAYMENT_METHOD_NEQATY]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
             service_fee = data.get('service_fee', None)
