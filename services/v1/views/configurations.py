@@ -7,8 +7,8 @@ from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string, get_gateway_additional_fee
-from integrations.constants import ADCB_CLIENT_CODE, QITAF_CLIENT_CODE, \
-    NEQATY_CLIENT_CODE
+from integrations.constants import (ADCB_CLIENT_CODE, QITAF_CLIENT_CODE,
+                                    NEQATY_CLIENT_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager

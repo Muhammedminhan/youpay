@@ -19,7 +19,7 @@ from integrations.constants import (
     NEQATY_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     NEQATY_CLIENT_CODE, CHECKOUTPG_PAYMENT_CONFIGURATIONS,
     CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API, CONTENT_TYPE_HEADERS,
-    PAYMENT_REQUEST_VERIFY, )
+    PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY, )
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
                                 PAYMENT_STATUS_DECLINED_RETRY,
@@ -283,7 +283,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     response_data = self.handle_neqaty_response(
                         response_data, self.transaction_obj)
                     return response_data, self.SUCCESS
-                elif response.status_code == 403:
+                elif response.status_code == status.HTTP_403_FORBIDDEN:
                     msg = "Neqaty Forbidden, or partial redemption not supported"
                     logger.error("{}, {}".format(msg, response.text))
                     return {"errors": msg}, self.NEQATY_NOT_SUPPORTED
@@ -363,7 +363,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 app_config=get_app_config(),
                 params=('?id=' + self.request_data.get("encrypted_id") +
                         "&redemption_reference_id=" + transaction_data.get(
-                            "payment_reference") + "&redemption_partner=NEQATY"),
+                            "payment_reference") + "&redemption_partner=" +
+                        REDEMPTION_PARTNER_NEQATY),
                 code=NEQATY_CLIENT_CODE,
             ),
             "invoice_id": self.transaction_obj.invoice_id,
@@ -382,28 +383,30 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
         is_full_redemption = response_data.get("partner_response").get(
             "is_full_redemption", False)
-        if is_full_redemption is False:
-            # Handle neqaty partial redemption response
-            redirect_url = response_data.get('partner_response', {}).get(
-                'url')
-            is_success = True
-            is_redirect = True
-            self.payment_status = PAYMENT_STATUS_PENDING
-            self.is_neqaty_enabled = True
-        else:
-            """Handle neqaty full redemption response"""
-            if response_data.get('code') == 1000:
+        redemption_status = response_data.get("partner_response").get(
+            "redemption_status", False)
+        name_on_card = ""
+
+        if redemption_status:
+            if is_full_redemption is False:
+                # Handle neqaty partial redemption response
+                redirect_url = response_data.get('partner_response', {}).get(
+                    'url')
+                is_success = True
+                is_redirect = True
+                self.payment_status = PAYMENT_STATUS_PENDING
+                name_on_card = response_data.get("partner_response").get(
+                    "checkout_response_data").get("customer").get("name")
+            else:
                 '''Neqaty full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
                 self.approved = True
 
                 redirect_url = ('{}?transaction_id={}'.format(
-                    payment_data.success_url, payment_data.transaction_id))
+                    payment_data.success_url,
+                    payment_data.transaction_id))
                 is_success, is_redirect = True, True
-            else:
-                '''Neqaty full redemption Failure case'''
-                self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
-                is_redirect = False
+
         self.payment_method = (
             PAYMENT_METHOD_NEQATY if is_full_redemption
             else PAYMENT_METHOD_NEQATY_AND_CARD)
@@ -417,7 +420,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "approved": self.approved,
                 "response_summary": response_data.get(
                     'reason'),
-                "payment_method": self.payment_method
+                "payment_method": self.payment_method,
+                "name_on_card": name_on_card
             }
         }
         update_data.update(youpay_update_data)
@@ -469,7 +473,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                             "data ---> {},".format(url, request_data,
                                                    response.text))
                 return_response_data = {}
-                if response.status_code == 200:
+                if response.status_code == status.HTTP_200_OK:
                     """Redemption verified successfully"""
                     logger.info(
                         "Neqaty Verification with b2c completed for "
@@ -487,7 +491,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     is_gcc_card = response_data.get("is_gcc_card", False)
                     payment_status = PAYMENT_STATUS_PAID
                     return_response_data[IS_SUCCESS] = True
-
+                    card_last4 = response_data.get("card_last4")
+                    card_bin = response_data.get("card_bin")
+                    card_issuer_country = response_data.get(
+                        "card_issuer_country")
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED_RETRY
@@ -498,6 +505,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     is_flagged = False
                     is_gcc_card = False
                     response_data = response.json()
+                    card_last4 = response_data.get("card_last4", "")
+                    card_bin = response_data.get("card_bin", "")
+                    card_issuer_country = response_data.get(
+                        "card_issuer_country", "")
 
                 return_response_data["payment_status"] = payment_status
                 self.create_youpay_to_payment_gateways_data(
@@ -515,7 +526,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_flagged': is_flagged,
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
-                    'earned_point': reward
+                    'card_last4': card_last4,
+                    'card_bin': card_bin,
+                    'card_issuer_country': card_issuer_country,
                 }
 
                 logger.info("Neqaty Verification with b2c completed for "
