@@ -22,9 +22,8 @@ from integrations.constants import (
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY, )
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
-                                PAYMENT_STATUS_DECLINED_RETRY,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_STATUS_PAID)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
@@ -473,7 +472,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                             "data ---> {},".format(url, request_data,
                                                    response.text))
                 return_response_data = {}
-                if response.status_code == status.HTTP_200_OK:
+                if response.status_code == status.HTTP_200_OK and (
+                        response.json().get(
+                            "status").lower == PAYMENT_STATUS_PAID):
                     """Redemption verified successfully"""
                     logger.info(
                         "Neqaty Verification with b2c completed for "
@@ -497,10 +498,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         "card_issuer_country")
                 else:
                     """Redemption failed"""
-                    payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                    payment_status = PAYMENT_STATUS_DECLINED
                     return_response_data[IS_SUCCESS] = False
-                    return_response_data['is_redirect'] = False
-                    return_response_data['redirect_url'] = None
+                    return_response_data['is_redirect'] = True
+                    return_response_data['redirect_url'] = (
+                            transaction_obj.failure_url +
+                            '?transaction_id=' + transaction_id)
                     approved = False
                     is_flagged = False
                     is_gcc_card = False
