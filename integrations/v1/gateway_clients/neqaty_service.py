@@ -512,6 +512,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     card_bin = response_data.get("card_bin", "")
                     card_issuer_country = response_data.get(
                         "card_issuer_country", "")
+                    return_response_data['message'] = response_data.get(
+                        "response_summary", "")
 
                 return_response_data["payment_status"] = payment_status
                 self.create_youpay_to_payment_gateways_data(
