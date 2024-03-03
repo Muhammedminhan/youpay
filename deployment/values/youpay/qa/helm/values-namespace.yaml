@@ -1,7 +1,7 @@
 namespace:
   - name: 'youpay-[JIRA_ID]'
     annotations:
-      field.cattle.io/projectId: 'c-m-c8fjq2ms:p-v4s75'
+      field.cattle.io/projectId: 'c-m-mwl52l26:p-7zg4x'
 
     resource_quota_disabled:
       requests.cpu: "3340m"
