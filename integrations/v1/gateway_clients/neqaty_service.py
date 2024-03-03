@@ -474,7 +474,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 return_response_data = {}
                 if response.status_code == status.HTTP_200_OK and (
                         response.json().get(
-                            "status").lower == PAYMENT_STATUS_PAID):
+                            "status").lower() == PAYMENT_STATUS_PAID):
                     """Redemption verified successfully"""
                     logger.info(
                         "Neqaty Verification with b2c completed for "
