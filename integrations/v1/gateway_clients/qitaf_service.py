@@ -2,6 +2,7 @@ import json
 import logging
 
 import requests
+from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
                             REQUEST_METHOD_GET)
@@ -26,7 +27,7 @@ from payments.constants import (PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_DECLINED_RETRY,
                                 PAYMENT_STATUS_PENDING, PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_QITAFAND_CARD,
-                                LANGUAGE_CODE_AR)
+                                LANGUAGE_CODE_AR, PAYMENT_STATUS_DECLINED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.constants import (B2C_PAYBACK_YOUPAY_PRODUCT_CODE,
@@ -540,7 +541,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                             "data ---> {},".format(url, formatted_data,
                                                    response.text))
                 return_response_data = {}
-                if response.status_code == 200:
+                if response.status_code == status.HTTP_200_OK and (
+                        response.json().get(
+                            "status").lower == PAYMENT_STATUS_PAID):
                     """Redemption verified successfully"""
                     logger.info(
                         "Qitaf Verification with b2c completed for "
@@ -576,10 +579,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                         reward = qitaf_reward
                 else:
                     """Redemption failed"""
-                    payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                    payment_status = PAYMENT_STATUS_DECLINED
                     return_response_data[IS_SUCCESS] = False
-                    return_response_data['is_redirect'] = False
-                    return_response_data['redirect_url'] = None
+                    return_response_data['is_redirect'] = True
+                    return_response_data['redirect_url'] = (
+                            transaction_obj.failure_url +
+                            '?transaction_id=' + transaction_id)
                     approved = False
                     is_flagged = False
                     is_gcc_card = False
