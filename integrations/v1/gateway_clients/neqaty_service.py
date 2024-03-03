@@ -468,9 +468,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 request_data.pop("transaction_id")
                 response = requests.get(url, params=request_data,
                                         headers=CONTENT_TYPE_HEADERS)
-                logger.info("Response from neqaty verify api : {}, params {} "
-                            "data ---> {},".format(url, request_data,
-                                                   response.text))
+
                 return_response_data = {}
                 if response.status_code == status.HTTP_200_OK and (
                         response.json().get(

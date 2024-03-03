@@ -537,9 +537,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
                                         headers=QITAF_HEADERS)
-                logger.info("Response from qitaf verify api : {}, params {} "
-                            "data ---> {},".format(url, formatted_data,
-                                                   response.text))
+
                 return_response_data = {}
                 if response.status_code == status.HTTP_200_OK and (
                         response.json().get(
