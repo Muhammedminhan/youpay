@@ -465,12 +465,16 @@ class ConfigViewSet(ViewSet):
             "request cookies value is {}, cookie keys are {}, cookie session "
             "key is {}".format(
                 request.COOKIES, request.COOKIES.keys(), session_key))
-        if session_key == 'null':
+        try:
+            if session_key in ['null', 'undefined', None, 'None', 'none']:
+                session_key = None
+            else:
+                session_key = decrypt_browser_value(session_key)
+        except Exception as e:
+            logger.error("Error occurred during resolving session key",
+                         exc_info=e)
             session_key = None
-        else:
-            session_key = decrypt_browser_value(session_key)
         return session_key
-
     def check_browser_session(self, transaction, session_key):
         logger.info("User session check browser value {}, session key {}"
                     "".format(transaction.browser_value, session_key))
