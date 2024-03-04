@@ -74,13 +74,12 @@ class ConfigViewSet(ViewSet):
         try:
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
-            session_key = self.get_session_key(request)
-            if transaction and self.check_browser_session(
-                    transaction, session_key):
-                logger.info(
-                    "Initial session_key is {}  and browser value is {}"
-                    "".format(session_key,
-                              transaction.browser_value))
+            # session_key = self.get_session_key(request)
+            if transaction:
+                # logger.info(
+                #     "Initial session_key is {}  and browser value is {}"
+                #     "".format(session_key,
+                #               transaction.browser_value))
                 # Redirect to success url if transaction is already paid
                 if transaction.payment_status in self.list_failure_statuses:
                     return_response = self.retrieve_response(
@@ -249,7 +248,7 @@ class ConfigViewSet(ViewSet):
             if redirect_url:
                 redirect_url = (redirect_url + '?transaction_id=' +
                                 str(transaction.transaction_id))
-            sessionkey = self.get_browser_value(transaction)
+            # sessionkey = self.get_browser_value(transaction)
 
         response_data = {
             "data": {
@@ -281,8 +280,7 @@ class ConfigViewSet(ViewSet):
                 "announcements": announcements_dict,
 
                 "is_guest": is_guest,
-                "allow_aed_converted_amount": aed_amount_flag,
-                "sessionkey": sessionkey
+                "allow_aed_converted_amount": aed_amount_flag
             },
         }
 
@@ -465,12 +463,16 @@ class ConfigViewSet(ViewSet):
             "request cookies value is {}, cookie keys are {}, cookie session "
             "key is {}".format(
                 request.COOKIES, request.COOKIES.keys(), session_key))
-        if session_key == 'null':
+        try:
+            if session_key in ['null', 'undefined', None, 'None', 'none']:
+                session_key = None
+            else:
+                session_key = decrypt_browser_value(session_key)
+        except Exception as e:
+            logger.error("Error occurred during resolving session key",
+                         exc_info=e)
             session_key = None
-        else:
-            session_key = decrypt_browser_value(session_key)
         return session_key
-
     def check_browser_session(self, transaction, session_key):
         logger.info("User session check browser value {}, session key {}"
                     "".format(transaction.browser_value, session_key))
