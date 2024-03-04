@@ -272,7 +272,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
                 response = requests.post(url, data=json.dumps(payload),
                                          headers=headers)
-
                 response_data, code = self.handle_neqaty_point_redeem_response(
                     response,
                     self.transaction_obj)
@@ -357,9 +356,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         redemption_status = response_data.get("partner_response").get(
             "redemption_status", False)
         name_on_card = ""
+        message = self.SUCCESS
 
         if redemption_status:
-
             if is_full_redemption is False:
                 # Handle neqaty partial redemption response
                 payment_status = response_data.get("partner_response").get(
@@ -370,6 +369,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         payment_data.transaction_id))
                     is_success = False
                     is_redirect = True
+                    message = response_data.get("partner_response").get(
+                        "checkout_response_data").get("response_summary")
                     self.payment_status = PAYMENT_STATUS_DECLINED
 
                 else:
@@ -411,7 +412,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
         self.update_youpay_transaction_data(update_data)
         return_response = {
-            "message": "API request completed successfully",
+            "message": message,
             REDIRECT_URL: redirect_url,
             IS_REDIRECT: is_redirect,
             "is_success": is_success
