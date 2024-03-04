@@ -273,38 +273,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 response = requests.post(url, data=json.dumps(payload),
                                          headers=headers)
 
-                if response:
-                    response_data = response.json()
-                    self.response_data = response_data
-                    logger.info("Neqaty redeem point api response: {}".format(
-                        response_data))
-
-                    response_data = self.handle_neqaty_response(
-                        response_data, self.transaction_obj)
-                    return response_data, self.SUCCESS
-                elif response.status_code == status.HTTP_403_FORBIDDEN:
-                    msg = "Neqaty Forbidden, or partial redemption not supported"
-                    logger.error("{}, {}".format(msg, response.text))
-                    return {"errors": msg}, self.NEQATY_NOT_SUPPORTED
-                else:
-                    logger.error("Error in neqaty redeem point api, {}"
-                                 "".format(response.text))
-                    self.response_data = response.json()
-                    partner_response = self.response_data.get(
-                        "partner_response")
-                    if language == LANGUAGE_CODE_AR:
-                        message = partner_response.get("response_text_ar")
-                    else:
-                        message = partner_response.get("response_text")
-
-                    err_obj = {
-                        "message": message,
-                        "code": self.response_data.get("code"),
-                        "is_full_redemption": self.response_data.get(
-                            "is_full_redemption")
-                    }
-                    return {"errors": err_obj}, self.NEQATY_CONNECTION_ERROR
-
+                response_data, code = self.handle_neqaty_point_redeem_response(
+                    response,
+                    self.transaction_obj)
+                return response_data, code
 
             else:
                 msg = (
@@ -387,15 +359,27 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         name_on_card = ""
 
         if redemption_status:
+
             if is_full_redemption is False:
                 # Handle neqaty partial redemption response
-                redirect_url = response_data.get('partner_response', {}).get(
-                    'url')
-                is_success = True
-                is_redirect = True
-                self.payment_status = PAYMENT_STATUS_PENDING
-                name_on_card = response_data.get("partner_response").get(
-                    "checkout_response_data").get("customer").get("name")
+                payment_status = response_data.get("partner_response").get(
+                    "payment_status", False)
+                if not payment_status:
+                    redirect_url = ('{}?transaction_id={}'.format(
+                        payment_data.failure_url,
+                        payment_data.transaction_id))
+                    is_success = False
+                    is_redirect = True
+                    self.payment_status = PAYMENT_STATUS_DECLINED
+
+                else:
+                    redirect_url = response_data.get('partner_response',
+                                                     {}).get('url')
+                    is_success = True
+                    is_redirect = True
+                    self.payment_status = PAYMENT_STATUS_PENDING
+                    name_on_card = response_data.get("partner_response").get(
+                        "checkout_response_data").get("customer").get("name")
             else:
                 '''Neqaty full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
@@ -433,6 +417,54 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "is_success": is_success
         }
         return return_response
+
+    def handle_neqaty_point_redeem_response(self, response, transaction_obj):
+        if response:
+            response_data = response.json()
+            self.response_data = response_data
+            logger.info("Neqaty redeem point api response: {}".format(
+                response_data))
+
+            response_data = self.handle_neqaty_response(
+                response_data, self.transaction_obj)
+            return response_data, self.SUCCESS
+        elif response.status_code == status.HTTP_403_FORBIDDEN:
+            msg = "Neqaty Forbidden, or partial redemption not supported"
+            logger.error("{}, {}".format(msg, response.text))
+            return {"errors": msg}, self.NEQATY_NOT_SUPPORTED
+        else:
+            logger.error("Error in neqaty redeem point api, {}"
+                         "".format(response.text))
+            self.response_data = response.json()
+
+            partner_response = self.response_data.get(
+                "partner_response")
+
+            redemption_status = partner_response.get(
+                'redemption_status', False)
+
+            if not redemption_status:
+                partner_response = self.response_data.get(
+                    "partner_response")
+                language = transaction_obj.language
+                if language == LANGUAGE_CODE_AR:
+                    message = partner_response.get("response_text_ar")
+                else:
+                    message = partner_response.get("response_text")
+
+                err_obj = {
+                    "message": message,
+                    "code": self.response_data.get("code"),
+                    "is_full_redemption": self.response_data.get(
+                        "is_full_redemption")
+                }
+                return {
+                    "errors": err_obj}, self.NEQATY_CONNECTION_ERROR
+            else:
+                response_data = self.handle_neqaty_response(
+                    self.response_data, self.transaction_obj)
+
+                return response_data, self.PAYMENT_FAILED
 
     def update_brand_calculations(self, data, redeem_code):
         for item in data:
