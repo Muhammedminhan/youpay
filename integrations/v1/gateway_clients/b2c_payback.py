@@ -1,5 +1,6 @@
 import json
 import logging
+
 import requests
 from rest_framework import status
 
@@ -262,7 +263,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 b2c_gateway_obj = get_payment_gateway_config(
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
                 b2c_payback_domain = b2c_gateway_obj.domain
-                url = b2c_payback_domain + ADCB_VERIFY_API
+                url = (b2c_payback_domain + ADCB_VERIFY_API +
+                       "?&redemption_partner=ADCB")
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
                                         headers=ADCB_HEADERS)
