@@ -8,6 +8,9 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
+from core.utils import decrypt_string, get_gateway_additional_fee
+from integrations.constants import (ADCB_CLIENT_CODE, QITAF_CLIENT_CODE,
+                                    NEQATY_CLIENT_CODE)
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         encrypt_browser_value, decrypt_browser_value)
 from integrations.models import PaymentGateway
@@ -22,25 +25,23 @@ from payments.constants import (
     PAYMENT_OPTION_CHECKOUT_APPLEPAY,
     PAYMENT_OPTION_PAYPAL, PAYMENT_OPTION_CITI_REWARDS, PAYMENT_OPTION_QITAF,
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
-    PAYMENT_OPTION_CHECKOUT_SAVED_CARD, PAYMENT_OPTION_ADCB,
+    PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
+    PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY
 )
 from payments.models import YouPayTransactionData
-from services.constants import (
-    APPLEPAY_SUPPORTED_NETWORKS,
-    APPLEPAY_MERCHANT_CAPABILITIES,
-    APPLEPAY_LABEL,
-)
+from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
+                                APPLEPAY_MERCHANT_CAPABILITIES,
+                                APPLEPAY_LABEL)
 from services.constants import TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
-from services.v1.views.utils import (
-    get_announcements,
-    get_session_id_from_header,
-    get_country_for_configuration,
-    get_client_for_configuration,
-    get_payment_methods,
-)
+from services.v1.views.utils import (get_announcements,
+                                     get_session_id_from_header,
+                                     get_country_for_configuration,
+                                     get_client_for_configuration,
+                                     get_payment_methods
+                                     )
 
 logger = logging.getLogger(__name__)
 
@@ -131,19 +132,18 @@ class ConfigViewSet(ViewSet):
                         payment_options)
                     applepay_config = (
                         self.get_applepay_config(payment_options))
-                    qitaf_config = self.get_qitaf_config(
-                        payment_options, transaction,
-                        partial_redemption_allowed_options,
-                    )
+                    b2c_configs = self.get_b2c_config(payment_options,
+                                                      transaction,
+                                                      partial_redemption_allowed_options)
+                    qitaf_config = b2c_configs.get('qitaf_config', {})
                     citi_config = self.check_citi_allowed_denominations(
                         payment_options,
                         transaction)
                     tabbypg_config = self.get_tabby_conf(payment_options)
                     checkout_config = self.get_checkout_config(
                         payment_options, transaction)
-                    adcb_config = self.get_adcb_config(
-                        payment_options, transaction,
-                        partial_redemption_allowed_options)
+                    adcb_config = b2c_configs.get('adcb_config', {})
+                    neqaty_config = b2c_configs.get('neqaty_config', {})
 
                     response_data = self.retrieve_response(
                         api_client=api_client,
@@ -156,6 +156,7 @@ class ConfigViewSet(ViewSet):
                         announcements_dict=announcements_dict,
                         paypal_config=paypal_config,
                         qitaf_config=qitaf_config,
+                        neqaty_config=neqaty_config,
                         citi_config=citi_config,
                         allow_aed_amount=(
                             transaction.api_client.allow_aed_converted_amount)
@@ -203,6 +204,7 @@ class ConfigViewSet(ViewSet):
         paypal_config = kwargs.get('paypal_config', None)
         qitaf_config = kwargs.get('qitaf_config', None)
         citi_config = kwargs.get('citi_config', None)
+        neqaty_config = kwargs.get('neqaty_config', None)
         aed_amount_flag = kwargs.get('allow_aed_amount', False)
 
         amount = None
@@ -259,6 +261,7 @@ class ConfigViewSet(ViewSet):
                 "tabbypg_config": tabbypg_config,
                 "applepay_config": applepay_config,
                 "paypal_config": paypal_config,
+                "neqaty_config": neqaty_config,
 
                 "amount": amount,
                 "currency": currency,
@@ -457,6 +460,61 @@ class ConfigViewSet(ViewSet):
                     'partial_redemption_allowed'] = partial_redemption_allowed
         return adcb_config
 
+    def get_b2c_config(self, payment_option, transaction,
+                       partial_redemption_allowed_options):
+        adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
+        qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
+        neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
+        config_dict = {}
+        if True in [adcb_enabled, qitaf_enabled, neqaty_enabled]:
+            b2c_payback_obj = B2CPaybackManager()
+            b2c_config = b2c_payback_obj.get_configurations(
+                transaction.amount, transaction.currency,
+                transaction.transaction_id)
+            config_list = b2c_config.get("results")
+            if adcb_enabled:
+                adcb_config = self.get_each_b2c_config(config_list,
+                                                       ADCB_CLIENT_CODE)
+                partial_redemption_allowed = (
+                    partial_redemption_allowed_options.get(
+                        PAYMENT_OPTION_ADCB, False))
+                adcb_config[
+                    'partial_redemption_allowed'] = partial_redemption_allowed
+                config_dict['adcb_config'] = adcb_config
+
+            if qitaf_enabled:
+                partial_redemption_allowed = (
+                    partial_redemption_allowed_options.get(
+                        PAYMENT_OPTION_QITAF, False))
+                qitaf_config = self.get_each_b2c_config(config_list,
+                                                        QITAF_CLIENT_CODE)
+                additional_config = {
+                    'qitaf_phone_number': transaction.qitaf_phone_number,
+                    'is_qitaf_enabled': transaction.is_qitaf_enabled,
+                    'partial_redemption_allowed': partial_redemption_allowed
+                }
+                qitaf_config.update(additional_config)
+                config_dict['qitaf_config'] = qitaf_config
+
+            if neqaty_enabled:
+                partial_redemption_allowed = (
+                    partial_redemption_allowed_options.get(
+                        PAYMENT_OPTION_QITAF, False))
+                neqaty_config = self.get_each_b2c_config(config_list,
+                                                         NEQATY_CLIENT_CODE)
+                additional_config = {
+                    'partial_redemption_allowed': partial_redemption_allowed
+                }
+                neqaty_config.update(additional_config)
+                config_dict['neqaty_config'] = neqaty_config
+        return config_dict
+
+    def get_each_b2c_config(self, config_list, payment_method_code):
+        for config in config_list:
+            if config["code"] == payment_method_code:
+                return config
+        return {}
+
     def get_session_key(self, request):
         session_key = request.COOKIES.get('sessionkey')
         logger.info(
@@ -483,7 +541,6 @@ class ConfigViewSet(ViewSet):
                 return False
         else:
             return True
-
 
 
 class ClientStaticFilesAPI(APIView):

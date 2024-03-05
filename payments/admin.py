@@ -85,7 +85,12 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('B2C Payback transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
-                       'is_full_redemption', 'maximum_redeemable_points',
+                       'is_full_redemption', 'earned_point',
+                       'points_collected_mobile_number',
+                       'points_redeemed_mobile_number',
+                       'points_collection_enabled_program',
+                       'point_collection_enabled',
+                       'maximum_redeemable_points',
                        'minimum_redeemable_points', 'amount_conversion_rate',
                        'citi_order_id', 'citi_phone_number'
                        )
@@ -102,13 +107,13 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'additional_total_amount',
                        )
         }),
-        ('Quitaf transaction details', {
+        ('Qitaf transaction details', {
             'fields': ('qitaf_phone_number', 'is_qitaf_enabled',
                        )
         }),
         ('Other Details', {
             'fields': ('retry_count', 'session_id', 'browser_value',
-                       'loyalty_level', 'earned_point', 'created_at',
+                       'loyalty_level', 'created_at',
                        'updated_at'
                        )
         }),
@@ -127,8 +132,9 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
 
 class AnnouncementAdmin(AdminAbstract):
     form = AnnouncementForm
-    list_display = ('gateway', 'payment_option', 'offer_message', 'platform', 'is_active',
-                    'created_at', 'updated_at')
+    list_display = (
+        'gateway', 'payment_option', 'offer_message', 'platform', 'is_active',
+        'created_at', 'updated_at')
     search_fields = ('gateway__gateway_name', 'offer_message', 'platform')
     list_filter = ('created_at', 'gateway__gateway_name', 'is_active',
                    'platform')
@@ -227,10 +233,14 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
             'fields': ('is_fraud', 'is_flagged',
                        )
         }),
-        ('ADCB transaction details', {
+        ('B2C Payback transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
-                       'is_full_redemption',
+                       'is_full_redemption', 'earned_point',
+                       'points_collected_mobile_number',
+                       'points_redeemed_mobile_number',
+                       'points_collection_enabled_program',
+                       'point_collection_enabled',
                        )
         }),
         ('CITI transaction details', {
@@ -253,7 +263,7 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Other Details', {
             'fields': ('retry_count', 'session_id', 'loyalty_level',
-                       'earned_point', 'created_at', 'updated_at',
+                       'created_at', 'updated_at',
                        'archived_at'
                        )
         }),
