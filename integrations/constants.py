@@ -110,7 +110,7 @@ ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
 ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
 ADCB_VERIFY_API = "/payback/api/v1/verify"
 
-ADCB_HEADERS = {'Content-Type': 'application/json'}
+CONTENT_TYPE_HEADERS = {'Content-Type': 'application/json'}
 
 ADCB_CLIENT_CODE = 'ADCBTP'
 ADCB_TOKEN_TYPE = "card"
@@ -175,6 +175,14 @@ QITAF_REVERSE_POINTS_API = "/qitaf/api/v1/burn/reverse-qitafpoints/"
 QITAF_REWARD_UPDATE_API = "/qitaf/api/v1/collect/reward-update/"
 QITAF_VERIFY_API = "/qitaf/api/v1/verify/"
 QITAF_CALCULATE_BALANCE_API = "/qitaf/api/v1/calculate-balance/"
+QITAF_CLIENT_CODE = 'PMTQTF'
 
 QITAF_HEADERS = {'Content-Type': 'application/json'}
 
+# Neqaty related constants
+NEQATY_CLIENT_CODE = 'PAYMTNQTI'
+NEQATY_POINT_BALANCE_API = "/payback/api/v1/touchpoint/check-point-balance/"
+NEQATY_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
+NEQATY_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"
+NEQATY_VERIFY_API = "/payback/api/v1/verify"
+REDEMPTION_PARTNER_NEQATY = "NEQATY"
