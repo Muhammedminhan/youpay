@@ -269,7 +269,8 @@ class UpdateNeqatyPhoneNumber(APIView, YouPayTransactionCRUD):
                 data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'points_collected_mobile_number': neqaty_phone_number,
-                    'points_collection_enabled_program': PAYMENT_METHOD_NEQATY
+                    'points_collection_enabled_program': PAYMENT_METHOD_NEQATY,
+                    'point_collection_enabled': True
                 }
                 neqaty_service = NeqatyServiceManager()
                 result = neqaty_service.update_points_collected_mobile_number(
