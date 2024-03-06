@@ -272,39 +272,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
                 response = requests.post(url, data=json.dumps(payload),
                                          headers=headers)
-
-                if response:
-                    response_data = response.json()
-                    self.response_data = response_data
-                    logger.info("Neqaty redeem point api response: {}".format(
-                        response_data))
-
-                    response_data = self.handle_neqaty_response(
-                        response_data, self.transaction_obj)
-                    return response_data, self.SUCCESS
-                elif response.status_code == status.HTTP_403_FORBIDDEN:
-                    msg = "Neqaty Forbidden, or partial redemption not supported"
-                    logger.error("{}, {}".format(msg, response.text))
-                    return {"errors": msg}, self.NEQATY_NOT_SUPPORTED
-                else:
-                    logger.error("Error in neqaty redeem point api, {}"
-                                 "".format(response.text))
-                    self.response_data = response.json()
-                    partner_response = self.response_data.get(
-                        "partner_response")
-                    if language == LANGUAGE_CODE_AR:
-                        message = partner_response.get("response_text_ar")
-                    else:
-                        message = partner_response.get("response_text")
-
-                    err_obj = {
-                        "message": message,
-                        "code": self.response_data.get("code"),
-                        "is_full_redemption": self.response_data.get(
-                            "is_full_redemption")
-                    }
-                    return {"errors": err_obj}, self.NEQATY_CONNECTION_ERROR
-
+                response_data, code = self.handle_neqaty_point_redeem_response(
+                    response,
+                    self.transaction_obj, self.request_data)
+                return response_data, code
 
             else:
                 msg = (
@@ -373,7 +344,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         }
         return redeem_payload
 
-    def handle_neqaty_response(self, response_data, payment_data):
+    def handle_neqaty_response(self, response_data, payment_data,
+                               request_data):
         youpay_update_data = {}
         logger.info(
             "handle_neqaty_response data {}".format(response_data))
@@ -385,17 +357,30 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         redemption_status = response_data.get("partner_response").get(
             "redemption_status", False)
         name_on_card = ""
+        message = self.SUCCESS
 
         if redemption_status:
             if is_full_redemption is False:
-                # Handle neqaty partial redemption response
-                redirect_url = response_data.get('partner_response', {}).get(
-                    'url')
-                is_success = True
-                is_redirect = True
-                self.payment_status = PAYMENT_STATUS_PENDING
-                name_on_card = response_data.get("partner_response").get(
-                    "checkout_response_data").get("customer").get("name")
+                payment_status = response_data.get("partner_response").get(
+                    "payment_status", False)
+                if payment_status:
+                    redirect_url = response_data.get('partner_response',
+                                                     {}).get('url')
+                    is_success = True
+                    is_redirect = True
+                    self.payment_status = PAYMENT_STATUS_PENDING
+                    name_on_card = request_data.get("customer_name")
+
+                else:
+                    redirect_url = ('{}?transaction_id={}'.format(
+                        payment_data.failure_url,
+                        payment_data.transaction_id))
+                    is_success = False
+                    is_redirect = True
+                    message = response_data.get("partner_response").get(
+                        "checkout_response_data").get("response_summary")
+                    self.payment_status = PAYMENT_STATUS_DECLINED
+
             else:
                 '''Neqaty full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
@@ -427,12 +412,66 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
         self.update_youpay_transaction_data(update_data)
         return_response = {
-            "message": "API request completed successfully",
+            "message": message,
             REDIRECT_URL: redirect_url,
             IS_REDIRECT: is_redirect,
             "is_success": is_success
         }
         return return_response
+
+    def handle_neqaty_point_redeem_response(self, response, transaction_obj,
+                                            request_data):
+        if response:
+            response_data = response.json()
+            self.response_data = response_data
+            logger.info("Neqaty redeem point api response: {}".format(
+                response_data))
+
+            response_data = self.handle_neqaty_response(
+                response_data, self.transaction_obj, request_data)
+            return response_data, self.SUCCESS
+        elif response.status_code == status.HTTP_403_FORBIDDEN:
+            msg = "Neqaty Forbidden, or partial redemption not supported"
+            logger.error("{}, {}".format(msg, response.text))
+            return {"errors": msg}, self.NEQATY_NOT_SUPPORTED
+        else:
+            logger.error("Error in neqaty redeem point api, {}"
+                         "".format(response.text))
+            if hasattr(response, 'text'):
+                self.response_data = json.loads(response.text)
+
+                partner_response = self.response_data.get(
+                    "partner_response")
+
+                redemption_status = partner_response.get(
+                    'redemption_status', False)
+
+                if redemption_status:
+                    response_data = self.handle_neqaty_response(
+                        self.response_data, self.transaction_obj,
+                        request_data)
+                    return response_data, self.PAYMENT_FAILED
+                else:
+                    partner_response = self.response_data.get(
+                        "partner_response")
+                    language = transaction_obj.language
+                    if language == LANGUAGE_CODE_AR:
+                        message = partner_response.get("response_text_ar")
+                    else:
+                        message = partner_response.get("response_text")
+
+                    err_obj = {
+                        "message": message,
+                        "code": self.response_data.get("code"),
+                        "is_full_redemption": self.response_data.get(
+                            "is_full_redemption")
+                    }
+                    return {
+                        "errors": err_obj}, self.NEQATY_CONNECTION_ERROR
+            else:
+                msg = "unable to get response from b2c_payback-neqaty"
+                logger.error(msg)
+                return {"errors": msg}, self.NEQATY_CONNECTION_ERROR
 
     def update_brand_calculations(self, data, redeem_code):
         for item in data:

@@ -150,6 +150,7 @@ class NeqatyRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     'client_code': NEQATY_CLIENT_CODE,
                     "encrypted_id": request.data.get('transaction_id'),
                     "reference_id": transaction_obj.payment_reference,
+                    "customer_name": request.data.get('customer_name')
                 }
             )
             neqaty_service = NeqatyServiceManager()
