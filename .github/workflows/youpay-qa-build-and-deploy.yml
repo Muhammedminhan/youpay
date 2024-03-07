@@ -156,7 +156,8 @@ jobs:
       with:
         ref: ''
 
-    - name: Checking if branch exists
+    - name: Checking if branch exists in case of deploy or renew
+      if: inputs.action == 'renew' || inputs.action == 'deploy' || github.event.client_payload.action == 'renew' || github.event.client_payload.action == 'deploy'
       run: |
         BRANCH_EXISTS=$(git ls-remote --heads origin ${{ env.JIRA_ID }} | wc -l)
         if [[ $BRANCH_EXISTS == 0 ]]; then
@@ -338,10 +339,17 @@ jobs:
     if: ( inputs.action == 'deploy' || github.event.client_payload.action == 'deploy' || inputs.action == 'destroy' || github.event.client_payload.action == 'destroy' )
     runs-on: self-hosted
     steps:
-     - name: Checkout Code
+     - name: Checkout Code for deploy
+       if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
        uses: actions/checkout@v3.0.2
        with:
          ref: ${{ inputs.branch || github.event.client_payload.branch }}
+
+     - name: Checkout Code for destroy
+       if: inputs.action == 'destroy' || github.event.client_payload.action == 'destroy'
+       uses: actions/checkout@v3.0.2
+       with:
+         ref: main
 
      - name: Setup Dynamic env variables
        run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)-${GITHUB_RUN_ID}-qa" >> $GITHUB_ENV
