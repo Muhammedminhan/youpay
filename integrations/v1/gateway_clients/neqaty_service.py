@@ -588,3 +588,15 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Invalid transaction id ({}) received for Neqaty "
                          "verify api".format(request_transaction_id))
             return None, None
+
+    def update_points_collected_mobile_number(self, data):
+        """
+        To update neqaty phone number
+        """
+        try:
+            return self.update_youpay_transaction_data(data)
+        except Exception as e:
+            error = ("Exception in updating points_collected_mobile_number "
+                     "for Neqaty: {}").format(e)
+            logger.error(error)
+            return False
