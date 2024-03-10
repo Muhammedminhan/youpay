@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
+from core.utils import decrypt_string
 from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
@@ -235,3 +236,48 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
             errors['code'] = code
 
         return data
+
+
+class GetCollectProgramEnabled(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        logger.info("GetCollectProgramEnabled API called for {}".format(
+            request.data.get('transaction_id')))
+        try:
+            transaction_id = request.data.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+                data = {}
+                points_collection_enabled_program = (
+                    transaction_obj.points_collection_enabled_program)
+                if points_collection_enabled_program:
+                    data = {
+                        "points_collection_enabled_program": (
+                            points_collection_enabled_program)
+                    }
+                    response_data = self.response_obj.get_success_dict(
+                        code=self.response_obj.SUCCESS,
+                        success_dict=data
+                    )
+                    return Response(response_data, status=status.HTTP_200_OK)
+                else:
+                    response_data = self.response_obj.get_success_dict(
+                        code=self.response_obj.SUCCESS,
+                        success_dict=data
+                    )
+                    return Response(response_data, status=status.HTTP_200_OK)
+
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.error(
+                "Exception in GetCollectProgramEnabled API  for {}".format(
+                    request.data.get('transaction_id')))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
