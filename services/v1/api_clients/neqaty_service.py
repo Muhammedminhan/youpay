@@ -13,7 +13,8 @@ from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
 from integrations.v1.serializers.neqaty_serializer import (
     NeqatyRedemptionSerializer)
-from payments.constants import PAYMENT_METHOD_NEQATY
+from payments.constants import PAYMENT_METHOD_NEQATY, \
+    PAYMENT_METHOD_NEQATY_AND_CARD
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -299,3 +300,91 @@ class UpdateNeqatyPhoneNumber(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class NeqatyCollectPointsAPIView(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        request for handling neqaty collect points api
+        """
+        try:
+            transaction_id = request.data.get('transaction_id')
+
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+
+                response_data, code, neqaty_reward = self.collect_reward_point(
+                    transaction_obj)
+                logger.info(
+                    "Reward Point(Collect Points) API response {}, code : {},"
+                    " rewarded : {}".format(response_data, code,
+                                            neqaty_reward))
+                if response_data:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data,
+                                    status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                logger.error(
+                    "NeqatyCollectPointsAPIView : Transaction not found for {}"
+                    "".format(transaction_id))
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def collect_reward_point(self, transaction_obj):
+        if transaction_obj.payment_method in [
+            PAYMENT_METHOD_NEQATY,
+            PAYMENT_METHOD_NEQATY_AND_CARD
+        ]:
+            paid_amount = transaction_obj.payable_amount
+        else:
+            paid_amount = transaction_obj.amount
+
+        data = {
+            "mobile_number": transaction_obj.Neqaty_phone_number,
+            "transaction_obj": transaction_obj,
+            "amount": int(paid_amount),
+            "platform": transaction_obj.platform,
+        }
+
+        logger.info("NeqatyCollectPointsAPIView request data : {}".format(
+            data))
+
+        response_obj = YouPayResponse()
+
+        if transaction_obj.earned_point:
+            '''if already rewarded'''
+            logger.info(
+                "Failed for Reward point, reward already collected "
+                "for ({}), rewarded point {}".format(
+                    transaction_obj.transaction_id,
+                    transaction_obj.earned_point))
+            return None, response_obj.NEQATY_ALREADY_COLLECTED, transaction_obj.earned_point
+
+        if data["amount"] < Neqaty_REWARD_POINT_MIN_AMT:
+            logger.info("Neqaty RewardPoint Failed for {} ".format(
+                transaction_obj.transaction_id,
+            ))
+            return None, response_obj.NEQATY_REWARD_POINT_MIN_AMT_NOT_MET, 0
+
+        neqaty_service = NeqatyServiceManager()
+        response_data, code = neqaty_service.collect_points(
+            data)
+        neqaty_reward = response_data.get("neqaty_response", {}).get(
+            "reward_point", 0)
+
+        return response_data, code, neqaty_reward

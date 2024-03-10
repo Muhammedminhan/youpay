@@ -19,7 +19,8 @@ from integrations.constants import (
     NEQATY_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     NEQATY_CLIENT_CODE, CHECKOUTPG_PAYMENT_CONFIGURATIONS,
     CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API, CONTENT_TYPE_HEADERS,
-    PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY, )
+    PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
+    NEQATY_EARN_POINTS_API, )
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
@@ -601,3 +602,56 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                      "for Neqaty: {}").format(e)
             logger.error(error)
             return False
+
+    def collect_points(self, data):
+        """
+        calls neqaty points collecting api
+        """
+        try:
+            request_data = data
+
+            self.transaction_obj = request_data.get('transaction_obj')
+            self.transaction_id = str(self.transaction_obj.transaction_id)
+
+            request_data.pop('transaction_obj')
+
+            logger.info(
+                "Youpay sending request data to neqaty point collection api "
+                "is {}".format(request_data))
+
+            request_data['transaction_id'] = "youpay|" + self.transaction_id
+            self.request_data = request_data
+
+            payload = json.dumps(request_data)
+
+            url = self.neqaty_config.domain + NEQATY_EARN_POINTS_API
+            headers = self.get_payment_header()
+            response = requests.post(url, data=payload, headers=headers)
+            logger.info("Response from neqaty point collection api {}"
+                        "".format(response))
+            if response:
+                response_data = response.json()
+                self.response_data = response_data
+                logger.info("neqaty point collection api response: {}".format(
+                    response_data))
+                return response_data, self.SUCCESS
+
+            logger.error("Error in neqaty point collection api, {}"
+                         "".format(response.text))
+            self.response_data = response.json()
+            return {"error": response.text}, self.NEQATY_CONNECTION_ERROR
+
+        except Exception as e:
+            error = "Error in neqaty point collection api: {}".format(e)
+            logger.error("Exception in neqaty point collection api: "
+                         "{}".format(e), exc_info=True)
+            return {"error": error}, self.NEQATY_CONNECTION_ERROR
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_COLLECT_POINTS,
+            )
