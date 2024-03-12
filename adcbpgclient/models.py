@@ -215,15 +215,16 @@ def update_youpaytransactiondata_on_webhook(instance):
                 payment_reference))
         if transaction_obj:
             data_to_update = prepare_youpay_transaction_update_data(
-                instance, payment_reference, youpay_crud)
+                instance, payment_reference, transaction_obj)
             if data_to_update:
                 transaction_id = data_to_update.get('transaction_id')
                 is_youpay_updated = youpay_crud.update_youpay_transaction_data(
                     data_to_update)
-                is_success = True
-            logger.info(
-                "Youpaytransactindata transaction {} updated ".format(
-                    transaction_obj.transaction_id))
+                if is_youpay_updated:
+                    is_success = True
+                    logger.info(
+                        "Youpaytransactindata transaction {} updated ".format(
+                            transaction_obj.transaction_id))
         else:
             logger.info(
                 "Youpaytransaction object not found for payment reference "
@@ -244,11 +245,8 @@ def update_youpaytransactiondata_on_webhook(instance):
 
 
 def prepare_youpay_transaction_update_data(instance, payment_reference,
-                                           youpay_obj):
+                                           transaction_obj):
     try:
-        transaction_obj = (
-            youpay_obj.get_youpay_transaction_data_with_payment_reference(
-                payment_reference))
         if transaction_obj:
             data_to_update = {
                 'transaction_id': transaction_obj.transaction_id,
