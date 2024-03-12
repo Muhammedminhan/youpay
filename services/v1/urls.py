@@ -115,6 +115,6 @@ urlpatterns = [
     path('neqaty/redeem-points/', NeqatyRedeemPointsAPIView.as_view()),
     path('neqaty/verify/', NeqatyVerify.as_view()),
     path('neqaty/update-phone-number/', UpdateNeqatyPhoneNumber.as_view()),
-    path('qitaf/collect/', NeqatyCollectPointsAPIView.as_view()),
+    path('neqaty/collect/', NeqatyCollectPointsAPIView.as_view()),
 
 ]

@@ -354,7 +354,7 @@ class NeqatyCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             paid_amount = transaction_obj.amount
 
         data = {
-            "mobile_number": transaction_obj.Neqaty_phone_number,
+            "mobile_number": transaction_obj.points_collected_mobile_number,
             "customer_email": transaction_obj.customer_email,
             "customer_name": transaction_obj.customer_name,
             "invoice_id": transaction_obj.invoice_id,
