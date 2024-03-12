@@ -17,7 +17,9 @@ from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_EXPIRED,
                                 PAYMENT_STATUS_PAID, ALLOW_EXPIRE_STATUS_LIST,
                                 PAYMENT_METHOD_CITI_REWARDS,
-                                PAYMENT_METHOD_QITAF)
+                                PAYMENT_METHOD_QITAF,
+                                PAYMENT_METHOD_NEQATY_AND_CARD,
+                                PAYMENT_METHOD_NEQATY)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -301,6 +303,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         if payment_method in [PAYMENT_METHOD_CITI_REWARDS,
                               PAYMENT_METHOD_QITAF]:
             amount = transaction_obj.base_amount
+        elif payment_method in [PAYMENT_METHOD_NEQATY_AND_CARD,
+                                PAYMENT_METHOD_NEQATY]:
+            amount = transaction_obj.brand_calculations.get(
+                'sum_net_amount', None)
 
         verify_body = {
             "transaction_id": str(transaction_obj.transaction_id),
