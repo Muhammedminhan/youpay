@@ -20,11 +20,12 @@ from integrations.constants import (
     NEQATY_CLIENT_CODE, CHECKOUTPG_PAYMENT_CONFIGURATIONS,
     CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API, CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
-    NEQATY_EARN_POINTS_API, )
+    NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS, )
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED,
+                                PAYMENT_METHOD_QITAF)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
@@ -534,6 +535,36 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     card_bin = response_data.get("card_bin")
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
+
+                    if transaction_obj.point_collection_enabled:
+                        """If point collection enabled"""
+
+                        if transaction_obj.points_collection_enabled_program == PAYMENT_METHOD_QITAF:
+                            data = {
+                                'transaction_id':
+                                    transaction_obj.transaction_id,
+                                'points_collected_mobile_number':
+                                    transaction_obj.points_redeemed_mobile_number,
+                                'points_collection_enabled_program':
+                                    PAYMENT_METHOD_NEQATY,
+                            }
+                            update = (
+                                self.update_points_collected_mobile_number(
+                                    data))
+
+                        from services.v1.api_clients.neqaty_service import (
+                            NeqatyCollectPointsAPIView)
+                        neqaty_reward_point_obj = NeqatyCollectPointsAPIView()
+
+                        response, code = (
+                            neqaty_reward_point_obj.collect_reward_point(
+                                transaction_obj))
+                        logger.info(
+                            "Checking for Reward Point for transaction : "
+                            "{}, response : {}, code : {}".format(
+                                transaction_id, response, code))
+
+
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED

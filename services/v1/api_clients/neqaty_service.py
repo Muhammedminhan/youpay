@@ -316,12 +316,11 @@ class NeqatyCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 decrypt_string(transaction_id))
             if transaction_obj:
 
-                response_data, code, neqaty_reward = self.collect_reward_point(
+                response_data, code = self.collect_reward_point(
                     transaction_obj)
                 logger.info(
-                    "Reward Point(Collect Points) API response {}, code : {},"
-                    " rewarded : {}".format(response_data, code,
-                                            neqaty_reward))
+                    "Reward Point(Collect Points) API response {}, code : {}"
+                    .format(response_data, code))
                 if response_data:
                     data = self.response_obj.get_success_dict(
                         code=code,
@@ -356,6 +355,12 @@ class NeqatyCollectPointsAPIView(APIView, YouPayTransactionCRUD):
 
         data = {
             "mobile_number": transaction_obj.Neqaty_phone_number,
+            "customer_email": transaction_obj.customer_email,
+            "customer_name": transaction_obj.customer_name,
+            "invoice_id": transaction_obj.invoice_id,
+            "gateway_reference": transaction_obj.payment_reference,
+            "currency": transaction_obj.currency,
+            "client_code": NEQATY_CLIENT_CODE,
             "transaction_obj": transaction_obj,
             "amount": int(paid_amount),
             "platform": transaction_obj.platform,
@@ -375,16 +380,8 @@ class NeqatyCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                     transaction_obj.earned_point))
             return None, response_obj.NEQATY_ALREADY_COLLECTED, transaction_obj.earned_point
 
-        if data["amount"] < Neqaty_REWARD_POINT_MIN_AMT:
-            logger.info("Neqaty RewardPoint Failed for {} ".format(
-                transaction_obj.transaction_id,
-            ))
-            return None, response_obj.NEQATY_REWARD_POINT_MIN_AMT_NOT_MET, 0
-
         neqaty_service = NeqatyServiceManager()
         response_data, code = neqaty_service.collect_points(
             data)
-        neqaty_reward = response_data.get("neqaty_response", {}).get(
-            "reward_point", 0)
 
-        return response_data, code, neqaty_reward
+        return response_data, code
