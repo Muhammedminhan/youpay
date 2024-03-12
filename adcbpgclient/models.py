@@ -4,8 +4,10 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from payments.constants import MODEL_NAME_ADCBTRANSACTIONDATA
+from payments.constants import (MODEL_NAME_ADCBTRANSACTIONDATA,
+                                PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE)
 from payments.models import YouPayTransactionData
+from services.v1.views.common import YouPayTransactionCRUD
 from .constants import (PURCHASE_PLATFORM_CHOICES, REDEMPTION_METHOD_CHOICES,
                         REDEMPTION_METHOD_NONE)
 
@@ -100,6 +102,12 @@ class ADCBTransactionData(ADCBAbstractDateTime):
     card_issuer_country = models.CharField(
         max_length=4, null=True, blank=True, db_index=True,
         help_text=' Denotes two letter code card issued country.')
+    payment_scheme = models.CharField(
+        max_length=200,
+        choices=PAYMENT_SCHEME_CHOICES,
+        default=PAYMENT_SCHEME_NONE,
+        help_text='Denotes the payment scheme used for the payment')
+
     payment_id = models.CharField(
         max_length=200, null=True, blank=True,
         help_text='for checkoutpg transactions, payment id received from '
@@ -162,7 +170,12 @@ class ADCBTransactionData(ADCBAbstractDateTime):
 
 
 @receiver(post_save, sender=ADCBTransactionData)
-def calculate_adcb_card_charges(sender, instance, created, **kwargs):
+def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
+    calculate_adcb_card_charges(instance)
+    update_youpaytransactiondata_on_webhook(instance)
+
+
+def calculate_adcb_card_charges(instance):
     if instance.financial_action_response_data:
         from payments.tasks import common_update_financial_action_charges
         try:
@@ -182,3 +195,72 @@ def calculate_adcb_card_charges(sender, instance, created, **kwargs):
             logger.error("Error calling gateway charge calculation for "
                          "adcb transaction {}".format(instance.reference_id),
                          exc_info=e)
+
+
+def update_youpaytransactiondata_on_webhook(instance):
+    payment_reference = None
+    transaction_id = None
+    is_success, is_youpay_updated = False, False
+
+    try:
+        logger.info(
+            "ADCBTransactionData post_save Triggering for "
+            "reference {}, status {}".format(
+                instance.reference_id, instance.payment_status))
+        payment_reference = instance.reference_id
+
+        youpay_crud = YouPayTransactionCRUD()
+        transaction_obj = (
+            youpay_crud.get_youpay_transaction_data_with_payment_reference(
+                payment_reference))
+        if transaction_obj:
+            data_to_update = prepare_youpay_transaction_update_data(
+                instance, payment_reference, transaction_obj)
+            if data_to_update:
+                transaction_id = data_to_update.get('transaction_id')
+                is_youpay_updated = youpay_crud.update_youpay_transaction_data(
+                    data_to_update)
+                if is_youpay_updated:
+                    is_success = True
+                    logger.info(
+                        "Youpaytransactindata transaction {} updated ".format(
+                            transaction_obj.transaction_id))
+        else:
+            logger.info(
+                "Youpaytransaction object not found for payment reference "
+                "{} during update transaction from "
+                "TabbyPaymentData".format(instance.payment_reference))
+    except Exception as e:
+        logger.error(
+            "Error while trying to update youpay transaction from "
+            "TabbyPaymentData signal {}".format(e), exc_info=e)
+        is_success = False
+
+    finally:
+        logger.info(
+            "ADCBTransactionData post_save Triggered for tid {}, "
+            "reference {}, is_completed {}, youpay updated {}".format(
+                transaction_id, payment_reference, is_success,
+                is_youpay_updated))
+
+
+def prepare_youpay_transaction_update_data(instance, payment_reference,
+                                           transaction_obj):
+    try:
+        if transaction_obj:
+            data_to_update = {
+                'transaction_id': transaction_obj.transaction_id,
+                'payment_scheme': instance.payment_scheme,
+                'is_full_redemption': instance.is_full_redemption,
+                'is_fraud': instance.is_fraud,
+                'is_flagged': instance.is_flagged,
+            }
+            return data_to_update
+        else:
+            logger.info(
+                "Transaction object not found for payment reference "
+                "{}".format(payment_reference))
+            return None
+    except Exception as e:
+        logger.error("Error while preparing data for youpay transaction "
+                     "update {}".format(e), exc_info=True)

@@ -24,7 +24,8 @@ from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyGenerateOTPAPIView,
                                          NeqatyRedeemPointsAPIView,
                                          NeqatyVerify,
-                                         UpdateNeqatyPhoneNumber)
+                                         UpdateNeqatyPhoneNumber,
+                                         NeqatyCollectPointsAPIView)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify,
@@ -113,5 +114,7 @@ urlpatterns = [
     path('neqaty/generate-otp/', NeqatyGenerateOTPAPIView.as_view()),
     path('neqaty/redeem-points/', NeqatyRedeemPointsAPIView.as_view()),
     path('neqaty/verify/', NeqatyVerify.as_view()),
-    path('neqaty/update-phone-number/', UpdateNeqatyPhoneNumber.as_view())
+    path('neqaty/update-phone-number/', UpdateNeqatyPhoneNumber.as_view()),
+    path('neqaty/collect/', NeqatyCollectPointsAPIView.as_view()),
+
 ]

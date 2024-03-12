@@ -22,7 +22,8 @@ from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY)
+    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
+    PAYMENT_METHOD_NEQATY)
 from services.constants import RESPONSE_CODE_LIST
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
@@ -351,20 +352,9 @@ def process_checkoutpg_response_verification(**kwargs):
             is_payment_verified = True
 
         if payment_status == PAYMENT_STATUS_PAID:
-            # Qitaf Reward Point
-            if youpay_transaction.is_qitaf_enabled:
-                from services.v1.api_clients.qitaf_service import (
-                    QitafCollectPointsAPIView)
-                qitaf_reward_point_obj = QitafCollectPointsAPIView()
+            handle_point_collection(youpay_transaction, transaction_id)
 
-                response, code, qitaf_reward = (
-                qitaf_reward_point_obj.collect_reward_point(
-                    youpay_transaction))
-                logger.info("Checking for Reward Point for transaction : "
-                            "{}, response : {}, code : {}, Qitaf reward :"
-                            " {}".format(transaction_id,
-                                         response, code, qitaf_reward))
-                reward = qitaf_reward
+
 
     youpay_obj = YouPayTransactionCRUD()
 
@@ -439,3 +429,33 @@ def format_pre_auth_payment_response_for_verify(response_data):
     logger.info(
         "structured dict for pre auth case {} ".format(structured_dict))
     return structured_dict
+
+
+def handle_point_collection(youpay_transaction, transaction_id):
+    """Point Collection Part"""
+    if youpay_transaction.point_collection_enabled:
+        if youpay_transaction.points_collection_enabled_program != PAYMENT_METHOD_QITAF:
+            from services.v1.api_clients.qitaf_service import (
+                QitafCollectPointsAPIView)
+            qitaf_reward_point_obj = QitafCollectPointsAPIView()
+
+            response, code, qitaf_reward = (
+                qitaf_reward_point_obj.collect_reward_point(
+                    youpay_transaction))
+            logger.info("Checking for Reward Point for transaction : "
+                        "{}, response : {}, code : {}, Qitaf reward :"
+                        " {}".format(transaction_id,
+                                     response, code, qitaf_reward))
+            reward = qitaf_reward
+        elif youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
+            from services.v1.api_clients.neqaty_service import (
+                NeqatyCollectPointsAPIView)
+            neqaty_reward_point_obj = NeqatyCollectPointsAPIView()
+
+            response, code = (
+                neqaty_reward_point_obj.collect_reward_point(
+                    youpay_transaction))
+            logger.info(
+                "Checking for Neqaty Reward Point for transaction : "
+                "{}, response : {}, code : {}".format(
+                    transaction_id, response, code))
