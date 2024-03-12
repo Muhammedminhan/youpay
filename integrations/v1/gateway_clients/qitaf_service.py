@@ -232,6 +232,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 self.response_data = response_data
                 logger.info("qitaf point collection api response: {}".format(
                     response_data))
+                update_data = {
+                    "earn_reference": response_data.get(
+                        "partner_response").get("earn_reference"),
+                    "point_collected": True
+                }
+                self.update_youpay_transaction_data(update_data)
                 return response_data, self.SUCCESS
 
             logger.error("Error in qitaf point collection api, {}"
@@ -560,21 +566,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     payment_status = PAYMENT_STATUS_PAID
                     return_response_data[IS_SUCCESS] = True
 
-                    """Qitaf Reward Point flow"""
-                    if transaction_obj.is_qitaf_enabled:
-                        from services.v1.api_clients.qitaf_service import (
-                            QitafCollectPointsAPIView)
-                        qitaf_reward_point_obj = QitafCollectPointsAPIView()
+                    self.handele_qitaf_collection(transaction_obj)
 
-                        response, code, qitaf_reward = (
-                            qitaf_reward_point_obj.collect_reward_point(
-                                transaction_obj))
-                        logger.info(
-                            "Checking for Reward Point for transaction : "
-                            "{}, response : {}, code : {}, Qitaf reward :"
-                            " {}".format(transaction_id,
-                                         response, code, qitaf_reward))
-                        reward = qitaf_reward
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -692,3 +685,34 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Exception in calculate_qitaf_balance: "
                          "{}".format(e))
             return None, self.QITAF_BALANCE_CALCULATION_FAILED
+
+    def handele_qitaf_collection(self, transaction_obj):
+        """Qitaf Reward Point flow"""
+        if transaction_obj.is_qitaf_enabled:
+            update = True
+            if transaction_obj.points_collection_enabled_program != PAYMENT_METHOD_QITAF:
+                data = {
+                    'transaction_id':
+                        transaction_obj.transaction_id,
+                    'points_collected_mobile_number':
+                        transaction_obj.points_redeemed_mobile_number,
+                    'points_collection_enabled_program':
+                        PAYMENT_METHOD_QITAF,
+                }
+                update = (
+                    self.update_youpay_transaction_data(
+                        data))
+            if update:
+                from services.v1.api_clients.qitaf_service import (
+                    QitafCollectPointsAPIView)
+                qitaf_reward_point_obj = QitafCollectPointsAPIView()
+
+                response, code, qitaf_reward = (
+                    qitaf_reward_point_obj.collect_reward_point(
+                        transaction_obj))
+                logger.info(
+                    "Checking for Reward Point for transaction : "
+                    "{}, response : {}, code : {}, Qitaf reward :"
+                    " {}".format(transaction_obj.transaction_id,
+                                 response, code, qitaf_reward))
+                reward = qitaf_reward

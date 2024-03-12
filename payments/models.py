@@ -183,6 +183,12 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     point_collection_enabled = models.BooleanField(
         null=True, blank=True, default=False, db_index=True,
         help_text='If the point collection enabled or not')
+    earn_reference = models.CharField(
+        max_length=120, null=True, db_index=True, blank=True,
+        help_text='Reference for the point collection')
+    point_collected = models.BooleanField(
+        null=True, blank=True, default=False, db_index=True,
+        help_text='Denotes whether point collection is completed')
     maximum_redeemable_points = models.DecimalField(
         null=True, blank=True, decimal_places=4, max_digits=15,
         help_text='Maximum points used for citi rewards point redemption')
