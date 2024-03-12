@@ -362,10 +362,19 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
         if redemption_status:
             if is_full_redemption is False:
-                # Handle neqaty partial redemption response
                 payment_status = response_data.get("partner_response").get(
                     "payment_status", False)
-                if not payment_status:
+                if payment_status:
+                    redirect_url = response_data.get('partner_response',
+                                                     {}).get('url')
+                    is_success = True
+                    is_redirect = True
+                    self.payment_status = PAYMENT_STATUS_PENDING
+                    amount = payment_data.brand_calculations.get(
+                        'sum_net_amount', None)
+                    name_on_card = request_data.get("customer_name")
+
+                else:
                     redirect_url = ('{}?transaction_id={}'.format(
                         payment_data.failure_url,
                         payment_data.transaction_id))
@@ -375,15 +384,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         "checkout_response_data").get("response_summary")
                     self.payment_status = PAYMENT_STATUS_DECLINED
 
-                else:
-                    redirect_url = response_data.get('partner_response',
-                                                     {}).get('url')
-                    is_success = True
-                    is_redirect = True
-                    self.payment_status = PAYMENT_STATUS_PENDING
-                    name_on_card = request_data.get("customer_name")
-                    amount = payment_data.brand_calculations.get(
-                        'sum_net_amount', None)
             else:
                 '''Neqaty full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
@@ -443,36 +443,41 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         else:
             logger.error("Error in neqaty redeem point api, {}"
                          "".format(response.text))
-            self.response_data = response.json()
+            if hasattr(response, 'text'):
+                self.response_data = json.loads(response.text)
 
-            partner_response = self.response_data.get(
-                "partner_response")
-
-            redemption_status = partner_response.get(
-                'redemption_status', False)
-
-            if not redemption_status:
                 partner_response = self.response_data.get(
                     "partner_response")
-                language = transaction_obj.language
-                if language == LANGUAGE_CODE_AR:
-                    message = partner_response.get("response_text_ar")
+
+                redemption_status = partner_response.get(
+                    'redemption_status', False)
+
+                if redemption_status:
+                    response_data = self.handle_neqaty_response(
+                        self.response_data, self.transaction_obj,
+                        request_data)
+                    return response_data, self.PAYMENT_FAILED
                 else:
-                    message = partner_response.get("response_text")
+                    partner_response = self.response_data.get(
+                        "partner_response")
+                    language = transaction_obj.language
+                    if language == LANGUAGE_CODE_AR:
+                        message = partner_response.get("response_text_ar")
+                    else:
+                        message = partner_response.get("response_text")
 
-                err_obj = {
-                    "message": message,
-                    "code": self.response_data.get("code"),
-                    "is_full_redemption": self.response_data.get(
-                        "is_full_redemption")
-                }
-                return {
-                    "errors": err_obj}, self.NEQATY_CONNECTION_ERROR
+                    err_obj = {
+                        "message": message,
+                        "code": self.response_data.get("code"),
+                        "is_full_redemption": self.response_data.get(
+                            "is_full_redemption")
+                    }
+                    return {
+                        "errors": err_obj}, self.NEQATY_CONNECTION_ERROR
             else:
-                response_data = self.handle_neqaty_response(
-                    self.response_data, self.transaction_obj, request_data)
-
-                return response_data, self.PAYMENT_FAILED
+                msg = "unable to get response from b2c_payback-neqaty"
+                logger.error(msg)
+                return {"errors": msg}, self.NEQATY_CONNECTION_ERROR
 
     def update_brand_calculations(self, data, redeem_code):
         for item in data:
