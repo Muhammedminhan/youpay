@@ -360,6 +360,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "redemption_status", False)
         name_on_card = ""
         message = self.SUCCESS
+        amount = payment_data.amount
 
         if redemption_status:
             if is_full_redemption is False:
@@ -371,6 +372,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     is_success = True
                     is_redirect = True
                     self.payment_status = PAYMENT_STATUS_PENDING
+                    amount = payment_data.brand_calculations.get(
+                        'sum_net_amount', None)
                     name_on_card = request_data.get("customer_name")
 
                 else:
@@ -387,6 +390,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 '''Neqaty full redemption Success case'''
                 self.payment_status = PAYMENT_STATUS_PAID
                 self.approved = True
+                amount = payment_data.brand_calculations.get(
+                    'sum_net_amount', None)
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url,
@@ -401,6 +406,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             **update_data,
             **{
                 "transaction_id": payment_data.transaction_id,
+                "amount": amount,
                 "is_full_redemption": is_full_redemption,
                 "payment_status": self.payment_status,
                 "approved": self.approved,
