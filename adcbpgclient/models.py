@@ -238,7 +238,7 @@ def update_youpaytransactiondata_on_webhook(instance):
 
     finally:
         logger.info(
-            "Citi Redemption Data post_save Triggered for tid {}, "
+            "ADCBTransactionData post_save Triggered for tid {}, "
             "reference {}, is_completed {}, youpay updated {}".format(
                 transaction_id, payment_reference, is_success,
                 is_youpay_updated))
