@@ -362,7 +362,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
         if redemption_status:
             if is_full_redemption is False:
-                # Handle neqaty partial redemption response
                 payment_status = response_data.get("partner_response").get(
                     "payment_status", False)
                 if payment_status:
@@ -440,7 +439,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Error in neqaty redeem point api, {}"
                          "".format(response.text))
             if hasattr(response, 'text'):
-                self.response_data = response.json()
+                self.response_data = json.loads(response.text)
 
                 partner_response = self.response_data.get(
                     "partner_response")

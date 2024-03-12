@@ -5,7 +5,8 @@ from integrations.v1.gateway_clients.tabbypg import TabbyPaymentCancel
 from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
                                                  B2CPaybackRedemption,
-                                                 B2CPaybackVerify)
+                                                 B2CPaybackVerify,
+                                                 GetCollectProgramEnabled)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
                                                 PaypalPayment,
@@ -65,6 +66,8 @@ urlpatterns = [
          name='B2CPaybackAuthenticate'),
     path('adcb/redemption/', B2CPaybackRedemption.as_view()),
     path('adcb/verification/', B2CPaybackVerify.as_view(),
+         name='B2CPaybackVerify'),
+    path('b2cpayback/collect-program/', GetCollectProgramEnabled.as_view(),
          name='B2CPaybackVerify'),
 
     # Tabbypg endpoints
