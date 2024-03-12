@@ -112,7 +112,6 @@ def get_redemption_details(transaction_obj, updated_brand_calculations):
         youpay_update_data = {
             'redeemed_amount': redeemed_amount,
             'redeemed_points': redeemed_point,
-            'amount': amount,
             'payable_amount': payable_amount,
             'service_fee': service_fee,
             'base_amount': base_amount,
