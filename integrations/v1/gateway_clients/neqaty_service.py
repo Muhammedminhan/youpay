@@ -648,7 +648,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         "partner_response").get("earn_reference"),
                     "point_collected": True
                 }
-                breakpoint()
                 self.update_youpay_transaction_data(update_data)
                 return response_data, self.SUCCESS
 
