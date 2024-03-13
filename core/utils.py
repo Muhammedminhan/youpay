@@ -434,7 +434,7 @@ def format_pre_auth_payment_response_for_verify(response_data):
 def handle_point_collection(youpay_transaction, transaction_id):
     """Point Collection Part"""
     if youpay_transaction.point_collection_enabled:
-        if youpay_transaction.points_collection_enabled_program != PAYMENT_METHOD_QITAF:
+        if youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_QITAF:
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
             qitaf_reward_point_obj = QitafCollectPointsAPIView()

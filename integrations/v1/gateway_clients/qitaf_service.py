@@ -233,6 +233,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.info("qitaf point collection api response: {}".format(
                     response_data))
                 update_data = {
+                    'transaction_id': self.transaction_id,
                     "earn_reference": response_data.get(
                         "partner_response").get("earn_reference"),
                     "point_collected": True
