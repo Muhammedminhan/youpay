@@ -195,10 +195,8 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
         qitaf_service = QitafServiceManager()
         response_data, code = qitaf_service.collect_points(
             data)
-        qitaf_reward = response_data.get("qitaf_response", {}).get(
-            "reward_point", 0)
 
-        return response_data, code, qitaf_reward
+        return response_data, code
 
 
 class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):

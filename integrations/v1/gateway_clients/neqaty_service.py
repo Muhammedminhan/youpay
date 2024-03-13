@@ -488,7 +488,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
     def verification(self, request_data):
         """Neqaty Verification with b2c"""
-        reward = None
+        earned_point = None
+        earn_reference = None
+        point_collected = False
 
         request_transaction_id = request_data.get('transaction_id')
         logger.info(
@@ -541,7 +543,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
 
-                    self.handele_neqaty_collection(transaction_obj)
+                    response_data, code = self.handele_neqaty_collection(
+                        transaction_obj)
+                    if response_data:
+                        earn_reference = response_data.get(
+                            "partner_response").get("earn_reference")
+                        point_collected = True
 
                 else:
                     """Redemption failed"""
@@ -581,6 +588,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'card_last4': card_last4,
                     'card_bin': card_bin,
                     'card_issuer_country': card_issuer_country,
+                    'earn_reference': earn_reference,
+                    'point_collected': point_collected,
+                    'earned_point': earned_point,
                 }
 
                 logger.info("Neqaty Verification with b2c completed for "
@@ -642,13 +652,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 self.response_data = response_data
                 logger.info("neqaty point collection api response: {}".format(
                     response_data))
-                update_data = {
-                    'transaction_id': self.transaction_id,
-                    "earn_reference": response_data.get(
-                        "partner_response").get("earn_reference"),
-                    "point_collected": True
-                }
-                self.update_youpay_transaction_data(update_data)
                 return response_data, self.SUCCESS
 
             logger.error("Error in neqaty point collection api, {}"
@@ -672,6 +675,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             )
 
     def handele_neqaty_collection(self, transaction_obj):
+        response = None
+        code = None
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
             update = True
@@ -699,3 +704,4 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     "Checking for Reward Point for transaction : "
                     "{}, response : {}, code : {}".format(
                         transaction_obj.transaction_id, response, code))
+        return response, code
