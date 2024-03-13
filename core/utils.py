@@ -281,7 +281,9 @@ def process_checkoutpg_response_verification(**kwargs):
     function to process checkoutpg response verification and update in youpay
     transaction table
     """
-    reward = None
+    earned_point = None
+    earn_reference = None
+    point_collected = False
     transaction_id = kwargs.get('transaction_id')
     response_data = kwargs.get('response_data')
     is_pre_auth = kwargs.get('is_pre_auth')
@@ -352,9 +354,16 @@ def process_checkoutpg_response_verification(**kwargs):
             is_payment_verified = True
 
         if payment_status == PAYMENT_STATUS_PAID:
-            handle_point_collection(youpay_transaction, transaction_id)
-
-
+            response_data = handle_point_collection(youpay_transaction,
+                                                    transaction_id)
+            if response_data:
+                earn_reference = response_data.get("earn_reference")
+                point_collected = response_data.get("point_collected")
+                earned_point = response_data.get("reward_point", 0)
+            else:
+                logger.error(
+                    "Error while collecting reward point for the "
+                    "transaction {}".format(transaction_id))
 
     youpay_obj = YouPayTransactionCRUD()
 
@@ -376,7 +385,9 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
             'is_payment_verified': is_payment_verified,
-            'earned_point': reward,
+            'earned_point': earned_point,
+            'earn_reference': earn_reference,
+            'point_collected': point_collected,
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
@@ -432,6 +443,11 @@ def format_pre_auth_payment_response_for_verify(response_data):
 
 
 def handle_point_collection(youpay_transaction, transaction_id):
+    response_data = None
+    reward_point = None
+    point_collected = False
+    earn_reference = None
+
     """Point Collection Part"""
     if youpay_transaction.point_collection_enabled:
         if youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_QITAF:
@@ -439,14 +455,15 @@ def handle_point_collection(youpay_transaction, transaction_id):
                 QitafCollectPointsAPIView)
             qitaf_reward_point_obj = QitafCollectPointsAPIView()
 
-            response, code, qitaf_reward = (
+            response, code = (
                 qitaf_reward_point_obj.collect_reward_point(
                     youpay_transaction))
+            reward_point = response.get("qitaf_response", {}).get(
+                "reward_point", 0)
+            point_collected = True
             logger.info("Checking for Reward Point for transaction : "
-                        "{}, response : {}, code : {}, Qitaf reward :"
-                        " {}".format(transaction_id,
-                                     response, code, qitaf_reward))
-            reward = qitaf_reward
+                        "{}, response : {}, code : {}".format(transaction_id,
+                                                              response, code))
         elif youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
             from services.v1.api_clients.neqaty_service import (
                 NeqatyCollectPointsAPIView)
@@ -455,7 +472,18 @@ def handle_point_collection(youpay_transaction, transaction_id):
             response, code = (
                 neqaty_reward_point_obj.collect_reward_point(
                     youpay_transaction))
+            if response:
+                earn_reference = response.get(
+                    "partner_response").get("earn_reference"),
+                point_collected = True
+
             logger.info(
                 "Checking for Neqaty Reward Point for transaction : "
                 "{}, response : {}, code : {}".format(
                     transaction_id, response, code))
+        response_data = {
+            "earn_reference": earn_reference,
+            "point_collected": point_collected,
+            "reward_point": reward_point,
+        }
+    return response_data
