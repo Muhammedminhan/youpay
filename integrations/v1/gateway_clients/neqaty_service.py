@@ -643,10 +643,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.info("neqaty point collection api response: {}".format(
                     response_data))
                 update_data = {
+                    'transaction_id': self.transaction_id,
                     "earn_reference": response_data.get(
                         "partner_response").get("earn_reference"),
                     "point_collected": True
                 }
+                breakpoint()
                 self.update_youpay_transaction_data(update_data)
                 return response_data, self.SUCCESS
 
