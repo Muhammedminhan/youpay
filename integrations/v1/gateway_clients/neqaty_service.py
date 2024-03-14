@@ -50,7 +50,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         self.request_type = None
         self.payment_status = None
         self.payment_method = None
-        self.is_neqaty_enabled = None
+        self.point_collection_enabled = False
         self.approved = False
         self.amount = None
         self.redeemed_point = None
@@ -374,6 +374,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     amount = payment_data.brand_calculations.get(
                         'sum_net_amount', None)
                     name_on_card = request_data.get("customer_name")
+                    self.point_collection_enabled = True
 
                 else:
                     redirect_url = ('{}?transaction_id={}'.format(
@@ -412,7 +413,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "response_summary": response_data.get(
                     'reason'),
                 "payment_method": self.payment_method,
-                "name_on_card": name_on_card
+                "name_on_card": name_on_card,
+                "point_collection_enabled": self.point_collection_enabled,
             }
         }
         update_data.update(youpay_update_data)
@@ -542,10 +544,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
 
-                    response_data, code = self.handele_neqaty_collection(
-                        transaction_obj)
-                    if response_data:
-                        earn_reference = response_data.get(
+                    collect_point_response_data, code = (
+                        self.handele_neqaty_collection(transaction_obj))
+                    if collect_point_response_data:
+                        earn_reference = collect_point_response_data.get(
                             "partner_response").get("earn_reference")
 
                 else:

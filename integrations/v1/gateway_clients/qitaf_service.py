@@ -56,6 +56,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.payment_status = None
         self.payment_method = None
         self.is_qitaf_enabled = None
+        self.point_collection_enabled = False
         self.approved = False
         self.amount = None
         self.redeemed_point = None
@@ -152,8 +153,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 'transaction_id': str(self.transaction_id),
                 'qitaf_phone_number': request_data.get("mobile_number"),
             }
-
-            self.update_qitaf_phone_number(data)
 
             payload.update(data)
             self.request_data = payload
@@ -445,6 +444,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             is_redirect = True
             self.payment_status = PAYMENT_STATUS_PENDING
             self.is_qitaf_enabled = True
+            self.point_collection_enabled = True
         else:
             """Handle qiTaf full redemption response"""
             if str(response_data.get('response_code')) in ["0"]:
@@ -493,6 +493,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 "base_amount": self.base_amount,
                 "VAT_amount": self.VAT_amount,
                 "is_qitaf_enabled": self.is_qitaf_enabled,
+                "point_collection_enabled": self.point_collection_enabled,
                 "response_summary": response_data.get(
                     'reason')
             }
@@ -561,12 +562,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     payment_status = PAYMENT_STATUS_PAID
                     return_response_data[IS_SUCCESS] = True
 
-                    response_data, code = self.handele_qitaf_collection(
-                        transaction_obj)
-                    if response_data:
-                        earn_reference = response_data.get(
+                    collect_point_response, code = (
+                        self.handele_qitaf_collection(transaction_obj))
+                    if collect_point_response:
+                        earn_reference = collect_point_response.get(
                             "partner_response").get("earn_reference")
-                        earned_point = response_data.get(
+                        earned_point = collect_point_response.get(
                             "qitaf_response", {}).get("reward_point", 0)
 
                 else:
