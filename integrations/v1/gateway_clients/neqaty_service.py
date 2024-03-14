@@ -546,7 +546,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
                     collect_point_response_data, code = (
                         self.handele_neqaty_collection(transaction_obj))
-                    if collect_point_response_data:
+                    if code == self.SUCCESS:
                         earn_reference = collect_point_response_data.get(
                             "partner_response").get("earn_reference")
 
@@ -657,12 +657,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.error("Error in neqaty point collection api, {}"
                              "".format(response.text))
                 self.response_data = response.json()
-                return None, self.NEQATY_CONNECTION_ERROR
+                return {"error": response.text}
             else:
                 msg = ("unable to get response from b2c_payback-neqaty for "
                        "point collection")
                 logger.error(msg)
-                return None, self.NEQATY_CONNECTION_ERROR
+                return {"errors": msg}
 
         except Exception as e:
             error = "Error in neqaty point collection api: {}".format(e)

@@ -236,13 +236,13 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Error in qitaf point collection api, {}"
                          "".format(response.text))
             self.response_data = response.json()
-            return None, self.QITAF_CONNECTION_ERROR
+            return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Error in qitaf point collection api: {}".format(e)
             logger.error("Exception in qitaf point collection api: "
                          "{}".format(e), exc_info=True)
-            return None, self.QITAF_CONNECTION_ERROR
+            return {"error": error}, self.QITAF_CONNECTION_ERROR
         finally:
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
@@ -563,7 +563,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                     collect_point_response, code = (
                         self.handele_qitaf_collection(transaction_obj))
-                    if collect_point_response:
+                    if code == self.SUCCESS:
                         earn_reference = collect_point_response.get(
                             "partner_response").get("earn_reference")
                         earned_point = collect_point_response.get(
