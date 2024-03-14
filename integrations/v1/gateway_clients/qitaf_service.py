@@ -516,7 +516,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
     def verification(self, request_data):
         """Qitaf Verification with b2c"""
         earned_point = None
-        earn_reference = None
 
         request_transaction_id = request_data.get('transaction_id')
         logger.info(
@@ -567,8 +566,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     collect_point_response, code = (
                         self.handele_qitaf_collection(transaction_obj))
                     if code == self.SUCCESS:
-                        earn_reference = collect_point_response.get(
-                            "partner_response").get("earn_reference")
                         earned_point = collect_point_response.get(
                             "qitaf_response", {}).get("reward_point", 0)
 
@@ -610,7 +607,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_flagged': is_flagged,
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
-                    'earn_reference': earn_reference,
                     'earned_point': earned_point,
                 }
                 update_data.update(calculated_youpay_transaction_data)
