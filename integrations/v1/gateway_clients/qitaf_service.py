@@ -475,7 +475,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             PAYMENT_METHOD_QITAF if is_full_redemption
             else PAYMENT_METHOD_QITAFAND_CARD)
 
-
         youpay_update_data = {
             **update_data,
             **{
@@ -694,30 +693,23 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         response = None
         code = None
         if transaction_obj.point_collection_enabled:
-            update = True
-            if transaction_obj.points_collection_enabled_program != PAYMENT_METHOD_QITAF:
-                data = {
-                    'transaction_id':
-                        transaction_obj.transaction_id,
-                    'points_collected_mobile_number':
-                        transaction_obj.points_redeemed_mobile_number,
-                    'points_collection_enabled_program':
-                        PAYMENT_METHOD_QITAF,
-                }
-                update = (
-                    self.update_youpay_transaction_data(
-                        data))
-            if update:
-                from services.v1.api_clients.qitaf_service import (
-                    QitafCollectPointsAPIView)
-                qitaf_reward_point_obj = QitafCollectPointsAPIView()
+            if transaction_obj.points_collection_enabled_program != (
+                    PAYMENT_METHOD_QITAF):
+                transaction_obj.points_collected_mobile_number = (
+                    transaction_obj.points_redeemed_mobile_number)
+                transaction_obj.points_collection_enabled_program = (
+                    PAYMENT_METHOD_QITAF)
+                transaction_obj.save()
+            from services.v1.api_clients.qitaf_service import (
+                QitafCollectPointsAPIView)
+            qitaf_reward_point_obj = QitafCollectPointsAPIView()
 
-                response, code = (
-                    qitaf_reward_point_obj.collect_reward_point(
-                        transaction_obj))
-                logger.info(
-                    "Checking for Reward Point for transaction : "
-                    "{}, response : {}, code : {}".format(
-                        transaction_obj.transaction_id,
-                        response, code))
+            response, code = (
+                qitaf_reward_point_obj.collect_reward_point(
+                    transaction_obj))
+            logger.info(
+                "Checking for Reward Point for transaction : "
+                "{}, response : {}, code : {}".format(
+                    transaction_obj.transaction_id,
+                    response, code))
         return response, code
