@@ -490,7 +490,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         """Neqaty Verification with b2c"""
         earned_point = None
         earn_reference = None
-        point_collected = False
 
         request_transaction_id = request_data.get('transaction_id')
         logger.info(
@@ -548,7 +547,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     if response_data:
                         earn_reference = response_data.get(
                             "partner_response").get("earn_reference")
-                        point_collected = True
 
                 else:
                     """Redemption failed"""
@@ -589,7 +587,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'card_bin': card_bin,
                     'card_issuer_country': card_issuer_country,
                     'earn_reference': earn_reference,
-                    'point_collected': point_collected,
                     'earned_point': earned_point,
                 }
 

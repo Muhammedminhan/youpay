@@ -283,7 +283,6 @@ def process_checkoutpg_response_verification(**kwargs):
     """
     earned_point = None
     earn_reference = None
-    point_collected = False
     transaction_id = kwargs.get('transaction_id')
     response_data = kwargs.get('response_data')
     is_pre_auth = kwargs.get('is_pre_auth')
@@ -358,7 +357,6 @@ def process_checkoutpg_response_verification(**kwargs):
                                                     transaction_id)
             if response_data:
                 earn_reference = response_data.get("earn_reference")
-                point_collected = response_data.get("point_collected")
                 earned_point = response_data.get("reward_point", 0)
             else:
                 logger.error(
@@ -387,7 +385,6 @@ def process_checkoutpg_response_verification(**kwargs):
             'is_payment_verified': is_payment_verified,
             'earned_point': earned_point,
             'earn_reference': earn_reference,
-            'point_collected': point_collected,
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
@@ -445,7 +442,6 @@ def format_pre_auth_payment_response_for_verify(response_data):
 def handle_point_collection(youpay_transaction, transaction_id):
     response_data = None
     reward_point = None
-    point_collected = False
     earn_reference = None
 
     """Point Collection Part"""
@@ -460,7 +456,6 @@ def handle_point_collection(youpay_transaction, transaction_id):
                     youpay_transaction))
             reward_point = response.get("qitaf_response", {}).get(
                 "reward_point", 0)
-            point_collected = True
             logger.info("Checking for Reward Point for transaction : "
                         "{}, response : {}, code : {}".format(transaction_id,
                                                               response, code))
@@ -475,7 +470,6 @@ def handle_point_collection(youpay_transaction, transaction_id):
             if response:
                 earn_reference = response.get(
                     "partner_response").get("earn_reference"),
-                point_collected = True
 
             logger.info(
                 "Checking for Neqaty Reward Point for transaction : "
@@ -483,7 +477,6 @@ def handle_point_collection(youpay_transaction, transaction_id):
                     transaction_id, response, code))
         response_data = {
             "earn_reference": earn_reference,
-            "point_collected": point_collected,
             "reward_point": reward_point,
         }
     return response_data

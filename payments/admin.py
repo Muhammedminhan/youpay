@@ -86,7 +86,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
                        'is_full_redemption', 'earned_point', 'earn_reference',
-                       'point_collected', 'points_collected_mobile_number',
+                       'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
                        'points_collection_enabled_program',
                        'point_collection_enabled',
@@ -234,7 +234,7 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
         ('B2C Payback transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
-                       'earn_reference', 'point_collected',
+                       'earn_reference',
                        'is_full_redemption', 'earned_point',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
