@@ -148,10 +148,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             self.transaction_obj = request_data.get('transaction_obj')
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.get_qitaf_payment_data(request_data)
+            qitaf_phone_number = request_data.get("mobile_number")
 
             data = {
                 'transaction_id': str(self.transaction_id),
-                'qitaf_phone_number': request_data.get("mobile_number"),
+                'qitaf_phone_number': qitaf_phone_number,
             }
 
             payload.update(data)
@@ -175,6 +176,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'transaction_id': self.transaction_obj.transaction_id,
                     'payment_reference': response_data.get(
                         'payment_reference'),
+                    'points_redeemed_mobile_number': qitaf_phone_number,
+                    'qitaf_phone_number': qitaf_phone_number
                 })
 
                 return response_data, self.SUCCESS
