@@ -175,6 +175,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'transaction_id': self.transaction_obj.transaction_id,
                     'payment_reference': response_data.get(
                         'payment_reference'),
+                    'points_redeemed_mobile_number': request_data.get(
+                        "mobile_number")
                 })
 
                 return response_data, self.SUCCESS
