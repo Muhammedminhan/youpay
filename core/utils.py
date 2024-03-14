@@ -17,6 +17,7 @@ from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig
+from core.response_messages import YouPayResponse
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
@@ -353,11 +354,14 @@ def process_checkoutpg_response_verification(**kwargs):
             is_payment_verified = True
 
         if payment_status == PAYMENT_STATUS_PAID:
-            response_data = handle_point_collection(youpay_transaction,
-                                                    transaction_id)
-            if response_data:
-                earn_reference = response_data.get("earn_reference")
-                earned_point = response_data.get("reward_point", 0)
+            response_obj = YouPayResponse()
+            collect_point_response, code = handle_point_collection(
+                youpay_transaction,
+                transaction_id,
+                response_obj)
+            if code == response_obj.SUCCESS:
+                earn_reference = collect_point_response.get("earn_reference")
+                earned_point = collect_point_response.get("reward_point", 0)
             else:
                 logger.error(
                     "Error while collecting reward point for the "
@@ -439,10 +443,11 @@ def format_pre_auth_payment_response_for_verify(response_data):
     return structured_dict
 
 
-def handle_point_collection(youpay_transaction, transaction_id):
+def handle_point_collection(youpay_transaction, transaction_id, response_obj):
     response_data = None
     reward_point = None
     earn_reference = None
+    code = None
 
     """Point Collection Part"""
     if youpay_transaction.point_collection_enabled:
@@ -454,8 +459,9 @@ def handle_point_collection(youpay_transaction, transaction_id):
             response, code = (
                 qitaf_reward_point_obj.collect_reward_point(
                     youpay_transaction))
-            reward_point = response.get("qitaf_response", {}).get(
-                "reward_point", 0)
+            if code == response_obj.SUCCESS:
+                reward_point = response.get("qitaf_response", {}).get(
+                    "reward_point", 0)
             logger.info("Checking for Reward Point for transaction : "
                         "{}, response : {}, code : {}".format(transaction_id,
                                                               response, code))
@@ -467,7 +473,7 @@ def handle_point_collection(youpay_transaction, transaction_id):
             response, code = (
                 neqaty_reward_point_obj.collect_reward_point(
                     youpay_transaction))
-            if response:
+            if code == response_obj.SUCCESS:
                 earn_reference = response.get(
                     "partner_response").get("earn_reference"),
 
@@ -479,4 +485,4 @@ def handle_point_collection(youpay_transaction, transaction_id):
             "earn_reference": earn_reference,
             "reward_point": reward_point,
         }
-    return response_data
+    return response_data, code
