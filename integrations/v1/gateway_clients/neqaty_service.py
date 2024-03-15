@@ -8,6 +8,7 @@ from rest_framework import status
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
                             REQUEST_METHOD_GET)
 from core.messages import REDIRECT_URL, IS_REDIRECT, IS_SUCCESS
+from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
 from integrations.common import update_brand_details, get_redemption_details
@@ -490,7 +491,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
     def verification(self, request_data):
         """Neqaty Verification with b2c"""
-        earned_point = None
         earn_reference = None
 
         request_transaction_id = request_data.get('transaction_id')
@@ -589,7 +589,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'card_bin': card_bin,
                     'card_issuer_country': card_issuer_country,
                     'earn_reference': earn_reference,
-                    'earned_point': earned_point,
                 }
 
                 logger.info("Neqaty Verification with b2c completed for "
@@ -620,17 +619,42 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error(error)
             return False
 
-    def collect_points(self, data):
+    def collect_points(self, transaction_obj):
         """
         calls neqaty points collecting api
         """
         try:
-            request_data = data
+            response_obj = YouPayResponse()
+            if transaction_obj.earned_point:
+                '''if already rewarded'''
+                logger.info(
+                    "Failed for Reward point, reward already collected "
+                    "for ({}), rewarded point {}".format(
+                        transaction_obj.transaction_id,
+                        transaction_obj.earned_point))
+                return None, response_obj.NEQATY_ALREADY_COLLECTED
+
+            if transaction_obj.payment_method in [
+                PAYMENT_METHOD_NEQATY_AND_CARD
+            ]:
+                paid_amount = transaction_obj.payable_amount
+            else:
+                paid_amount = transaction_obj.amount
+
+            request_data = {
+                "mobile_number": transaction_obj.points_collected_mobile_number,
+                "customer_email": transaction_obj.customer_email,
+                "customer_name": transaction_obj.customer_name,
+                "invoice_id": transaction_obj.invoice_id,
+                "gateway_reference": transaction_obj.payment_reference,
+                "currency": transaction_obj.currency,
+                "client_code": NEQATY_CLIENT_CODE,
+                "amount": int(paid_amount),
+                "platform": transaction_obj.platform,
+            }
 
             self.transaction_obj = request_data.get('transaction_obj')
             self.transaction_id = str(self.transaction_obj.transaction_id)
-
-            request_data.pop('transaction_obj')
 
             logger.info(
                 "Youpay sending request data to neqaty point collection api "
@@ -692,13 +716,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()
 
-            from services.v1.api_clients.neqaty_service import (
-                NeqatyCollectPointsAPIView)
-            neqaty_reward_point_obj = NeqatyCollectPointsAPIView()
-
-            response, code = (
-                neqaty_reward_point_obj.collect_reward_point(
-                    transaction_obj))
+            response, code = self.collect_points(transaction_obj)
             logger.info(
                 "Checking for Reward Point for transaction : "
                 "{}, response : {}, code : {}".format(

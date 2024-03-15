@@ -466,12 +466,12 @@ def handle_point_collection(youpay_transaction, transaction_id, response_obj):
                         "{}, response : {}, code : {}".format(transaction_id,
                                                               response, code))
         elif youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
-            from services.v1.api_clients.neqaty_service import (
-                NeqatyCollectPointsAPIView)
-            neqaty_reward_point_obj = NeqatyCollectPointsAPIView()
+            from integrations.v1.gateway_clients.neqaty_service import (
+                NeqatyServiceManager)
+            neqaty_reward_point_obj = NeqatyServiceManager()
 
             response, code = (
-                neqaty_reward_point_obj.collect_reward_point(
+                neqaty_reward_point_obj.collect_points(
                     youpay_transaction))
             if code == response_obj.SUCCESS:
                 earn_reference = response.get(
