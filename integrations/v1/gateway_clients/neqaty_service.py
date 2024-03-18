@@ -653,7 +653,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "platform": transaction_obj.platform,
             }
 
-            self.transaction_obj = request_data.get('transaction_obj')
+            self.transaction_obj = transaction_obj
             self.transaction_id = str(self.transaction_obj.transaction_id)
 
             logger.info(
@@ -689,7 +689,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 return {"errors": msg}, self.NEQATY_CONNECTION_ERROR
 
         except Exception as e:
-            error = "Error in neqaty point collection api: {}".format(e)
             logger.error("Exception in neqaty point collection api: "
                          "{}".format(e), exc_info=True)
             return None, self.NEQATY_CONNECTION_ERROR
