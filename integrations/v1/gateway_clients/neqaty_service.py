@@ -362,11 +362,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
         if redemption_status:
             if is_full_redemption is False:
-                payment_status = response_data.get("partner_response").get(
-                    "payment_status", False)
-                if payment_status:
-                    redirect_url = response_data.get('partner_response',
-                                                     {}).get('url')
+                redirect_url = response_data.get('partner_response',
+                                                 {}).get('url')
+                if redirect_url:
                     is_success = True
                     is_redirect = True
                     self.payment_status = PAYMENT_STATUS_PENDING
