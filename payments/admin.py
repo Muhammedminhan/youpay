@@ -85,14 +85,13 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('B2C Payback transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
-                       'is_full_redemption', 'earned_point',
+                       'is_full_redemption', 'earned_point', 'earn_reference',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
                        'points_collection_enabled_program',
                        'point_collection_enabled',
                        'maximum_redeemable_points',
                        'minimum_redeemable_points', 'amount_conversion_rate',
-                       'citi_order_id', 'citi_phone_number'
                        )
         }),
         ('Happycredits transaction details', {
@@ -235,6 +234,7 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
         ('B2C Payback transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
+                       'earn_reference',
                        'is_full_redemption', 'earned_point',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
