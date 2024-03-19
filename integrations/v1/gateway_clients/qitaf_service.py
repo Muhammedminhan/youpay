@@ -158,6 +158,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             payload.update(data)
             self.request_data = payload
             payload['MSISDN'] = payload['qitaf_phone_number']
+            payload['apiclient'] = self.transaction_obj.api_client.name
             logger.info(
                 "Youpay sending request data to qitaf generate otp api "
                 "is {}".format(payload))
@@ -289,6 +290,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             transaction_data = serializer.data
             payload.update(self.prepare_redeem_payload(transaction_data))
             payload.pop('transaction_obj')
+            source_payment_method = (
+                PAYMENT_METHOD_QITAFAND_CARD if float(self.request_data.get(
+                    'checkout_amount')) > 0 else PAYMENT_METHOD_QITAF)
+            payload.update({"source_payment_method":source_payment_method})
 
             verify_response, verify_status = self.verify_transaction(
                 transaction_data, payment_method=PAYMENT_METHOD_QITAF)
@@ -315,7 +320,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             logger.info(
                 "Youpay sending request data to qitaf redeem point api is {}"
-                "headers {} ".format(payload, headers))
+                " headers {} ".format(payload, headers))
 
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
