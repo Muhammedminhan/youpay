@@ -214,29 +214,41 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             request_data.pop('transaction_obj')
 
+            request_data['transaction_id'] = self.transaction_id
+            request_data['invoice_id'] = self.transaction_obj.invoice_id
+            request_data['customer_name'] = self.transaction_obj.customer_name
+            request_data['customer_email'] = (
+                self.transaction_obj.customer_email)
+            request_data['apiclient'] = self.transaction_obj.api_client.name
+            request_data['source_payment_method'] = (
+                self.transaction_obj.payment_method)
+            request_data['gateway_reference'] = (
+                self.transaction_obj.payment_reference)
+            request_data['currency'] = self.transaction_obj.currency
+            self.request_data = request_data
             logger.info(
                 "Youpay sending request data to qitaf point collection api "
                 "is {}".format(request_data))
-
-            request_data['transaction_id'] = "youpay|" + self.transaction_id
-            self.request_data = request_data
 
             payload = json.dumps(request_data)
 
             url = self.qitaf_config.domain + QITAF_EARN_POINTS_API
             headers = self.get_payment_header()
             response = requests.post(url, data=payload, headers=headers)
-            logger.info("Response from qitaf point collection api {}"
-                        "".format(response))
+            logger.info(
+                "Response from qitaf point collection api for transaction {}"
+                " is {}".format(self.transaction_id, response))
             if response:
                 response_data = response.json()
                 self.response_data = response_data
-                logger.info("qitaf point collection api response: {}".format(
-                    response_data))
+                logger.info(
+                    "qitaf point collection api response for transaction {} :"
+                    " {}".format(self.transaction_id, response_data))
                 return response_data, self.SUCCESS
 
-            logger.error("Error in qitaf point collection api, {}"
-                         "".format(response.text))
+            logger.error(
+                "Error in qitaf point collection api, {} for transaction "
+                "{}".format(response.text, self.transaction_id))
             self.response_data = response.json()
             return {"error": response.text}, self.QITAF_CONNECTION_ERROR
 
