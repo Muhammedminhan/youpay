@@ -559,6 +559,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     is_gcc_card = response_data.get("is_gcc_card", False)
                     payment_status = PAYMENT_STATUS_PAID
                     return_response_data[IS_SUCCESS] = True
+                    card_last4 = response_data.get("card_last4")
+                    card_bin = response_data.get("card_bin")
+                    card_issuer_country = response_data.get(
+                        "card_issuer_country")
 
                     """Qitaf Reward Point flow"""
                     if transaction_obj.is_qitaf_enabled:
@@ -586,6 +590,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     approved = False
                     is_flagged = False
                     is_gcc_card = False
+                    card_last4 = ""
+                    card_bin = ""
+                    card_issuer_country = ""
                     response_data = response.json()
 
                 return_response_data["payment_status"] = payment_status
@@ -613,7 +620,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_flagged': is_flagged,
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
-                    'earned_point': reward
+                    'earned_point': reward,
+                    'card_last4': card_last4,
+                    'card_bin': card_bin,
+                    'card_issuer_country': card_issuer_country,
                 }
                 update_data.update(calculated_youpay_transaction_data)
 
