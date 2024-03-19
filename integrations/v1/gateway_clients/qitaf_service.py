@@ -564,7 +564,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     return_response_data[IS_SUCCESS] = True
 
                     collect_point_response, code = (
-                        self.handele_qitaf_collection(transaction_obj))
+                        self.handle_qitaf_collection(transaction_obj))
                     if code == self.SUCCESS:
                         earned_point = collect_point_response.get(
                             "qitaf_response", {}).get("reward_point", 0)
@@ -687,7 +687,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                          "{}".format(e))
             return None, self.QITAF_BALANCE_CALCULATION_FAILED
 
-    def handele_qitaf_collection(self, transaction_obj):
+    def handle_qitaf_collection(self, transaction_obj):
         """Qitaf Reward Point flow"""
         response = None
         code = None
