@@ -531,4 +531,4 @@ jobs:
       - name: Cleanup
         run: |
           cd devops-cd/scripts
-          bash qa-cleanup-resources.sh ${{ env.ACTION }} ${{ env.APPLICATION_NAME }} ${{needs.initialize.outputs.jira_id}} "backend-app"
+          bash qa-cleanup-resources.sh ${{ github.repository }} ${{ env.APPLICATION_NAME }} ${{needs.initialize.outputs.jira_id}} "backend-app"
