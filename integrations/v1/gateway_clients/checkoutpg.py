@@ -391,14 +391,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             # 3ds case
             self.payment_reference = response_data.get("reference_id")
             self.payment_status = PAYMENT_STATUS_PENDING
-            if is_card:
-                name_on_card = payment_data.get('customer_name')
-                self.update_youpay_transaction_data(
-                    self.prepare_data_to_update(name_on_card=name_on_card))
-            else:
-                # for saved card transactions
-                self.update_youpay_transaction_data(
-                    self.prepare_data_to_update())
+            name_on_card = payment_data.get('customer_name')
+            self.update_youpay_transaction_data(
+                self.prepare_data_to_update(name_on_card=name_on_card))
+
             response_data[IS_SUCCESS] = True
             response_data.pop('checkout_request_data')
             response_data.pop('checkout_response_data')
