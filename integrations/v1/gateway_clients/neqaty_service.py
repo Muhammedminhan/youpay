@@ -483,9 +483,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 return {"errors": msg}, self.NEQATY_CONNECTION_ERROR
 
     def update_brand_calculations(self, data, redeem_code):
-        for item in data:
-            if item["redeemCode"] == redeem_code:
-                return item
+        if data:
+            for item in data:
+                if item["redeemCode"] == redeem_code:
+                    return item
         return None
 
     def verification(self, request_data):

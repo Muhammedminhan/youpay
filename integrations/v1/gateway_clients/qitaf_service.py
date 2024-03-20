@@ -328,7 +328,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.info("qitaf redeem point api response: {}".format(
                     response_data))
                 response_data = self.handle_qitaf_response(
-                    response_data, self.transaction_obj)
+                    response_data, self.transaction_obj, self.request_data)
                 return response_data, self.SUCCESS
             elif response.status_code == 403:
                 msg = "Qitaf Forbidden, or partial redemption not supported"
@@ -432,12 +432,14 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                          "{}".format(e))
             return {"error": error}, self.QITAF_CONNECTION_ERROR
 
-    def handle_qitaf_response(self, response_data, payment_data):
+    def handle_qitaf_response(self, response_data, payment_data,
+                              request_data):
         youpay_update_data = {}
         logger.info(
             "handle_qitaf_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
+        name_on_card = request_data.get("customer_name", "")
 
         is_full_redemption = response_data.get("is_full_redemption", False)
         if is_full_redemption is False:
@@ -497,7 +499,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 "is_qitaf_enabled": self.is_qitaf_enabled,
                 "point_collection_enabled": self.point_collection_enabled,
                 "response_summary": response_data.get(
-                    'reason')
+                    'reason'),
+                "name_on_card": name_on_card
             }
         }
 
