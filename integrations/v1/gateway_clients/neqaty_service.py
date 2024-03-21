@@ -7,7 +7,8 @@ from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
                             REQUEST_METHOD_GET)
-from core.messages import REDIRECT_URL, IS_REDIRECT, IS_SUCCESS
+from core.messages import (REDIRECT_URL, IS_REDIRECT, IS_SUCCESS,
+                           GATEWAY_ERROR_OCCURRED)
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
@@ -140,13 +141,20 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 })
                 return formatted_response, self.SUCCESS
 
-
-            else:
+            elif hasattr(response, 'text'):
+                self.response_data = json.loads(response.text)
                 logger.error("Error in Neqaty point balance api, {}"
                              "".format(response.text))
-                self.response_data = response.json()
                 partner_response = self.response_data.get(
                     "partner_response")
+                self.update_youpay_transaction_data({
+                    'transaction_id': self.transaction_obj.transaction_id,
+                    'payment_reference': self.response_data.get(
+                        'reference_id'),
+                    'payment_status': PAYMENT_STATUS_PENDING,
+                    'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
+                    'payment_method': PAYMENT_METHOD_NEQATY,
+                })
                 if language == LANGUAGE_CODE_AR:
                     message = partner_response.get("response_text_ar")
                 else:
@@ -155,6 +163,14 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 err_obj = {
                     "message": message,
                     "code": self.response_data.get("code")
+                }
+                return {"errors": err_obj}, self.NEQATY_CONNECTION_ERROR
+            else:
+                logger.error(
+                    "unable to get response from b2c_payback-neqaty for "
+                    "point balance")
+                err_obj = {
+                    "message": GATEWAY_ERROR_OCCURRED,
                 }
                 return {"errors": err_obj}, self.NEQATY_CONNECTION_ERROR
 
