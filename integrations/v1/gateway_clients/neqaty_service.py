@@ -665,7 +665,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "gateway_reference": transaction_obj.payment_reference,
                 "currency": transaction_obj.currency,
                 "client_code": NEQATY_CLIENT_CODE,
-                "amount": int(paid_amount),
+                "amount": paid_amount,
                 "platform": transaction_obj.platform,
             }
 
