@@ -157,7 +157,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             payload.update(data)
             self.request_data = payload
-            payload['MSISDN'] = payload['qitaf_phone_number']
+            payload['MSISDN'] = payload.get('qitaf_phone_number')
             payload['apiclient'] = self.transaction_obj.api_client.name
             logger.info(
                 "Youpay sending request data to qitaf generate otp api "
