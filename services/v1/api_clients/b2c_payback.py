@@ -281,3 +281,46 @@ class GetCollectProgramEnabled(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class RemoveCollectProgramEnabled(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        transaction_id = decrypt_string(
+            request.data.get('transaction_id'))
+        logger.info("Removing CollectProgramEnabled API called for {}".format(
+            transaction_id))
+        try:
+            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+            if transaction_obj:
+                payback = B2CPaybackManager()
+                response = payback.remove_collect_program_enabled(
+                    transaction_obj)
+                if response:
+                    data = self.response_obj.get_success_dict(
+                        code=self.response_obj.SUCCESS,
+                        success_dict={}
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    message = (
+                        "Error in removing Collect point enabled "
+                        "program {}".format(
+                            request.data.get('transaction_id')))
+                    logger.error(message)
+                    data = self.response_obj.get_400_message(message=message)
+                    return Response(data.get('errors'),
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.error(
+                "Exception in removing Collect point enabled program {}".format(
+                    request.data.get('transaction_id')))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
