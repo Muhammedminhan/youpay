@@ -344,16 +344,14 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 transaction_obj.points_collection_enabled_program)
             points_collected_mobile_number = (
                 transaction_obj.points_collected_mobile_number)
-            if points_collection_enabled_program:
-                data = {
-                    "points_collection_enabled_program": (
-                        points_collection_enabled_program),
-                    "points_collected_mobile_number": (
-                        points_collected_mobile_number),
+            data = {
+                "points_collection_enabled_program": (
+                    points_collection_enabled_program),
+                "points_collected_mobile_number": (
+                    points_collected_mobile_number),
+            }
 
-                }
-                return data
-            return None
+            return data
         except Exception as e:
             logger.error(
                 "Exception occured on remove_collect_program_enabled",
