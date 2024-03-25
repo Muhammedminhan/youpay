@@ -249,26 +249,20 @@ class GetCollectProgramEnabled(APIView, YouPayTransactionCRUD):
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
-                data = {}
-                points_collection_enabled_program = (
-                    transaction_obj.points_collection_enabled_program)
-                if points_collection_enabled_program:
-                    data = {
-                        "points_collection_enabled_program": (
-                            points_collection_enabled_program)
-                    }
+                payback = B2CPaybackManager()
+                response = payback.get_collect_enabled_program(
+                    transaction_obj)
+                if response:
                     response_data = self.response_obj.get_success_dict(
                         code=self.response_obj.SUCCESS,
-                        success_dict=data
+                        success_dict=response
                     )
                     return Response(response_data, status=status.HTTP_200_OK)
                 else:
-                    response_data = self.response_obj.get_success_dict(
-                        code=self.response_obj.SUCCESS,
-                        success_dict=data
-                    )
-                    return Response(response_data, status=status.HTTP_200_OK)
-
+                    message = "Unable to get collect enabled program "
+                    data = self.response_obj.get_400_message(message=message)
+                    return Response(data.get('errors'),
+                                    status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_error_dict(
                     error_code=self.response_obj.TRANSACTION_NOT_FOUND)
