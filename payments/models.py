@@ -16,7 +16,6 @@ from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
-    PAYMENT_METHOD_CITI_REWARDS,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
     PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST,
     POINT_COLLECTION_PROGRAMS)
@@ -317,9 +316,6 @@ def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
     2.Handle actions for reverting citi blocked balance
     """
     youpay_update_client(instance)
-    if instance.payment_method == PAYMENT_METHOD_CITI_REWARDS:
-        if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
-            revert_citi_blocked_balance(instance)
 
     if instance.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
         if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
