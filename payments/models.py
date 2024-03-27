@@ -9,7 +9,8 @@ from django.dispatch import receiver
 
 from core.constants import (PAYMENT_GATEWAY_CHOICES,
                             PURCHASE_PLATFORM_CHOICES,
-                            PAYMENT_REQUEST_LANGUAGE_CHOICES)
+                            PAYMENT_REQUEST_LANGUAGE_CHOICES,
+                            PAYMENT_GATEWAY_B2CPAYBACK)
 from core.exceptions import ClientWebhookFailed
 from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
@@ -320,6 +321,10 @@ def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
         if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
             revert_citi_blocked_balance(instance)
 
+    if instance.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+        if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
+            trigger_mail_on_b2c(instance)
+
 
 def youpay_update_client(instance):
     """
@@ -367,6 +372,24 @@ def revert_citi_blocked_balance(instance):
         logger.error(
             "Exception occurred {} on signal while reverting citi blocked "
             "balance for {}, ".format(str(e), instance.transaction_id))
+
+
+def trigger_mail_on_b2c(instance):
+    """
+    Handle actions to trigger mail on b2c-payback
+    """
+    try:
+        logger.info(
+            "trigger_mail_on_b2c signal initiated for {}".format(
+                instance.transaction_id))
+        from integrations.v1.gateway_clients.b2c_payback import (
+            B2CPaybackManager)
+        b2c_obj = B2CPaybackManager()
+        b2c_obj.trigger_mail_on_canceled_transaction(instance)
+    except Exception as e:
+        logger.error(
+            "Exception occurred {} on signal while triggering mail "
+            "for {}, ".format(str(e), instance.transaction_id))
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):
