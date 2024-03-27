@@ -235,7 +235,7 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
             errors['message'] = COMMON_ERROR_MESSAGE_EN
             errors['code'] = code
 
-        return data
+        return True
 
 
 class CollectProgramManagement(APIView, YouPayTransactionCRUD):
