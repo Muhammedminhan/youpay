@@ -2,7 +2,8 @@ from django.contrib import admin
 
 from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
-from payments.adminActions import archive_transaction_data
+from payments.adminActions import (archive_transaction_data,
+                                   collect_neqaty_points_for_transaction)
 from payments.forms import AnnouncementForm
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification, AdditionalCharge,
@@ -17,9 +18,12 @@ class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
 
 
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
-    actions = [archive_transaction_data]
+    actions = [archive_transaction_data,
+               collect_neqaty_points_for_transaction]
     archive_transaction_data.short_description = (
         "Archive Selected Transaction data")
+    collect_neqaty_points_for_transaction.short_description = (
+        "Collect Neqaty points for the transaction")
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'order_reference',
@@ -85,14 +89,13 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('B2C Payback transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
-                       'is_full_redemption', 'earned_point',
+                       'is_full_redemption', 'earned_point', 'earn_reference',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
                        'points_collection_enabled_program',
                        'point_collection_enabled',
                        'maximum_redeemable_points',
                        'minimum_redeemable_points', 'amount_conversion_rate',
-                       'citi_order_id', 'citi_phone_number'
                        )
         }),
         ('Happycredits transaction details', {
@@ -235,6 +238,7 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
         ('B2C Payback transaction details', {
             'fields': ('redeemed_amount', 'redeemed_points', 'payable_amount',
                        'available_amount', 'available_points',
+                       'earn_reference',
                        'is_full_redemption', 'earned_point',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',

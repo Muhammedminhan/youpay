@@ -10,6 +10,7 @@ from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string, get_site_domain
 from integrations.constants import TABBYPG_HUB_CODE
+from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -30,6 +31,13 @@ class CreateSession(YouPayTransactionCRUD, APIView, ClientValidator):
 
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
+
+            if transaction_obj.point_collection_enabled:
+                """
+                Removing point collection enabled since tabby
+                """
+                payback = B2CPaybackManager()
+                payback.remove_collect_program_enabled(transaction_obj)
 
             if transaction_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)

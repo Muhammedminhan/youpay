@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
+from core.utils import decrypt_string
 from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
@@ -235,3 +236,79 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
             errors['code'] = code
 
         return data
+
+
+class CollectProgramManagement(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def get(self, request, pk):
+        logger.info("CollectProgramManagement API called to get collect "
+                    "program for transaction ID: {}".format(pk))
+        try:
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(pk))
+            if transaction_obj:
+                payback = B2CPaybackManager()
+                response = payback.get_collect_enabled_program(
+                    transaction_obj)
+                if response:
+                    response_data = self.response_obj.get_success_dict(
+                        code=self.response_obj.SUCCESS,
+                        success_dict=response
+                    )
+                    return Response(response_data, status=status.HTTP_200_OK)
+                else:
+                    message = "Unable to get collect enabled program"
+                    data = self.response_obj.get_400_message(message=message)
+                    return Response(data.get('errors'),
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.error("Exception in GetCollectProgramEnabled API for "
+                         "transaction ID: {}".format(pk))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        logger.info(
+            "Removing CollectProgramEnabled API called for transaction ID: {}".format(
+                pk))
+        try:
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(pk))
+            if transaction_obj:
+                payback = B2CPaybackManager()
+                response = payback.remove_collect_program_enabled(
+                    transaction_obj)
+                if response:
+                    data = self.response_obj.get_success_dict(
+                        code=self.response_obj.SUCCESS,
+                        success_dict={}
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    message = (
+                        "Error in removing Collect point enabled "
+                        "program {}".format(
+                            request.data.get('transaction_id')))
+                    logger.error(message)
+                    data = self.response_obj.get_400_message(message=message)
+                    return Response(data.get('errors'),
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.error(
+                "Exception in removing Collect point enabled program for "
+                "transaction ID: {}".format(pk))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)

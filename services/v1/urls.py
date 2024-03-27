@@ -5,7 +5,8 @@ from integrations.v1.gateway_clients.tabbypg import TabbyPaymentCancel
 from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
                                                  B2CPaybackRedemption,
-                                                 B2CPaybackVerify)
+                                                 B2CPaybackVerify,
+                                                 CollectProgramManagement)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
                                                 PaypalPayment,
@@ -22,7 +23,8 @@ from .api_clients.happy_credits import (HappyCreditsCreditBalance,
 from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyGenerateOTPAPIView,
                                          NeqatyRedeemPointsAPIView,
-                                         NeqatyVerify)
+                                         NeqatyVerify,
+                                         UpdateNeqatyPhoneNumber)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify,
@@ -64,6 +66,9 @@ urlpatterns = [
     path('adcb/redemption/', B2CPaybackRedemption.as_view()),
     path('adcb/verification/', B2CPaybackVerify.as_view(),
          name='B2CPaybackVerify'),
+    path('b2cpayback/collect-program/<str:pk>',
+         CollectProgramManagement.as_view(),
+         name='collect_program_management'),
 
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view(),
@@ -109,4 +114,5 @@ urlpatterns = [
     path('neqaty/generate-otp/', NeqatyGenerateOTPAPIView.as_view()),
     path('neqaty/redeem-points/', NeqatyRedeemPointsAPIView.as_view()),
     path('neqaty/verify/', NeqatyVerify.as_view()),
+    path('neqaty/update-phone-number/', UpdateNeqatyPhoneNumber.as_view()),
 ]
