@@ -238,16 +238,15 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
         return data
 
 
-class GetCollectProgramEnabled(APIView, YouPayTransactionCRUD):
+class CollectProgramManagement(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
-    def post(self, request):
-        logger.info("GetCollectProgramEnabled API called for {}".format(
-            request.data.get('transaction_id')))
+    def get(self, request, pk):
+        logger.info("CollectProgramManagement API called to get collect "
+                    "program for transaction ID: {}".format(pk))
         try:
-            transaction_id = request.data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
-                decrypt_string(transaction_id))
+                decrypt_string(pk))
             if transaction_obj:
                 payback = B2CPaybackManager()
                 response = payback.get_collect_enabled_program(
@@ -259,7 +258,7 @@ class GetCollectProgramEnabled(APIView, YouPayTransactionCRUD):
                     )
                     return Response(response_data, status=status.HTTP_200_OK)
                 else:
-                    message = "Unable to get collect enabled program "
+                    message = "Unable to get collect enabled program"
                     data = self.response_obj.get_400_message(message=message)
                     return Response(data.get('errors'),
                                     status=status.HTTP_400_BAD_REQUEST)
@@ -269,24 +268,19 @@ class GetCollectProgramEnabled(APIView, YouPayTransactionCRUD):
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
-            logger.error(
-                "Exception in GetCollectProgramEnabled API  for {}".format(
-                    request.data.get('transaction_id')))
+            logger.error("Exception in GetCollectProgramEnabled API for "
+                         "transaction ID: {}".format(pk))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
 
-
-class RemoveCollectProgramEnabled(APIView, YouPayTransactionCRUD):
-    response_obj = YouPayResponse()
-
-    def post(self, request):
-        transaction_id = decrypt_string(
-            request.data.get('transaction_id'))
-        logger.info("Removing CollectProgramEnabled API called for {}".format(
-            transaction_id))
+    def delete(self, request, pk):
+        logger.info(
+            "Removing CollectProgramEnabled API called for transaction ID: {}".format(
+                pk))
         try:
-            transaction_obj = self.get_youpay_transaction_data(transaction_id)
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(pk))
             if transaction_obj:
                 payback = B2CPaybackManager()
                 response = payback.remove_collect_program_enabled(
@@ -313,8 +307,8 @@ class RemoveCollectProgramEnabled(APIView, YouPayTransactionCRUD):
 
         except Exception as e:
             logger.error(
-                "Exception in removing Collect point enabled program {}".format(
-                    request.data.get('transaction_id')))
+                "Exception in removing Collect point enabled program for "
+                "transaction ID: {}".format(pk))
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

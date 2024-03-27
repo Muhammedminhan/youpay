@@ -6,8 +6,7 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
                                                  B2CPaybackRedemption,
                                                  B2CPaybackVerify,
-                                                 GetCollectProgramEnabled,
-                                                 RemoveCollectProgramEnabled)
+                                                 CollectProgramManagement)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
                                                 PaypalPayment,
@@ -67,11 +66,9 @@ urlpatterns = [
     path('adcb/redemption/', B2CPaybackRedemption.as_view()),
     path('adcb/verification/', B2CPaybackVerify.as_view(),
          name='B2CPaybackVerify'),
-    path('b2cpayback/collect-program/', GetCollectProgramEnabled.as_view(),
-         name='GetCollectProgramEnabled'),
-    path('b2cpayback/remove-collect-program/',
-         RemoveCollectProgramEnabled.as_view(),
-         name='RemoveCollectProgramEnabled'),
+    path('b2cpayback/collect-program/<str:pk>',
+         CollectProgramManagement.as_view(),
+         name='collect_program_management'),
 
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view(),
