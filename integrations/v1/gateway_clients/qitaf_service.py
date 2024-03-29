@@ -18,7 +18,8 @@ from integrations.constants import (
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
     CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
-    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, )
+    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, QITAF_TEST_NUMBER,
+    QITAF_DUMMY_BRAND_CALCULATION, )
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -66,6 +67,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.base_amount = None
         self.VAT_amount = None
         self.payment_gateway = PAYMENT_GATEWAY_B2CPAYBACK
+        self.points_redeemed_mobile_number = None
+        self.points_collection_enabled_program = None
+        self.point_collection_enabled = False
+        self.brand_calculations = None
 
     def get_configurations(self, amount, currency, transaction_id):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
@@ -462,6 +467,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             is_redirect = True
             self.payment_status = PAYMENT_STATUS_PENDING
             self.is_qitaf_enabled = True
+            self.redeemed_amount = response_data.get('redeemed_amount')
+            self.redeemed_point = response_data.get('redeemed_point')
+            self.payable_amount = response_data.get('payable_amount')
+            self.points_redeemed_mobile_number = response_data.get(
+                'redeemed_mobile_number')
+            self.points_collection_enabled_program = PAYMENT_METHOD_QITAF
+            self.point_collection_enabled = True
+            if self.points_redeemed_mobile_number == QITAF_TEST_NUMBER:
+                self.brand_calculations = QITAF_DUMMY_BRAND_CALCULATION
+
         else:
             """Handle qiTaf full redemption response"""
             if str(response_data.get('response_code')) in ["0"]:
@@ -480,6 +495,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 self.payable_amount = 0
                 self.service_fee = 0
                 self.VAT_amount = 0
+
+                self.points_redeemed_mobile_number = response_data.get(
+                    'redeemed_mobile_number')
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
@@ -511,10 +529,15 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 "VAT_amount": self.VAT_amount,
                 "is_qitaf_enabled": self.is_qitaf_enabled,
                 "response_summary": response_data.get(
-                    'reason')
+                    'reason'),
+                "points_redeemed_mobile_number": (
+                    self.points_redeemed_mobile_number),
+                "points_collection_enabled_program": (
+                    self.points_collection_enabled_program),
+                "point_collection_enabled": self.point_collection_enabled,
+                "brand_calculations": self.brand_calculations
             }
         }
-
         update_data.update(youpay_update_data)
 
         self.update_youpay_transaction_data(update_data)
@@ -530,6 +553,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
     def verification(self, request_data):
         """Qitaf Verification with b2c"""
         reward = None
+        payment_scheme = None
+        phone_number = None
 
         request_transaction_id = request_data.get('transaction_id')
         logger.info(
@@ -576,6 +601,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     is_gcc_card = response_data.get("is_gcc_card", False)
                     payment_status = PAYMENT_STATUS_PAID
                     return_response_data[IS_SUCCESS] = True
+                    payment_scheme = response_data.get("payment_scheme")
 
                     """Qitaf Reward Point flow"""
                     if transaction_obj.is_qitaf_enabled:
@@ -592,6 +618,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                             " {}".format(transaction_id,
                                          response, code, qitaf_reward))
                         reward = qitaf_reward
+                        phone_number = transaction_obj.qitaf_phone_number
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -630,7 +657,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_flagged': is_flagged,
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
-                    'earned_point': reward
+                    'earned_point': reward,
+                    'payment_scheme': payment_scheme,
+                    'points_collected_mobile_number': phone_number
                 }
                 update_data.update(calculated_youpay_transaction_data)
 
