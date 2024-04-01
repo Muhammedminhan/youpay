@@ -362,10 +362,6 @@ def process_checkoutpg_response_verification(**kwargs):
             if code == response_obj.SUCCESS:
                 earn_reference = collect_point_response.get("earn_reference")
                 earned_point = collect_point_response.get("reward_point", 0)
-            else:
-                logger.error(
-                    "Error while collecting reward point for the "
-                    "transaction {}".format(transaction_id))
 
     youpay_obj = YouPayTransactionCRUD()
 
