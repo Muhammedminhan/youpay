@@ -705,7 +705,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 return {"errors": msg}, self.NEQATY_CONNECTION_ERROR
 
         except Exception as e:
-            error = "Error in neqaty point collection api: {}".format(e)
             logger.error("Exception in neqaty point collection api: "
                          "{}".format(e), exc_info=True)
             return None, self.NEQATY_CONNECTION_ERROR

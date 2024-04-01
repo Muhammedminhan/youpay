@@ -565,6 +565,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     is_gcc_card = response_data.get("is_gcc_card", False)
                     payment_status = PAYMENT_STATUS_PAID
                     return_response_data[IS_SUCCESS] = True
+                    card_last4 = response_data.get("card_last4")
+                    card_bin = response_data.get("card_bin")
+                    card_issuer_country = response_data.get(
+                        "card_issuer_country")
 
                     collect_point_response, code = (
                         self.handle_qitaf_collection(transaction_obj))
@@ -583,6 +587,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     approved = False
                     is_flagged = False
                     is_gcc_card = False
+                    card_last4 = ""
+                    card_bin = ""
+                    card_issuer_country = ""
                     response_data = response.json()
                     return_response_data["message"] = response_data.get(
                         "response_summary", "Payment Failed")
@@ -613,6 +620,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
                     'earned_point': earned_point,
+                    'card_last4': card_last4,
+                    'card_bin': card_bin,
+                    'card_issuer_country': card_issuer_country,
                 }
                 update_data.update(calculated_youpay_transaction_data)
 
