@@ -584,6 +584,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     is_flagged = False
                     is_gcc_card = False
                     response_data = response.json()
+                    return_response_data["message"] = response_data.get(
+                        "response_summary", "Payment Failed")
 
                 return_response_data["payment_status"] = payment_status
                 self.create_youpay_to_payment_gateways_data(
