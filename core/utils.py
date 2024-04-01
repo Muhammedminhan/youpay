@@ -475,7 +475,7 @@ def handle_point_collection(youpay_transaction, transaction_id, response_obj):
                     youpay_transaction))
             if code == response_obj.SUCCESS:
                 earn_reference = response.get(
-                    "partner_response").get("earn_reference"),
+                    "partner_response").get("earn_reference")
 
             logger.info(
                 "Checking for Neqaty Reward Point for transaction : "
