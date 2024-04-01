@@ -306,6 +306,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
 @receiver(post_init, sender=YouPayTransactionData)
 def set_previous_status(sender, instance, **kwargs):
     instance.previous_status = instance.payment_status
+    instance.previous_payment_gateway = instance.payment_gateway
 
 
 @receiver(post_save, sender=YouPayTransactionData)
@@ -317,7 +318,8 @@ def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
     """
     youpay_update_client(instance)
 
-    if instance.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+    if (instance.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK and
+            instance.previous_status not in ALLOW_ARCHIVE_STATUS_LIST):
         if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
             trigger_mail_on_b2c(instance)
 
