@@ -229,11 +229,11 @@ def update_youpaytransactiondata_on_webhook(instance):
             logger.info(
                 "Youpaytransaction object not found for payment reference "
                 "{} during update transaction from "
-                "TabbyPaymentData".format(instance.payment_reference))
+                "ADCBTransactionData".format(payment_reference))
     except Exception as e:
         logger.error(
             "Error while trying to update youpay transaction from "
-            "TabbyPaymentData signal {}".format(e), exc_info=e)
+            "ADCBTransactionData signal {}".format(e), exc_info=e)
         is_success = False
 
     finally:

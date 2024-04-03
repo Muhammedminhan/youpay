@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from adcbpgclient.libs.authentication import SignatureAuthentication
 from adcbpgclient.models import ADCBTransactionData
 from integrations.common import WebhookDataFormat
+from payments.constants import PAYMENT_SCHEME_NONE
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +97,7 @@ class WebhookListener(APIView, WebhookDataFormat):
                 transaction_obj.card_issuer_country = request_data.get(
                     'card_issuer_country')
                 transaction_obj.payment_scheme = request_data.get(
-                    'payment_scheme'
-                )
+                    'payment_scheme', PAYMENT_SCHEME_NONE)
                 transaction_obj.payment_id = request_data.get(
                     'payment_id')
                 transaction_obj.financial_action_response_data = (

@@ -149,7 +149,9 @@ jobs:
   deploy-app-nginx:
     needs: [ build-app , build-nginx ]
     name: Deploy
-    runs-on: self-hosted
+    runs-on:
+      group: default
+      labels: self-hosted
     steps:
      - name: Checkout Code
        uses: actions/checkout@v3.0.2
