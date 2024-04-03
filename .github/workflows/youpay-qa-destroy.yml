@@ -1,0 +1,27 @@
+name: Destroy QA Deployment youpay
+run-name: Destroying youpay ${{ inputs.branch }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch'
+        required: true
+        type: string
+
+  repository_dispatch:
+    types: [ "QA Cleanup" ]
+    inputs:
+      branch:
+        description: 'Branch'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: QA
+    uses: YouGotaGift/devops-organization-actions/.github/workflows/qa-destroy-deployed-app.yml@main
+    with:
+      application_name: youpay
+      branch: ${{ inputs.branch || github.event.client_payload.branch }}
+    secrets: inherit

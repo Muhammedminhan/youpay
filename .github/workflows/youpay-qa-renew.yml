@@ -1,0 +1,19 @@
+name: Renew QA Deployment youpay
+run-name: Renewing youpay ${{ inputs.branch }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: QA
+    uses: YouGotaGift/devops-organization-actions/.github/workflows/qa-renew-deployed-app.yml@main
+    with:
+      application_name: youpay
+      branch: ${{ inputs.branch }}
+    secrets: inherit

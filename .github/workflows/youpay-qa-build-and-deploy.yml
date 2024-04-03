@@ -1,5 +1,5 @@
 name: QA Build & Deploy youpay
-run-name: ${{ inputs.action }} QA Branch ${{ inputs.branch }}
+run-name: Deploying QA Branch ${{ inputs.branch }}
 
 on:
   workflow_dispatch:
@@ -8,15 +8,6 @@ on:
         description: 'Branch'
         required: true
         type: string
-      action:
-        description: 'Action'
-        required: true
-        default: 'deploy'
-        type: choice
-        options:
-        - deploy
-        - renew
-        - destroy
       unit_test:
         description: 'Unit Test'
         required: true
@@ -54,7 +45,7 @@ on:
         default: 'qa'
         type: choice
         options:
-        - qa
+          - qa
       debug:
         description: 'Debug'
         required: true
@@ -65,7 +56,7 @@ on:
           - true
 
   repository_dispatch:
-    types: [ "QA Cleanup" , "QA Build & Deploy youpay" ]
+    types: [ "QA Build & Deploy youpay" ]
     inputs:
       branch:
         description: 'Branch'
@@ -117,7 +108,7 @@ on:
         default: 'qa'
         type: choice
         options:
-        - qa
+          - qa
       debug:
         description: 'Debug'
         required: true
@@ -127,408 +118,16 @@ on:
           - false
           - true
 
-env:
-  APPLICATION_NAME: 'youpay'
-  APP_IMAGE_REPOSITORY: 'qa/ygg/youpay/backend-app'
-  NGINX_IMAGE_REPOSITORY: 'qa/ygg/youpay/backend-nginx'
-  ECR_REGISTRY: '420360167813'
-  ECR_REGION: 'me-central-1'
-  VAULT_ADDRESS: ${{ secrets.VAULT_ADDRESS }}
-  PRODUCT_TEAM: 'payment'
-  JIRA_ID: ${{ inputs.branch || github.event.client_payload.branch }}
-  ACTION: ${{ inputs.action || github.event.client_payload.action }}
-  UNIT_TEST: ${{ inputs.unit_test || github.event.client_payload.unit_test || false }}
-  WHITELABEL: ${{ inputs.whitelabel || github.event.client_payload.whitelabel || false }}
-  APP_DB_LB_DEPLOY: ${{ inputs.app_db_lb_deploy || github.event.client_payload.app_db_lb_deploy || false }}
-  QA_DEPLOY_ENV: ${{ inputs.deploy_env || github.event.client_payload.deploy_env || 'qa' }}
-  DEBUG: ${{ inputs.debug || github.event.client_payload.debug || false }}
-  NGINX_BASE_IMAGE: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/nginx:1.16.1-1'
-
 jobs:
-  initialize:
-    name: Initialize
-    runs-on: ubuntu-latest
-    outputs:
-      jira_id: ${{ steps.conversion.outputs.jira_id }}
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v3.0.2
-      with:
-        ref: ''
-
-    - name: Checking if branch exists in case of deploy or renew
-      if: inputs.action == 'renew' || inputs.action == 'deploy' || github.event.client_payload.action == 'renew' || github.event.client_payload.action == 'deploy'
-      run: |
-        BRANCH_EXISTS=$(git ls-remote --heads origin ${{ env.JIRA_ID }} | wc -l)
-        if [[ $BRANCH_EXISTS == 0 ]]; then
-          echo "Branch ${{ env.JIRA_ID }} is not exist"
-          exit 1
-        fi
-
-    - name: Validating Branch Name
-      run: |
-         if [[ ${{ env.JIRA_ID }} == "master" || ${{ env.JIRA_ID }} == "main" || ! ${{ env.JIRA_ID }} =~ ^[[:alnum:]]*(-[[:alnum:]]+)*$ ]] ; then
-           echo -e "\n$(date) Deployment forbidden for branch: ${{ inputs.branch || github.event.client_payload.branch }}\n"
-           exit 1
-         fi
-
-    - name: Branch conversion
-      id: conversion
-      run: |
-        BRANCH=${{ env.JIRA_ID }}
-        echo "jira_id=${BRANCH,,}" >> "$GITHUB_OUTPUT"
-
-  renew:
-    needs: [ build-app , build-nginx , initialize ]
-    name: Renew
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout template
-        if: inputs.action == 'renew' || inputs.action == 'deploy' || github.event.client_payload.action == 'renew' || github.event.client_payload.action == 'deploy'
-        uses: actions/checkout@v3
-        with:
-          repository: yougotagift/devops-cd
-          ref: 'main'
-          ssh-key: ${{ secrets.DEVOPS_CD_DEPLOYMENT_KEY }}
-          path: devops-cd
-
-      - name: Configure AWS credentials
-        if: inputs.action == 'renew' || inputs.action == 'deploy' || github.event.client_payload.action == 'renew' || github.event.client_payload.action == 'deploy'
-        uses: aws-actions/configure-aws-credentials@v2.2.0
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
-          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH_QA }}
-          aws-region: ${{ env.ECR_REGION }}
-
-      - name: renew deployment
-        if: inputs.action == 'renew' || inputs.action == 'deploy' || github.event.client_payload.action == 'renew' || github.event.client_payload.action == 'deploy'
-        run: |
-          cd devops-cd/scripts
-          bash qa-expiry.sh ${{ env.ACTION }} ${{ github.repository }} ${{ env.APPLICATION_NAME }} ${{needs.initialize.outputs.jira_id}}
-
-  build-app-req:
-    needs: [initialize]
-    name: Build App Requirements
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        uses: actions/checkout@v3.0.2
-        with:
-         ref: ${{ inputs.branch || github.event.client_payload.branch }}
-
-      - name: Paths Filter
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        uses: yougotagift/paths-filter@v2
-        id: filter
-        with:
-          base: release
-          filters: |
-            requirements:
-              - 'requirements.txt'
-
-      - name: Configure AWS credentials
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        uses: aws-actions/configure-aws-credentials@v2.2.0
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
-          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH_QA }}
-          aws-region: ${{ env.ECR_REGION }}
-
-      - name: Login to Amazon ECR
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1.6.0
-        with:
-          registries: ${{ env.ECR_REGISTRY }}
-          registry-type: private
-          region: ${{ env.ECR_REGION }}
-
-      - name: Docker Build and push
-        if: (steps.filter.outputs.requirements == 'true' && (inputs.action == 'deploy' || github.event.client_payload.action == 'deploy') ) || inputs.rebuild_req == 'true'
-        env:
-          CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
-        run: |
-          YGAG_PIP_PRIVATE_REPO="https://aws:$(docker run -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }} amazon/aws-cli:2.2.37 codeartifact get-authorization-token --domain yougotagift --domain-owner 507980205015 --query authorizationToken --output text --region us-east-1)@yougotagift-507980205015.d.codeartifact.us-east-1.amazonaws.com/pypi/private/simple/"
-          docker build -f deployment/app/Dockerfile.req -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:req-v2 --build-arg YGAG_PIP_PRIVATE_REPO_URL=$YGAG_PIP_PRIVATE_REPO --build-arg BASE_IMAGE="$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:base-v2" .
-          docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:req-v2"
-
-  build-app:
-    needs: [build-app-req]
-    name: Build App
-    runs-on: ubuntu-latest
-    steps:
-      - name: Configure AWS credentials
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        uses: aws-actions/configure-aws-credentials@v2.2.0
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
-          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH_QA }}
-          aws-region: ${{ env.ECR_REGION }}
-
-      - name: Login to Amazon ECR
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1.6.0
-        with:
-          registries: ${{ env.ECR_REGISTRY }}
-          registry-type: private
-          region: ${{ env.ECR_REGION }}
-
-      - name: Checkout Code
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        uses: actions/checkout@v3.0.2
-        with:
-         ref: ${{ inputs.branch || github.event.client_payload.branch }}
-
-      - name: Docker Build and push
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        env:
-          CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
-        run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)-${GITHUB_RUN_ID}-qa
-          timestamp=$(date +%s)
-          docker build -f deployment/app/Dockerfile -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:$IMAGE_TAG -t $CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:qa_$timestamp --build-arg REQ_IMAGE="$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:req-v2" .
-          docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:$IMAGE_TAG"
-          docker push "$CONTAINER_REGISTRY/${{ env.APP_IMAGE_REPOSITORY }}:qa_$timestamp"
-
-  build-nginx:
-    needs: [initialize]
-    name: Build Nginx
-    runs-on: ubuntu-latest
-    steps:
-
-      - name: Configure AWS credentials
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        uses: aws-actions/configure-aws-credentials@v2.2.0
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
-          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH_QA }}
-          aws-region: ${{ env.ECR_REGION }}
-
-      - name: Login to Amazon ECR
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1.6.0
-        with:
-          registries: ${{ env.ECR_REGISTRY }}
-          registry-type: private
-          region: ${{ env.ECR_REGION }}
-
-      - name: Checkout Code
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        uses: actions/checkout@v3.0.2
-        with:
-         ref: ${{ inputs.branch || github.event.client_payload.branch }}
-
-      - name: Docker Build and push
-        if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-        env:
-          CONTAINER_REGISTRY: ${{ env.ECR_REGISTRY }}.dkr.ecr.${{ env.ECR_REGION }}.amazonaws.com
-        run: |
-          IMAGE_TAG=$(git rev-parse --short HEAD)-${GITHUB_RUN_ID}-qa
-          cd deployment/nginx/${{ env.APPLICATION_NAME }}/
-          timestamp=$(date +%s)
-          docker build -f Dockerfile -t $CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:$IMAGE_TAG -t $CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:qa_$timestamp --build-arg BASE_IMAGE="${{ env.NGINX_BASE_IMAGE }}" --build-arg ENVIRONMENT="qa" .
-          docker push "$CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:$IMAGE_TAG"
-          docker push "$CONTAINER_REGISTRY/${{ env.NGINX_IMAGE_REPOSITORY }}:qa_$timestamp"
-
-  deploy-app-nginx:
-    needs: [ build-app , build-nginx , renew , initialize ]
-    name: Deploy
-    if: ( inputs.action == 'deploy' || github.event.client_payload.action == 'deploy' || inputs.action == 'destroy' || github.event.client_payload.action == 'destroy' )
-    runs-on: self-hosted
-    steps:
-     - name: Checkout Code for deploy
-       if: inputs.action == 'deploy' || github.event.client_payload.action == 'deploy'
-       uses: actions/checkout@v3.0.2
-       with:
-         ref: ${{ inputs.branch || github.event.client_payload.branch }}
-
-     - name: Checkout Code for destroy
-       if: inputs.action == 'destroy' || github.event.client_payload.action == 'destroy'
-       uses: actions/checkout@v3.0.2
-       with:
-         ref: main
-
-     - name: Setup Dynamic env variables
-       run: echo "IMAGE_TAG=$(git rev-parse --short HEAD)-${GITHUB_RUN_ID}-qa" >> $GITHUB_ENV
-
-     - name: Setup QA env variable
-       run: |
-        echo "KUBERNETES_HOST=${{ secrets.YGG_ME_CENTRAL_1_QA_KUBERNETES_HOST }}" >> $GITHUB_ENV
-        echo "KUBERNETES_CLUSTER_CA_CERT=${{ secrets.YGG_ME_CENTRAL_1_QA_KUBERNETES_CLUSTER_CA_CERT }}" >> $GITHUB_ENV
-        echo "KUBERNETES_TOKEN=${{ secrets.YGG_ME_CENTRAL_1_QA_KUBERNETES_TOKEN }}" >> $GITHUB_ENV
-        echo "DOMAIN=${{ secrets.QA_DOMAIN }}" >> $GITHUB_ENV
-        echo "CERTIFICATE_ARN=${{ secrets.YGG_ME_CENTRAL_1_QA_CERTIFICATE_ARN }}" >> $GITHUB_ENV
-        echo "WAF_ARN=${{ secrets.YGG_ME_CENTRAL_1_QA_WAF_ARN }}" >> $GITHUB_ENV
-        echo "ALB_ACCESS_LOG_BUCKET=${{ secrets.YGG_ME_CENTRAL_1_QA_ALB_ACCESS_LOG_BUCKET }}" >> $GITHUB_ENV
-
-     - name: Checkout template
-       uses: actions/checkout@v3
-       with:
-          repository: yougotagift/devops-cd
-          ref: 'main'
-          ssh-key: ${{ secrets.DEVOPS_CD_DEPLOYMENT_KEY }}
-          path: devops-cd
-
-     - name: Search and replace values
-       run: |
-        cd devops-cd
-        mkdir -p build/${{ env.APPLICATION_NAME }}
-        cp application/* build/${{ env.APPLICATION_NAME }}
-        cp ../deployment/values/${{ env.APPLICATION_NAME }}/qa/helm/* build/${{ env.APPLICATION_NAME }}
-        cp ../deployment/values/${{ env.APPLICATION_NAME }}/qa/terraform/* build/${{ env.APPLICATION_NAME }}
-        
-        find ./ -type f -exec sed -i 's/\[ENVIRONMENT\]/qa/g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[KUBERNETES_TOKEN\]/${{ env.KUBERNETES_TOKEN }}/g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[VAULT_TOKEN\]/${{ secrets.VAULT_TOKEN }}/g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[BUILD_TAG\]/${{ env.IMAGE_TAG }}/g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[NGINX_BUILD_TAG\]/${{ env.IMAGE_TAG }}/g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[IMAGE_PULL_SECRET\]/${{ env.IMAGE_PULL_SECRET }}/g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[APPLICATION_NAME\]/${{ env.APPLICATION_NAME }}/g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[KUBERNETES_CLUSTER_CA_CERT\]/${{ env.KUBERNETES_CLUSTER_CA_CERT }}/g' '{}' \;
-        find ./ -type f -exec sed -i 's!\[VAULT_ADDRESS\]!${{ env.VAULT_ADDRESS }}!g' '{}' \;
-        find ./ -type f -exec sed -i 's!\[KUBERNETES_HOST\]!${{ env.KUBERNETES_HOST }}!g' '{}' \;
-        find ./ -type f -exec sed -i 's!\[DOMAIN\]!${{ env.DOMAIN }}!g' '{}' \;
-        find ./ -type f -exec sed -i 's!\[CERTIFICATE_ARN\]!${{ env.CERTIFICATE_ARN }}!g' '{}' \;
-        find ./ -type f -exec sed -i 's!\[WAF_ARN\]!${{ env.WAF_ARN }}!g' '{}' \;
-        find ./ -type f -exec sed -i 's!\[ALB_ACCESS_LOG_BUCKET\]!${{ env.ALB_ACCESS_LOG_BUCKET }}!g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[AWS_ACCESS_KEY_ID\]/${{ secrets.TERRAFORM_QA_AWS_ACCESS_KEY_ID }}/g' '{}' \;
-        find ./ -type f -exec sed -i 's/\[AWS_ACCESS_SECRET_KEY\]/${{ secrets.TERRAFORM_QA_AWS_ACCESS_SECRET_KEY }}/g' '{}' \;
-
-        cd build/${{ env.APPLICATION_NAME }}/ > /dev/null
-
-        find ./ -type f -exec sed -i "s/\[JIRA_ID\]/${{needs.initialize.outputs.jira_id}}/g" {} \;
-
-        if [[ ${{ env.ACTION }} == "destroy" ]] ; then
-          sed -i "s/\[APP_DEPLOY\]/false/g" *.auto.tfvars
-        else
-          sed -i "s/\[APP_DEPLOY\]/true/g" *.auto.tfvars
-        fi
-
-        if [[ ${{ env.WHITELABEL }} == "true" ]] ; then
-          sed -i "s/\[APP_WHITELABEL_DEPLOY\]/true/g" *.auto.tfvars
-          /bin/patch -u values-ingress.yaml -i values-ingress.yaml.patch
-        else
-          sed -i "s/\[APP_WHITELABEL_DEPLOY\]/false/g" *.auto.tfvars
-        fi
-
-        if [[ ${{ env.UNIT_TEST }} == "true" ]] ; then
-          sed -i "s/\[APP_UNIT_TEST_DEPLOY\]/true/g" *.auto.tfvars
-        else
-          sed -i "s/\[APP_UNIT_TEST_DEPLOY\]/false/g" *.auto.tfvars
-        fi
-
-        if [[ ${{ env.APP_DB_LB_DEPLOY }} == "true" ]] ; then
-          sed -i "s/\[APP_DB_LB_DEPLOY\]/true/g" *.auto.tfvars *.yaml
-        else
-          sed -i "s/\[APP_DB_LB_DEPLOY\]/false/g" *.auto.tfvars *.yaml
-        fi
-
-        if [[ ${{ env.QA_DEPLOY_ENV }} == "automation" ]] ; then
-          sed -i "s/\[QA_DEPLOY_ENV\]/automation/g" *.yaml
-        else
-          sed -i "s/\[QA_DEPLOY_ENV\]/qa/g" *.yaml
-        fi
-
-        if [[ $APP_CRON_DEPLOY == "True" ]] ; then
-          sed -i "s/\[APP_CRON_DEPLOY\]/true/g" *.auto.tfvars
-        else
-          sed -i "s/\[APP_CRON_DEPLOY\]/false/g" *.auto.tfvars
-        fi
-
-        cd - > /dev/null
-
-     - name: Installing Terraform
-       uses: hashicorp/setup-terraform@v2
-       with:
-         terraform_version: 1.6.6
-
-     - name: Configure AWS credentials
-       uses: aws-actions/configure-aws-credentials@v2.2.0
-       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }}
-        aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }}
-        aws-region: us-east-1
-
-     - name: Login to Amazon ECR helm registry
-       id: login-ecr
-       uses: aws-actions/amazon-ecr-login@v1.6.0
-       with:
-         registries: 459037613883
-         registry-type: private
-         region: us-east-1
-
-     - name: Deploying application
-       env:
-          AWS_ACCESS_KEY_ID:     ${{ secrets.AWS_ACCESS_KEY_ID_ECR_PUSH }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH }}
-          VAULT_ADDRESS: ${{ secrets.VAULT_ADDRESS }}
-          VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
-       run: |
-         cd devops-cd/build/${{ env.APPLICATION_NAME }}
-
-         if [[ ${{ env.DEBUG }} == "true" ]] ; then
-          ls -lt
-          cat *.tfvars
-          cat *.tf
-          cat *.yaml
-         fi
-
-         aws ecr get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin 459037613883.dkr.ecr.us-east-1.amazonaws.com
-         terraform version
-         terraform init
-         terraform apply -auto-approve
-         
-         if [[ ${{ env.ACTION }} == "deploy" ]];then
-           retry=1
-           while [[ $status -ne 200 && $retry -le 30 ]]; do
-             status=$(curl -I https://${{ env.APPLICATION_NAME }}-${{needs.initialize.outputs.jira_id}}.sit.yougotagift.co/ -w "%{http_code}" -s -o /dev/null)
-             sleep 1;
-             ((retry++));
-           done
-         fi
-
-     - name: Output
-       env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-       run: |
-         URL="https://youpay-${{needs.initialize.outputs.jira_id}}.sit.yougotagift.co"
-         USER="@$( echo $GITHUB_CONTEXT | jq '.triggering_actor' | sed 's/"//g')"
-          
-         echo "**URL**: $URL" >> $GITHUB_STEP_SUMMARY
-         if [[ ${{ env.APP_DB_LB_DEPLOY }} == "true" ]];then
-           echo -e "**Database Endpoint**: db.${{ env.APPLICATION_NAME }}-${{needs.initialize.outputs.jira_id}}.sit.yougotagift.co\n" >> $GITHUB_STEP_SUMMARY
-         fi
-         echo -e "**K8s dashboard**: https://k8s.sit.yougotagift.co\n" >> $GITHUB_STEP_SUMMARY
-         echo "**Branch**: ${{needs.initialize.outputs.jira_id}}" >> $GITHUB_STEP_SUMMARY
-         echo "**Action**: ${{ env.ACTION }}" >> $GITHUB_STEP_SUMMARY
-         echo $'\n\n' >> $GITHUB_STEP_SUMMARY
-         echo "**Triggered by** : $USER" >> $GITHUB_STEP_SUMMARY
-
-  cleanup:
-    needs: [ deploy-app-nginx , initialize ]
-    if: inputs.action == 'destroy' || github.event.client_payload.action == 'destroy'
-    name: Cleanup
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout template
-        uses: actions/checkout@v3
-        with:
-          repository: yougotagift/devops-cd
-          ref: 'main'
-          ssh-key: ${{ secrets.DEVOPS_CD_DEPLOYMENT_KEY }}
-          path: devops-cd
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2.2.0
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ECR_PUSH_QA }}
-          aws-secret-access-key: ${{ secrets.AWS_ACCESS_SECRET_ECR_PUSH_QA }}
-          aws-region: ${{ env.ECR_REGION }}
-
-      - name: Cleanup
-        run: |
-          cd devops-cd/scripts
-          bash qa-cleanup-resources.sh ${{ github.repository }} ${{ env.APPLICATION_NAME }} ${{needs.initialize.outputs.jira_id}} "backend-app"
+  deploy:
+    name: QA
+    uses: YouGotaGift/devops-organization-actions/.github/workflows/qa-application-build-and-deploy.yml@main
+    with:
+      application_name: youpay
+      branch: ${{ inputs.branch || github.event.client_payload.branch }}
+      unit_test: ${{ inputs.unit_test || github.event.client_payload.unit_test || false }}
+      whitelabel: ${{ inputs.whitelabel || github.event.client_payload.whitelabel || false }}
+      app_db_lb_deploy: ${{ inputs.app_db_lb_deploy || github.event.client_payload.app_db_lb_deploy || false }}
+      debug: ${{ inputs.debug || github.event.client_payload.debug || false }}
+      rebuild_req: ${{ inputs.rebuild_req || github.event.client_payload.rebuild_req || false}}
+    secrets: inherit
