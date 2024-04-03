@@ -2,7 +2,10 @@ import logging
 
 from django.contrib import messages
 
-from payments.constants import ALLOW_ARCHIVE_STATUS_LIST
+from core.response_messages import YouPayResponse
+from integrations.v1.gateway_clients.neqaty_service import (
+    NeqatyServiceManager)
+from payments.constants import ALLOW_ARCHIVE_STATUS_LIST, PAYMENT_STATUS_PAID
 from payments.models import (ArchivedYouPayTransactionData)
 
 logger = logging.getLogger(__name__)
@@ -12,7 +15,7 @@ def archive_transaction_data(modeladmin, request, queryset):
     """
     Function to move YouPayTransactionData to ArchivedYouPayTransactionData
     """
-    
+
     try:
         # prepared_data for bulk create, filtered_queryset for delete
         prepared_data, filtered_queryset = prepare_archive_transaction_objects(
@@ -66,3 +69,49 @@ def prepare_archive_transaction_objects(youpaytransactiondata_queryset):
         **item) for item in dict_data]
 
     return archive_transaction_objects, filtered_queryset
+
+
+def collect_neqaty_points_for_transaction(modeladmin, request, queryset):
+    try:
+        if queryset.count() != 1:
+            modeladmin.message_user(request,
+                                    "You can only select one transaction to process.",
+                                    level=messages.WARNING)
+        transaction = queryset.first()
+
+        if transaction.payment_status == PAYMENT_STATUS_PAID and (
+                transaction.point_collection_enabled):
+            neqaty_obj = NeqatyServiceManager()
+            response, code = neqaty_obj.collect_points(transaction)
+            response_obj = YouPayResponse()
+
+            if code == response_obj.SUCCESS:
+                response_message = (
+                    "Neqaty collection successful for the transaction {}".format(
+                        transaction.transaction_id
+                    ))
+                logger.info(response_message)
+                modeladmin.message_user(request, response_message,
+                                        level=messages.SUCCESS)
+            else:
+                response_message = (
+                    "Neqaty collection failed for the transaction {}".format(
+                        transaction.transaction_id
+                    ))
+                logger.info(response_message)
+                modeladmin.message_user(request, response_message,
+                                        level=messages.ERROR)
+        else:
+            response_message = (
+                "Neqaty collection not available for this transaction {}".format(
+                    transaction.transaction_id
+                ))
+            modeladmin.message_user(request, response_message,
+                                    level=messages.ERROR)
+
+    except Exception as e:
+        response_message = ("Collecting points of neqaty failed with error : "
+                            "{}".format(str(e)))
+        logger.error(response_message)
+        modeladmin.message_user(request, response_message,
+                                level=messages.ERROR)
