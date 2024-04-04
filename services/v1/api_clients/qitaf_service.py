@@ -126,12 +126,11 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 decrypt_string(transaction_id))
             if transaction_obj:
 
-                response_data, code, qitaf_reward = self.collect_reward_point(
+                response_data, code = self.collect_reward_point(
                     transaction_obj)
                 logger.info(
-                    "Reward Point(Collect Points) API response {}, code : {},"
-                    " rewarded : {}".format(response_data, code,
-                                            qitaf_reward))
+                    "Reward Point(Collect Points) API response {}, code : "
+                    "{}".format(response_data, code, ))
                 if response_data:
                     data = self.response_obj.get_success_dict(
                         code=code,
