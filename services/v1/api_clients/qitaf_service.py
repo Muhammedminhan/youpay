@@ -126,12 +126,11 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 decrypt_string(transaction_id))
             if transaction_obj:
 
-                response_data, code, qitaf_reward = self.collect_reward_point(
+                response_data, code = self.collect_reward_point(
                     transaction_obj)
                 logger.info(
-                    "Reward Point(Collect Points) API response {}, code : {},"
-                    " rewarded : {}".format(response_data, code,
-                                            qitaf_reward))
+                    "Reward Point(Collect Points) API response {}, code : "
+                    "{}".format(response_data, code, ))
                 if response_data:
                     data = self.response_obj.get_success_dict(
                         code=code,
@@ -184,13 +183,13 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 "for ({}), rewarded point {}".format(
                     transaction_obj.transaction_id,
                     transaction_obj.earned_point))
-            return None, response_obj.QITAF_ALREADY_COLLECTED, transaction_obj.earned_point
+            return None, response_obj.QITAF_ALREADY_COLLECTED
 
         if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
             logger.info("Qitaf RewardPoint Failed for {} ".format(
                 transaction_obj.transaction_id,
             ))
-            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, 0
+            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET
 
         qitaf_service = QitafServiceManager()
         response_data, code = qitaf_service.collect_points(
