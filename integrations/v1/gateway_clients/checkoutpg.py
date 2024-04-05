@@ -19,7 +19,9 @@ from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     PAYMENT_REQUEST_TYPE_PAYMENT,
                                     CHECKOUTPG_CREATE_TRANSACTION_ENDPOINT,
                                     PAYMENT_REQUEST_CREATE_TRANSACTION,
-                                    CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2)
+                                    CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2,
+                                    CHECKOUTPG_HUB_CODE,
+                                    )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
     PAYMENT_REQUEST_TYPE_SAVED_CARD,
@@ -185,7 +187,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 saved_cards = requests.get(url=URL, params=PARAMS)
                 if saved_cards:
                     saved_cards = json.loads(saved_cards.text).get('cards')
-                    return saved_cards
+                    for card in saved_cards:
+                        card['key'] = CHECKOUTPG_HUB_CODE
+                return saved_cards
 
             except Exception as e:
                 logger.error(
@@ -202,7 +206,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             try:
                 header = self.get_payment_header()
                 URL = (
-                        settings.CHECKOUTPG_DOMAIN + CHECKOUTPG_SAVED_CARD_ENDPOINT +
+                        self.checkoutpg_config.domain + CHECKOUTPG_SAVED_CARD_ENDPOINT +
                         card_id + '/')
                 response = requests.delete(url=URL, headers=header)
                 return json.loads(response.text)
@@ -391,14 +395,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             # 3ds case
             self.payment_reference = response_data.get("reference_id")
             self.payment_status = PAYMENT_STATUS_PENDING
-            if is_card:
-                name_on_card = payment_data.get('customer_name')
-                self.update_youpay_transaction_data(
-                    self.prepare_data_to_update(name_on_card=name_on_card))
-            else:
-                # for saved card transactions
-                self.update_youpay_transaction_data(
-                    self.prepare_data_to_update())
+            name_on_card = payment_data.get('customer_name')
+            self.update_youpay_transaction_data(
+                self.prepare_data_to_update(name_on_card=name_on_card))
+
             response_data[IS_SUCCESS] = True
             response_data.pop('checkout_request_data')
             response_data.pop('checkout_response_data')

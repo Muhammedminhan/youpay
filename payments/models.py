@@ -183,6 +183,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     point_collection_enabled = models.BooleanField(
         null=True, blank=True, default=False, db_index=True,
         help_text='If the point collection enabled or not')
+    earn_reference = models.CharField(
+        max_length=120, null=True, db_index=True, blank=True,
+        help_text='Reference for the point collection')
     maximum_redeemable_points = models.DecimalField(
         null=True, blank=True, decimal_places=4, max_digits=15,
         help_text='Maximum points used for citi rewards point redemption')
@@ -298,6 +301,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         decimal_places=4, max_digits=12, null=True, blank=True,
         help_text='Earned point for the transaction via corresponding payment'
                   ' method')
+    browser_value = models.CharField(
+        max_length=250, null=True, blank=True, db_index=True,
+        help_text='string generated for browser session key')
 
 
 @receiver(post_init, sender=YouPayTransactionData)
