@@ -13,7 +13,8 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
 
-from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
+from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
+                            BROWSER_VALUE_ENCRYPTION_KEY)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig
@@ -482,3 +483,19 @@ def handle_point_collection(youpay_transaction, transaction_id, response_obj):
             "reward_point": reward_point,
         }
     return response_data, code
+
+
+def encrypt_browser_value(string_value):
+    key = BROWSER_VALUE_ENCRYPTION_KEY
+    fer_instance = Fernet(key)
+    encrypted_value = fer_instance.encrypt(string_value.encode())
+    logger.info("encrypted browser value is {}".format(encrypted_value))
+    return encrypted_value.decode("utf-8")
+
+
+def decrypt_browser_value(encrypted_value):
+    key = BROWSER_VALUE_ENCRYPTION_KEY
+    fer_instance = Fernet(key)
+    decrypted_value = fer_instance.decrypt(encrypted_value).decode()
+    logger.info("decrypted cookie key is {}".format(decrypted_value))
+    return decrypted_value

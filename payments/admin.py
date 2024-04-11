@@ -110,13 +110,14 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'additional_total_amount',
                        )
         }),
-        ('Quitaf transaction details', {
+        ('Qitaf transaction details', {
             'fields': ('qitaf_phone_number', 'is_qitaf_enabled',
                        )
         }),
         ('Other Details', {
-            'fields': ('retry_count', 'session_id', 'loyalty_level',
-                       'created_at', 'updated_at'
+            'fields': ('retry_count', 'session_id', 'browser_value',
+                       'loyalty_level', 'created_at',
+                       'updated_at'
                        )
         }),
     )
