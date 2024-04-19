@@ -4,7 +4,8 @@ import logging
 import requests
 from rest_framework import status
 
-from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET
+from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET, \
+    PAYMENT_GATEWAY_AMAZONPG
 from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
                         decrypt_string
@@ -26,7 +27,7 @@ from integrations.v1.gateway_clients.utils import (
 )
 from integrations.v1.serializers.b2c_payback_payment_request import (
     PointBalanceRequestSerializer,
-    AuthenticateRequestSerializer
+    AuthenticateRequestSerializer, AuthenticateRequestAmazonSerializer
 )
 from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
@@ -157,10 +158,15 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 'data': request_data,
                 'transaction_data': transaction_data.data
             }
-            authenticate_request_data = AuthenticateRequestSerializer(
-                request_dict)
-            update_data = {
-                'cko-card-token': request_data.get('cko-card-token')}
+            update_data = {}
+            if request_data.get("gateway") == PAYMENT_GATEWAY_AMAZONPG:
+                authenticate_request_data = (
+                    AuthenticateRequestAmazonSerializer(request_dict))
+            else:
+                authenticate_request_data = AuthenticateRequestSerializer(
+                    request_dict)
+                update_data = {
+                    'cko-card-token': request_data.get('cko-card-token')}
             update_data.update(authenticate_request_data.data)
             request_data_json = json.dumps(update_data)
             b2c_gateway_obj = get_payment_gateway_config(

@@ -4,7 +4,8 @@ from core.utils import encrypt_string
 from core.utils import get_app_config
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     ADCB_TOKEN_TYPE, ADCB_REDEMPTION_CURRENCY,
-                                    CHECKOUT_UAE_CHANNEL_CODE)
+                                    CHECKOUT_UAE_CHANNEL_CODE,
+                                    AMAZONPG_HUB_CODE)
 from services.v1.views.common import add_payment_gateway_info_in_url
 
 
@@ -117,3 +118,73 @@ class AuthenticateRequestSerializer(serializers.Serializer):
 
     def get_order_reference(self, data):
         return str(data.get('transaction_data', {}).get('order_reference'))
+
+
+class AuthenticateRequestAmazonSerializer(serializers.Serializer):
+    currency = serializers.SerializerMethodField()
+    card_number = serializers.SerializerMethodField()
+    customer_email = serializers.SerializerMethodField()
+    customer_phone = serializers.SerializerMethodField()
+    response_url = serializers.SerializerMethodField()
+    selected_amount = serializers.SerializerMethodField()
+    checkout_amount = serializers.SerializerMethodField()
+    order_reference = serializers.SerializerMethodField()
+    reference_id = serializers.SerializerMethodField()
+    invoice_id = serializers.SerializerMethodField()
+    customer_ip_address = serializers.SerializerMethodField()
+    language = serializers.SerializerMethodField()
+    platform = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
+    cvv = serializers.SerializerMethodField()
+    gateway = serializers.SerializerMethodField()
+
+    def get_currency(self, data):
+        return str(data.get('transaction_data', {}).get('currency'))
+
+    def get_card_number(self, data):
+        return data.get('data', {}).get('card_number')
+
+    def get_customer_email(self, data):
+        return str(data.get('transaction_data', {}).get('customer_email'))
+
+    def get_response_url(self, data):
+        app_config = get_app_config()
+        params = '?id=' + encrypt_string(data.get('transaction_data').get(
+            'transaction_id'))
+        return add_payment_gateway_info_in_url(
+            transaction_data=data.get('transaction_data'),
+            app_config=app_config, params=params,
+            code=AMAZONPG_HUB_CODE)
+
+    def get_selected_amount(self, data):
+        return data.get('data', {}).get('selected_amount')
+
+    def get_checkout_amount(self, data):
+        return data.get('data', {}).get('checkout_amount')
+
+    def get_order_reference(self, data):
+        return str(data.get('transaction_data', {}).get('order_reference'))
+
+    def get_reference_id(self, data):
+        return data.get('data', {}).get('reference_id')
+
+    def get_invoice_id(self, data):
+        return data.get('transaction_data', {}).get('invoice_id')
+
+    def get_customer_ip_address(self, data):
+        return data.get('transaction_data', {}).get('ip')
+
+    def get_language(self, data):
+        return data.get('transaction_data', {}).get('language')
+
+    def get_platform(self, data):
+        return data.get('transaction_data', {}).get('ip')
+
+    def get_payment_method(self, data):
+        return data.get('data', {}).get('payment_method')
+
+    def get_cvv(self, data):
+        return data.get('data', {}).get('cvv')
+
+    def get_gateway(self, data):
+        return data.get('data', {}).get('gateway')
