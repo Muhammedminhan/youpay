@@ -31,7 +31,8 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.constants import RESPONSE_CODE_LIST, CURRENCY_UAE, CURRENCY_KSA
-from services.models import APIClient
+from services.models import APIClient, PaymentRequestData
+from services.v1.views.utils import reformat_payment_request_data
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +266,53 @@ class YouPayTransactionCRUD(object):
                          "".format(currency))
         return settlement_entity
 
+    def generate_new_transaction(self, transaction_obj):
+        order_reference = transaction_obj.order_reference
+        invoice_id = transaction_obj.invoice_id
+        api_client = transaction_obj.api_client
+        payment_url = None
+        try:
+            payment_request = PaymentRequestData.objects.get(
+                order_reference=order_reference, invoice_id=invoice_id,
+                api_client=api_client)
+            request_data = payment_request.request_data
+            data_formatted = reformat_payment_request_data(request_data)
+            data_formatted['api_client'] = api_client.id
+            retry_count = self.get_transaction_retry_count(transaction_obj)
+            if retry_count:
+                data_formatted['retry_count'] = retry_count
+            else:
+                return transaction_obj.failure_url
+            new_transaction_response = self.create_youpay_transaction_data(
+                data_formatted)
+            new_transaction_id = new_transaction_response.get('data', {}).get(
+                'transaction_id')
+            from core.utils import encrypt_string
+            encrypted_transaction_id = encrypt_string(new_transaction_id)
+            logger.info(
+                "Created new transaction for existing transaction id {}, new "
+                "transaction id {} --> encrypted id {}".format(
+                    transaction_obj.transaction_id, new_transaction_id,
+                    encrypted_transaction_id))
+            language = data_formatted.get('language')
+            from services.utils import get_payment_redirect_url
+            app_config_redirect_url = get_payment_redirect_url()
+            payment_url = app_config_redirect_url + "{}/{}".format(
+                language, encrypted_transaction_id)
+        except Exception as e:
+            logger.error(
+                "Exception occurred during generating transaction for new "
+                "attempt related to existing transaction id {}".format(
+                    transaction_obj.transaction_id), exc_info=e)
+            payment_url = None
+        return payment_url
+
+    def get_transaction_retry_count(self, transaction_obj):
+        if transaction_obj.retry_count == 3:
+            return None
+        else:
+            return transaction_obj.retry_count + 1
+
 
 class ClientValidator(object):
     """
@@ -317,11 +365,13 @@ def is_redirect(transaction_id, transaction_message):
         '''We are setting the redirect url to none so in frontend it will 
         redirect to the payment page, which will give another try to the 
         customer in the current transaction, only for checkoutpg'''
-        redirect_url = None
-        logger.info("Checkout Response code checking for"
-                    "transaction id {}".format(transaction_id))
+        logger.info(
+            "Transaction for order reference {} failed, generating new "
+            "transaction for another attempt".format(
+                youpay_transaction.order_reference))
+        redirect_url = youpay.generate_new_transaction(youpay_transaction)
         response_data = {
-            IS_REDIRECT: False,
+            IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
             TRANSACTION_MSG: transaction_message,
             IS_SUCCESS: False
@@ -460,3 +510,52 @@ class AdditionalChargesUpdation(object):
             logger.error("Error in creating additional charge object for {} "
                          "{}".format(data.get('transaction').transaction_id,
                                      str(e)))
+
+
+# def generate_new_transaction(transaction_obj, youpay_transaction_crud):
+#     youpay_crud = youpay_transaction_crud
+#     order_reference = transaction_obj.order_reference
+#     invoice_id = transaction_obj.invoice_id
+#     api_client = transaction_obj.api_client
+#     try:
+#         payment_request = PaymentRequestData.objects.get(
+#             order_reference=order_reference, invoice_id=invoice_id,
+#             api_client=api_client)
+#         request_data = payment_request.request_data
+#         data_formatted = reformat_payment_request_data(request_data)
+#         data_formatted['api_client'] = api_client.id
+#         retry_count = get_transaction_retry_count(transaction_obj)
+#         if retry_count:
+#             data_formatted['retry_count'] = retry_count
+#         else:
+#             return transaction_obj.failure_url
+#         new_transaction_response = youpay_crud.create_youpay_transaction_data(
+#             data_formatted)
+#         new_transaction_id = new_transaction_response.get('data', {}).get(
+#             'transaction_id')
+#         encrypted_transaction_id = encrypt_string(new_transaction_id)
+#         logger.info(
+#             "Created new transaction for existing transaction id {}, new "
+#             "transaction id {} --> encrypted id {}".format(
+#                 transaction_obj.transaction_id, new_transaction_id,
+#                 encrypted_transaction_id))
+#         language = data_formatted.get('language')
+#         app_config_redirect_url = get_payment_redirect_url()
+#         payment_url = app_config_redirect_url + "{}/{}".format(
+#             language, encrypted_transaction_id)
+#         new_transaction = youpay_crud.get_youpay_transaction_data(
+#             new_transaction_id)
+#     except Exception as e:
+#         logger.error(
+#             "Exception occurred during generating new transaction for new "
+#             "attempt for existing transaction id {}".format(
+#                 transaction_obj.transaction_id), exc_info=e)
+#         payment_url = ""
+#     return payment_url
+#
+#
+# def get_transaction_retry_count(transaction_obj):
+#     if transaction_obj.retry_count == 3:
+#         return None
+#     else:
+#         return transaction_obj.retry_count + 1
