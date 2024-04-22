@@ -93,8 +93,8 @@ def collect_neqaty_points_for_transaction(modeladmin, request, queryset):
                     ))
                 earn_reference = response.get("earn_reference")
                 youpay_obj = YouPayTransactionCRUD()
-                youpay_obj.update_youpay_transaction_data(
-                    {'earn_reference': earn_reference})
+                data_to_update = {'earn_reference': earn_reference}
+                youpay_obj.update_youpay_transaction_data(data_to_update)
                 logger.info(response_message)
                 modeladmin.message_user(request, response_message,
                                         level=messages.SUCCESS)
