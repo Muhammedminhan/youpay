@@ -19,7 +19,7 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY,
                                     B2C_REVERSE_REDEMPTION_API,
-                                    PAYMENT_CANCEL_EXPIRE_EMAIL_TRIGGER)
+                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -422,5 +422,5 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 request_data=json.dumps(payload),
                 response_data=response.text,
                 request_method=REQUEST_METHOD_POST,
-                request_type=PAYMENT_CANCEL_EXPIRE_EMAIL_TRIGGER,
+                request_type=PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
             )
