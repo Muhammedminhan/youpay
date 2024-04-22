@@ -18,7 +18,7 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY,
-                                    B2C_MAIL_TRIGGER_API,
+                                    B2C_REVERSE_REDEMPTION_API,
                                     PAYMENT_CANCEL_EXPIRE_EMAIL_TRIGGER)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
@@ -394,7 +394,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             b2c_gateway_obj = get_payment_gateway_config(
                 B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
             b2c_payback_domain = b2c_gateway_obj.domain
-            url = b2c_payback_domain + B2C_MAIL_TRIGGER_API
+            url = b2c_payback_domain + B2C_REVERSE_REDEMPTION_API
             payload = {
                 'reference_id': transaction.payment_reference
             }

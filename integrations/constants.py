@@ -112,7 +112,7 @@ ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
 ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
 ADCB_VERIFY_API = "/payback/api/v1/verify"
 
-B2C_MAIL_TRIGGER_API = "/payback/api/v1/trigger-email/"
+B2C_REVERSE_REDEMPTION_API = "/payback/api/v1/reverse-redemption/"
 
 CONTENT_TYPE_HEADERS = {'Content-Type': 'application/json'}
 
