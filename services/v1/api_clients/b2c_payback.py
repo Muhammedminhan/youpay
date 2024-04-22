@@ -170,13 +170,9 @@ class B2CPaybackVerify(APIView, YouPayTransactionCRUD):
 
     def get(self, request, *args, **kwargs):
         payback = B2CPaybackManager()
-        payment_data = {
-            'transaction_id': request.query_params.get('id'),
-            'redemption_reference_id': request.query_params.get(
-                'redemption_reference_id'),
-            'cko-session-id': request.query_params.get(
-                'cko-session-id')}
-        response, transaction_obj = payback.verification(payment_data)
+        request_params = request.query_params
+
+        response, transaction_obj = payback.verification(request_params)
         transaction_id = (transaction_obj.transaction_id if transaction_obj
                           else None)
         if response:

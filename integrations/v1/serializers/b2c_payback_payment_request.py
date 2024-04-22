@@ -136,6 +136,8 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
     platform = serializers.SerializerMethodField()
     payment_method = serializers.SerializerMethodField()
     cvv = serializers.SerializerMethodField()
+    client_code = serializers.SerializerMethodField()
+    invoice_amount = serializers.SerializerMethodField()
     gateway = serializers.SerializerMethodField()
 
     def get_currency(self, data):
@@ -147,10 +149,21 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
     def get_customer_email(self, data):
         return str(data.get('transaction_data', {}).get('customer_email'))
 
+    def get_customer_phone(self, data):
+        return str(data.get('transaction_data', {}).get('customer_phone'))
+
+    def get_client_code(self, data):
+        return ADCB_CLIENT_CODE
+
+    def get_invoice_amount(self, data):
+        return str(data.get('transaction_data', {}).get('amount'))
+
     def get_response_url(self, data):
         app_config = get_app_config()
-        params = '?id=' + encrypt_string(data.get('transaction_data').get(
-            'transaction_id'))
+        params = '?id=' + encrypt_string(data.get('transaction_data', {}).get(
+            'transaction_id')) + '&redemption_reference_id=' + data.get(
+            'data', {}).get('reference_id')
+
         return add_payment_gateway_info_in_url(
             transaction_data=data.get('transaction_data'),
             app_config=app_config, params=params,
@@ -178,7 +191,7 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
         return data.get('transaction_data', {}).get('language')
 
     def get_platform(self, data):
-        return data.get('transaction_data', {}).get('ip')
+        return data.get('transaction_data', {}).get('platform')
 
     def get_payment_method(self, data):
         return data.get('data', {}).get('payment_method')
