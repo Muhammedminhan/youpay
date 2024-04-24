@@ -6,14 +6,13 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string, get_gateway_additional_fee
-from integrations.constants import (ADCB_CLIENT_CODE, QITAF_CLIENT_CODE,
+from core.utils import (decrypt_string, get_gateway_additional_fee,
+                        get_configuration_data)
+from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
+                                    CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE)
 from integrations.models import PaymentGateway
-from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
-from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
-from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED,
@@ -25,10 +24,8 @@ from payments.constants import (
     PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY
 )
 from payments.models import YouPayTransactionData
-from services.constants import (APPLEPAY_SUPPORTED_NETWORKS,
-                                APPLEPAY_MERCHANT_CAPABILITIES,
-                                APPLEPAY_LABEL)
-from services.constants import TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY
+from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
+                                CURRENCY_UAE, CURRENCY_KSA)
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
@@ -64,384 +61,243 @@ class ConfigViewSet(ViewSet):
         session id is required in header
         transaction id is required in query params
         """
-
         session_id = get_session_id_from_header(request)
-
         decrypted_transaction_id = decrypt_string(pk)
         try:
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
-            if transaction:
 
-                # Redirect to success url if transaction is already paid
-                if (
-                        transaction.payment_status == PAYMENT_STATUS_PAID or
-                        transaction.payment_status in self.list_failure_statuses
-                ):
-                    return_response = self.retrieve_response(
-                        payment_options=None,
-                        checkoutpg_config=None,
-                        transaction=transaction,
-                        announcements_dict=None,
-                        status_code=None
-                    )
-                    data = self.response_obj.get_success_dict(
-                        code=self.response_obj.SUCCESS,
-                        success_dict=return_response
-                    )
-                    return Response(data, status=status.HTTP_200_OK)
+            if not transaction:
+                return self._transaction_not_found_response()
 
-                # bypass session checking when api client is inactive
-                if not transaction.api_client.validate_session:
-                    session_id = transaction.session_id
+            if (transaction.payment_status == PAYMENT_STATUS_PAID or
+                    transaction.payment_status in self.list_failure_statuses):
+                return self._transaction_already_paid_response(transaction)
 
-                country = get_country_for_configuration(transaction)
-                if not country:
-                    message = "Not available for this country"
-                    data = self.response_obj.get_404_message(message=message)
+            if not transaction.api_client.validate_session:
+                session_id = transaction.session_id
 
-                    return Response(data,
-                                    status=status.HTTP_404_NOT_FOUND)
+            country = get_country_for_configuration(transaction)
+            if not country:
+                return self._country_not_available_response()
 
-                client = get_client_for_configuration(transaction)
-                if not client:
-                    message = "Client doesn't exists"
-                    data = self.response_obj.get_404_message(
-                        message=message)
+            client = get_client_for_configuration(transaction)
+            if not client:
+                return self._client_not_found_response()
 
-                    return Response(data,
-                                    status=status.HTTP_404_NOT_FOUND)
+            payment_options, partial_redemption_allowed_options = (
+                get_payment_methods(transaction, client, country))
 
-                payment_methods, partial_redemption_allowed_options = (
-                    get_payment_methods(transaction, client, country))
+            if transaction.session_id != session_id:
+                return self._session_expired_response()
 
-                if transaction.session_id == session_id:
-                    payment_options = payment_methods
-                    announcements_dict = get_announcements(
-                        transaction.platform)
-                    api_client = {'color': client.color_code,
-                                  'mobile_logo': get_mobile_logo_url(
-                                      client),
-                                  'logo': get_logo_url(client)}
-                    paypal_config = self.get_paypal_config(
-                        payment_options)
-                    applepay_config = (
-                        self.get_applepay_config(payment_options))
-                    b2c_configs = self.get_b2c_config(payment_options,
-                                                      transaction,
-                                                      partial_redemption_allowed_options)
-                    qitaf_config = b2c_configs.get('qitaf_config', {})
-                    citi_config = self.check_citi_allowed_denominations(
-                        payment_options,
-                        transaction)
-                    tabbypg_config = self.get_tabby_conf(payment_options)
-                    checkout_config = self.get_checkout_config(
-                        payment_options, transaction)
-                    adcb_config = b2c_configs.get('adcb_config', {})
-                    neqaty_config = b2c_configs.get('neqaty_config', {})
+            response_data = self.retrieve_response(
+                transaction=transaction,
+                payment_options=payment_options,
+                partial_redemption_allowed_options=
+                partial_redemption_allowed_options,
+                client=client
+            )
 
-                    response_data = self.retrieve_response(
-                        api_client=api_client,
-                        payment_options=payment_options,
-                        tabbypg_config=tabbypg_config,
-                        checkoutpg_config=checkout_config,
-                        adcb_config=adcb_config,
-                        applepay_config=applepay_config,
-                        transaction=transaction,
-                        announcements_dict=announcements_dict,
-                        paypal_config=paypal_config,
-                        qitaf_config=qitaf_config,
-                        neqaty_config=neqaty_config,
-                        citi_config=citi_config,
-                        allow_aed_amount=(
-                            transaction.api_client.allow_aed_converted_amount)
-                    )
-
-                    data = self.response_obj.get_success_dict(
-                        code=self.response_obj.SUCCESS,
-                        success_dict=response_data
-                    )
-
-                    return Response(data,
-                                    status=status.HTTP_200_OK)
-
-                else:
-                    message = "Session expired or doesn't match"
-                    data = self.response_obj.get_404_message(message=message)
-
-                    return Response(data,
-                                    status=status.HTTP_404_NOT_FOUND)
-            else:
-                data = self.response_obj.get_error_dict(
-                    error_code=self.response_obj.UNKNOWN_ERR)
-                return Response(data.get('errors'),
-                                status=status.HTTP_404_NOT_FOUND)
+            return Response(self.response_obj.get_success_dict(
+                code=self.response_obj.SUCCESS, success_dict=response_data),
+                status=status.HTTP_200_OK)
 
         except Exception as e:
-            data = self.response_obj.get_404_message(message=str(e))
-            return Response(
-                data,
-                status=status.HTTP_404_NOT_FOUND)
-        finally:
-            logger.info(
-                "ConfigViewSet retrieve method called, Response data :"
-                " {}".format(data))
+            return self._exception_response(e)
 
     def retrieve_response(self, **kwargs):
+        transaction = kwargs.get('transaction')
+        payment_options = kwargs.get('payment_options')
+        partial_redemption_allowed_options = kwargs.get(
+            'partial_redemption_allowed_options')
+        client = kwargs.get('client')
 
-        payment_options = kwargs.get('payment_options', None)
-        api_client = kwargs.get('api_client', None)
-        checkoutpg_config = kwargs.get('checkoutpg_config', None)
-        tabbypg_config = kwargs.get('tabbypg_config', None)
-        adcb_config = kwargs.get('adcb_config', None)
-        transaction = kwargs.get('transaction', None)
-        announcements_dict = kwargs.get('announcements_dict', None)
-        applepay_config = kwargs.get('applepay_config', None)
-        paypal_config = kwargs.get('paypal_config', None)
-        qitaf_config = kwargs.get('qitaf_config', None)
-        citi_config = kwargs.get('citi_config', None)
-        neqaty_config = kwargs.get('neqaty_config', None)
-        aed_amount_flag = kwargs.get('allow_aed_amount', False)
+        api_client = {
+            'color': client.color_code,
+            'mobile_logo': get_mobile_logo_url(client),
+            'logo': get_logo_url(client)
+        }
 
-        amount = None
-        currency = None
-        service_fee = None
-        VAT_amount = None
-        base_amount = None
-        redirect_url = None
-
-        cart_amount = None
-        cart_currency = None
-        cart_service_fee = None
-        cart_base_amount = None
-        cart_VAT_amount = None
-
-        if transaction:
-            amount = transaction.amount
-            currency = transaction.currency
-            country_code = transaction.country_code
-            service_fee = transaction.service_fee
-            VAT_amount = transaction.VAT_amount
-            base_amount = transaction.base_amount
-
-            cart_amount = transaction.cart_amount
-            cart_currency = transaction.cart_currency
-            cart_service_fee = transaction.cart_service_fee
-            cart_base_amount = transaction.cart_base_amount
-            cart_VAT_amount = transaction.cart_VAT_amount
-
-            is_guest = transaction.is_guest
-
-            if transaction.payment_status == PAYMENT_STATUS_PAID:
-                redirect_url = transaction.success_url
-
-            if transaction.payment_status in self.list_failure_statuses:
-                redirect_url = transaction.failure_url
-
-            if transaction.payment_status == PAYMENT_STATUS_CANCELLED:
-                redirect_url = transaction.cancel_url
-
-            # add transaction id in response
-            if redirect_url:
-                redirect_url = (redirect_url + '?transaction_id=' +
-                                str(transaction.transaction_id))
+        checkoutpg_config = self.get_checkout_config(payment_options,
+                                                     transaction)
+        tabbypg_config = self.get_tabby_conf(payment_options)
+        b2c_configs = self.get_b2c_config(payment_options,
+                                          transaction,
+                                          partial_redemption_allowed_options)
 
         response_data = {
             "data": {
                 "api_client": api_client,
                 "payment_options": payment_options,
-                "checkoutpg_config": checkoutpg_config,
-                "adcb_config": adcb_config,
+                "checkoutpg_config": checkoutpg_config.response_data if
+                checkoutpg_config else None,
+                "adcb_config": b2c_configs.get('adcb_config', {}),
                 "tabbypg_config": tabbypg_config,
-                "applepay_config": applepay_config,
-                "paypal_config": paypal_config,
-                "neqaty_config": neqaty_config,
-
-                "amount": amount,
-                "currency": currency,
-                "country_code": country_code,
-                "service_fee": service_fee,
-                "vat_amount": VAT_amount,
-                "base_amount": base_amount,
-
-                "cart_amount": cart_amount,
-                "cart_currency": cart_currency,
-                "cart_service_fee": cart_service_fee,
-                "cart_vat_amount": cart_VAT_amount,
-                "cart_base_amount": cart_base_amount,
-
-                "qitaf_config": qitaf_config,
-                "citi_config": citi_config,
-
-                "redirect_url": redirect_url,
-                "announcements": announcements_dict,
-
-                "is_guest": is_guest,
-                "allow_aed_converted_amount": aed_amount_flag
+                "applepay_config": self.get_applepay_config(payment_options),
+                "paypal_config": self.get_paypal_config(payment_options),
+                "neqaty_config": b2c_configs.get('neqaty_config', {}),
+                "amount": transaction.amount,
+                "currency": transaction.currency,
+                "country_code": transaction.country_code,
+                "service_fee": transaction.service_fee,
+                "vat_amount": transaction.VAT_amount,
+                "base_amount": transaction.base_amount,
+                "cart_amount": transaction.cart_amount,
+                "cart_currency": transaction.cart_currency,
+                "cart_service_fee": transaction.cart_service_fee,
+                "cart_vat_amount": transaction.cart_VAT_amount,
+                "cart_base_amount": transaction.cart_base_amount,
+                "qitaf_config": b2c_configs.get('qitaf_config', {}),
+                "citi_config": self.check_citi_allowed_denominations(
+                    payment_options, transaction),
+                "redirect_url": self._get_redirect_url(transaction),
+                "announcements": get_announcements(transaction.platform),
+                "is_guest": transaction.is_guest,
+                "allow_aed_converted_amount":
+                    transaction.api_client.allow_aed_converted_amount
             },
         }
 
         return response_data
 
+    def _transaction_not_found_response(self):
+        data = self.response_obj.get_error_dict(
+            error_code=self.response_obj.UNKNOWN_ERR)
+        return Response(data.get('errors'), status=status.HTTP_404_NOT_FOUND)
+
+    def _transaction_already_paid_response(self, transaction):
+        return_response = self.retrieve_response(
+            payment_options=None,
+            checkoutpg_config=None,
+            transaction=transaction,
+            announcements_dict=None,
+            status_code=None
+        )
+        data = self.response_obj.get_success_dict(
+            code=self.response_obj.SUCCESS, success_dict=return_response)
+        return Response(data, status=status.HTTP_200_OK)
+
+    def _country_not_available_response(self):
+        message = "Not available for this country"
+        data = self.response_obj.get_404_message(message=message)
+        return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+    def _client_not_found_response(self):
+        message = "Client doesn't exist"
+        data = self.response_obj.get_404_message(message=message)
+        return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+    def _session_expired_response(self):
+        message = "Session expired or doesn't match"
+        data = self.response_obj.get_404_message(message=message)
+        return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+    def _exception_response(self, e):
+        data = self.response_obj.get_404_message(message=str(e))
+        return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+    def _get_redirect_url(self, transaction):
+        if transaction.payment_status == PAYMENT_STATUS_PAID:
+            return transaction.success_url
+        elif transaction.payment_status in self.list_failure_statuses:
+            return transaction.failure_url
+        elif transaction.payment_status == PAYMENT_STATUS_CANCELLED:
+            return transaction.cancel_url
+        else:
+            return None
+
     def get_tabby_conf(self, payment_option):
         tabby_enabled = payment_option.get(PAYMENT_OPTION_TABBYPG, False)
         tabbypg_config = {}
+
         if tabby_enabled:
             tabbypg_obj = TabbyPGManager()
             tabbypg_obj = tabbypg_obj.tabbypg_config
+
             if tabbypg_obj:
-                tabbypg_config[
-                    "validation_json"] = tabbypg_obj.validation_json
+                tabbypg_config['validation_json'] = tabbypg_obj.validation_json
+
         return tabbypg_config
 
     def get_additional_config(self, additional_fee, payment_type):
-        """
-        returns additional charge configured dict
-        """
-        additional_charges = False
-        additional_percentage = 0
-        additional_fixed_amount = 0
         if additional_fee:
-            additional_charges = True
-            additional_percentage = additional_fee.percentage
-            additional_fixed_amount = additional_fee.fixed_amount
-        return {"additional_charges": additional_charges,
+            return {
+                "additional_charges": True,
                 "payment_option": payment_type,
-                "additional_percentage": additional_percentage,
-                "additional_fixed_amount": additional_fixed_amount}
+                "additional_percentage": additional_fee.percentage,
+                "additional_fixed_amount": additional_fee.fixed_amount
+            }
+        else:
+            return {
+                "additional_charges": False,
+                "payment_option": payment_type,
+                "additional_percentage": 0,
+                "additional_fixed_amount": 0
+            }
 
     def get_applepay_config(self, payment_option):
-        """
-        returns applepay additional fee config
-        only if applepay is enabled
-        """
         applepay_config = {}
-        applepay_config["supportedNetworks"] = APPLEPAY_SUPPORTED_NETWORKS
-        applepay_config[
-            "merchantCapabilities"] = APPLEPAY_MERCHANT_CAPABILITIES
-        applepay_config["label"] = APPLEPAY_LABEL
+        applepay_enabled = payment_option.get(PAYMENT_OPTION_CHECKOUT_APPLEPAY,
+                                              False)
 
-        applepay_enabled = payment_option.get(
-            PAYMENT_OPTION_CHECKOUT_APPLEPAY, False)
         if applepay_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
-            applepay_config.update(self.get_additional_config(additional_fee,
-                                                              TOKEN_TYPE_APPLEPAY))
+            applepay_config = self.get_additional_config(additional_fee,
+                                                         TOKEN_TYPE_APPLEPAY)
+
         return applepay_config
 
     def get_paypal_config(self, payment_option):
-        """
-        returns paypal process fee config
-        only if paypal is enabled
-        """
         paypal_config = {}
         paypal_enabled = payment_option.get(PAYMENT_OPTION_PAYPAL, False)
+
         if paypal_enabled:
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
             paypal_config = self.get_additional_config(additional_fee,
                                                        TOKEN_TYPE_PAYPAL)
+
         return paypal_config
 
-    def get_qitaf_config(self, payment_option, transaction_data,
-                         partial_redemption_allowed_options):
-        """
-        returns qitaf configurations
-        """
-        qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
-        if qitaf_enabled:
-            partial_redemption_allowed = partial_redemption_allowed_options.get(
-                PAYMENT_OPTION_QITAF, False)
-            qitaf_obj = QitafServiceManager()
-            qitaf_config = qitaf_obj.get_configurations(
-                transaction_data.amount, transaction_data.currency,
-                transaction_data.transaction_id)
-            if qitaf_config:
-                additional_config = {
-                    'qitaf_phone_number': transaction_data.qitaf_phone_number,
-                    'is_qitaf_enabled': transaction_data.is_qitaf_enabled,
-                    'partial_redemption_allowed': partial_redemption_allowed
-                }
-                qitaf_config.update(additional_config)
-            else:
-                logger.error(
-                    "Qitaf configuration not found for transaction id: "
-                    "{}".format(transaction_data.transaction_id))
-                qitaf_config = {}
-            return qitaf_config
-        else:
-            return None
-
     def check_citi_allowed_denominations(self, payment_option, transaction):
-        """
-        returns citi configurations
-        """
         citi_config = {}
         citi_enabled = payment_option.get(PAYMENT_OPTION_CITI_REWARDS, False)
-        if citi_enabled:
-            base_value = transaction.base_amount
-            citi_allowed = False
-            if base_value % 100 == 0:
-                citi_allowed = True
-            if citi_allowed:
-                citi_obj = CitiRewardsManager()
-                cit_available_balance = citi_obj.get_citi_account_balance(
-                    transaction)
-                if cit_available_balance < base_value:
-                    citi_allowed = False
-            citi_config = {
-                'citi_allowed': citi_allowed
-            }
+
+        if citi_enabled and transaction.base_amount % 100 == 0:
+            citi_obj = CitiRewardsManager()
+            cit_available_balance = citi_obj.get_citi_account_balance(
+                transaction)
+
+            if cit_available_balance >= transaction.base_amount:
+                citi_config['citi_allowed'] = True
+
         return citi_config
 
     def get_checkout_config(self, payment_option, transaction):
-        card__enabled = payment_option.get(PAYMENT_OPTION_CHECKOUT_CARD,
-                                           False)
-        saved_card__enabled = payment_option.get(
-            PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
-            False)
+        card_enabled = payment_option.get(PAYMENT_OPTION_CHECKOUT_CARD, False)
+        saved_card_enabled = payment_option.get(
+            PAYMENT_OPTION_CHECKOUT_SAVED_CARD, False)
         checkout_config = {}
-        if True in [card__enabled, saved_card__enabled]:
-            checkout_obj = CheckoutpgManager()
-            checkout_config, status_code = (
-                checkout_obj.get_configurations(transaction.currency)
-            )
 
-            logger.info(
-                "checkoutpg response : {}, {}".format(checkout_config,
-                                                      status_code))
+        if True in [card_enabled, saved_card_enabled]:
+            checkout_config = get_configuration_data(CHECKOUTPG_HUB_CODE,
+                                                     transaction.currency)
+
         return checkout_config
-
-    def get_adcb_config(self, payment_option, transaction,
-                        partial_redemption_allowed_options):
-        """
-        This is for ADCB payback
-        """
-        adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
-        partial_redemption_allowed = partial_redemption_allowed_options.get(
-            PAYMENT_OPTION_ADCB, False)
-        adcb_config = {}
-        if adcb_enabled:
-            b2c_payback_obj = B2CPaybackManager()
-            adcb_config = b2c_payback_obj.get_configurations(
-                transaction.amount, transaction.currency,
-                transaction.transaction_id)
-            if adcb_config:
-                adcb_config[
-                    'partial_redemption_allowed'] = partial_redemption_allowed
-        return adcb_config
 
     def get_b2c_config(self, payment_option, transaction,
                        partial_redemption_allowed_options):
+        if transaction.currency not in [CURRENCY_UAE, CURRENCY_KSA]:
+            return {}
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
         neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
         config_dict = {}
         if True in [adcb_enabled, qitaf_enabled, neqaty_enabled]:
-            b2c_payback_obj = B2CPaybackManager()
-            b2c_config = b2c_payback_obj.get_configurations(
-                transaction.amount, transaction.currency,
-                transaction.transaction_id)
-            config_list = b2c_config.get("results")
+            b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
+                                                transaction.currency)
+            config_list = (b2c_config.response_data.get("results") if
+                           b2c_config else {})
             if adcb_enabled:
                 adcb_config = self.get_each_b2c_config(config_list,
                                                        ADCB_CLIENT_CODE)

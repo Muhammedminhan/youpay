@@ -27,6 +27,7 @@ from payments.constants import (
     PAYMENT_METHOD_NEQATY)
 from services.constants import RESPONSE_CODE_LIST
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
+from services.models import ConfigurationData
 
 logger = logging.getLogger(__name__)
 
@@ -482,3 +483,15 @@ def handle_point_collection(youpay_transaction, transaction_id, response_obj):
             "reward_point": reward_point,
         }
     return response_data, code
+
+
+def get_configuration_data(code, currency):
+    """get configuration data"""
+    try:
+        config_data = ConfigurationData.objects.get(
+            payment_gateway__code=code, currency__iso_code=currency)
+    except(ConfigurationData.DoesNotExist, Exception):
+        logging.error(f'No configuration data instance found for code {code} '
+                      f'and currency {currency}.')
+        return None
+    return config_data

@@ -47,12 +47,11 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     Class to manage b2cpayback related operations
     """
 
-    def get_configurations(self, amount, currency, transaction_id):
+    def get_configurations(self, currency):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
-        amount = str(amount)
         currency = str(currency)
         config_request_data = {
-            "amount": amount, "currency": currency,
+            "currency": currency,
             "product_code": product_code
         }
         request_data_json = json.dumps(config_request_data)
@@ -69,8 +68,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             else:
                 logger.error(
                     "No configuration received from configuration api "
-                    "call to b2cpayback for transaction {}, response "
-                    "{}".format(transaction_id, response.text))
+                    "call to b2cpayback, response "
+                    "{}".format(response.text))
                 return None
         except Exception as e:
             logger.error("config api call to b2cpayback failed",

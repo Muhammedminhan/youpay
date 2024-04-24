@@ -25,6 +25,15 @@ app.conf.beat_schedule = {
         # Function Arguments
         'args': ()
     },
+    'sync-configurations': {
+            # Task Name (Name Specified in Decorator)
+            'task': 'get_configuration_data',
+            # Schedule
+            # Execute at: every 5 hours
+            'schedule': crontab(minute="*/300"),
+            # Function Arguments
+            'args': ()
+        },
 }
 
 @app.task(bind=True)
