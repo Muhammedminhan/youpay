@@ -139,6 +139,10 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
     client_code = serializers.SerializerMethodField()
     invoice_amount = serializers.SerializerMethodField()
     gateway = serializers.SerializerMethodField()
+    expiry_date = serializers.SerializerMethodField()
+
+    def get_expiry_date(self, data):
+        return data.get('data', {}).get('expiry_date')
 
     def get_currency(self, data):
         return str(data.get('transaction_data', {}).get('currency'))
