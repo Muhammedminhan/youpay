@@ -26,7 +26,7 @@ from payments.constants import (
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
     PAYMENT_METHOD_NEQATY)
-from services.constants import RESPONSE_CODE_LIST
+from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -398,7 +398,8 @@ def checkout_decline_check(response_data):
 
     response_code = str(response_data.get('response_code', None))
 
-    if response_code in RESPONSE_CODE_LIST:
+    if str(response_code).startswith(
+            SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
         # this allow retry payments
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
         is_payment_verified = False
