@@ -366,8 +366,8 @@ def is_redirect(transaction_id, transaction_message):
         redirect to the payment page, which will give another try to the 
         customer in the current transaction, only for checkoutpg'''
         logger.info(
-            "Transaction for order reference {} failed, generating new "
-            "transaction for another attempt".format(
+            "Checkoutpg transaction for order reference {} failed, generating"
+            " new transaction for another attempt".format(
                 youpay_transaction.order_reference))
         redirect_url = youpay.generate_new_transaction(youpay_transaction)
         response_data = {
@@ -380,10 +380,14 @@ def is_redirect(transaction_id, transaction_message):
 
     if youpay_transaction.payment_status == PAYMENT_STATUS_REJECTED_RETRY:
         # Mainly occurs for tabbypg, this will redirect to FE payment page
-
+        logger.info(
+            "Tabbypg transaction for order reference {} failed, generating"
+            " new transaction for another attempt".format(
+                youpay_transaction.order_reference))
+        redirect_url = youpay.generate_new_transaction(youpay_transaction)
         response_data = {
-            IS_REDIRECT: False,
-            REDIRECT_URL: None,
+            IS_REDIRECT: True,
+            REDIRECT_URL: redirect_url,
             TRANSACTION_MSG: transaction_message,
             IS_SUCCESS: False
         }

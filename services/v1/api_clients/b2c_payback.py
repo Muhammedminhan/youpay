@@ -146,7 +146,7 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 self.update_youpay_transaction_data(update_data)
             else:
                 logger.info(
-                    "Point redemption not successful for transaction id "
+                    "adcb point redemption not successful for transaction id "
                     "{}".format(transaction_id))
             return Response(response, status=status.HTTP_200_OK)
         else:
@@ -157,8 +157,9 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 response = {'errors': {
                     'code': resp_code, 'message': message}}
             except Exception as e:
-                logger.error("Failed response received from b2cpayback "
-                             "redemption endpoint", exc_info=e)
+                logger.error(
+                    "Failed response received from b2cpayback adcb "
+                    "redemption endpoint", exc_info=e)
                 response = {'errors': {
                     'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}
                 }

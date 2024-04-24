@@ -236,19 +236,25 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     response_data[REDIRECT_URL], transaction_status = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
+                    logger.info(
+                        "response for adcb redemption api call for "
+                        "transaction {} is {}".format(
+                            transaction_obj.transaction_id,
+                            response_data))
                     return response_data, transaction_obj
                 else:
                     logger.error(
-                        "Error response received from redemption api call "
-                        "to b2cpayback {}".format(response.text))
+                        "Error response received from adcb redemption api "
+                        "call to b2cpayback {}".format(response.text))
                     return response, None
             except Exception as e:
                 logger.error(
-                    "redemption api call to b2cpayback failed", exc_info=e)
+                    "adcb redemption api call to b2cpayback failed",
+                    exc_info=e)
                 return None, None
         else:
-            logger.error("Invalid transaction id received for b2cpayback "
-                         "redemption api")
+            logger.error("Invalid transaction id received for adcb "
+                         "redemption api call")
             return None, None
 
     def verification(self, request_data):
