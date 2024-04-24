@@ -13,7 +13,8 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
 
-from core.constants import COMMON_ENCRYPTION_KEY, FERNET_KEY
+from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
+                            BROWSER_VALUE_ENCRYPTION_KEY)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig
@@ -25,7 +26,7 @@ from payments.constants import (
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
     PAYMENT_METHOD_NEQATY)
-from services.constants import RESPONSE_CODE_LIST
+from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.models import ConfigurationData
 
@@ -398,7 +399,8 @@ def checkout_decline_check(response_data):
 
     response_code = str(response_data.get('response_code', None))
 
-    if response_code in RESPONSE_CODE_LIST:
+    if str(response_code).startswith(
+            SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
         # this allow retry payments
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
         is_payment_verified = False
@@ -495,3 +497,19 @@ def get_configuration_data(code, currency):
                       f'and currency {currency}.')
         return None
     return config_data
+
+
+def encrypt_browser_value(string_value):
+    key = BROWSER_VALUE_ENCRYPTION_KEY
+    fer_instance = Fernet(key)
+    encrypted_value = fer_instance.encrypt(string_value.encode())
+    logger.info("encrypted browser value is {}".format(encrypted_value))
+    return encrypted_value.decode("utf-8")
+
+
+def decrypt_browser_value(encrypted_value):
+    key = BROWSER_VALUE_ENCRYPTION_KEY
+    fer_instance = Fernet(key)
+    decrypted_value = fer_instance.decrypt(encrypted_value).decode()
+    logger.info("decrypted cookie key is {}".format(decrypted_value))
+    return decrypted_value

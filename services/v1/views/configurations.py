@@ -7,7 +7,8 @@ from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
-                        get_configuration_data)
+                        get_configuration_data, encrypt_browser_value,
+                        decrypt_browser_value)
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE)
@@ -48,7 +49,7 @@ class ConfigViewSet(ViewSet):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.list_failure_statuses = PAYMENT_END_STATUS_LIST
+        self.list_end_statuses = PAYMENT_END_STATUS_LIST
 
     def list(self, request):
         queryset = PaymentGateway.objects.all()
@@ -70,8 +71,7 @@ class ConfigViewSet(ViewSet):
             if not transaction:
                 return self._transaction_not_found_response()
 
-            if (transaction.payment_status == PAYMENT_STATUS_PAID or
-                    transaction.payment_status in self.list_failure_statuses):
+            if transaction.payment_status in self.list_failure_statuses:
                 return self._transaction_already_paid_response(transaction)
 
             if not transaction.api_client.validate_session:
