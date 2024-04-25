@@ -97,7 +97,13 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         if data.get('token_type') == 'paypal':
             channel_code = ""
         else:
-            channel_code = CHECKOUTPG_CHANNEL_CONFIGURATIONS.get(
+            client_channel_code = data.get(
+                'transaction_obj').api_client.client_channel_code
+            if client_channel_code:
+                channelcode = client_channel_code
+            else:
+                channelcode = CHECKOUTPG_CHANNEL_CONFIGURATIONS
+            channel_code = channelcode.get(
                 data.get('transaction_data').get("currency")).get(
                 data.get('transaction_data').get("platform").upper())
         return channel_code
