@@ -324,7 +324,7 @@ def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
     if (instance.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK and
             instance.previous_status not in ALLOW_ARCHIVE_STATUS_LIST):
         if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
-            trigger_mail_on_b2c(instance)
+            reverse_redemption(instance)
 
 
 def youpay_update_client(instance):
@@ -375,7 +375,7 @@ def revert_citi_blocked_balance(instance):
             "balance for {}, ".format(str(e), instance.transaction_id))
 
 
-def trigger_mail_on_b2c(instance):
+def reverse_redemption(instance):
     """
     Handle actions to trigger mail on b2c-payback
     """
@@ -386,7 +386,7 @@ def trigger_mail_on_b2c(instance):
         from integrations.v1.gateway_clients.b2c_payback import (
             B2CPaybackManager)
         b2c_obj = B2CPaybackManager()
-        b2c_obj.trigger_mail_on_canceled_transaction(instance)
+        b2c_obj.reverse_redemption_on_canceled_expired_transaction(instance)
     except Exception as e:
         logger.error(
             "Exception occurred {} on signal while triggering mail "

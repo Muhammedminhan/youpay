@@ -387,7 +387,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 exc_info=e)
             return None
 
-    def trigger_mail_on_canceled_transaction(self, transaction):
+    def reverse_redemption_on_canceled_expired_transaction(self, transaction):
         payload = {}
         response = {}
         try:
