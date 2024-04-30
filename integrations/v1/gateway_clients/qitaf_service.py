@@ -475,7 +475,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             else:
                 '''Qitaf full redemption Failure case'''
                 self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
-                is_redirect = False
+                is_redirect = True
+                is_success = False
+                redirect_url = self.generate_new_transaction(payment_data)
         self.payment_method = (
             PAYMENT_METHOD_QITAF if is_full_redemption
             else PAYMENT_METHOD_QITAFAND_CARD)
