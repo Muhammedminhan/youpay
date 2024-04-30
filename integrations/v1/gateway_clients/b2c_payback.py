@@ -246,7 +246,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     logger.error(
                         "Error response received from adcb redemption api "
                         "call to b2cpayback {}".format(response.text))
-                    return response, None
+                    return response, transaction_obj
             except Exception as e:
                 logger.error(
                     "adcb redemption api call to b2cpayback failed",

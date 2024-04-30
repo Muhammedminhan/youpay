@@ -7,8 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
-from core.messages import COMMON_ERROR_MESSAGE_EN, IS_REDIRECT, IS_SUCCESS, \
-    REDIRECT_URL
+from core.messages import (COMMON_ERROR_MESSAGE_EN, IS_REDIRECT,
+                           IS_SUCCESS, REDIRECT_URL)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
