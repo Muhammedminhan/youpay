@@ -349,7 +349,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     "is_full_redemption": self.response_data.get(
                         "is_full_redemption"),
                     IS_REDIRECT: True,
-                    IS_SUCCESS: False
+                    IS_SUCCESS: False,
                     REDIRECT_URL: self.generate_new_transaction(
                         self.transaction_obj)
                 }
