@@ -267,6 +267,11 @@ class YouPayTransactionCRUD(object):
         return settlement_entity
 
     def generate_new_transaction(self, transaction_obj):
+        """
+        method to create new youpaytransactiondata object in case of retry
+        attempts. Returns new payment url for re attempts.
+        For retry count > 3, returns failure url
+        """
         order_reference = transaction_obj.order_reference
         invoice_id = transaction_obj.invoice_id
         api_client = transaction_obj.api_client

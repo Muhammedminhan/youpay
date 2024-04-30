@@ -147,7 +147,8 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
             else:
                 logger.info(
                     "adcb point redemption not successful for transaction id "
-                    "{}".format(transaction_id))
+                    "{} response is {}".format(
+                        transaction_id, response))
             return Response(response, status=status.HTTP_200_OK)
         else:
             try:
