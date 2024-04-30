@@ -12,10 +12,10 @@ from services.models import ConfigurationData
 logger = logging.getLogger(__name__)
 
 
-@shared_task(name='get_configuration_data')
-def get_configuration_data(payment_gateway=None, currency=None):
+@shared_task(name='sync_configuration_data')
+def sync_configuration_data(payment_gateway=None, currency=None):
     """
-    Task to get the latest configuration data from different payment gateways.
+    Task to sync the latest configuration data from different payment gateways.
 
     Args:
         payment_gateway (str): The code of the payment gateway.

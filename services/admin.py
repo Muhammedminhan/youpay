@@ -3,7 +3,7 @@ from django.contrib import admin
 from core.admin import AdminAbstract
 from services.models import APIClient, PaymentRequestData, ConfigurationData
 from services.forms import APIClientForm
-from services.tasks import get_configuration_data
+from services.tasks import sync_configuration_data
 
 
 class APIClientAdmin(AdminAbstract):
@@ -32,17 +32,17 @@ class ConfigurationDataAdmin(admin.ModelAdmin):
     list_filter = ('created_at', 'payment_gateway', 'currency')
     raw_id_fields = ('payment_gateway',)
 
-    actions = ['sync_configuration_data']
+    actions = ['sync_conf_data']
 
-    def sync_configuration_data(self, request, queryset):
+    def sync_conf_data(self, request, queryset):
         """
         It will update latest configuration data
         """
         for item in queryset:
-            get_configuration_data.delay(item.payment_gateway.code,
-                                         item.currency.iso_code)
+            sync_configuration_data.delay(item.payment_gateway.code,
+                                          item.currency.iso_code)
 
-    sync_configuration_data.short_description = "Sync Configuration Data"
+    sync_conf_data.short_description = "Sync Configuration Data"
 
 
 admin.site.register(APIClient, APIClientAdmin)

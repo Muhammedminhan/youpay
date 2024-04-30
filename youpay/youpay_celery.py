@@ -27,7 +27,7 @@ app.conf.beat_schedule = {
     },
     'sync-configurations': {
             # Task Name (Name Specified in Decorator)
-            'task': 'get_configuration_data',
+            'task': 'sync_configuration_data',
             # Schedule
             # Execute at: every 5 hours
             'schedule': crontab(minute="*/300"),
