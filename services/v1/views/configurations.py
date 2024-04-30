@@ -72,7 +72,7 @@ class ConfigViewSet(ViewSet):
             if not transaction:
                 return self._transaction_not_found_response()
 
-            if transaction.payment_status in self.list_failure_statuses:
+            if transaction.payment_status in self.list_end_statuses:
                 return self._transaction_already_paid_response(transaction)
 
             if not transaction.api_client.validate_session:
@@ -201,7 +201,7 @@ class ConfigViewSet(ViewSet):
     def _get_redirect_url(self, transaction):
         if transaction.payment_status == PAYMENT_STATUS_PAID:
             return transaction.success_url
-        elif transaction.payment_status in self.list_failure_statuses:
+        elif transaction.payment_status in self.list_end_statuses:
             return transaction.failure_url
         elif transaction.payment_status == PAYMENT_STATUS_CANCELLED:
             return transaction.cancel_url
@@ -301,6 +301,8 @@ class ConfigViewSet(ViewSet):
             else:
                 return {}
         else:
+            return {}
+        if not payment_methods:
             return {}
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
