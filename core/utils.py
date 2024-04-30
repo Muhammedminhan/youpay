@@ -487,6 +487,24 @@ def handle_point_collection(youpay_transaction, transaction_id, response_obj):
     return response_data, code
 
 
+def get_payment_gateway_by_code(code):
+    """get payment gateway object by code"""
+    try:
+        payment_gateway = PaymentGateway.objects.get(code=code)
+    except PaymentGateway.DoesNotExist:
+        payment_gateway = None
+    return payment_gateway
+
+
+def get_currency_by_iso_code(code):
+    """get currency object by iso code"""
+    try:
+        currency = Currency.objects.get(iso_code=code)
+    except Currency.DoesNotExist:
+        currency = None
+    return currency
+
+
 def create_configuration_data(code, currency):
     """create configuration data"""
     from services.tasks import get_checkout_conf, get_b2c_conf
@@ -497,18 +515,12 @@ def create_configuration_data(code, currency):
     elif code == B2CPAYBACK_HUB_CODE:
         response = get_b2c_conf(currency)
     if response:
-        try:
-            payment_gateway = PaymentGateway.objects.get(code=code)
-        except PaymentGateway.DoesNotExist:
-            payment_gateway = None
-        try:
-            currency = Currency.objects.get(iso_code=code)
-        except Currency.DoesNotExist:
-            currency = None
-        if payment_gateway and currency:
+        payment_gateway = get_payment_gateway_by_code(code)
+        currency_obj = get_currency_by_iso_code(currency)
+        if payment_gateway and currency_obj:
             config_data = ConfigurationData(
                 payment_gateway=payment_gateway,
-                currency=currency,
+                currency=currency_obj,
                 response_data=response
             )
             config_data.save()

@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 
 from celery import shared_task
+from django.db.models import Q
 
 from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
@@ -25,31 +26,25 @@ def get_configuration_data(payment_gateway=None, currency=None):
     """
     logger.info(
         "Getting latest configuration data for {}".format(payment_gateway))
-    configuration_data = ConfigurationData.objects.all()
 
+    filters = Q()
     if payment_gateway:
-        configuration_data = configuration_data.filter(
-            payment_gateway__code=payment_gateway)
+        filters &= Q(payment_gateway__code=payment_gateway)
     if currency:
-        configuration_data = configuration_data.filter(
-            currency__iso_code=currency)
+        filters &= Q(currency__iso_code=currency)
 
-    update_data = {}
+    configuration_data = ConfigurationData.objects.filter(filters)
 
     for item in configuration_data:
+        response = None
         if item.payment_gateway.code == CHECKOUTPG_HUB_CODE:
             response = get_checkout_conf(item.currency.iso_code)
         elif item.payment_gateway__code == B2CPAYBACK_HUB_CODE:
             response = get_b2c_conf(item.currency.iso_code)
-        else:
-            response = None
 
         if response:
-            update_data[item.id] = response
-
-    for item_id, response_data in update_data.items():
-        ConfigurationData.objects.filter(id=item_id).update(
-            response_data=response_data, updated_at=datetime.now())
+            ConfigurationData.objects.filter(id=item.id).update(
+                response_data=response, updated_at=datetime.now())
 
 
 def get_checkout_conf(currency):

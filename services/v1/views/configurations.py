@@ -208,7 +208,8 @@ class ConfigViewSet(ViewSet):
         else:
             return None
 
-    def get_tabby_conf(self, payment_option):
+    @staticmethod
+    def get_tabby_conf(payment_option):
         tabby_enabled = payment_option.get(PAYMENT_OPTION_TABBYPG, False)
         tabbypg_config = {}
 
@@ -221,7 +222,8 @@ class ConfigViewSet(ViewSet):
 
         return tabbypg_config
 
-    def get_additional_config(self, additional_fee, payment_type):
+    @staticmethod
+    def get_additional_config(additional_fee, payment_type):
         if additional_fee:
             return {
                 "additional_charges": True,
@@ -260,7 +262,8 @@ class ConfigViewSet(ViewSet):
 
         return paypal_config
 
-    def check_citi_allowed_denominations(self, payment_option, transaction):
+    @staticmethod
+    def check_citi_allowed_denominations(payment_option, transaction):
         citi_config = {}
         citi_enabled = payment_option.get(PAYMENT_OPTION_CITI_REWARDS, False)
 
@@ -274,7 +277,8 @@ class ConfigViewSet(ViewSet):
 
         return citi_config
 
-    def get_checkout_config(self, payment_option, transaction):
+    @staticmethod
+    def get_checkout_config(payment_option, transaction):
         card_enabled = payment_option.get(PAYMENT_OPTION_CHECKOUT_CARD, False)
         saved_card_enabled = payment_option.get(
             PAYMENT_OPTION_CHECKOUT_SAVED_CARD, False)
@@ -288,21 +292,8 @@ class ConfigViewSet(ViewSet):
 
     def get_b2c_config(self, payment_option, transaction,
                        partial_redemption_allowed_options):
-        if transaction.currency in [CURRENCY_UAE, CURRENCY_KSA]:
-            if transaction.currency == CURRENCY_UAE:
-                payment_methods = PaymentMethod.objects.filter(
-                    validations__AED__min__lte=float(transaction.amount),
-                    validations__AED__max__gte=float(transaction.amount))
-            elif transaction.currency == CURRENCY_KSA:
-                payment_methods = PaymentMethod.objects.filter(
-                    validations__SAR__min__lte=float(transaction.amount),
-                    validations__SAR__max__gte=float(transaction.amount)
-                )
-            else:
-                return {}
-        else:
-            return {}
-        if not payment_methods:
+        is_valid_amount = self.validate_amount(transaction)
+        if not is_valid_amount:
             return {}
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
@@ -350,11 +341,29 @@ class ConfigViewSet(ViewSet):
                 config_dict['neqaty_config'] = neqaty_config
         return config_dict
 
-    def get_each_b2c_config(self, config_list, payment_method_code):
+    @staticmethod
+    def get_each_b2c_config(config_list, payment_method_code):
         for config in config_list:
             if config["code"] == payment_method_code:
                 return config
         return {}
+
+    @staticmethod
+    def validate_amount(transaction):
+        is_valid_amount = False
+        if transaction.currency in [CURRENCY_UAE, CURRENCY_KSA]:
+            if transaction.currency == CURRENCY_UAE:
+                payment_methods = PaymentMethod.objects.filter(
+                    validations__AED__min__lte=float(transaction.amount),
+                    validations__AED__max__gte=float(transaction.amount))
+            elif transaction.currency == CURRENCY_KSA:
+                payment_methods = PaymentMethod.objects.filter(
+                    validations__SAR__min__lte=float(transaction.amount),
+                    validations__SAR__max__gte=float(transaction.amount)
+                )
+        if payment_methods:
+            is_valid_amount = True
+        return is_valid_amount
 
 
 class ClientStaticFilesAPI(APIView):
