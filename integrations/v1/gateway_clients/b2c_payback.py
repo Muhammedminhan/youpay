@@ -246,13 +246,6 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     logger.error(
                         "Error response received from adcb redemption api "
                         "call to b2cpayback {}".format(response.text))
-                    from services.v1.views.common import YouPayTransactionCRUD
-                    youpay_crud = YouPayTransactionCRUD()
-                    response_data = json.loads(response.text)
-                    response_data[IS_REDIRECT] = True
-                    response_data[IS_SUCCESS] = False
-                    response_data[REDIRECT_URL] = (
-                        youpay_crud.generate_new_transaction(transaction_obj))
                     return response, None
             except Exception as e:
                 logger.error(
