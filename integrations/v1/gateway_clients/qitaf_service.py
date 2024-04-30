@@ -347,7 +347,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     "message": message,
                     "code": self.response_data.get("response_code"),
                     "is_full_redemption": self.response_data.get(
-                        "is_full_redemption")
+                        "is_full_redemption"),
+                    IS_REDIRECT: True,
+                    IS_SUCCESS: False
+                    REDIRECT_URL: self.generate_new_transaction(
+                        self.transaction_obj)
                 }
                 return {"errors": err_obj}, self.QITAF_CONNECTION_ERROR
 
@@ -475,9 +479,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             else:
                 '''Qitaf full redemption Failure case'''
                 self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
-                is_redirect = True
-                is_success = False
-                redirect_url = self.generate_new_transaction(payment_data)
+                is_redirect = False
         self.payment_method = (
             PAYMENT_METHOD_QITAF if is_full_redemption
             else PAYMENT_METHOD_QITAFAND_CARD)
