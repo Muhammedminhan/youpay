@@ -17,9 +17,9 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
-from core.models import AppConfig
+from core.models import AppConfig, Currency
 from core.response_messages import YouPayResponse
-from integrations.constants import CHECKOUTPG_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
@@ -487,6 +487,34 @@ def handle_point_collection(youpay_transaction, transaction_id, response_obj):
     return response_data, code
 
 
+def create_configuration_data(code, currency):
+    """create configuration data"""
+    from services.tasks import get_checkout_conf, get_b2c_conf
+    config_data = None
+    if code == CHECKOUTPG_HUB_CODE:
+        response = get_checkout_conf(currency)
+
+    elif code == B2CPAYBACK_HUB_CODE:
+        response = get_b2c_conf(currency)
+    if response:
+        try:
+            payment_gateway = PaymentGateway.objects.get(code=code)
+        except PaymentGateway.DoesNotExist:
+            payment_gateway = None
+        try:
+            currency = Currency.objects.get(iso_code=code)
+        except Currency.DoesNotExist:
+            currency = None
+        if payment_gateway and currency:
+            config_data = ConfigurationData(
+                payment_gateway=payment_gateway,
+                currency=currency,
+                response_data=response
+            )
+            config_data.save()
+    return config_data
+
+
 def get_configuration_data(code, currency):
     """get configuration data"""
     try:
@@ -495,7 +523,7 @@ def get_configuration_data(code, currency):
     except(ConfigurationData.DoesNotExist, Exception):
         logging.error(f'No configuration data instance found for code {code} '
                       f'and currency {currency}.')
-        return None
+        config_data = create_configuration_data(code, currency)
     return config_data
 
 
