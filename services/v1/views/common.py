@@ -277,9 +277,9 @@ class YouPayTransactionCRUD(object):
         api_client = transaction_obj.api_client
         payment_url = None
         try:
-            payment_request = PaymentRequestData.objects.get(
+            payment_request = PaymentRequestData.objects.filter(
                 order_reference=order_reference, invoice_id=invoice_id,
-                api_client=api_client)
+                api_client=api_client).order_by('-created_at').last()
             request_data = payment_request.request_data
             data_formatted = reformat_payment_request_data(request_data)
             data_formatted['api_client'] = api_client.id
