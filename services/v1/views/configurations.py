@@ -8,11 +8,10 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string, get_gateway_additional_fee
-from integrations.constants import (ADCB_CLIENT_CODE, QITAF_CLIENT_CODE,
-                                    NEQATY_CLIENT_CODE)
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         encrypt_browser_value, decrypt_browser_value)
+from integrations.constants import (ADCB_CLIENT_CODE, QITAF_CLIENT_CODE,
+                                    NEQATY_CLIENT_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
@@ -55,7 +54,7 @@ class ConfigViewSet(ViewSet):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.list_failure_statuses = PAYMENT_END_STATUS_LIST
+        self.list_end_statuses = PAYMENT_END_STATUS_LIST
 
     def list(self, request):
         queryset = PaymentGateway.objects.all()
@@ -82,7 +81,7 @@ class ConfigViewSet(ViewSet):
                 #     "".format(session_key,
                 #               transaction.browser_value))
                 # Redirect to success url if transaction is already paid
-                if transaction.payment_status in self.list_failure_statuses:
+                if transaction.payment_status in self.list_end_statuses:
                     return_response = self.retrieve_response(
                         payment_options=None,
                         checkoutpg_config=None,
@@ -240,10 +239,10 @@ class ConfigViewSet(ViewSet):
             if transaction.payment_status == PAYMENT_STATUS_PAID:
                 redirect_url = transaction.success_url
 
-            if transaction.payment_status in self.list_failure_statuses:
+            elif transaction.payment_status in self.list_end_statuses:
                 redirect_url = transaction.failure_url
 
-            if transaction.payment_status == PAYMENT_STATUS_CANCELLED:
+            elif transaction.payment_status == PAYMENT_STATUS_CANCELLED:
                 redirect_url = transaction.cancel_url
 
             # add transaction id in response
