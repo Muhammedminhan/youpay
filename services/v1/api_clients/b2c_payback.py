@@ -158,12 +158,12 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 message = response_text.get('message', None)
                 response_dict = {'errors': {
                     'code': resp_code,
-                    'message': message,
+                    'message': message},
                     IS_REDIRECT: True,
                     IS_SUCCESS: False,
                     REDIRECT_URL: self.generate_new_transaction(
                         transaction_obj)
-                }}
+                }
                 response = response_dict
             except Exception as e:
                 logger.error(
