@@ -491,8 +491,14 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         "is_full_redemption": self.response_data.get(
                             "is_full_redemption")
                     }
-                    return {
-                        "errors": err_obj}, self.NEQATY_CONNECTION_ERROR
+                    response_data = {
+                        "errors": err_obj,
+                        IS_REDIRECT: True,
+                        IS_SUCCESS: False,
+                        REDIRECT_URL: self.generate_new_transaction(
+                            self.transaction_obj)
+                    }
+                    return response_data, self.NEQATY_CONNECTION_ERROR
             else:
                 msg = "unable to get response from b2c_payback-neqaty"
                 logger.error(msg)
