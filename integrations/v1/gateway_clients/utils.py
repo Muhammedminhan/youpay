@@ -3,7 +3,6 @@ import logging
 from core.response_messages import YouPayResponse
 from integrations.constants import (ADCB_CLIENT_CODE,
                                     ADCB_CHECKOUTPG_PAYMENT_NOT_PAID,
-                                    CHECKOUT_UAE_CHANNEL_CODE,
                                     CITI_REWARDS_OTP_EXPIRED_CODE,
                                     CITI_REWARDS_VALIDATION_ERROR_CODE,
                                     CITI_REWARDS_ALREADY_REDEEMED_CODE,
@@ -13,7 +12,7 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE,
                                     CHECKOUT_UAE_CHANNEL_CODE,
                                     CHECKOUT_SAUDI_CHANNEL_CODE
-)
+                                    )
 from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
