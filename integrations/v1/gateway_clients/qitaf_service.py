@@ -349,14 +349,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     "is_full_redemption": self.response_data.get(
                         "is_full_redemption")
                 }
-                response_data = {
-                    "errors": err_obj,
-                    IS_REDIRECT: True,
-                    IS_SUCCESS: False,
-                    REDIRECT_URL: self.generate_new_transaction(
-                        self.transaction_obj)
-                }
-                return response_data, self.QITAF_CONNECTION_ERROR
+                return {"errors": err_obj}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Exception in qitaf redeem point api: {}".format(e)
