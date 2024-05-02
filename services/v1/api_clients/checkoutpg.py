@@ -82,6 +82,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
                 transaction_data = serializer.data
                 payment_data = {'token_type': TOKEN_TYPE_SAVED_CARD,
                                 'transaction_data': transaction_data,
+                                'transaction_obj': transaction_obj,
                                 'request_data': request.data,
                                 'site_domain': site_domain,
                                 }
@@ -156,6 +157,7 @@ class CardPayment(APIView, YouPayTransactionCRUD):
                 payment_data = {'token_type': TOKEN_TYPE_CARD,
                                 'transaction_data': transaction_data,
                                 'request_data': request.data,
+                                'transaction_obj': transaction_obj,
                                 'site_domain': site_domain}
                 checkout = CheckoutpgManager()
                 response_data, code = checkout.card_payment(

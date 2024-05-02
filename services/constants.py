@@ -32,6 +32,7 @@ RESPONSE_CODE_LIST = [
     '20151',  # Declined - Payment authorization initiated but failed
     None
 ]
+SOFT_DECLINE_RESPONSE_CODE_STARTSWITH = "20"
 
 YOUPAY_SESSION_KEY = "youpay-session-id"
 

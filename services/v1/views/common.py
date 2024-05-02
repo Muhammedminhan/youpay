@@ -30,9 +30,11 @@ from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
-from services.constants import RESPONSE_CODE_LIST, CURRENCY_UAE, CURRENCY_KSA
+from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
+                                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
 from services.models import APIClient, PaymentRequestData
 from services.v1.views.utils import reformat_payment_request_data
+
 
 logger = logging.getLogger(__name__)
 
@@ -365,7 +367,8 @@ def is_redirect(transaction_id, transaction_message):
     response_code = transaction_message.get('response_code', None)
 
     '''This check is applicable only for checkout payments'''
-    if (response_code in RESPONSE_CODE_LIST and
+    if ((str(response_code).startswith(
+            SOFT_DECLINE_RESPONSE_CODE_STARTSWITH) or response_code is None) and
             youpay_transaction.payment_gateway == PAYMENT_GATEWAY_CHECKOUTPG):
         '''We are setting the redirect url to none so in frontend it will 
         redirect to the payment page, which will give another try to the 
@@ -381,7 +384,7 @@ def is_redirect(transaction_id, transaction_message):
             TRANSACTION_MSG: transaction_message,
             IS_SUCCESS: False
         }
-        return True, response_data
+        return False, response_data
 
     if youpay_transaction.payment_status == PAYMENT_STATUS_REJECTED_RETRY:
         # Mainly occurs for tabbypg, this will redirect to FE payment page
