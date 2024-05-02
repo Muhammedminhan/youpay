@@ -60,7 +60,7 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     allow_aed_converted_amount = models.BooleanField(
         default=False, help_text='For enabling AED converted amount for the '
                                  'client')
-    client_channel_code = models.JSONField(
+    checkout_channel_code = models.JSONField(
         null=True, blank=True,
         help_text="channel code used by client")
 
