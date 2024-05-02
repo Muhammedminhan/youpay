@@ -1,5 +1,6 @@
 import json
 import logging
+
 import requests
 from rest_framework import status
 
@@ -135,20 +136,29 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         """
         Calls amazonpg tokenization api
         """
+        transaction_data = data.get('transaction_data')
+        self.transaction_id = transaction_data.get('transaction_id')
         try:
 
             url = self.amazonpg_config.domain + AMAZONPG_TOKENIZATION_API
             card_details = self.get_tokenization_data(data)
+            headers = self.get_payment_header()
             logger.info(
                 "Youpay sending card details to amazonpg "
                 "is {}".format(card_details))
-            payload = card_details
+            payload = json.dumps(card_details)
 
-            response = requests.post(url, data=payload)
+            response = requests.post(url, data=payload, headers=headers)
             if response:
                 response_data = response.json()
+                self.payment_reference = response_data.get(
+                    "payment_reference")
+                self.update_youpay_transaction_data(
+                    self.prepare_data_to_update())
+                response_data.pop("payment_reference")
                 logger.info("Response from AmazonPG tokenization api "
                             "{}".format(response_data))
+
                 return response_data, self.SUCCESS
         except Exception as e:
             error = "Error in amazonpg tokenization api: {}".format(e)
