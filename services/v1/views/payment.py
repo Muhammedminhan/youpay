@@ -101,7 +101,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             with wait_redis_lock(lock_name=lock_name):
                 data_formatted['api_client'] = client_pk
                 serializer = PaymentRequestDataSerializer(data=data_formatted)
-                data_formatted['retry_count'] = 1
+
                 if serializer.is_valid():
                     self.payment_request_obj = serializer.save()
                     transaction_response = self.create_youpay_transaction_data(
