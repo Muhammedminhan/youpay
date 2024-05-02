@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
-from core.messages import COMMON_ERROR_MESSAGE_EN
+from core.messages import (COMMON_ERROR_MESSAGE_EN, IS_REDIRECT,
+                           IS_SUCCESS, REDIRECT_URL)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
@@ -146,19 +147,28 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 self.update_youpay_transaction_data(update_data)
             else:
                 logger.info(
-                    "Point redemption not successful for transaction id "
-                    "{}".format(transaction_id))
+                    "adcb point redemption not successful for transaction id "
+                    "{} response is {}".format(
+                        transaction_id, response))
             return Response(response, status=status.HTTP_200_OK)
         else:
             try:
                 response_text = json.loads(response.text)
                 resp_code = response_text.get('code', False)
                 message = response_text.get('message', None)
-                response = {'errors': {
-                    'code': resp_code, 'message': message}}
+                response_dict = {'errors': {
+                    'code': resp_code,
+                    'message': message},
+                    IS_REDIRECT: True,
+                    IS_SUCCESS: False,
+                    REDIRECT_URL: self.generate_new_transaction(
+                        transaction_obj)
+                }
+                response = response_dict
             except Exception as e:
-                logger.error("Failed response received from b2cpayback "
-                             "redemption endpoint", exc_info=e)
+                logger.error(
+                    "Failed response received from b2cpayback adcb "
+                    "redemption endpoint", exc_info=e)
                 response = {'errors': {
                     'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}
                 }
