@@ -20,6 +20,7 @@ REDIRECT_URL = 'redirect_url'
 TRANSACTION_MSG = 'transaction_message'
 IS_REDIRECT = 'is_redirect'
 IS_SUCCESS = "is_success"
+PAYMENT_ID = "payment_id"
 
 COMMON_ERROR_MESSAGE_EN = "Oops! Something went wrong with the system."
 COMMON_ERROR_MESSAGE_EN_CODE = 11111

@@ -9,7 +9,7 @@ from core.constants import (
     PURCHASE_PLATFORM_ANDROID
 )
 from core.messages import (
-    ERROR_MISSING_FIELDS, IS_SUCCESS
+    ERROR_MISSING_FIELDS, IS_SUCCESS, PAYMENT_ID
 )
 from core.messages import (
     REDIRECT_URL,
@@ -275,7 +275,6 @@ class YouPayTransactionCRUD(object):
         order_reference = transaction_obj.order_reference
         invoice_id = transaction_obj.invoice_id
         api_client = transaction_obj.api_client
-        payment_url = None
         try:
             payment_request = PaymentRequestData.objects.filter(
                 order_reference=order_reference, invoice_id=invoice_id,
@@ -310,7 +309,8 @@ class YouPayTransactionCRUD(object):
                 "attempt related to existing transaction id {}".format(
                     transaction_obj.transaction_id), exc_info=e)
             payment_url = None
-        return payment_url
+            encrypted_transaction_id = None
+        return payment_url, encrypted_transaction_id
 
     def get_transaction_retry_count(self, transaction_obj):
         if transaction_obj.retry_count == 3:
@@ -389,12 +389,14 @@ def is_redirect(transaction_id, transaction_message):
             "Tabbypg transaction for order reference {} failed, generating"
             " new transaction for another attempt".format(
                 youpay_transaction.order_reference))
-        redirect_url = youpay.generate_new_transaction(youpay_transaction)
+        redirect_url, encrypted_id = youpay.generate_new_transaction(
+            youpay_transaction)
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
             TRANSACTION_MSG: transaction_message,
-            IS_SUCCESS: False
+            IS_SUCCESS: False,
+            PAYMENT_ID: encrypted_id
         }
         return False, response_data
 
