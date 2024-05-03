@@ -7,6 +7,7 @@ from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
 from payments.constants import ALLOW_ARCHIVE_STATUS_LIST, PAYMENT_STATUS_PAID
 from payments.models import (ArchivedYouPayTransactionData)
+from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,10 @@ def collect_neqaty_points_for_transaction(modeladmin, request, queryset):
                     "Neqaty collection successful for the transaction {}".format(
                         transaction.transaction_id
                     ))
+                earn_reference = response.get("earn_reference")
+                youpay_obj = YouPayTransactionCRUD()
+                data_to_update = {'earn_reference': earn_reference}
+                youpay_obj.update_youpay_transaction_data(data_to_update)
                 logger.info(response_message)
                 modeladmin.message_user(request, response_message,
                                         level=messages.SUCCESS)
