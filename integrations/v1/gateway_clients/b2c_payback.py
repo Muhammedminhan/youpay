@@ -271,6 +271,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             return None, None
 
     def verification(self, request_data):
+        update_data = {}
         request_transaction_id = request_data.get('transaction_id')
         if request_transaction_id:
             try:
@@ -343,9 +344,15 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                         # if redirecting then it will be a verified payment
                         'is_payment_verified': response_data["is_redirect"]
                     }
-                    self.update_youpay_transaction_data(update_data)
+
                     return response_data, transaction_obj
                 else:
+                    update_data = {
+                        'transaction_id': transaction_obj.transaction_id,
+                        'payment_status': payment_status,
+                        'is_full_redemption':
+                            transaction_obj.is_full_redemption,
+                    }
                     logger.error(
                         "Error response received from adcb verify api call "
                         "to b2cpayback {}".format(response.text))
@@ -355,6 +362,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     "adcb verify api call to b2cpayback failed",
                     exc_info=e)
                 return None, None
+
+            finally:
+                self.update_youpay_transaction_data(update_data)
         else:
             logger.error("Invalid transaction id received for adcb "
                          "verify api")
