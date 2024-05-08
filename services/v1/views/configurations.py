@@ -268,8 +268,7 @@ class ConfigViewSet(ViewSet):
             additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
             applepay_config = self.get_additional_config(additional_fee,
                                                          TOKEN_TYPE_APPLEPAY)
-            
-            applepay_config.update(additional_config)
+
         return applepay_config
 
     def get_paypal_config(self, payment_option):
