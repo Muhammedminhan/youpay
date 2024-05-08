@@ -110,7 +110,7 @@ def tabby_to_youpay_status(tabbypg_data):
 
     if payment_status == PAYMENT_STATUS_CLOSED and is_paid:
         payment_status = PAYMENT_STATUS_PAID
-    elif payment_status == PAYMENT_STATUS_PAID and not is_paid:
+    elif payment_status == PAYMENT_STATUS_CLOSED and not is_paid:
         payment_status = PAYMENT_STATUS_CANCELLED
 
     return payment_status
