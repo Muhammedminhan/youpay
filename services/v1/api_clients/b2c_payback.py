@@ -16,7 +16,7 @@ from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_TOUCHPOINTS,
     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD, PAYMENT_METHOD_ADCB_CARD_ONLY,
-    PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING
+    PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_DECLINED_RETRY
 )
 from services.v1.constants import B2C_PAYBACK_NO_RESPONSE_MESSAGE
 from services.v1.views.common import YouPayTransactionCRUD
@@ -153,6 +153,11 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
             return Response(response, status=status.HTTP_200_OK)
         else:
             try:
+                update_data = {
+                    'transaction_id': transaction_obj.transaction_id,
+                    'payment_status': PAYMENT_STATUS_DECLINED_RETRY,
+                }
+                self.update_youpay_transaction_data(update_data)
                 response_text = json.loads(response.text)
                 resp_code = response_text.get('code', False)
                 message = response_text.get('message', None)
@@ -169,7 +174,7 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 response = response_dict
             except Exception as e:
                 logger.error(
-                    "Failed response received from b2cpayback adcb "
+                    "Failed response received from adcb "
                     "redemption endpoint", exc_info=e)
                 response = {'errors': {
                     'code': "400", 'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}
