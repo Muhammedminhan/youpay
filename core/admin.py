@@ -65,8 +65,8 @@ class CountryAdmin(AdminAbstract):
 
 class PaymentMethodAdmin(AdminAbstract):
     fields = ('payment_method', 'country', 'clients', 'active',
-              'guest_user_enabled', 'payment_gateway', 'created_at',
-              'updated_at', 'created_by', 'modified_by')
+              'guest_user_enabled', 'payment_gateway','validations',
+              'created_at', 'updated_at', 'created_by', 'modified_by')
     list_display = ('payment_method', 'active',
                     'guest_user_enabled', 'payment_gateway')
     search_fields = ('payment_method', 'country', 'clients')
