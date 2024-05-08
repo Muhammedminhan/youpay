@@ -29,7 +29,10 @@ from payments.constants import (
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
-                                CURRENCY_UAE, CURRENCY_KSA)
+                                CURRENCY_UAE, CURRENCY_KSA,
+                                APPLEPAY_SUPPORTED_NETWORKS,
+                                APPLEPAY_MERCHANT_CAPABILITIES,
+                                APPLEPAY_LABEL)
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
@@ -250,7 +253,14 @@ class ConfigViewSet(ViewSet):
             }
 
     def get_applepay_config(self, payment_option):
-        applepay_config = {}
+        """
+        returns applepay additional fee config
+        only if applepay is enabled
+        """
+        applepay_config = {"supportedNetworks": APPLEPAY_SUPPORTED_NETWORKS,
+                           "merchantCapabilities": 
+                               APPLEPAY_MERCHANT_CAPABILITIES,
+                           "label": APPLEPAY_LABEL}
         applepay_enabled = payment_option.get(PAYMENT_OPTION_CHECKOUT_APPLEPAY,
                                               False)
 
