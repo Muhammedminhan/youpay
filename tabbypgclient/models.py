@@ -97,8 +97,8 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
 
 
 def tabby_to_youpay_status(tabbypg_data):
-    tabbypg_status = tabbypg_data.status
-    is_paid = tabbypg_data.is_paid
+    tabbypg_status = tabbypg_data.get('status')
+    is_paid = tabbypg_data.get('is_paid')
 
     payment_status = TABBY_YOUPAY_STATUS_DICT.get(tabbypg_status)
     if not payment_status:
