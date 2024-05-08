@@ -105,6 +105,9 @@ class PaymentStatusCheckMiddleware(object):
             except TransactionAlreadyPaid:
                 return JsonResponse(self.response, status=200)
 
+            except TransactionAlreadyProcessed:
+                return JsonResponse(self.response, status=404)
+
             except TransactionNotFound:
                 log_message = "TransactionNotFound"
                 code = youpay_message_obj.TRANSACTION_NOT_FOUND
