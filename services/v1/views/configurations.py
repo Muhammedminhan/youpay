@@ -1,4 +1,6 @@
 import logging
+import random
+import string
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -68,7 +70,7 @@ class ConfigViewSet(ViewSet):
         try:
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
-
+            # session_key = self.get_session_key(request)
             if not transaction:
                 return self._transaction_not_found_response()
 
@@ -126,7 +128,7 @@ class ConfigViewSet(ViewSet):
         b2c_configs = self.get_b2c_config(payment_options,
                                           transaction,
                                           partial_redemption_allowed_options)
-
+        # sessionkey = self.get_browser_value(transaction) if transaction else None
         response_data = {
             "data": {
                 "api_client": api_client,
@@ -138,17 +140,25 @@ class ConfigViewSet(ViewSet):
                 "applepay_config": self.get_applepay_config(payment_options),
                 "paypal_config": self.get_paypal_config(payment_options),
                 "neqaty_config": b2c_configs.get('neqaty_config', {}),
-                "amount": transaction.amount,
-                "currency": transaction.currency,
-                "country_code": transaction.country_code,
-                "service_fee": transaction.service_fee,
-                "vat_amount": transaction.VAT_amount,
-                "base_amount": transaction.base_amount,
-                "cart_amount": transaction.cart_amount,
-                "cart_currency": transaction.cart_currency,
-                "cart_service_fee": transaction.cart_service_fee,
-                "cart_vat_amount": transaction.cart_VAT_amount,
-                "cart_base_amount": transaction.cart_base_amount,
+                "amount": transaction.amount if transaction else None,
+                "currency": transaction.currency if transaction else None,
+                "country_code": transaction.country_code if transaction else
+                None,
+                "service_fee": transaction.service_fee if transaction else
+                None,
+                "vat_amount": transaction.VAT_amount if transaction else None,
+                "base_amount": transaction.base_amount if transaction else
+                None,
+                "cart_amount": transaction.cart_amount if transaction else
+                None,
+                "cart_currency": transaction.cart_currency if transaction else
+                None,
+                "cart_service_fee": transaction.cart_service_fee if
+                transaction else None,
+                "cart_vat_amount": transaction.cart_VAT_amount if transaction
+                else None,
+                "cart_base_amount": transaction.cart_base_amount if
+                transaction else None,
                 "qitaf_config": b2c_configs.get('qitaf_config', {}),
                 "citi_config": self.check_citi_allowed_denominations(
                     payment_options, transaction),
@@ -263,6 +273,31 @@ class ConfigViewSet(ViewSet):
         return paypal_config
 
     @staticmethod
+    def get_browser_value(transaction_obj):
+        letters = string.ascii_lowercase
+        if transaction_obj.browser_value:
+            browser_value = transaction_obj.browser_value
+            logger.info("subsequent returned browser value is "
+                        "{}".format(browser_value))
+            browser_value = encrypt_browser_value(browser_value)
+        else:
+            browser_value = ''.join(random.choice(letters) for i in range(15))
+            try:
+                browser_value_transaction = YouPayTransactionData.objects.get(
+                    transaction_id=transaction_obj.transaction_id)
+                browser_value_transaction.browser_value = browser_value
+                browser_value_transaction.save()
+                logger.info("first returned browser value is {}".format(
+                    browser_value))
+                browser_value = encrypt_browser_value(browser_value)
+            except YouPayTransactionData.DoesNotExist:
+                browser_value = None
+        if browser_value:
+            logger.info("returned encrypted browser value is {}".format(
+                browser_value))
+        return browser_value
+
+    @staticmethod
     def check_citi_allowed_denominations(payment_option, transaction):
         citi_config = {}
         citi_enabled = payment_option.get(PAYMENT_OPTION_CITI_REWARDS, False)
@@ -364,6 +399,36 @@ class ConfigViewSet(ViewSet):
         if payment_methods:
             is_valid_amount = True
         return is_valid_amount
+
+    @staticmethod
+    def get_session_key(request):
+        session_key = request.COOKIES.get('sessionkey')
+        logger.info(
+            "request cookies value is {}, cookie keys are {}, cookie session "
+            "key is {}".format(
+                request.COOKIES, request.COOKIES.keys(), session_key))
+        try:
+            if session_key in ['null', 'undefined', None, 'None', 'none']:
+                session_key = None
+            else:
+                session_key = decrypt_browser_value(session_key)
+        except Exception as e:
+            logger.error("Error occurred during resolving session key",
+                         exc_info=e)
+            session_key = None
+        return session_key
+
+    @staticmethod
+    def check_browser_session(transaction, session_key):
+        logger.info("User session check browser value {}, session key {}"
+                    "".format(transaction.browser_value, session_key))
+        if transaction.browser_value:
+            if transaction.browser_value == session_key:
+                return True
+            elif transaction.browser_value != session_key:
+                return False
+        else:
+            return True
 
 
 class ClientStaticFilesAPI(APIView):
