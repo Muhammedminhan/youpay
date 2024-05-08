@@ -4,9 +4,11 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from payments.constants import PAYMENT_STATUS_PAID, PAYMENT_STATUS_CANCELLED
 from services.v1.views.common import YouPayTransactionCRUD
 from .constant import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
-                       PURCHASE_PLATFORM_CHOICES, TABBY_YOUPAY_STATUS_DICT)
+                       PURCHASE_PLATFORM_CHOICES, TABBY_YOUPAY_STATUS_DICT,
+                       PAYMENT_STATUS_CLOSED)
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,8 @@ class TabbyPaymentData(models.Model):
 @receiver(post_save, sender=TabbyPaymentData)
 def update_youpaytransactiondata_on_webhook(sender, instance, created,
                                             **kwargs):
-    payment_status = tabby_to_youpay_status(instance.status)
+    payment_status = tabby_to_youpay_status(
+        {"status": instance.status, "is_paid": instance.is_paid})
     if payment_status:
         try:
             youpay_crud = YouPayTransactionCRUD()
@@ -62,7 +65,9 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
             if transaction_obj:
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
-                    "payment_status": payment_status
+                    "payment_status": payment_status,
+                    "approved": (True if payment_status == PAYMENT_STATUS_PAID
+                                 else False),
                 }
                 youpay_crud.update_youpay_transaction_data(
                             data_to_update)
@@ -91,7 +96,10 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
                     instance.payment_reference, instance.status))
 
 
-def tabby_to_youpay_status(tabbypg_status):
+def tabby_to_youpay_status(tabbypg_data):
+    tabbypg_status = tabbypg_data.status
+    is_paid = tabbypg_data.is_paid
+
     payment_status = TABBY_YOUPAY_STATUS_DICT.get(tabbypg_status)
     if not payment_status:
         if tabbypg_status == PAYMENT_STATUS_NONE:
@@ -99,4 +107,10 @@ def tabby_to_youpay_status(tabbypg_status):
         logger.info(
             "Error status at tabbypgclient while trying to update "
             "youpaytransactiondata, status {}".format(tabbypg_status))
+
+    if payment_status == PAYMENT_STATUS_CLOSED and is_paid:
+        payment_status = PAYMENT_STATUS_PAID
+    elif payment_status == PAYMENT_STATUS_PAID and not is_paid:
+        payment_status = PAYMENT_STATUS_CANCELLED
+
     return payment_status
