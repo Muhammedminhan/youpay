@@ -367,10 +367,11 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                                request_data):
         youpay_update_data = {}
         logger.info(
-            "handle_neqaty_response data {}".format(response_data))
+            "handle_neqaty_response data {} for transaction {}".format(
+                response_data, payment_data.transaction_id))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
-
+        return_response = {}
         is_full_redemption = response_data.get("partner_response").get(
             "is_full_redemption", False)
         redemption_status = response_data.get("partner_response").get(
@@ -391,6 +392,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         'sum_net_amount', None)
                     name_on_card = request_data.get("customer_name")
                     self.point_collection_enabled = True
+                    return_response[IS_SUCCESS] = is_success
+                    return_response[IS_REDIRECT] = is_redirect
+                    return_response["message"] = message
+                    return_response[REDIRECT_URL] = redirect_url
 
                 else:
                     redirect_url = ('{}?transaction_id={}'.format(
@@ -402,6 +407,13 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         "checkout_response_data", {}).get("response_summary",
                                                           "Payment Failed")
                     self.payment_status = PAYMENT_STATUS_DECLINED
+                    error_obj = {
+                        "message": message,
+                    }
+                    return_response[IS_SUCCESS] = is_success
+                    return_response[IS_REDIRECT] = is_redirect
+                    return_response["errors"] = error_obj
+                    return_response[REDIRECT_URL] = redirect_url
 
             else:
                 '''Neqaty full redemption Success case'''
@@ -414,6 +426,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     payment_data.success_url,
                     payment_data.transaction_id))
                 is_success, is_redirect = True, True
+                return_response[IS_SUCCESS] = is_success
+                return_response[IS_REDIRECT] = is_redirect
+                return_response["message"] = message
+                return_response[REDIRECT_URL] = redirect_url
 
         self.payment_method = (
             PAYMENT_METHOD_NEQATY if is_full_redemption
@@ -437,12 +453,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         update_data.update(youpay_update_data)
 
         self.update_youpay_transaction_data(update_data)
-        return_response = {
-            "message": message,
-            REDIRECT_URL: redirect_url,
-            IS_REDIRECT: is_redirect,
-            "is_success": is_success
-        }
         return return_response
 
     def handle_neqaty_point_redeem_response(self, response, transaction_obj,
