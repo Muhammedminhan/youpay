@@ -30,11 +30,12 @@ app.conf.beat_schedule = {
             'task': 'sync_configuration_data',
             # Schedule
             # Execute at: every 5 hours
-            'schedule': crontab(minute="*/300"),
+            'schedule': crontab(minute="*/15"),
             # Function Arguments
             'args': ()
         },
 }
+
 
 @app.task(bind=True)
 def debug_task(self):

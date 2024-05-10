@@ -43,8 +43,11 @@ def sync_configuration_data(payment_gateway=None, currency=None):
             response = get_b2c_conf(item.currency.iso_code)
 
         if response:
-            ConfigurationData.objects.filter(id=item.id).update(
-                response_data=response, updated_at=datetime.now())
+            logger.info(
+                "updating latest configuration data for {} , in {}".format(
+                    payment_gateway, item))
+            item.response_data = response
+            item.save(update_fields=["response_data", "updated_at"])
 
 
 def get_checkout_conf(currency):
@@ -77,4 +80,5 @@ def get_b2c_conf(currency):
     """
     b2c_payback_obj = B2CPaybackManager()
     b2c_config = b2c_payback_obj.get_configurations(currency)
+    logger.info("B2CPayback response: {}".format(b2c_config))
     return b2c_config
