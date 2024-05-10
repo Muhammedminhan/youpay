@@ -328,7 +328,7 @@ def is_redirect(transaction_id, transaction_message):
             TRANSACTION_MSG: transaction_message,
             IS_SUCCESS: False
         }
-        return True, response_data
+        return False, response_data
 
     if youpay_transaction.payment_status == PAYMENT_STATUS_REJECTED_RETRY:
         # Mainly occurs for tabbypg, this will redirect to FE payment page
