@@ -39,7 +39,7 @@ def sync_configuration_data(payment_gateway=None, currency=None):
         response = None
         if item.payment_gateway.code == CHECKOUTPG_HUB_CODE:
             response = get_checkout_conf(item.currency.iso_code)
-        elif item.payment_gateway__code == B2CPAYBACK_HUB_CODE:
+        elif item.payment_gateway.code == B2CPAYBACK_HUB_CODE:
             response = get_b2c_conf(item.currency.iso_code)
 
         if response:
@@ -48,6 +48,9 @@ def sync_configuration_data(payment_gateway=None, currency=None):
                     payment_gateway, item))
             item.response_data = response
             item.save(update_fields=["response_data", "updated_at"])
+            logger.info(
+                "updated latest configuration data for {} , in {}".format(
+                    payment_gateway, item))
 
 
 def get_checkout_conf(currency):
