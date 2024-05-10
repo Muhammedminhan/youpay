@@ -30,7 +30,7 @@ app.conf.beat_schedule = {
             'task': 'sync_configuration_data',
             # Schedule
             # Execute at: every 5 hours
-            'schedule': crontab(minute="*/15"),
+            'schedule': crontab(minute="*/300"),
             # Function Arguments
             'args': ()
         },
