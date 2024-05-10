@@ -387,7 +387,7 @@ class PaymentVerificationCheckMiddleware(object):
             elif transaction_obj.payment_status in RETRY_END_STATUS_LIST:
                 logger.info(
                     "Older retry transaction verify call attempted again for"
-                    " transaction {}".format(transaction_obj.transaction_ids))
+                    " transaction {}".format(transaction_obj.transaction_id))
                 raise TransactionAlreadyProcessed
             else:
                 redirect_url = (
