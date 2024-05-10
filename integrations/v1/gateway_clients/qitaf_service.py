@@ -362,6 +362,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     "transaction_id": self.transaction_obj.transaction_id,
                     "payment_status": PAYMENT_STATUS_DECLINED_RETRY,
                     "payment_gateway": self.payment_gateway,
+                    "is_payment_verified": True
                 }
                 self.update_youpay_transaction_data(update_data)
                 return response_data, self.QITAF_CONNECTION_ERROR
