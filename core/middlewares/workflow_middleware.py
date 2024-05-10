@@ -344,6 +344,9 @@ class PaymentVerificationCheckMiddleware(object):
                             "".format(transaction_id))
                 return JsonResponse(self.response, status=200)
 
+            except TransactionAlreadyProcessed:
+                return JsonResponse(self.response, status=404)
+
             except TransactionNotFound:
                 log_message = "TransactionNotFound"
                 code = youpay_message_obj.TRANSACTION_NOT_FOUND
@@ -381,12 +384,16 @@ class PaymentVerificationCheckMiddleware(object):
                     url_format.format(
                         transaction_obj.success_url,
                         transaction_obj.transaction_id))
+            elif transaction_obj.payment_status in RETRY_END_STATUS_LIST:
+                logger.info(
+                    "Older retry transaction verify call attempted again for"
+                    " transaction {}".format(transaction_obj.transaction_ids))
+                raise TransactionAlreadyProcessed
             else:
                 redirect_url = (
                     url_format.format(
                         transaction_obj.failure_url,
                         transaction_obj.transaction_id))
-
             self.response = {
                 "is_redirect": True,
                 "redirect_url": redirect_url,
