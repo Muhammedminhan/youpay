@@ -514,6 +514,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     update_data = {
                         "transaction_id": self.transaction_obj.transaction_id,
                         "payment_status": PAYMENT_STATUS_DECLINED_RETRY,
+                        "is_payment_verified" : True
                     }
                     self.update_youpay_transaction_data(update_data)
                     return response_data, self.NEQATY_CONNECTION_ERROR
