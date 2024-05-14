@@ -6,20 +6,22 @@ from django.http import JsonResponse
 from core.constants import (
     MAX_PAYMENT_RETRY_COUNT,
     CHECK_PAYMENT_STATUS_CLASSES,
-    VERIFY_PAYMENT_CLASSES)
+    VERIFY_PAYMENT_CLASSES, CONFIGURATIONS_VIEW_NAME)
 from core.exceptions import (
     TransactionNotFound,
     TransactionAlreadyPaid,
     TransactionAlreadyCancelled, TransactionAlreadyExpired,
-    TransactionAlreadyVerified, TransactionMaxAttemptReached)
+    TransactionAlreadyVerified, TransactionMaxAttemptReached,
+    TransactionAlreadyProcessed)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
-    MIDDLEWARE_ALREADY_PAID_MESSAGE)
+    MIDDLEWARE_ALREADY_PAID_MESSAGE, IS_REDIRECT, IS_SUCCESS, REDIRECT_URL)
 from core.response_messages import YouPayResponse
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST)
+    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST,
+    RETRY_END_STATUS_LIST)
 
 logger = logging.getLogger(__name__)
 
@@ -318,6 +320,9 @@ class PaymentVerificationCheckMiddleware(object):
                             "".format(transaction_id))
                 return JsonResponse(self.response, status=200)
 
+            except TransactionAlreadyProcessed:
+                return JsonResponse(self.response, status=400)
+
             except TransactionNotFound:
                 log_message = "TransactionNotFound"
                 code = youpay_message_obj.TRANSACTION_NOT_FOUND
@@ -355,6 +360,26 @@ class PaymentVerificationCheckMiddleware(object):
                     url_format.format(
                         transaction_obj.success_url,
                         transaction_obj.transaction_id))
+            elif transaction_obj.payment_status in RETRY_END_STATUS_LIST:
+                logger.info(
+                    "Older retry transaction verify call attempted again for"
+                    " transaction {}".format(transaction_obj.transaction_id))
+                redirect_url = (
+                    url_format.format(
+                        transaction_obj.cancel_url,
+                        transaction_obj.transaction_id))
+                error_obj = {
+                    "message": youpay_message_obj.MESSAGE.get(
+                        youpay_message_obj.ALREADY_PROCESSED)
+                }
+                self.response = {
+                    "errors": error_obj,
+                    IS_REDIRECT: True,
+                    IS_SUCCESS: False,
+                    REDIRECT_URL: redirect_url,
+                    "code": youpay_message_obj.ALREADY_PROCESSED
+                }
+                raise TransactionAlreadyProcessed
             else:
                 redirect_url = (
                     url_format.format(
