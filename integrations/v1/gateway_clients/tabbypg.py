@@ -227,11 +227,10 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                 logger.info(
                     "Verify payment response data {}".format(response_data))
 
-                is_payment_verified = False
+                is_payment_verified = True
                 if response_data.get('is_capture'):
                     payment_status = PAYMENT_STATUS_PAID
                     approved = True
-                    is_payment_verified = True
                     response_summary = "Payment successful"
                 else:
                     payment_status = PAYMENT_STATUS_REJECTED_RETRY
