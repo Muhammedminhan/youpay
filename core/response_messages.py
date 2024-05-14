@@ -31,6 +31,7 @@ class YouPayResponse(object):
 
     TRANSACTION_NOT_FOUND = 1404
     MAX_PAYMENT_ATTEMPT_REACHED = 1416
+    ALREADY_PROCESSED = 1417
 
     TRANSACTION_ALREADY_CLOSED = 1600
     REQUIRED_DATA_MISSING = 1601
@@ -239,7 +240,10 @@ class YouPayResponse(object):
             self.CITI_REWARDS_INVALID_OTP: "Invalid/Expired OTP",
             self.CITI_REWARDS_USER_BLOCKED: (
                 "Exceeded the limit. Please try again later"
-            )
+            ),
+            self.ALREADY_PROCESSED: ("Transaction already processed, "
+                                     "redirecting to the cart.")
+
         })
 
     def get_400_message(self, message):
