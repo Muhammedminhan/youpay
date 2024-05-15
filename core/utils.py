@@ -356,9 +356,6 @@ def process_checkoutpg_response_verification(**kwargs):
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
 
-
-
-      
         if payment_status == PAYMENT_STATUS_PAID:
             response_obj = YouPayResponse()
             collect_point_response, code = handle_point_collection(
