@@ -590,6 +590,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         collected_points = None
         partner_response = None
         partner_response_code = None
+        code = None
         program_name = transaction_obj.points_collection_enabled_program
 
         if transaction_obj.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
