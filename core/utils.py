@@ -18,7 +18,7 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig
-from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
