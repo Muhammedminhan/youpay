@@ -352,6 +352,7 @@ def process_checkoutpg_response_verification(**kwargs):
             payment_status = PAYMENT_STATUS_PAID
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
+
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(
@@ -372,6 +373,7 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
             'is_payment_verified': is_payment_verified,
+
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
