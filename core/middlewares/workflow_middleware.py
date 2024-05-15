@@ -6,20 +6,22 @@ from django.http import JsonResponse
 from core.constants import (
     MAX_PAYMENT_RETRY_COUNT,
     CHECK_PAYMENT_STATUS_CLASSES,
-    VERIFY_PAYMENT_CLASSES)
+    VERIFY_PAYMENT_CLASSES, CONFIGURATIONS_VIEW_NAME)
 from core.exceptions import (
     TransactionNotFound,
     TransactionAlreadyPaid,
     TransactionAlreadyCancelled, TransactionAlreadyExpired,
-    TransactionAlreadyVerified, TransactionMaxAttemptReached)
+    TransactionAlreadyVerified, TransactionMaxAttemptReached,
+    TransactionAlreadyProcessed)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
-    MIDDLEWARE_ALREADY_PAID_MESSAGE)
+    MIDDLEWARE_ALREADY_PAID_MESSAGE, IS_REDIRECT, IS_SUCCESS, REDIRECT_URL)
 from core.response_messages import YouPayResponse
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST)
+    PAYMENT_STATUS_EXPIRED, SUCCESS_REDIRECT_STATUS_LIST,
+    RETRY_END_STATUS_LIST)
 
 logger = logging.getLogger(__name__)
 
@@ -88,10 +90,8 @@ class PaymentStatusCheckMiddleware(object):
                     self.check_transaction_expired(transaction_obj,
                                                    youpay_message_obj)
 
-                    self.check_maximum_retry_attempt(transaction_obj,
-                                                     youpay_message_obj,
-                                                     youpay_obj,
-                                                     data)
+                    self.check_already_attempted(transaction_obj,
+                                                 youpay_message_obj)
 
             except TransactionMaxAttemptReached:
                 return JsonResponse(self.response, status=200)
@@ -104,6 +104,9 @@ class PaymentStatusCheckMiddleware(object):
 
             except TransactionAlreadyPaid:
                 return JsonResponse(self.response, status=200)
+
+            except TransactionAlreadyProcessed:
+                return JsonResponse(self.response, status=404)
 
             except TransactionNotFound:
                 log_message = "TransactionNotFound"
@@ -263,6 +266,29 @@ class PaymentStatusCheckMiddleware(object):
                     }
                 )
 
+    def check_already_attempted(self, transaction_obj, youpay_message_obj):
+        transaction_status = transaction_obj.payment_status
+        transaction_id = transaction_obj.transaction_id
+
+        if transaction_status in RETRY_END_STATUS_LIST:
+            """
+            request will redirect to not found page.
+            """
+
+            transaction_message = MIDDLEWARE_STATUS_CHECK_MESSAGE
+            logger.info("{} {} ".format(
+                transaction_message, transaction_id))
+
+            redirect_url = self.get_redirect_url(
+                transaction_obj.failure_url, transaction_id)
+            is_success = False
+
+            self.response = self.get_payment_response(
+                redirect_url, transaction_message, youpay_message_obj,
+                is_success)
+            raise TransactionAlreadyProcessed
+
+
     def common_error_response(self, message, code):
         return JsonResponse(
             {
@@ -318,6 +344,9 @@ class PaymentVerificationCheckMiddleware(object):
                             "".format(transaction_id))
                 return JsonResponse(self.response, status=200)
 
+            except TransactionAlreadyProcessed:
+                return JsonResponse(self.response, status=400)
+
             except TransactionNotFound:
                 log_message = "TransactionNotFound"
                 code = youpay_message_obj.TRANSACTION_NOT_FOUND
@@ -355,12 +384,31 @@ class PaymentVerificationCheckMiddleware(object):
                     url_format.format(
                         transaction_obj.success_url,
                         transaction_obj.transaction_id))
+            elif transaction_obj.payment_status in RETRY_END_STATUS_LIST:
+                logger.info(
+                    "Older retry transaction verify call attempted again for"
+                    " transaction {}".format(transaction_obj.transaction_id))
+                redirect_url = (
+                    url_format.format(
+                        transaction_obj.cancel_url,
+                        transaction_obj.transaction_id))
+                error_obj = {
+                    "message": youpay_message_obj.MESSAGE.get(
+                        youpay_message_obj.ALREADY_PROCESSED)
+                }
+                self.response = {
+                    "errors": error_obj,
+                    IS_REDIRECT: True,
+                    IS_SUCCESS: False,
+                    REDIRECT_URL: redirect_url,
+                    "code": youpay_message_obj.ALREADY_PROCESSED
+                }
+                raise TransactionAlreadyProcessed
             else:
                 redirect_url = (
                     url_format.format(
                         transaction_obj.failure_url,
                         transaction_obj.transaction_id))
-
             self.response = {
                 "is_redirect": True,
                 "redirect_url": redirect_url,

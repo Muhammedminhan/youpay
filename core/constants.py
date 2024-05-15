@@ -76,6 +76,7 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'B2CPaybackAuthenticate',
     'TabbyPGCreateSession',
     'AmazonPGAuthentication',
+    'AmazonPGSavedCard',
     'HappyCreditsDebitBalance',
     'CitiGenerateOTPAPIView',
     'QitafRedeemPointsAPIView'
@@ -85,7 +86,8 @@ VERIFY_PAYMENT_CLASSES = [
     # these names are specified in the urls
     'CheckoutVerification',
     'B2CPaybackVerify',
-    'TabbyPGVerification'
+    'TabbyPGVerification',
+    'AmazonPGVerification'
 ]
 
 QITAF_REWARD_POINT_MIN_AMT = 10
@@ -99,3 +101,5 @@ GUEST_USER_OPTIONS = (
     (GUEST_USER_ENABLE, GUEST_USER_ENABLE),
     (GUEST_USER_DISABLE, GUEST_USER_DISABLE)
 )
+
+CONFIGURATIONS_VIEW_NAME = 'conf-detail'
