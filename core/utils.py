@@ -357,6 +357,7 @@ def process_checkoutpg_response_verification(**kwargs):
             is_payment_verified = True
 
 
+
       
         if payment_status == PAYMENT_STATUS_PAID:
             response_obj = YouPayResponse()
