@@ -518,7 +518,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
     def verification(self, request_data):
         """Qitaf Verification with b2c"""
-        earned_point = None
 
         request_transaction_id = request_data.get('transaction_id')
         logger.info(
@@ -570,11 +569,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
 
-                    collect_point_response, code = (
-                        self.handle_qitaf_collection(transaction_obj))
-                    if code == self.SUCCESS:
-                        earned_point = collect_point_response.get(
-                            "qitaf_response", {}).get("reward_point", 0)
 
                 else:
                     """Redemption failed"""
@@ -617,7 +611,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_flagged': is_flagged,
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
-                    'earned_point': earned_point,
                     'card_last4': card_last4,
                     'card_bin': card_bin,
                     'card_issuer_country': card_issuer_country,
