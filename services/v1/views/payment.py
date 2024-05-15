@@ -571,3 +571,108 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
+                                  ClientValidator,
+                                  YouPayResponse):
+
+    def get_earn_points(self, **kwargs):
+        '''
+        This method is used to get earn points by identifying the redemption
+        partner
+        '''
+        transaction_id = kwargs.get('transaction_id', None)
+        transaction_obj = kwargs.get('transaction_obj', None)
+        number = None
+        is_success = False
+        message = None
+        collected_points = None
+        partner_response = None
+        partner_response_code = None
+        program_name = transaction_obj.points_collection_enabled_program
+
+        if transaction_obj.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
+            is_enalbled = transaction_obj.point_collection_enabled
+            number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.neqaty_service import (
+                NeqatyServiceManager)
+            neqaty_obj = NeqatyServiceManager()
+            response, code = neqaty_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+            message = "Pont Collected for {}, response {}".format(
+                PAYMENT_METHOD_NEQATY, response)
+
+
+        elif transaction_obj.points_collection_enabled_program == PAYMENT_METHOD_QITAF:
+            is_enalbled = transaction_obj.qitaf_phone_number
+            number = transaction_obj.is_qitaf_enabled
+
+            from services.v1.api_clients.qitaf_service import (
+                QitafCollectPointsAPIView)
+            qitaf_view_obj = QitafCollectPointsAPIView()
+            response, code = qitaf_view_obj.collect_reward_point(
+                transaction_obj)
+            partner_response = response
+            partner_response_code = code
+            message = "Pont Collected for {}, response {}".format(
+                PAYMENT_METHOD_QITAF, response)
+        else:
+            message = "Unknown redemption partner {}".format(
+                transaction_obj.points_collection_enabled_program)
+
+        if code == self.SUCCESS:
+            is_success = True
+
+        logger.info("Earn Partner response is {}".format(partner_response))
+        logger.info(
+            "Earn Partner response code is {}".format(partner_response_code))
+        logger.info("Earn MESSAGE {}".format(message))
+
+        return {
+            "status": is_success,
+            "message": message,
+            "number": number,
+            "collected_points": collected_points,
+            "program_name": program_name,
+        }
+
+    def post(self, request):
+        try:
+            logger.info("Triggered EarnRedemptionPartnerPoints View")
+
+            data = self.request.data
+            transaction_id = decrypt_string(data.get('transaction_id'))
+            transaction_object = self.get_youpay_transaction_data(
+                transaction_id)
+
+            if transaction_object:
+                # call redemption partner earn flow
+                logger.info(
+                    "Earn started for transaction_id "
+                    ": {}".format(transaction_id))
+
+                earn_points = self.get_earn_points(
+                    transaction_id=transaction_id,
+                    transaction_obj=transaction_object)
+
+                response_data = {
+                    "status": status.HTTP_200_OK,
+                    "message": "Earn Point requested successfully",
+                    "earn_point_response": earn_points
+                }
+
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                response_data = {
+                    "status": status.HTTP_400_BAD_REQUEST,
+                    "message": "Transaction not found",
+                }
+                return Response(response_data,
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error("Error in transaction expire api ", exc_info=e)
+            return Response({"error": str(e), })
