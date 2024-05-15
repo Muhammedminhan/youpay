@@ -18,6 +18,7 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig
+from core.response_messages import YouPayResponse
 from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
@@ -353,6 +354,16 @@ def process_checkoutpg_response_verification(**kwargs):
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
 
+        if payment_status == PAYMENT_STATUS_PAID:
+            response_obj = YouPayResponse()
+            collect_point_response, code = handle_point_collection(
+                youpay_transaction,
+                transaction_id,
+                response_obj)
+            if code == response_obj.SUCCESS:
+                earn_reference = collect_point_response.get("earn_reference")
+                earned_point = collect_point_response.get("reward_point", 0)
+
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(
@@ -373,7 +384,8 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
             'is_payment_verified': is_payment_verified,
-
+            'earned_point': earned_point,
+            'earn_reference': earn_reference,
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
