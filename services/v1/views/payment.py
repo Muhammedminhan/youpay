@@ -586,14 +586,14 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         transaction_obj = kwargs.get('transaction_obj', None)
         number = None
         is_success = False
-        message = None
-        collected_points = None
+        earned_points = None
         partner_response = None
         partner_response_code = None
         code = None
         program_name = transaction_obj.points_collection_enabled_program
 
-        if transaction_obj.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
+        if (transaction_obj.points_collection_enabled_program ==
+                PAYMENT_METHOD_NEQATY):
             is_enalbled = transaction_obj.point_collection_enabled
             number = transaction_obj.points_collected_mobile_number
 
@@ -603,13 +603,18 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             response, code = neqaty_obj.collect_points(transaction_obj)
             partner_response = response
             partner_response_code = code
+            earn_reference = response.get("partner_response").get(
+                "earn_reference")
+            transaction_obj.earn_reference = earn_reference
+            transaction_obj.save()
             message = "Pont Collected for {}, response {}".format(
                 PAYMENT_METHOD_NEQATY, response)
 
 
-        elif transaction_obj.points_collection_enabled_program == PAYMENT_METHOD_QITAF:
-            is_enalbled = transaction_obj.qitaf_phone_number
-            number = transaction_obj.is_qitaf_enabled
+        elif (transaction_obj.points_collection_enabled_program ==
+              PAYMENT_METHOD_QITAF):
+            is_enalbled = transaction_obj.is_qitaf_enabled
+            number = transaction_obj.qitaf_phone_number
 
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
@@ -618,6 +623,12 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 transaction_obj)
             partner_response = response
             partner_response_code = code
+
+            earn_reference = response.get("earn_reference")
+            earned_point = response.get("reward_point", 0)
+            transaction_obj.earn_reference = earn_reference
+            transaction_obj.earned_point = earned_point
+            transaction_obj.save()
             message = "Pont Collected for {}, response {}".format(
                 PAYMENT_METHOD_QITAF, response)
         else:
@@ -636,8 +647,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             "status": is_success,
             "message": message,
             "number": number,
-            "collected_points": collected_points,
+            "earned_points": earned_points,
             "program_name": program_name,
+            "is_enalbled": is_enalbled
         }
 
     def post(self, request):
@@ -655,14 +667,14 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     "Earn started for transaction_id "
                     ": {}".format(transaction_id))
 
-                earn_points = self.get_earn_points(
+                earn_response = self.get_earn_points(
                     transaction_id=transaction_id,
                     transaction_obj=transaction_object)
 
                 response_data = {
                     "status": status.HTTP_200_OK,
                     "message": "Earn Point requested successfully",
-                    "earn_point_response": earn_points
+                    "earn_point_response": earn_response
                 }
 
                 return Response(response_data, status=status.HTTP_200_OK)
