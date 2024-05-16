@@ -706,5 +706,5 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 transaction_obj.save()
 
             logger.info(
-                "Point collection enabled for transaction : "
+                "Point collection enabled for Qitaf for transaction : "
                 "{}".format(transaction_obj.transaction_id))

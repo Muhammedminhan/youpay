@@ -721,5 +721,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 transaction_obj.points_collection_enabled_program = (
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()
-                logger.info("Point collection enabled for neqaty for {}"
-                            "".format(transaction_obj.transaction_id))
+                logger.info(
+                    "Point collection enabled for neqaty for transaction{}"
+                    "".format(transaction_obj.transaction_id))
