@@ -584,6 +584,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
 
+                    self.handle_neqaty_collection(transaction_obj)
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -735,9 +736,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 request_type=PAYMENT_REQUEST_COLLECT_POINTS,
             )
 
-    def handele_neqaty_collection(self, transaction_obj):
-        response = None
-        code = None
+    def handle_neqaty_collection(self, transaction_obj):
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
             if transaction_obj.points_collection_enabled_program != (
@@ -747,10 +746,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 transaction_obj.points_collection_enabled_program = (
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()
-
-            response, code = self.collect_points(transaction_obj)
-            logger.info(
-                "Checking for Reward Point for transaction : "
-                "{}, response : {}, code : {}".format(
-                    transaction_obj.transaction_id, response, code))
-        return response, code
+                logger.info(
+                    "Point collection enabled for neqaty for transaction{}"
+                    "".format(transaction_obj.transaction_id))
