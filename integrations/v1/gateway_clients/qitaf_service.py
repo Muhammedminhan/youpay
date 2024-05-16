@@ -569,6 +569,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
 
+                    self.handle_qitaf_collection(transaction_obj)
 
                 else:
                     """Redemption failed"""
@@ -695,8 +696,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
     def handle_qitaf_collection(self, transaction_obj):
         """Qitaf Reward Point flow"""
-        response = None
-        code = None
         if transaction_obj.point_collection_enabled:
             if transaction_obj.points_collection_enabled_program != (
                     PAYMENT_METHOD_QITAF):
@@ -705,16 +704,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 transaction_obj.points_collection_enabled_program = (
                     PAYMENT_METHOD_QITAF)
                 transaction_obj.save()
-            from services.v1.api_clients.qitaf_service import (
-                QitafCollectPointsAPIView)
-            qitaf_reward_point_obj = QitafCollectPointsAPIView()
 
-            response, code = (
-                qitaf_reward_point_obj.collect_reward_point(
-                    transaction_obj))
             logger.info(
-                "Checking for Reward Point for transaction : "
-                "{}, response : {}, code : {}".format(
-                    transaction_obj.transaction_id,
-                    response, code))
-        return response, code
+                "Point collection enabled for transaction : "
+                "{}".format(transaction_obj.transaction_id))
