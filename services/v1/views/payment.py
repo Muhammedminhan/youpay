@@ -603,10 +603,11 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             response, code = neqaty_obj.collect_points(transaction_obj)
             partner_response = response
             partner_response_code = code
-            earn_reference = response.get("partner_response").get(
-                "earn_reference")
-            transaction_obj.earn_reference = earn_reference
-            transaction_obj.save()
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                transaction_obj.earn_reference = earn_reference
+                transaction_obj.save()
             message = "Pont Collected for {}".format(PAYMENT_METHOD_NEQATY)
 
 
@@ -622,11 +623,13 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             partner_response = response
             partner_response_code = code
 
-            earn_reference = response.get("earn_reference")
-            earned_point = response.get("reward_point", 0)
-            transaction_obj.earn_reference = earn_reference
-            transaction_obj.earned_point = earned_point
-            transaction_obj.save()
+            if code == self.SUCCESS:
+                earn_reference = response.get("earn_reference")
+                earned_point = response.get("reward_point", 0)
+                transaction_obj.earn_reference = earn_reference
+                transaction_obj.earned_point = earned_point
+                transaction_obj.save()
+
             message = "Pont Collected for {}, response {}".format(
                 PAYMENT_METHOD_QITAF, response)
         else:
