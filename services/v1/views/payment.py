@@ -608,7 +608,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     "earn_reference")
                 transaction_obj.earn_reference = earn_reference
                 transaction_obj.save()
-            message = "Pont Collected for {}".format(PAYMENT_METHOD_NEQATY)
+            message = "Pont Collect requested for {}".format(
+                PAYMENT_METHOD_NEQATY)
 
 
         elif (program_name and program_name == PAYMENT_METHOD_QITAF):
@@ -630,14 +631,16 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 transaction_obj.earned_point = earned_point
                 transaction_obj.save()
 
-            message = "Pont Collected for {}, response {}".format(
-                PAYMENT_METHOD_QITAF, response)
+            message = "Pont Collect requested for {}".format(
+                PAYMENT_METHOD_QITAF)
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.points_collection_enabled_program)
 
         if code == self.SUCCESS:
             is_success = True
+
+        message = "{} status {}".format(message, is_success)
 
         logger.info(
             "Earn Partner response code is {}, response : {} for transaction:"
@@ -684,10 +687,12 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 response_data = {
                     "status": status.HTTP_400_BAD_REQUEST,
                     "message": "Transaction not found",
+                    "transaction_id": transaction_id,
                 }
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            logger.error("Error in transaction expire api ", exc_info=e)
+            logger.error("Error in Earn Redemption Partner Points api ",
+                         exc_info=e)
             return Response({"error": str(e), })
