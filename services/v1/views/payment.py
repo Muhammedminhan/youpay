@@ -658,6 +658,16 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
     def post(self, request):
         try:
+            
+            validate, client_pk = self.validate_client(request)
+            if not validate:
+                logger.info(
+                    "payment request client validation failed for {0}"
+                    .format("order_reference"))
+                self.return_data = self.get_400_message(
+                    message="Client Does Not Exist")
+                return Response(self.return_data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
             data = self.request.data
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
