@@ -14,7 +14,8 @@ from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
 from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
-                                   AmazonPGVerification, AmazonPGTokenization, AmazonPGSavedCard)
+                                   AmazonPGVerification, AmazonPGTokenization,
+                                   AmazonPGSavedCard)
 from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiPointRedemptionAPIView,
                                        CitiGenerateOTPAPIView)
@@ -33,7 +34,8 @@ from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
-                            AdditionalChargeCalculation)
+                            AdditionalChargeCalculation,
+                            EarnRedemptionPartnerPoints)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -58,6 +60,7 @@ urlpatterns = [
          name='CheckoutVerification'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
     path('payment-expire/', TransactionExpireView.as_view()),
+    path('earn-points/', EarnRedemptionPartnerPoints.as_view()),
 
     # b2cpayback endpoints
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
@@ -81,8 +84,10 @@ urlpatterns = [
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view(),
          name='AmazonPGAuthentication'),
-    path('amazonpg/verify/', AmazonPGVerification.as_view()),
-    path('amazonpg/saved-card/', AmazonPGSavedCard.as_view()),
+    path('amazonpg/verify/', AmazonPGVerification.as_view(),
+         name='AmazonPGVerification'),
+    path('amazonpg/saved-card/', AmazonPGSavedCard.as_view(),
+         name='AmazonPGSavedCard'),
 
     # Happy Credits endpoints
     path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),

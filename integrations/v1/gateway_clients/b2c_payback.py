@@ -17,7 +17,9 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    PAYMENT_REQUEST_VERIFY)
+                                    PAYMENT_REQUEST_VERIFY,
+                                    B2C_REVERSE_REDEMPTION_API,
+                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -29,7 +31,8 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
     AuthenticateRequestSerializer
 )
 from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
-                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED,
+                                PAYMENT_STATUS_DECLINED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -47,12 +50,22 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     Class to manage b2cpayback related operations
     """
 
-    def get_configurations(self, amount, currency, transaction_id):
+    def get_payment_header(self, b2c_config):
+        """
+        Returns headers
+        """
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': b2c_config.api_key,
+            'X-API-KEY': b2c_config.api_key
+        }
+        return headers
+
+    def get_configurations(self, currency):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
-        amount = str(amount)
         currency = str(currency)
         config_request_data = {
-            "amount": amount, "currency": currency,
+            "currency": currency,
             "product_code": product_code
         }
         request_data_json = json.dumps(config_request_data)
@@ -69,8 +82,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             else:
                 logger.error(
                     "No configuration received from configuration api "
-                    "call to b2cpayback for transaction {}, response "
-                    "{}".format(transaction_id, response.text))
+                    "call to b2cpayback, response "
+                    "{}".format(response.text))
                 return None
         except Exception as e:
             logger.error("config api call to b2cpayback failed",
@@ -235,19 +248,25 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     response_data[REDIRECT_URL], transaction_status = (
                         get_adcb_redemption_redirect_url(response_data,
                                                          transaction_obj))
+                    logger.info(
+                        "response for adcb redemption api call for "
+                        "transaction {} is {}".format(
+                            transaction_obj.transaction_id,
+                            response_data))
                     return response_data, transaction_obj
                 else:
                     logger.error(
-                        "Error response received from redemption api call "
-                        "to b2cpayback {}".format(response.text))
-                    return response, None
+                        "Error response received from adcb redemption api "
+                        "call to b2cpayback {}".format(response.text))
+                    return response, transaction_obj
             except Exception as e:
                 logger.error(
-                    "redemption api call to b2cpayback failed", exc_info=e)
+                    "adcb redemption api call to b2cpayback failed",
+                    exc_info=e)
                 return None, None
         else:
-            logger.error("Invalid transaction id received for b2cpayback "
-                         "redemption api")
+            logger.error("Invalid transaction id received for adcb "
+                         "redemption api call")
             return None, None
 
     def verification(self, request_data):
@@ -279,14 +298,16 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     response_data[IS_SUCCESS] = True
                 elif response_data.get(
                         "redirect_url") is None:  # checkoutpg declined
-                    payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                    payment_status = PAYMENT_STATUS_DECLINED
                     response_data[IS_SUCCESS] = False
                 else:  # failure
                     payment_status = PAYMENT_STATUS_FAILED
                     approved_status = False
                     response_data[IS_SUCCESS] = False
-                logger.info("adcb verify api call response : {}"
-                            "".format(response_data))
+                logger.info(
+                    "adcb verify api call response for transaction id {} : {}"
+                    "".format(transaction_obj.transaction_id,
+                              response_data))
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_obj.transaction_id,
@@ -325,15 +346,16 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     return response_data, transaction_obj
                 else:
                     logger.error(
-                        "Error response received from verify api call "
+                        "Error response received from adcb verify api call "
                         "to b2cpayback {}".format(response.text))
                     return response_data, None
             except Exception as e:
                 logger.error(
-                    "Verify api call to b2cpayback failed", exc_info=e)
+                    "adcb verify api call to b2cpayback failed",
+                    exc_info=e)
                 return None, None
         else:
-            logger.error("Invalid transaction id received for b2cpayback "
+            logger.error("Invalid transaction id received for adcb "
                          "verify api")
             return None, None
 
@@ -373,3 +395,41 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 "Exception occured on remove_collect_program_enabled",
                 exc_info=e)
             return None
+
+    def reverse_redemption_on_canceled_expired_transaction(self, transaction):
+        payload = {}
+        response = {}
+        try:
+            b2c_gateway_obj = get_payment_gateway_config(
+                B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+            b2c_payback_domain = b2c_gateway_obj.domain
+            url = b2c_payback_domain + B2C_REVERSE_REDEMPTION_API
+            payload = {
+                'reference_id': transaction.payment_reference
+            }
+            headers = self.get_payment_header(b2c_gateway_obj)
+            response = requests.post(url, data=json.dumps(payload),
+                                     headers=headers)
+            if response:
+                logger.info(
+                    "Triggering mail success for transaction {}"
+                    .format(transaction.transaction_id))
+            else:
+                logger.error(
+                    "Triggering mail failed for transaction {} with response"
+                    " {}".format(transaction.transaction_id, response.text))
+
+        except Exception as e:
+            logger.error(
+                "Triggering mail failed with error {}".format(
+                    str(e)))
+
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=transaction,
+                transaction_id=transaction.transaction_id,
+                request_data=json.dumps(payload),
+                response_data=response.text,
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
+            )
