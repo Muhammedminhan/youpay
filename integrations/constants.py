@@ -183,6 +183,24 @@ QITAF_CALCULATE_BALANCE_API = "/qitaf/api/v1/calculate-balance/"
 QITAF_CLIENT_CODE = 'PMTQTF'
 
 QITAF_HEADERS = {'Content-Type': 'application/json'}
+QITAF_TEST_NUMBER = "500000000"
+QITAF_DUMMY_BRAND_CALCULATION = {
+    "currency": "SAR", "sum_net_amount": 201, "sum_applied_vat": 1.45,
+    "sum_gift_base_value": 200.0, "sum_redemption_points": 10,
+    "calculated_item_details": [
+        {"vat": 1.53,
+         "item_id": "#line-YUBCSA-15_45_40-16d779ce-f48c-4562-be9d-2676da0d4d30",
+         "payment": "partial", "quantity": 1, "total_vat": 1.45,
+         "brand_code": "YUBCSA", "net_amount": 201, "applied_vat": 1.45,
+         "%_paid_on_card": 95.0, "service_charge": 10.19,
+         "gift_base_value": 200.0, "redemption_points": 10,
+         "total_base_amount": 200.0, "amount_paid_on_card": 100,
+         "total_service_charge": 9.68, "applied_service_charge": 9.68
+         }
+    ],
+    "sum_card_payment_amount": 100, "sum_applied_service_charge": 9.68,
+    "service_fee_eligible_amount": 200.0
+}
 
 # Neqaty related constants
 NEQATY_CLIENT_CODE = 'PAYMTNQTI'
