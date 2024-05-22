@@ -341,7 +341,6 @@ def process_checkoutpg_response_verification(**kwargs):
         retry payments
         '''
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
-        is_payment_verified = True
     else:
         source = response_data.get('source', None)
 
@@ -391,7 +390,7 @@ def checkout_decline_check(response_data):
             SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
         # this allow retry payments
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
-        is_payment_verified = True
+        is_payment_verified = False
     else:
         # this doesnt allow retry payments
         payment_status = response_data.get("status").lower()
