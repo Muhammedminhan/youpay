@@ -17,17 +17,17 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
-from core.models import AppConfig
-from core.response_messages import YouPayResponse
-from integrations.constants import CHECKOUTPG_HUB_CODE
+from core.models import AppConfig, Currency
+from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
     PAYMENT_METHOD_NEQATY)
-from services.constants import RESPONSE_CODE_LIST
+from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
+from services.models import ConfigurationData
 
 logger = logging.getLogger(__name__)
 
@@ -354,16 +354,6 @@ def process_checkoutpg_response_verification(**kwargs):
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
 
-        if payment_status == PAYMENT_STATUS_PAID:
-            response_obj = YouPayResponse()
-            collect_point_response, code = handle_point_collection(
-                youpay_transaction,
-                transaction_id,
-                response_obj)
-            if code == response_obj.SUCCESS:
-                earn_reference = collect_point_response.get("earn_reference")
-                earned_point = collect_point_response.get("reward_point", 0)
-
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(
@@ -384,8 +374,6 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
             'is_payment_verified': is_payment_verified,
-            'earned_point': earned_point,
-            'earn_reference': earn_reference,
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
@@ -398,7 +386,8 @@ def checkout_decline_check(response_data):
 
     response_code = str(response_data.get('response_code', None))
 
-    if response_code in RESPONSE_CODE_LIST:
+    if str(response_code).startswith(
+            SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
         # this allow retry payments
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
         is_payment_verified = False
@@ -483,6 +472,58 @@ def handle_point_collection(youpay_transaction, transaction_id, response_obj):
             "reward_point": reward_point,
         }
     return response_data, code
+
+
+def get_payment_gateway_by_code(code):
+    """get payment gateway object by code"""
+    try:
+        payment_gateway = PaymentGateway.objects.get(code=code)
+    except PaymentGateway.DoesNotExist:
+        payment_gateway = None
+    return payment_gateway
+
+
+def get_currency_by_iso_code(code):
+    """get currency object by iso code"""
+    try:
+        currency = Currency.objects.get(iso_code=code)
+    except Currency.DoesNotExist:
+        currency = None
+    return currency
+
+
+def create_configuration_data(code, currency):
+    """create configuration data"""
+    from services.tasks import get_checkout_conf, get_b2c_conf
+    config_data = None
+    if code == CHECKOUTPG_HUB_CODE:
+        response = get_checkout_conf(currency)
+
+    elif code == B2CPAYBACK_HUB_CODE:
+        response = get_b2c_conf(currency)
+    if response:
+        payment_gateway = get_payment_gateway_by_code(code)
+        currency_obj = get_currency_by_iso_code(currency)
+        if payment_gateway and currency_obj:
+            config_data = ConfigurationData(
+                payment_gateway=payment_gateway,
+                currency=currency_obj,
+                response_data=response
+            )
+            config_data.save()
+    return config_data
+
+
+def get_configuration_data(code, currency):
+    """get configuration data"""
+    try:
+        config_data = ConfigurationData.objects.get(
+            payment_gateway__code=code, currency__iso_code=currency)
+    except(ConfigurationData.DoesNotExist, Exception):
+        logging.error(f'No configuration data instance found for code {code} '
+                      f'and currency {currency}.')
+        config_data = create_configuration_data(code, currency)
+    return config_data
 
 
 def encrypt_browser_value(string_value):

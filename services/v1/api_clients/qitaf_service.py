@@ -10,6 +10,7 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
+from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
@@ -47,6 +48,7 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
                         code=self.response_obj.QITAF_PHONE_NUMBER_SAVED,
                         success_dict={}
                     )
+                    update_brand_details(transaction_obj)
                     return Response(data, status=status.HTTP_200_OK)
                 else:
                     logger.error("Couldn't Update Qitaf phone number for {}"
@@ -126,12 +128,11 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 decrypt_string(transaction_id))
             if transaction_obj:
 
-                response_data, code, qitaf_reward = self.collect_reward_point(
+                response_data, code = self.collect_reward_point(
                     transaction_obj)
                 logger.info(
-                    "Reward Point(Collect Points) API response {}, code : {},"
-                    " rewarded : {}".format(response_data, code,
-                                            qitaf_reward))
+                    "Reward Point(Collect Points) API response {}, code : "
+                    "{}".format(response_data, code, ))
                 if response_data:
                     data = self.response_obj.get_success_dict(
                         code=code,
@@ -184,13 +185,13 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 "for ({}), rewarded point {}".format(
                     transaction_obj.transaction_id,
                     transaction_obj.earned_point))
-            return None, response_obj.QITAF_ALREADY_COLLECTED, transaction_obj.earned_point
+            return None, response_obj.QITAF_ALREADY_COLLECTED
 
         if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
             logger.info("Qitaf RewardPoint Failed for {} ".format(
                 transaction_obj.transaction_id,
             ))
-            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, 0
+            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET
 
         qitaf_service = QitafServiceManager()
         response_data, code = qitaf_service.collect_points(
@@ -349,7 +350,6 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
             else:
-                response["message"] = self.response_obj.PAYMENT_FAILED
                 message = (
                     "couldnt process qitaf Verification for transaction id {}"
                     ", response : {}".format(transaction_id, response))

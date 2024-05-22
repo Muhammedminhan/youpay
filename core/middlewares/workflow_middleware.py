@@ -88,10 +88,10 @@ class PaymentStatusCheckMiddleware(object):
                     self.check_transaction_expired(transaction_obj,
                                                    youpay_message_obj)
 
-                    self.check_maximum_retry_attempt(transaction_obj,
-                                                     youpay_message_obj,
-                                                     youpay_obj,
-                                                     data)
+                    # self.check_maximum_retry_attempt(transaction_obj,
+                    #                                  youpay_message_obj,
+                    #                                  youpay_obj,
+                    #                                  data)
 
             except TransactionMaxAttemptReached:
                 return JsonResponse(self.response, status=200)
