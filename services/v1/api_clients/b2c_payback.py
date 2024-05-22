@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from core.messages import (COMMON_ERROR_MESSAGE_EN, IS_REDIRECT,
-                           IS_SUCCESS, REDIRECT_URL, PAYMENT_ID)
+                           IS_SUCCESS, REDIRECT_URL)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
@@ -156,15 +156,13 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                 response_text = json.loads(response.text)
                 resp_code = response_text.get('code', False)
                 message = response_text.get('message', None)
-                redirect_url, encrypted_id = self.generate_new_transaction(
-                        transaction_obj)
                 response_dict = {'errors': {
                     'code': resp_code,
                     'message': message},
                     IS_REDIRECT: True,
                     IS_SUCCESS: False,
-                    REDIRECT_URL: redirect_url,
-                    PAYMENT_ID: encrypted_id
+                    REDIRECT_URL: self.generate_new_transaction(
+                        transaction_obj)
                 }
                 response = response_dict
             except Exception as e:

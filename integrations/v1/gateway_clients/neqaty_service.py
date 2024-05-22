@@ -8,7 +8,7 @@ from rest_framework import status
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
                             REQUEST_METHOD_GET)
 from core.messages import (REDIRECT_URL, IS_REDIRECT, IS_SUCCESS,
-                           GATEWAY_ERROR_OCCURRED, PAYMENT_ID)
+                           GATEWAY_ERROR_OCCURRED)
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
@@ -491,14 +491,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         "is_full_redemption": self.response_data.get(
                             "is_full_redemption")
                     }
-                    redirect_url, encrypted_id = self.generate_new_transaction(
-                            self.transaction_obj)
                     response_data = {
                         "errors": err_obj,
                         IS_REDIRECT: True,
                         IS_SUCCESS: False,
-                        REDIRECT_URL: redirect_url,
-                        PAYMENT_ID: encrypted_id
+                        REDIRECT_URL: self.generate_new_transaction(
+                            self.transaction_obj)
                     }
                     return response_data, self.NEQATY_CONNECTION_ERROR
             else:
