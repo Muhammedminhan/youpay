@@ -26,8 +26,7 @@ from integrations.constants import (
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED,
-                                PAYMENT_STATUS_DECLINED_RETRY)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
@@ -501,11 +500,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                         REDIRECT_URL: redirect_url,
                         PAYMENT_ID: encrypted_id
                     }
-                    update_data = {
-                        "transaction_id": self.transaction_obj.transaction_id,
-                        "payment_status": PAYMENT_STATUS_DECLINED_RETRY,
-                    }
-                    self.update_youpay_transaction_data(update_data)
                     return response_data, self.NEQATY_CONNECTION_ERROR
             else:
                 msg = "unable to get response from b2c_payback-neqaty"
