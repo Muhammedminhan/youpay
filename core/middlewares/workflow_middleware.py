@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from core.constants import (
     MAX_PAYMENT_RETRY_COUNT,
     CHECK_PAYMENT_STATUS_CLASSES,
-    VERIFY_PAYMENT_CLASSES, CONFIGURATIONS_VIEW_NAME)
+    VERIFY_PAYMENT_CLASSES)
 from core.exceptions import (
     TransactionNotFound,
     TransactionAlreadyPaid,
@@ -15,7 +15,7 @@ from core.exceptions import (
     TransactionAlreadyProcessed)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
-    MIDDLEWARE_ALREADY_PAID_MESSAGE, IS_REDIRECT, IS_SUCCESS, REDIRECT_URL)
+    MIDDLEWARE_ALREADY_PAID_MESSAGE)
 from core.response_messages import YouPayResponse
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
@@ -345,7 +345,7 @@ class PaymentVerificationCheckMiddleware(object):
                 return JsonResponse(self.response, status=200)
 
             except TransactionAlreadyProcessed:
-                return JsonResponse(self.response, status=400)
+                return JsonResponse(self.response, status=404)
 
             except TransactionNotFound:
                 log_message = "TransactionNotFound"
@@ -388,21 +388,6 @@ class PaymentVerificationCheckMiddleware(object):
                 logger.info(
                     "Older retry transaction verify call attempted again for"
                     " transaction {}".format(transaction_obj.transaction_id))
-                redirect_url = (
-                    url_format.format(
-                        transaction_obj.cancel_url,
-                        transaction_obj.transaction_id))
-                error_obj = {
-                    "message": youpay_message_obj.MESSAGE.get(
-                        youpay_message_obj.ALREADY_PROCESSED)
-                }
-                self.response = {
-                    "errors": error_obj,
-                    IS_REDIRECT: True,
-                    IS_SUCCESS: False,
-                    REDIRECT_URL: redirect_url,
-                    "code": youpay_message_obj.ALREADY_PROCESSED
-                }
                 raise TransactionAlreadyProcessed
             else:
                 redirect_url = (
