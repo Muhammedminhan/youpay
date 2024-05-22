@@ -477,9 +477,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 'redeemed_mobile_number')
             self.points_collection_enabled_program = PAYMENT_METHOD_QITAF
             self.point_collection_enabled = True
-            if self.points_redeemed_mobile_number == QITAF_TEST_NUMBER:
-                self.brand_calculations = QITAF_DUMMY_BRAND_CALCULATION
-
         else:
             """Handle qiTaf full redemption response"""
             if str(response_data.get('response_code')) in ["0"]:
