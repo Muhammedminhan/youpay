@@ -60,8 +60,7 @@ urlpatterns = [
          name='CheckoutVerification'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
     path('payment-expire/', TransactionExpireView.as_view()),
-    path('earn-redemption-partner-points/',
-         EarnRedemptionPartnerPoints.as_view()),
+    path('earn-points/', EarnRedemptionPartnerPoints.as_view()),
 
     # b2cpayback endpoints
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
