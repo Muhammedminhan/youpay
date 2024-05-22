@@ -52,11 +52,3 @@ class TransactionMaxAttemptReached(Exception):
 class ClientWebhookFailed(Exception):
     """Exception to be raised when validation fails. """
     pass
-
-
-class TransactionAlreadyProcessed(Exception):
-    """
-    Exception to be raised when already attempted url is tried afterward.
-    For retry attempts case.
-    """
-    pass
