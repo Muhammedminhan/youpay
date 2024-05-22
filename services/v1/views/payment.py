@@ -584,9 +584,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         '''
         transaction_id = kwargs.get('transaction_id', None)
         transaction_obj = kwargs.get('transaction_obj', None)
-        number = None
+        mobile_number = None
         is_success = False
-        is_enalbled = False
+        collect_enabled = False
         earned_points = None
         partner_response = None
         partner_response_code = None
@@ -594,8 +594,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         program_name = transaction_obj.points_collection_enabled_program
 
         if (program_name and program_name == PAYMENT_METHOD_NEQATY):
-            is_enalbled = transaction_obj.point_collection_enabled
-            number = transaction_obj.points_collected_mobile_number
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
 
             from integrations.v1.gateway_clients.neqaty_service import (
                 NeqatyServiceManager)
@@ -606,15 +606,13 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             if code == self.SUCCESS:
                 earn_reference = response.get("partner_response").get(
                     "earn_reference")
-                transaction_obj.earn_reference = earn_reference
-                transaction_obj.save()
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_NEQATY)
 
 
         elif (program_name and program_name == PAYMENT_METHOD_QITAF):
-            is_enalbled = transaction_obj.is_qitaf_enabled
-            number = transaction_obj.qitaf_phone_number
+            collect_enabled = transaction_obj.is_qitaf_enabled
+            mobile_number = transaction_obj.qitaf_phone_number
 
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
@@ -627,9 +625,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             if code == self.SUCCESS:
                 earn_reference = response.get("earn_reference")
                 earned_point = response.get("reward_point", 0)
-                transaction_obj.earn_reference = earn_reference
-                transaction_obj.earned_point = earned_point
-                transaction_obj.save()
 
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_QITAF)
@@ -638,6 +633,10 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 transaction_obj.points_collection_enabled_program)
 
         if code == self.SUCCESS:
+            transaction_obj.earn_reference = earn_reference
+            transaction_obj.earned_point = earned_point
+            transaction_obj.save()
+
             is_success = True
 
         message = "{} status {}".format(message, is_success)
@@ -650,15 +649,15 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         return {
             "status": is_success,
             "message": message,
-            "number": number,
+            "mobile_number": mobile_number,
             "earned_points": earned_points,
             "program_name": program_name,
-            "is_enalbled": is_enalbled
+            "collect_enabled": collect_enabled
         }
 
     def post(self, request):
         try:
-            
+
             validate, client_pk = self.validate_client(request)
             if not validate:
                 logger.info(
@@ -689,7 +688,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 response_data = {
                     "status": earn_response.get("status"),
                     "message": earn_response.get("message"),
-                    "transaction_id": transaction_id,
                 }
 
                 return Response(response_data, status=status.HTTP_200_OK)
@@ -697,7 +695,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 response_data = {
                     "status": status.HTTP_400_BAD_REQUEST,
                     "message": "Transaction not found",
-                    "transaction_id": transaction_id,
                 }
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
