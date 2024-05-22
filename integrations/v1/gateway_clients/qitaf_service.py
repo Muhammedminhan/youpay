@@ -6,7 +6,7 @@ from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
                             REQUEST_METHOD_GET)
-from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS, PAYMENT_ID
+from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
 from integrations.common import update_brand_details
@@ -349,14 +349,12 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     "is_full_redemption": self.response_data.get(
                         "is_full_redemption")
                 }
-                redirect_url, encrypted_id = self.generate_new_transaction(
-                        self.transaction_obj)
                 response_data = {
                     "errors": err_obj,
                     IS_REDIRECT: True,
                     IS_SUCCESS: False,
-                    REDIRECT_URL: redirect_url,
-                    PAYMENT_ID: encrypted_id
+                    REDIRECT_URL: self.generate_new_transaction(
+                        self.transaction_obj)
                 }
                 return response_data, self.QITAF_CONNECTION_ERROR
 
