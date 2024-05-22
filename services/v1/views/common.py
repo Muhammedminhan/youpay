@@ -288,7 +288,7 @@ class YouPayTransactionCRUD(object):
             if retry_count:
                 data_formatted['retry_count'] = retry_count
             else:
-                return transaction_obj.failure_url, None
+                return transaction_obj.failure_url
             new_transaction_response = self.create_youpay_transaction_data(
                 data_formatted)
             new_transaction_id = new_transaction_response.get('data', {}).get(
@@ -377,14 +377,12 @@ def is_redirect(transaction_id, transaction_message):
             "Checkoutpg transaction for order reference {} failed, generating"
             " new transaction for another attempt".format(
                 youpay_transaction.order_reference))
-        redirect_url, encrypted_id = youpay.generate_new_transaction(
-            youpay_transaction)
+        redirect_url = youpay.generate_new_transaction(youpay_transaction)
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
             TRANSACTION_MSG: transaction_message,
-            IS_SUCCESS: False,
-            PAYMENT_ID: encrypted_id
+            IS_SUCCESS: False
         }
         return False, response_data
 
