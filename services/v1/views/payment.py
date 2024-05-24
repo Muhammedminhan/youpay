@@ -597,7 +597,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         if transaction_obj.brand_calculations is None:
             payload = {
                 'transaction_obj': transaction_obj,
-                "selected_amount": transaction_obj.amount,
+                "selected_amount": str(transaction_obj.amount),
             }
 
             from integrations.v1.gateway_clients.qitaf_service import (
