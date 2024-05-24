@@ -6,7 +6,8 @@ from django.db import models
 from core.constants import (
     PURCHASE_PLATFORM_CHOICES,
     PAYMENT_REQUEST_LANGUAGE_CHOICES)
-from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
+from core.models import (AbstractDateTime, AbstractUserBase, CustomerProfile,
+                         Currency)
 from core.validators import DecimalValidator, MinLengthValidator, URLValidator
 
 
@@ -107,3 +108,16 @@ class PaymentRequestData(AbstractDateTime, CustomerProfile):
 
     def __str__(self):
         return self.api_client.name
+
+
+class ConfigurationData(AbstractDateTime):
+    request_data = models.JSONField(null=True, blank=True,
+                                    help_text="used to store request data")
+    response_data = models.JSONField(null=False, blank=False,
+                                     help_text="used to store response data")
+    currency = models.ForeignKey(Currency, null=False, blank=False,
+                                 on_delete=models.CASCADE,
+                                 related_name="configuration_data_currency")
+    payment_gateway = models.ForeignKey('integrations.PaymentGateway',
+                                        null=False, blank=False,
+                                        on_delete=models.PROTECT)
