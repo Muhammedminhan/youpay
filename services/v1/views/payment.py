@@ -593,6 +593,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         partner_response_code = None
         code = None
         program_name = transaction_obj.points_collection_enabled_program
+        logger.info("Earn working for {}, for transaction {}".format(
+            program_name, transaction_id
+        ))
 
         if transaction_obj.brand_calculations is None:
             payload = {
@@ -609,7 +612,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             logger.info(
                 "Brand Calculated for transaction {}".format(transaction_id))
 
-        if (program_name and program_name == PAYMENT_METHOD_NEQATY):
+        if program_name == PAYMENT_METHOD_NEQATY:
             collect_enabled = transaction_obj.point_collection_enabled
             mobile_number = transaction_obj.points_collected_mobile_number
 
@@ -626,7 +629,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 PAYMENT_METHOD_NEQATY)
 
 
-        elif (program_name and program_name == PAYMENT_METHOD_QITAF):
+        elif program_name == PAYMENT_METHOD_QITAF:
             collect_enabled = transaction_obj.is_qitaf_enabled
             mobile_number = transaction_obj.qitaf_phone_number
 
