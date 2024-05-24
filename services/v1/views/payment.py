@@ -693,17 +693,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 logger.info("Earn started for transaction_id: {}".format(
                     transaction_id))
 
-                if not transaction_object.brand_calculations:
-                    #     Calculate brand details
-                    from integrations.v1.gateway_clients.qitaf_service import \
-                        QitafServiceManager
-                    qitaf_service = QitafServiceManager()
-                    payload = {
-                        'transaction_obj': transaction_object,
-                        "selected_amount": transaction_object.amount,
-                    }
-                    qitaf_service.calculate_qitaf_balance(payload)
-
                 earn_response = self.get_earn_points(
                     transaction_id=transaction_id,
                     transaction_obj=transaction_object)
