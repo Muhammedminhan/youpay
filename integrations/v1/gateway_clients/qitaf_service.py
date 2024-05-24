@@ -718,8 +718,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             headers = self.get_payment_header()
             response = requests.post(url, data=payload, headers=headers)
 
-            logger.info("Response from qitaf calculate balance api {}"
-                        "".format(response.json()))
+            logger.info(
+                "Response from qitaf calculate balance api {} for transaction"
+                " {}".format(response.json(), transaction_id))
 
             response_data = None
             response_code = self.QITAF_BALANCE_CALCULATION_FAILED
@@ -738,7 +739,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
         except Exception as e:
             logger.error("Exception in calculate_qitaf_balance: "
-                         "{}".format(e))
+                         "{}".format(e), exc_info=True)
             return None, self.QITAF_BALANCE_CALCULATION_FAILED
 
     def handle_qitaf_collection(self, transaction_obj):

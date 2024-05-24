@@ -164,7 +164,7 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             paid_amount = transaction_obj.brand_calculations.get(
                 'sum_card_payment_amount', 0)
         else:
-            paid_amount = transaction_obj.amount
+            paid_amount = float(transaction_obj.amount)
 
         data = {
             "mobile_number": transaction_obj.qitaf_phone_number,
