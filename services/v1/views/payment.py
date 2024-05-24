@@ -588,10 +588,26 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         is_success = False
         collect_enabled = False
         earned_points = None
+        earn_reference = None
         partner_response = None
         partner_response_code = None
         code = None
         program_name = transaction_obj.points_collection_enabled_program
+
+        if transaction_obj.brand_calculations is None:
+            payload = {
+                'transaction_obj': transaction_obj,
+                "selected_amount": transaction_obj.amount,
+            }
+
+            from integrations.v1.gateway_clients.qitaf_service import (
+                QitafServiceManager)
+
+            qitaf_service = QitafServiceManager()
+            response_data, code = qitaf_service.calculate_qitaf_balance(
+                payload)
+            logger.info(
+                "Brand Calculated for transaction {}".format(transaction_id))
 
         if (program_name and program_name == PAYMENT_METHOD_NEQATY):
             collect_enabled = transaction_obj.point_collection_enabled
@@ -624,7 +640,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             if code == self.SUCCESS:
                 earn_reference = response.get("earn_reference")
-                earned_point = response.get("reward_point", 0)
+                earned_points = response.get("reward_point", 0)
 
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_QITAF)
@@ -634,7 +650,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
-            transaction_obj.earned_point = earned_point
+            transaction_obj.earned_point = earned_points
             transaction_obj.save()
 
             is_success = True

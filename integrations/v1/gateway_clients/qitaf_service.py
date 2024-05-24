@@ -692,7 +692,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
         except Exception as e:
             logger.error("Exception in calculate_qitaf_balance: "
-                         "{}".format(e))
+                         "{}".format(e), exc_info=True)
             return None, self.QITAF_BALANCE_CALCULATION_FAILED
 
     def handle_qitaf_collection(self, transaction_obj):

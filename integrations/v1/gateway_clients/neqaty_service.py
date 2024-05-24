@@ -104,7 +104,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             logger.info(
                 "Youpay sending request data to Neqaty point balance api "
-                "is {}".format(request_data))
+                "is {} for transaction {}".format(request_data,
+                                                  self.transaction_id))
 
             self.request_data = request_data
 
