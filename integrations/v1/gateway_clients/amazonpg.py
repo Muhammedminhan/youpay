@@ -299,21 +299,13 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             logger.info("Amazonpg verify response: {}".format(response.text))
             self.response_data = response.text
 
-            if response:
-                response_data = response.json()
-                response_data, return_status = (
-                    process_amazonpg_response_verification(
-                        transaction_id=transaction_id,
-                        response_data=response_data))
-                if return_status:
-                    return response_data, self.SUCCESS
-                else:
-                    return response_data, self.PAYMENT_FAILED
-            else:
-                logger.error("Error while verifying_payment amazonpg "
-                             "status: {}, reason {} "
-                             "".format(response.status_code, response.text))
-                return None, self.AMAZONPG_CONNECTION_ERROR
+            response_data, return_status = (
+                process_amazonpg_response_verification(
+                    transaction_id=transaction_id,
+                    response_data=response))
+
+            return response_data, return_status
+
         except Exception as e:
             logger.error("Exception in amazonpg verify session: {}"
                          "".format(str(e)))
