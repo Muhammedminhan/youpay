@@ -156,7 +156,6 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                     "payment_reference")
                 self.update_youpay_transaction_data(
                     self.prepare_data_to_update())
-                response_data.pop("payment_reference")
                 return response_data, self.SUCCESS
         except Exception as e:
             error = "Error in amazonpg tokenization api: {}".format(e)
