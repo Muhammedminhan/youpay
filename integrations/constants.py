@@ -78,7 +78,6 @@ PAYMENT_REQUEST_CREATE_TRANSACTION = 'Create-transaction'
 PAYMENT_REQUEST_GENERATE_OTP = 'Generate OTP'
 PAYMENT_REQUEST_REVERSE_PAYMENT = 'Reverse Payment'
 PAYMENT_REQUEST_COLLECT_POINTS = 'Collect Points'
-PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION = 'B2C-payback reverse redemption'
 
 PAYMENT_REQUEST_TYPE_CHOICES = (
     (PAYMENT_REQUEST_TYPE_PAYMENT, PAYMENT_REQUEST_TYPE_PAYMENT),
@@ -96,9 +95,7 @@ PAYMENT_REQUEST_TYPE_CHOICES = (
     (PAYMENT_REQUEST_CREATE_TRANSACTION, PAYMENT_REQUEST_CREATE_TRANSACTION),
     (PAYMENT_REQUEST_GENERATE_OTP, PAYMENT_REQUEST_GENERATE_OTP),
     (PAYMENT_REQUEST_REVERSE_PAYMENT, PAYMENT_REQUEST_REVERSE_PAYMENT),
-    (PAYMENT_REQUEST_COLLECT_POINTS, PAYMENT_REQUEST_COLLECT_POINTS),
-    (PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
-     PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
+    (PAYMENT_REQUEST_COLLECT_POINTS, PAYMENT_REQUEST_COLLECT_POINTS)
 )
 CHECKOUTPG_CACHE_KEY = 'checkoutpg_config'
 B2CP_CACHE_KEY = 'b2cp_config'
@@ -112,8 +109,6 @@ ADCB_POINT_BALANCE_API = "/payback/api/v2/touchpoint/point-balance/"
 ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
 ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
 ADCB_VERIFY_API = "/payback/api/v1/verify"
-
-B2C_REVERSE_REDEMPTION_API = "/payback/api/v1/reverse-redemption/"
 
 CONTENT_TYPE_HEADERS = {'Content-Type': 'application/json'}
 
@@ -183,24 +178,6 @@ QITAF_CALCULATE_BALANCE_API = "/qitaf/api/v1/calculate-balance/"
 QITAF_CLIENT_CODE = 'PMTQTF'
 
 QITAF_HEADERS = {'Content-Type': 'application/json'}
-QITAF_TEST_NUMBER = "500000000"
-QITAF_DUMMY_BRAND_CALCULATION = {
-    "currency": "SAR", "sum_net_amount": 201, "sum_applied_vat": 1.45,
-    "sum_gift_base_value": 200.0, "sum_redemption_points": 10,
-    "calculated_item_details": [
-        {"vat": 1.53,
-         "item_id": "#line-YUBCSA-15_45_40-16d779ce-f48c-4562-be9d-2676da0d4d30",
-         "payment": "partial", "quantity": 1, "total_vat": 1.45,
-         "brand_code": "YUBCSA", "net_amount": 201, "applied_vat": 1.45,
-         "%_paid_on_card": 95.0, "service_charge": 10.19,
-         "gift_base_value": 200.0, "redemption_points": 10,
-         "total_base_amount": 200.0, "amount_paid_on_card": 100,
-         "total_service_charge": 9.68, "applied_service_charge": 9.68
-         }
-    ],
-    "sum_card_payment_amount": 100, "sum_applied_service_charge": 9.68,
-    "service_fee_eligible_amount": 200.0
-}
 
 # Neqaty related constants
 NEQATY_CLIENT_CODE = 'PAYMTNQTI'

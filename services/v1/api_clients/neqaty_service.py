@@ -8,7 +8,6 @@ from rest_framework.views import APIView
 from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
-from integrations.common import update_brand_details
 from integrations.constants import NEQATY_CLIENT_CODE
 from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
@@ -281,7 +280,6 @@ class UpdateNeqatyPhoneNumber(APIView, YouPayTransactionCRUD):
                         code=self.response_obj.NEQATY_PHONE_NUMBER_SAVED,
                         success_dict={}
                     )
-                    update_brand_details(transaction_obj)
                     return Response(data, status=status.HTTP_200_OK)
                 else:
                     logger.error("Couldn't Update Neqaty phone number for {}"

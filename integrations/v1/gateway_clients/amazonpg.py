@@ -1,6 +1,5 @@
 import json
 import logging
-
 import requests
 from rest_framework import status
 
@@ -309,8 +308,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         'transaction_id': transaction_id,
                         "payment_status": payment_status,
                         "approved": approved,
-                        "response_summary": response_summary,
-                        "is_payment_verified": True
+                        "response_summary": response_summary
                     }
                 )
 

@@ -18,8 +18,7 @@ from integrations.constants import (
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
     CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
-    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, QITAF_TEST_NUMBER,
-    QITAF_DUMMY_BRAND_CALCULATION, )
+    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY)
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -370,14 +369,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     "is_full_redemption": self.response_data.get(
                         "is_full_redemption")
                 }
-                response_data = {
-                    "errors": err_obj,
-                    IS_REDIRECT: True,
-                    IS_SUCCESS: False,
-                    REDIRECT_URL: self.generate_new_transaction(
-                        self.transaction_obj)
-                }
-                return response_data, self.QITAF_CONNECTION_ERROR
+                return {"errors": err_obj}, self.QITAF_CONNECTION_ERROR
 
         except Exception as e:
             error = "Exception in qitaf redeem point api: {}".format(e)
@@ -484,8 +476,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 'redeemed_mobile_number')
             self.points_collection_enabled_program = PAYMENT_METHOD_QITAF
             self.point_collection_enabled = True
-            if self.points_redeemed_mobile_number == QITAF_TEST_NUMBER:
-                self.brand_calculations = QITAF_DUMMY_BRAND_CALCULATION
         else:
             """Handle qiTaf full redemption response"""
             if str(response_data.get('response_code')) in ["0"]:
@@ -563,6 +553,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         earned_point = None
         payment_scheme = None
         phone_number = None
+        earn_reference = None
+        points_collected_mobile_number = None
 
         request_transaction_id = request_data.get('transaction_id')
         logger.info(
@@ -619,8 +611,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                         self.handle_qitaf_collection(transaction_obj))
                     if code == self.SUCCESS:
                         earned_point = collect_point_response.get(
-                            "qitaf_response", {}).get("reward_point", 0)
-
+                            "partner_response", {}).get("reward_point", 0)
+                        earn_reference = collect_point_response.get(
+                            "partner_response", {}).get("earn_reference")
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -668,7 +661,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'card_last4': card_last4,
                     'card_bin': card_bin,
                     'card_issuer_country': card_issuer_country,
-                    'payment_scheme': payment_scheme
+                    'payment_scheme': payment_scheme,
+                    'earn_reference': earn_reference,
+                    'points_collected_mobile_number': (
+                        points_collected_mobile_number)
                 }
                 update_data.update(calculated_youpay_transaction_data)
 
