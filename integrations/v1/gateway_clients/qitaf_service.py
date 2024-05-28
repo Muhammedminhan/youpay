@@ -484,6 +484,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 'redeemed_mobile_number')
             self.points_collection_enabled_program = PAYMENT_METHOD_QITAF
             self.point_collection_enabled = True
+            if self.points_redeemed_mobile_number == QITAF_TEST_NUMBER:
+                self.brand_calculations = QITAF_DUMMY_BRAND_CALCULATION
         else:
             """Handle qiTaf full redemption response"""
             if str(response_data.get('response_code')) in ["0"]:
@@ -613,7 +615,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                         "card_issuer_country")
                     payment_scheme = response_data.get("payment_scheme")
 
-                    self.handle_qitaf_collection(transaction_obj)
+                    collect_point_response, code = (
+                        self.handle_qitaf_collection(transaction_obj))
+                    if code == self.SUCCESS:
+                        earned_point = collect_point_response.get(
+                            "qitaf_response", {}).get("reward_point", 0)
 
                 else:
                     """Redemption failed"""
@@ -658,6 +664,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_flagged': is_flagged,
                     'approved': approved,
                     'is_gcc_card': is_gcc_card,
+                    'earned_point': earned_point,
                     'card_last4': card_last4,
                     'card_bin': card_bin,
                     'card_issuer_country': card_issuer_country,
@@ -743,6 +750,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
     def handle_qitaf_collection(self, transaction_obj):
         """Qitaf Reward Point flow"""
+        response = None
+        code = None
         if transaction_obj.point_collection_enabled:
             if transaction_obj.points_collection_enabled_program != (
                     PAYMENT_METHOD_QITAF):
@@ -751,7 +760,16 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 transaction_obj.points_collection_enabled_program = (
                     PAYMENT_METHOD_QITAF)
                 transaction_obj.save()
+            from services.v1.api_clients.qitaf_service import (
+                QitafCollectPointsAPIView)
+            qitaf_reward_point_obj = QitafCollectPointsAPIView()
 
+            response, code = (
+                qitaf_reward_point_obj.collect_reward_point(
+                    transaction_obj))
             logger.info(
-                "Point collection enabled for Qitaf for transaction : "
-                "{}".format(transaction_obj.transaction_id))
+                "Checking for Reward Point for transaction : "
+                "{}, response : {}, code : {}".format(
+                    transaction_obj.transaction_id,
+                    response, code))
+        return response, code
