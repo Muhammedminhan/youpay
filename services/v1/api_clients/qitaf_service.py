@@ -33,13 +33,22 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
+                is_updated, brand_details = update_brand_details(
+                    transaction_obj)
+                if not is_updated:
+                    data = self.response_obj.get_error_dict(
+                        error_code=(
+                            self.response_obj.QITAF_PHONE_NUMBER_SAVE_FAILED))
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
                 data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'qitaf_phone_number': qitaf_phone_number,
                     'points_collected_mobile_number': qitaf_phone_number,
                     'points_collection_enabled_program': PAYMENT_METHOD_QITAF,
                     'point_collection_enabled': True,
-                    'is_qitaf_enabled': True
+                    'is_qitaf_enabled': True,
+                    "brand_details": brand_details
                 }
                 qitaf_service = QitafServiceManager()
                 result = qitaf_service.update_qitaf_phone_number(data)
@@ -48,7 +57,6 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
                         code=self.response_obj.QITAF_PHONE_NUMBER_SAVED,
                         success_dict={}
                     )
-                    update_brand_details(transaction_obj)
                     return Response(data, status=status.HTTP_200_OK)
                 else:
                     logger.error("Couldn't Update Qitaf phone number for {}"

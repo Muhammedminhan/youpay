@@ -647,15 +647,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             transaction_id = transaction_obj.transaction_id
 
-            is_updated = update_brand_details(transaction_obj)
-            if is_updated:
-                transaction_obj = self.get_youpay_transaction_data(
-                    transaction_id)
+            is_updated, brand_details = update_brand_details(transaction_obj)
 
-            brand_details = transaction_obj.brand_details
             items_array = brand_details.get("item_set", None)
 
-            if not items_array or not len(items_array):
+            if not items_array or not len(items_array) or is_updated:
                 logger.error("Brand details not found for transaction {}"
                              "".format(transaction_obj.transaction_id))
                 return None, self.BRAND_DETAILS_MISSING
@@ -684,6 +680,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                         'calculated_item_details')
                     update_data = {
                         'transaction_id': transaction_obj.transaction_id,
+                        "brand_details": brand_details,
                         "brand_calculations": calculated_balance
                     }
                     self.update_youpay_transaction_data(update_data)
