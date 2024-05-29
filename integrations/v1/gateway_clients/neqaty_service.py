@@ -661,6 +661,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "client_code": NEQATY_CLIENT_CODE,
                 "amount": str(paid_amount),
                 "platform": transaction_obj.platform,
+
+                "item_details_list": transaction_obj.brand_details.get(
+                    "item_set", None),
+                "redeemed_amount": (
+                    transaction_obj.redeemed_amount if
+                    transaction_obj.redeemed_amount else 0),
             }
 
             self.transaction_obj = transaction_obj

@@ -592,6 +592,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         partner_response = None
         partner_response_code = None
         code = None
+        calculated_item_details = None
         program_name = transaction_obj.points_collection_enabled_program
         logger.info("Earn working for {}, for transaction {}".format(
             program_name, transaction_id
@@ -625,6 +626,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             if code == self.SUCCESS:
                 earn_reference = response.get("partner_response").get(
                     "earn_reference")
+                calculated_item_details = response.get(
+                    "partner_response").get("calculated_item_details")
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_NEQATY)
 
@@ -654,6 +657,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
             transaction_obj.earned_point = earned_points
+            transaction_obj.brand_calculations = calculated_item_details
             transaction_obj.save()
 
             is_success = True
