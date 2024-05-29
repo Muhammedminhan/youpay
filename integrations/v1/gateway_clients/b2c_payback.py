@@ -18,7 +18,7 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    PAYMENT_REQUEST_VERIFY, AMAZONPG_HUB_CODE,
+                                    AMAZONPG_HUB_CODE,
                                     ADCB_AMAZON_VERIFY_API,
                                     PAYMENT_REQUEST_VERIFY,
                                     B2C_REVERSE_REDEMPTION_API,
@@ -282,6 +282,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
 
                 response = requests.get(url, params=formatted_data,
                                         headers=CONTENT_TYPE_HEADERS)
+
                 response_data = response.json()
                 response_data["is_redirect"] = True
                 response_data[
