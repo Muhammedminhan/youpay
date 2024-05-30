@@ -10,7 +10,6 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
-from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
