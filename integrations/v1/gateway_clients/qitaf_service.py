@@ -697,15 +697,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             transaction_id = transaction_obj.transaction_id
 
-            is_updated = update_brand_details(transaction_obj)
-            if is_updated:
-                transaction_obj = self.get_youpay_transaction_data(
-                    transaction_id)
+            is_updated, brand_details = update_brand_details(transaction_obj)
 
-            brand_details = transaction_obj.brand_details
             items_array = brand_details.get("item_set", None)
 
-            if not items_array or not len(items_array):
+            if not items_array or not len(items_array) or is_updated:
                 logger.error("Brand details not found for transaction {}"
                              "".format(transaction_obj.transaction_id))
                 return None, self.BRAND_DETAILS_MISSING
@@ -721,8 +717,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             headers = self.get_payment_header()
             response = requests.post(url, data=payload, headers=headers)
 
-            logger.info("Response from qitaf calculate balance api {}"
-                        "".format(response.json()))
+            logger.info(
+                "Response from qitaf calculate balance api {} for transaction"
+                " {}".format(response.json(), transaction_id))
 
             response_data = None
             response_code = self.QITAF_BALANCE_CALCULATION_FAILED
@@ -733,6 +730,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                         'calculated_item_details')
                     update_data = {
                         'transaction_id': transaction_obj.transaction_id,
+                        "brand_details": brand_details,
                         "brand_calculations": calculated_balance
                     }
                     self.update_youpay_transaction_data(update_data)
@@ -741,7 +739,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
         except Exception as e:
             logger.error("Exception in calculate_qitaf_balance: "
-                         "{}".format(e))
+                         "{}".format(e), exc_info=True)
             return None, self.QITAF_BALANCE_CALCULATION_FAILED
 
     def handle_qitaf_collection(self, transaction_obj):

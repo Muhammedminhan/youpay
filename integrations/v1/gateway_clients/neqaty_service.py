@@ -86,16 +86,15 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             self.transaction_id = str(self.transaction_obj.transaction_id)
             language = self.transaction_obj.language
 
-            is_updated = update_brand_details(
+            is_updated, brand_details = update_brand_details(
                 self.transaction_obj)
             if is_updated:
-                brand_details = self.transaction_obj.brand_details
                 brand_detail_items_set = brand_details.get("item_set", None)
                 data.update({
                     "brand_details": brand_details})
 
                 if not brand_detail_items_set or not len(
-                        brand_detail_items_set):
+                        brand_detail_items_set) or not is_updated:
                     logger.error("Brand details not found for transaction {}"
                                  "".format(self.transaction_id))
                     return None, self.BRAND_DETAILS_MISSING
@@ -104,7 +103,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             logger.info(
                 "Youpay sending request data to Neqaty point balance api "
-                "is {}".format(request_data))
+                "is {} for transaction {}".format(request_data,
+                                                  self.transaction_id))
 
             self.request_data = request_data
 
@@ -136,8 +136,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                     'payment_method': PAYMENT_METHOD_NEQATY,
                     'available_points': response_data.get(
-                        "partner_response").get("available_points")
-
+                        "partner_response").get("available_points"),
+                    "brand_details": brand_details
                 })
                 return formatted_response, self.SUCCESS
 
@@ -154,6 +154,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'payment_status': PAYMENT_STATUS_PENDING,
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                     'payment_method': PAYMENT_METHOD_NEQATY,
+                    "brand_details": brand_details
                 })
                 if language == LANGUAGE_CODE_AR:
                     message = partner_response.get("response_text_ar")
@@ -667,6 +668,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "client_code": NEQATY_CLIENT_CODE,
                 "amount": str(paid_amount),
                 "platform": transaction_obj.platform,
+
+                "item_details_list": transaction_obj.brand_details.get(
+                    "item_set", None),
+                "redeemed_amount": (
+                    str(transaction_obj.redeemed_amount) if
+                    transaction_obj.redeemed_amount else 0),
             }
 
             self.transaction_obj = transaction_obj
