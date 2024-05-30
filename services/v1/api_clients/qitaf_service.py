@@ -10,7 +10,6 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
-from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
@@ -33,13 +32,22 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
+                is_updated, brand_details = update_brand_details(
+                    transaction_obj)
+                if not is_updated:
+                    data = self.response_obj.get_error_dict(
+                        error_code=(
+                            self.response_obj.QITAF_PHONE_NUMBER_SAVE_FAILED))
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
                 data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'qitaf_phone_number': qitaf_phone_number,
                     'points_collected_mobile_number': qitaf_phone_number,
                     'points_collection_enabled_program': PAYMENT_METHOD_QITAF,
                     'point_collection_enabled': True,
-                    'is_qitaf_enabled': True
+                    'is_qitaf_enabled': True,
+                    "brand_details": brand_details
                 }
                 qitaf_service = QitafServiceManager()
                 result = qitaf_service.update_qitaf_phone_number(data)
@@ -48,7 +56,6 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
                         code=self.response_obj.QITAF_PHONE_NUMBER_SAVED,
                         success_dict={}
                     )
-                    update_brand_details(transaction_obj)
                     return Response(data, status=status.HTTP_200_OK)
                 else:
                     logger.error("Couldn't Update Qitaf phone number for {}"
@@ -128,11 +135,12 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 decrypt_string(transaction_id))
             if transaction_obj:
 
-                response_data, code = self.collect_reward_point(
+                response_data, code, qitaf_reward = self.collect_reward_point(
                     transaction_obj)
                 logger.info(
-                    "Reward Point(Collect Points) API response {}, code : "
-                    "{}".format(response_data, code, ))
+                    "Reward Point(Collect Points) API response {}, code : {},"
+                    " rewarded : {}".format(response_data, code,
+                                            qitaf_reward))
                 if response_data:
                     data = self.response_obj.get_success_dict(
                         code=code,
@@ -185,13 +193,13 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
                 "for ({}), rewarded point {}".format(
                     transaction_obj.transaction_id,
                     transaction_obj.earned_point))
-            return None, response_obj.QITAF_ALREADY_COLLECTED
+            return None, response_obj.QITAF_ALREADY_COLLECTED, transaction_obj.earned_point
 
         if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
             logger.info("Qitaf RewardPoint Failed for {} ".format(
                 transaction_obj.transaction_id,
             ))
-            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET
+            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, 0
 
         qitaf_service = QitafServiceManager()
         response_data, code = qitaf_service.collect_points(
@@ -350,6 +358,7 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
             else:
+                response["message"] = self.response_obj.PAYMENT_FAILED
                 message = (
                     "couldnt process qitaf Verification for transaction id {}"
                     ", response : {}".format(transaction_id, response))

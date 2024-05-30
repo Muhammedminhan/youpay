@@ -60,7 +60,8 @@ urlpatterns = [
          name='CheckoutVerification'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
     path('payment-expire/', TransactionExpireView.as_view()),
-    path('earn-points/', EarnRedemptionPartnerPoints.as_view()),
+    path('earn-points/', EarnRedemptionPartnerPoints.as_view(),
+         name="earn-points"),
 
     # b2cpayback endpoints
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
@@ -84,10 +85,8 @@ urlpatterns = [
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view(),
          name='AmazonPGAuthentication'),
-    path('amazonpg/verify/', AmazonPGVerification.as_view(),
-         name='AmazonPGVerification'),
-    path('amazonpg/saved-card/', AmazonPGSavedCard.as_view(),
-         name='AmazonPGSavedCard'),
+    path('amazonpg/verify/', AmazonPGVerification.as_view()),
+    path('amazonpg/saved-card/', AmazonPGSavedCard.as_view()),
 
     # Happy Credits endpoints
     path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),
