@@ -9,7 +9,7 @@ from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
-from integrations.common import update_brand_details
+from integrations.common import (update_brand_details)
 from integrations.constants import (
     QITAF_CALCULATE_BALANCE_API, QITAF_OTP_GENERATION_API,
     QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
