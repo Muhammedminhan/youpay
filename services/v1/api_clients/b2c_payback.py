@@ -69,13 +69,25 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
     def post(self, request):
+        logger.info("Entered post method with request data: %s",
+                    request.data)
+
         payback = B2CPaybackManager()
         response, transaction_obj = payback.authenticate_redemption(
             request.data)
+        logger.info(
+            "Response from authenticate_redemption: %s, Transaction Object: %s",
+            response, transaction_obj)
+
         if response:
             invoice_amount = transaction_obj.amount
+            logger.info("Invoice amount: %s", invoice_amount)
+
             selected_amount = Decimal(request.data.get('selected_amount'))
             checkout_amount = Decimal(request.data.get('checkout_amount'))
+            logger.info("Selected amount: %s, Checkout amount: %s",
+                        selected_amount, checkout_amount)
+
             update_data = {
                 'transaction_id': transaction_obj.transaction_id,
                 'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
@@ -86,34 +98,52 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 'available_points': transaction_obj.available_points,
                 'is_full_redemption': response.get('is_full_redemption')
             }
+            logger.info("Update data: %s", update_data)
 
             if invoice_amount == selected_amount:  # full redemption
                 update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
+                logger.info(
+                    "Payment method set to PAYMENT_METHOD_TOUCHPOINTS")
 
             elif selected_amount > 0 and checkout_amount > 0:  # partial redemption
-                update_data['payment_method'] = (
-                    PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
+                update_data[
+                    'payment_method'] = PAYMENT_METHOD_TOUCHPOINTS_AND_CARD
                 update_data['payment_scheme'] = request.data.get('card_type')
+                logger.info(
+                    "Payment method set to PAYMENT_METHOD_TOUCHPOINTS_AND_CARD, Payment scheme: %s",
+                    request.data.get('card_type'))
 
             else:  # full amount from card
                 update_data['payment_method'] = PAYMENT_METHOD_ADCB_CARD_ONLY
                 update_data['payment_scheme'] = request.data.get('card_type')
+                logger.info(
+                    "Payment method set to PAYMENT_METHOD_ADCB_CARD_ONLY, Payment scheme: %s",
+                    request.data.get('card_type'))
 
             self.update_youpay_transaction_data(update_data)
+            logger.info("Updated transaction data with: %s", update_data)
+
             return Response(response, status=status.HTTP_200_OK)
         else:
+            logger.error(
+                "Failed to get a valid response from authenticate_redemption")
             try:
                 response_text = json.loads(response.text)
                 resp_code = response_text.get('code', False)
                 message = response_text.get('message', None)
                 response = {'errors': {
                     'code': resp_code, 'message': message}}
+                logger.info(
+                    "Error response from b2cpayback: Code: %s, Message: %s",
+                    resp_code, message)
             except Exception as e:
-                logger.error("Failed response received from b2cpayback "
-                             "authenticate endpoint", exc_info=e)
+                logger.error(
+                    "Failed response received from b2cpayback authenticate endpoint",
+                    exc_info=e)
                 response = {'errors': {
-                    'code': "400", 'message':
-                        B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
+                    'code': "400",
+                    'message': B2C_PAYBACK_NO_RESPONSE_MESSAGE}}
+                logger.info("Default error response set")
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
 
