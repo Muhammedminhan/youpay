@@ -174,7 +174,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 'transaction_data': transaction_data.data
             }
             update_data = {}
-            if request_data.get("gateway") == PAYMENT_GATEWAY_AMAZONPG:
+            if request_data.get(
+                    "gateway").lower() == PAYMENT_GATEWAY_AMAZONPG:
                 authenticate_request_data = (
                     AuthenticateRequestAmazonSerializer(request_dict))
             else:
