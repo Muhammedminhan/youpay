@@ -646,6 +646,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             if code == self.SUCCESS:
                 earned_points = response.get("partner_response").get(
+                    "reward_point")
+                earn_reference = response.get("partner_response").get(
                     "earn_reference")
                 calculated_item_details = response.get(
                     "partner_response", {}).get("calculated_item_details")
