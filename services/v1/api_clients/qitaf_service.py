@@ -200,13 +200,13 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             logger.info("Qitaf RewardPoint Failed for {} ".format(
                 transaction_obj.transaction_id,
             ))
-            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, 0
+            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, None
 
         qitaf_service = QitafServiceManager()
         response_data, code = qitaf_service.collect_points(
             data)
 
-        return response_data, code
+        return response_data, code, None
 
 
 class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):

@@ -627,7 +627,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 earn_reference = response.get("partner_response").get(
                     "earn_reference")
                 calculated_item_details = response.get(
-                    "partner_response").get("calculated_item_details")
+                    "partner_response", {}).get("calculated_item_details")
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_NEQATY)
 
@@ -639,14 +639,16 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
             qitaf_view_obj = QitafCollectPointsAPIView()
-            response, code = qitaf_view_obj.collect_reward_point(
+            response, code, earned_points = qitaf_view_obj.collect_reward_point(
                 transaction_obj)
             partner_response = response
             partner_response_code = code
 
             if code == self.SUCCESS:
-                earn_reference = response.get("earn_reference")
-                earned_points = response.get("reward_point", 0)
+                earned_points = response.get("partner_response").get(
+                    "earn_reference")
+                calculated_item_details = response.get(
+                    "partner_response", {}).get("calculated_item_details")
 
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_QITAF)
