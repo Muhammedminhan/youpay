@@ -560,13 +560,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     card_bin = response_data.get("card_bin")
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
-
-                    collect_point_response_data, code = (
-                        self.handele_neqaty_collection(transaction_obj))
-                    if code == self.SUCCESS:
-                        earn_reference = collect_point_response_data.get(
-                            "partner_response").get("earn_reference")
-
+                    self.handele_neqaty_collection(transaction_obj)
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -604,8 +598,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_gcc_card': is_gcc_card,
                     'card_last4': card_last4,
                     'card_bin': card_bin,
-                    'card_issuer_country': card_issuer_country,
-                    'earn_reference': earn_reference,
+                    'card_issuer_country': card_issuer_country
                 }
 
                 logger.info("Neqaty Verification with b2c completed for "
@@ -726,8 +719,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             )
 
     def handele_neqaty_collection(self, transaction_obj):
-        response = None
-        code = None
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
             if transaction_obj.points_collection_enabled_program != (
@@ -738,9 +729,3 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()
 
-            response, code = self.collect_points(transaction_obj)
-            logger.info(
-                "Checking for Reward Point for transaction : "
-                "{}, response : {}, code : {}".format(
-                    transaction_obj.transaction_id, response, code))
-        return response, code

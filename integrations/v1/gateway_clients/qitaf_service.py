@@ -607,13 +607,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                         "card_issuer_country")
                     payment_scheme = response_data.get("payment_scheme")
 
-                    collect_point_response, code = (
-                        self.handle_qitaf_collection(transaction_obj))
-                    if code == self.SUCCESS:
-                        earned_point = collect_point_response.get(
-                            "partner_response", {}).get("reward_point", 0)
-                        earn_reference = collect_point_response.get(
-                            "partner_response", {}).get("earn_reference")
+                    self.handle_qitaf_collection(transaction_obj)
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -661,10 +655,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     'card_last4': card_last4,
                     'card_bin': card_bin,
                     'card_issuer_country': card_issuer_country,
-                    'payment_scheme': payment_scheme,
-                    'earn_reference': earn_reference,
-                    'points_collected_mobile_number': (
-                        points_collected_mobile_number)
+                    'payment_scheme': payment_scheme
                 }
                 update_data.update(calculated_youpay_transaction_data)
 
@@ -754,16 +745,3 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 transaction_obj.points_collection_enabled_program = (
                     PAYMENT_METHOD_QITAF)
                 transaction_obj.save()
-            from services.v1.api_clients.qitaf_service import (
-                QitafCollectPointsAPIView)
-            qitaf_reward_point_obj = QitafCollectPointsAPIView()
-
-            response, code = (
-                qitaf_reward_point_obj.collect_reward_point(
-                    transaction_obj))
-            logger.info(
-                "Checking for Reward Point for transaction : "
-                "{}, response : {}, code : {}".format(
-                    transaction_obj.transaction_id,
-                    response, code))
-        return response, code
