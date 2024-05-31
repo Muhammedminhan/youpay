@@ -12,6 +12,7 @@ from core.utils import (decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded, encrypt_payment_data)
+from integrations.constants import NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE
 from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
@@ -602,6 +603,10 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             payload = {
                 'transaction_obj': transaction_obj,
                 "selected_amount": str(transaction_obj.amount),
+                "client_code": (
+                    NEQATY_CLIENT_CODE
+                    if program_name == PAYMENT_METHOD_NEQATY else
+                    QITAF_CLIENT_CODE)
             }
 
             from integrations.v1.gateway_clients.qitaf_service import (
