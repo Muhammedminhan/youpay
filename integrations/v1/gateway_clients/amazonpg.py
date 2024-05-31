@@ -1,5 +1,6 @@
 import json
 import logging
+
 import requests
 from rest_framework import status
 
@@ -7,7 +8,8 @@ from core.constants import (
     PAYMENT_GATEWAY_AMAZONPG, REQUEST_METHOD_POST,
     REQUEST_METHOD_GET,
 )
-from core.utils import get_payment_gateway_config
+from core.utils import (get_payment_gateway_config,
+                        process_amazonpg_response_verification)
 from integrations.constants import (
     AMAZONPG_AUTHENTICATE_API, AMAZONPG_VERIFY_API, AMAZONPG_CACHE_KEY,
     AMAZONPG_HUB_CODE, PAYMENT_REQUEST_VERIFY, AMAZONPG_TOKENIZATION_API,
@@ -23,10 +25,8 @@ from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD,
     PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_AUTHORIZED,
-    PAYMENT_STATUS_FAILED
+    PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_AUTHORIZED
 )
-from services.v1.views.common import is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -135,20 +135,27 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         """
         Calls amazonpg tokenization api
         """
+        transaction_data = data.get('transaction_data')
+        self.transaction_id = transaction_data.get('transaction_id')
         try:
 
             url = self.amazonpg_config.domain + AMAZONPG_TOKENIZATION_API
             card_details = self.get_tokenization_data(data)
+            headers = self.get_payment_header()
             logger.info(
                 "Youpay sending card details to amazonpg "
                 "is {}".format(card_details))
-            payload = card_details
+            payload = json.dumps(card_details)
 
-            response = requests.post(url, data=payload)
+            response = requests.post(url, data=payload, headers=headers)
             if response:
                 response_data = response.json()
                 logger.info("Response from AmazonPG tokenization api "
                             "{}".format(response_data))
+                self.payment_reference = response_data.get(
+                    "payment_reference")
+                self.update_youpay_transaction_data(
+                    self.prepare_data_to_update())
                 return response_data, self.SUCCESS
         except Exception as e:
             error = "Error in amazonpg tokenization api: {}".format(e)
@@ -287,44 +294,16 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                 return response_data, self.SUCCESS
 
             response = requests.get(url, params=params)
-            logger.info("Amazonpg verify response: {}".format(response))
+            logger.info("Amazonpg verify response: {}".format(response.text))
+            self.response_data = response.text
 
-            if response:
-                response_data = response.json()
-                logger.info(
-                    "Verify payment response data {}".format(response_data))
+            response_data, return_status = (
+                process_amazonpg_response_verification(
+                    transaction_id=transaction_id,
+                    response_data=response))
 
-                if response_data.get('is_capture'):
-                    payment_status = PAYMENT_STATUS_PAID
-                    approved = True
-                    response_summary = response_data.get('message')
-                else:
-                    payment_status = PAYMENT_STATUS_FAILED
-                    approved = False
-                    response_summary = response_data.get('message')
+            return response_data, return_status
 
-                self.update_youpay_transaction_data(
-                    {
-                        'transaction_id': transaction_id,
-                        "payment_status": payment_status,
-                        "approved": approved,
-                        "response_summary": response_summary
-                    }
-                )
-
-                redirect, response_data = is_redirect(transaction_id,
-                                                      response_data)
-                if redirect:
-                    self.response_data = json.dumps(response_data)
-                    return response_data, self.SUCCESS
-                else:
-                    self.response_data = json.dumps(response_data)
-                    return response_data, self.PAYMENT_FAILED
-            else:
-                logger.error("Error while verifying_payment amazonpg "
-                             "status: {}, reason {} "
-                             "".format(response.status_code, response.text))
-                return None, self.AMAZONPG_CONNECTION_ERROR
         except Exception as e:
             logger.error("Exception in amazonpg verify session: {}"
                          "".format(str(e)))
