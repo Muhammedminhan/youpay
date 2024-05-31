@@ -692,7 +692,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             items_array = brand_details.get("item_set", None)
 
-            if not items_array or not len(items_array) or is_updated:
+            if not items_array or not len(items_array) or not is_updated:
                 logger.error("Brand details not found for transaction {}"
                              "".format(transaction_obj.transaction_id))
                 return None, self.BRAND_DETAILS_MISSING
