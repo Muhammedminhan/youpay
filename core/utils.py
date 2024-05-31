@@ -375,10 +375,7 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': is_payment_verified,
-            'earned_point': earned_point,
-            'earn_reference': earn_reference,
-            'points_collected_mobile_number': points_collected_mobile_number
+            'is_payment_verified': is_payment_verified
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
