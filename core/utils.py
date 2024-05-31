@@ -356,16 +356,6 @@ def process_checkoutpg_response_verification(**kwargs):
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
 
-        if payment_status == PAYMENT_STATUS_PAID:
-            response_obj = YouPayResponse()
-            collect_point_response, code = handle_point_collection(
-                youpay_transaction,
-                transaction_id,
-                response_obj)
-            if code == response_obj.SUCCESS:
-                earn_reference = collect_point_response.get("earn_reference")
-                earned_point = collect_point_response.get("reward_point", 0)
-
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(
@@ -442,53 +432,6 @@ def format_pre_auth_payment_response_for_verify(response_data):
     logger.info(
         "structured dict for pre auth case {} ".format(structured_dict))
     return structured_dict
-
-
-def handle_point_collection(youpay_transaction, transaction_id, response_obj):
-    response_data = None
-    reward_point = None
-    earn_reference = None
-    code = None
-
-    """Point Collection Part"""
-    if youpay_transaction.point_collection_enabled:
-        if youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_QITAF:
-            from services.v1.api_clients.qitaf_service import (
-                QitafCollectPointsAPIView)
-            qitaf_reward_point_obj = QitafCollectPointsAPIView()
-
-            response, code = (
-                qitaf_reward_point_obj.collect_reward_point(
-                    youpay_transaction))
-            if code == response_obj.SUCCESS:
-                reward_point = response.get("partner_response", {}).get(
-                    "reward_point", 0)
-                earn_reference = response.get(
-                    "partner_response").get("earn_reference")
-            logger.info("Checking for Reward Point for transaction : "
-                        "{}, response : {}, code : {}".format(transaction_id,
-                                                              response, code))
-        elif youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
-            from integrations.v1.gateway_clients.neqaty_service import (
-                NeqatyServiceManager)
-            neqaty_reward_point_obj = NeqatyServiceManager()
-
-            response, code = (
-                neqaty_reward_point_obj.collect_points(
-                    youpay_transaction))
-            if code == response_obj.SUCCESS:
-                earn_reference = response.get(
-                    "partner_response").get("earn_reference")
-
-            logger.info(
-                "Checking for Neqaty Reward Point for transaction : "
-                "{}, response : {}, code : {}".format(
-                    transaction_id, response, code))
-        response_data = {
-            "earn_reference": earn_reference,
-            "reward_point": reward_point,
-        }
-    return response_data, code
 
 
 def get_payment_gateway_by_code(code):
