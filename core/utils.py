@@ -12,21 +12,23 @@ from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
+from rest_framework import status
 
 from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
-from core.models import AppConfig
+from core.models import AppConfig, Currency
 from core.response_messages import YouPayResponse
-from integrations.constants import CHECKOUTPG_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
-    PAYMENT_METHOD_NEQATY)
+    PAYMENT_METHOD_NEQATY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_PENDING)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
+from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 
 logger = logging.getLogger(__name__)
@@ -311,8 +313,8 @@ def process_checkoutpg_response_verification(**kwargs):
             "".format(transaction_id, reference_from_checkout,
                       youpay_payment_referance))
 
-        redirect_url = (youpay_transaction.failure_url +
-                        '?transaction_id=' + transaction_id)
+        redirect_url = get_redirect_url(youpay_transaction.failure_url,
+                                        transaction_id)
         response_data = {
             IS_REDIRECT: True,
             REDIRECT_URL: redirect_url,
@@ -486,6 +488,58 @@ def handle_point_collection(youpay_transaction, transaction_id, response_obj):
     return response_data, code
 
 
+def get_payment_gateway_by_code(code):
+    """get payment gateway object by code"""
+    try:
+        payment_gateway = PaymentGateway.objects.get(code=code)
+    except PaymentGateway.DoesNotExist:
+        payment_gateway = None
+    return payment_gateway
+
+
+def get_currency_by_iso_code(code):
+    """get currency object by iso code"""
+    try:
+        currency = Currency.objects.get(iso_code=code)
+    except Currency.DoesNotExist:
+        currency = None
+    return currency
+
+
+def create_configuration_data(code, currency):
+    """create configuration data"""
+    from services.tasks import get_checkout_conf, get_b2c_conf
+    config_data = None
+    if code == CHECKOUTPG_HUB_CODE:
+        response = get_checkout_conf(currency)
+
+    elif code == B2CPAYBACK_HUB_CODE:
+        response = get_b2c_conf(currency)
+    if response:
+        payment_gateway = get_payment_gateway_by_code(code)
+        currency_obj = get_currency_by_iso_code(currency)
+        if payment_gateway and currency_obj:
+            config_data = ConfigurationData(
+                payment_gateway=payment_gateway,
+                currency=currency_obj,
+                response_data=response
+            )
+            config_data.save()
+    return config_data
+
+
+def get_configuration_data(code, currency):
+    """get configuration data"""
+    try:
+        config_data = ConfigurationData.objects.get(
+            payment_gateway__code=code, currency__iso_code=currency)
+    except(ConfigurationData.DoesNotExist, Exception):
+        logging.error(f'No configuration data instance found for code {code} '
+                      f'and currency {currency}.')
+        config_data = create_configuration_data(code, currency)
+    return config_data
+
+
 def encrypt_browser_value(string_value):
     key = BROWSER_VALUE_ENCRYPTION_KEY
     fer_instance = Fernet(key)
@@ -500,3 +554,122 @@ def decrypt_browser_value(encrypted_value):
     decrypted_value = fer_instance.decrypt(encrypted_value).decode()
     logger.info("decrypted cookie key is {}".format(decrypted_value))
     return decrypted_value
+
+
+def process_amazonpg_response_verification(**kwargs):
+    """
+    Function to process AmazonPG response verification and update in YouPay
+    transaction table.
+    """
+    response_obj = YouPayResponse()
+    transaction_id = kwargs.get('transaction_id')
+    response = kwargs.get('response_data')
+    response_data = {}
+
+    try:
+        response_data = response.json()
+        status_code = response.status_code
+    except ValueError:
+        status_code = status.HTTP_400_BAD_REQUEST
+        msg = ('Response not received on AmazonPG Verify for transaction ,'
+               '{}'.format(transaction_id))
+        logger.error(msg)
+
+    response_summary = response_data.get('message', 'No response message')
+    reference_from_amazon = response_data.get("merchant_reference", None)
+    transaction_message = response_data.get('message', 'Payment Failed')
+
+    youpay = YouPayTransactionCRUD()
+    youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
+    youpay_payment_reference = youpay_transaction.payment_reference
+
+    is_flagged = response_data.get("flagged", False)
+    is_fraud = response_data.get("fraud", False)
+    approved = False
+
+    logger.info("Verify payment response data {}".format(response_data))
+
+    if status_code == status.HTTP_200_OK:
+        if youpay_payment_reference and (
+                youpay_payment_reference != reference_from_amazon):
+            '''During pre auth check with AmazonPG, YouPay transaction data do
+             not contain payment reference'''
+
+            logger.error(
+                "Payment Reference mismatch found for transaction id {},"
+                " reference id from Amazon {}, YouPay reference {}"
+                "".format(transaction_id, reference_from_amazon,
+                          youpay_payment_reference))
+
+            redirect_url = get_redirect_url(youpay_transaction.failure_url,
+                                            transaction_id)
+            return_status = response_obj.PAYMENT_FAILED
+            response_data = {
+                IS_REDIRECT: True,
+                REDIRECT_URL: redirect_url,
+                TRANSACTION_MSG: {"response_summary": "Payment Failed"},
+                IS_SUCCESS: False
+            }
+            return response_data, return_status
+
+        if response_data.get('is_capture') or response_data.get('in_review'):
+            payment_status = PAYMENT_STATUS_PAID
+            redirect_url = get_redirect_url(youpay_transaction.success_url,
+                                            transaction_id)
+            return_status = response_obj.SUCCESS
+            approved = True
+            return_response_data = {
+                IS_REDIRECT: True,
+                REDIRECT_URL: redirect_url,
+                TRANSACTION_MSG: transaction_message,
+                IS_SUCCESS: True
+            }
+        else:
+            payment_status = PAYMENT_STATUS_FAILED
+            redirect_url = get_redirect_url(youpay_transaction.failure_url,
+                                            transaction_id)
+            return_status = response_obj.PAYMENT_FAILED
+            return_response_data = {
+                IS_REDIRECT: True,
+                REDIRECT_URL: redirect_url,
+                TRANSACTION_MSG: transaction_message,
+                IS_SUCCESS: False
+            }
+
+    elif status_code == status.HTTP_307_TEMPORARY_REDIRECT:
+        payment_status = PAYMENT_STATUS_PENDING
+        return_status = response_obj.AMAZONPG_CONNECTION_RETRY
+        return_response_data = {
+            'retry': True,
+            'status': status.HTTP_307_TEMPORARY_REDIRECT
+        }
+    else:
+        payment_status = PAYMENT_STATUS_FAILED
+        return_status = response_obj.PAYMENT_FAILED
+        redirect_url = get_redirect_url(youpay_transaction.failure_url,
+                                        transaction_id)
+
+        return_response_data = {
+            IS_REDIRECT: True,
+            REDIRECT_URL: redirect_url,
+            TRANSACTION_MSG: transaction_message,
+            IS_SUCCESS: False
+        }
+
+    youpay_obj = YouPayTransactionCRUD()
+    youpay_obj.update_youpay_transaction_data(
+        {
+            'transaction_id': transaction_id,
+            "payment_status": payment_status,
+            "payment_reference": reference_from_amazon,
+            'is_gcc_card': response_data.get("is_gcc_card", None),
+            'is_flagged': is_flagged,
+            "approved": approved,
+            'is_fraud': is_fraud,
+            'card_issuer_country': response_data.get("card_issuer_country",
+                                                     None),
+            "response_summary": response_summary,
+            'is_payment_verified': True,
+        }
+    )
+    return return_response_data, return_status

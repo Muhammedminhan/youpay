@@ -63,12 +63,11 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
         }
         return headers
 
-    def get_configurations(self, amount, currency, transaction_id):
+    def get_configurations(self, currency):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
-        amount = str(amount)
         currency = str(currency)
         config_request_data = {
-            "amount": amount, "currency": currency,
+            "currency": currency,
             "product_code": product_code
         }
         request_data_json = json.dumps(config_request_data)
@@ -85,8 +84,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             else:
                 logger.error(
                     "No configuration received from configuration api "
-                    "call to b2cpayback for transaction {}, response "
-                    "{}".format(transaction_id, response.text))
+                    "call to b2cpayback, response "
+                    "{}".format(response.text))
                 return None
         except Exception as e:
             logger.error("config api call to b2cpayback failed",
@@ -162,22 +161,12 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             return None, None, None
 
     def authenticate_redemption(self, request_data):
-        logger.info("Entered authenticate_redemption with request_data: %s",
-                    request_data)
-
         request_transaction_id = request_data.get('transaction_id')
-        logger.info("Extracted request_transaction_id: %s",
-                    request_transaction_id)
-
         try:
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(request_transaction_id))
-            logger.info("Fetched transaction_obj: %s", transaction_obj)
-
             transaction_data = YouPayTransactionDataSerializer(
                 transaction_obj)
-            logger.info("Serialized transaction_data: %s",
-                        transaction_data.data)
 
             request_dict = {
                 'data': request_data,
@@ -188,31 +177,19 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             update_data = {}
             if request_data.get(
                     "gateway").lower() == PAYMENT_GATEWAY_AMAZONPG:
-                logger.info("Using AuthenticateRequestAmazonSerializer")
                 authenticate_request_data = AuthenticateRequestAmazonSerializer(
                     request_dict)
             else:
-                logger.info("Using AuthenticateRequestSerializer")
                 authenticate_request_data = AuthenticateRequestSerializer(
                     request_dict)
                 update_data = {
                     'cko-card-token': request_data.get('cko-card-token')}
-
-            logger.info("authenticate_request_data: %s",
-                        authenticate_request_data.data)
-
             update_data.update(authenticate_request_data.data)
-            logger.info("Updated update_data: %s", update_data)
-
             request_data_json = json.dumps(update_data)
-            logger.info("Serialized request_data_json: %s",
-                        request_data_json)
-
             b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                          B2CPAYBACK_HUB_CODE)
             b2c_payback_domain = b2c_gateway_obj.domain
             url = b2c_payback_domain + ADCB_AUTHENTICATE_API
-            logger.info("Constructed URL for request: %s", url)
 
             logger.info(
                 "Youpay requesting adcb redemption authentication for %s with data %s",
@@ -220,8 +197,6 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
 
             response = requests.post(url, data=request_data_json,
                                      headers=CONTENT_TYPE_HEADERS)
-            logger.info("Received response: %s", response.text)
-
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
@@ -230,31 +205,26 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_AUTHENTICATE
             )
-            logger.info("Recorded transaction data")
-
             if response:
-                response_json = response.json()
-                logger.info("Response JSON: %s", response_json)
-                if response_json.get('url'):
-                    response_data = response_json
+                if response.json().get('url'):
+                    response_data = response.json()
                     response_data['is_redirect'] = True
-                    logger.info("Returning redirect response_data: %s",
-                                response_data)
                     return response_data, transaction_obj
                 else:
-                    logger.info("Returning non-redirect response_data: %s",
-                                response_json)
-                    return response_json, transaction_obj
+                    return response.json(), transaction_obj
             else:
                 logger.error(
-                    "Error response received from authenticate API call to b2cpayback for transaction %s, %s",
-                    transaction_obj.transaction_id, response.text)
+                    "Error response received from authenticate api call "
+                    "to b2cpayback for transaction {0}, {1}".format(
+                        transaction_obj.transaction_id,
+                        response.text))
                 return response, None
 
         except Exception as e:
             logger.error(
-                "Authenticate API call to b2cpayback failed for transaction %s",
-                decrypt_string(request_transaction_id), exc_info=e)
+                "authenticate api call to b2cpayback failed for "
+                "transaction {}".format(
+                    decrypt_string(request_transaction_id)), exc_info=e)
             return None, None
 
     def point_redemption(self, request_data):

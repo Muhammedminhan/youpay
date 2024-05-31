@@ -6,12 +6,12 @@ from django.db.models import signals
 from django.dispatch import receiver
 
 from core.models import AbstractDateTime, CustomerProfile
-from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
-                        APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
-from payments.models import YouPayTransactionData
 from payments.constants import (PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_FAILED,
                                 PAYMENT_STATUS_CANCELLED)
+from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
+                        APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,8 +35,14 @@ class AmazonPGTransactionData(AbstractDateTime, CustomerProfile):
         max_length=20, null=True, blank=True,
         choices=TRANSACTION_PAYMENT_STATUS_CHOICES)
     apg_payment_status = models.CharField(
-                            max_length=20, null=True, blank=True,
-                            choices=APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
+        max_length=20, null=True, blank=True,
+        choices=APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
+    is_fraud = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Denotes whether the payment is fraud or not.')
+    is_flagged = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Denotes whether the payment is flagged or not.')
     card_bin = models.CharField(max_length=6, null=True, blank=True,
                                 help_text='Denotes the bin number of the '
                                           'card used for the payment')
