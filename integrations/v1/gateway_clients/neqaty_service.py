@@ -357,6 +357,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 code=NEQATY_CLIENT_CODE,
             ),
             "invoice_id": self.transaction_obj.invoice_id,
+            "brand_calculations": self.transaction_obj.brand_calculations,
             "customer_ip_address": self.transaction_obj.ip,
             "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
                 transaction_data.get("currency").upper()),
@@ -664,6 +665,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
                 "item_details_list": transaction_obj.brand_details.get(
                     "item_set", None),
+                "brand_calculations": transaction_obj.brand_calculations,
                 "redeemed_amount": (
                     str(transaction_obj.redeemed_amount) if
                     transaction_obj.redeemed_amount else 0),

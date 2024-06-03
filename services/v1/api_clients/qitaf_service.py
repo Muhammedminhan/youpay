@@ -247,6 +247,8 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "token": validated_data.get('token'),
                     "token_type": validated_data.get('token_type'),
                     "encrypted_id": request.data.get('transaction_id'),
+                    "brand_calculations": (
+                        qitaf_redemption_serializer.transaction_obj.brand_calculations),
                     "order_reference": transaction_order_reference
                 }
             )

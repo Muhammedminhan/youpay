@@ -230,6 +230,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             request_data['gateway_reference'] = (
                 self.transaction_obj.payment_reference)
             request_data['currency'] = self.transaction_obj.currency
+            request_data[
+                'brand_calculations'] = self.transaction_obj.brand_calculations
             self.request_data = request_data
             logger.info(
                 "Youpay sending request data to qitaf point collection api "
