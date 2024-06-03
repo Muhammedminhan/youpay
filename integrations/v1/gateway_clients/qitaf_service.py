@@ -711,8 +711,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             response = requests.post(url, data=payload, headers=headers)
 
             logger.info(
-                "Response from qitaf calculate balance api {} for transaction"
-                " {}".format(response.json(), transaction_id))
+                "Calculate balance api payload {}, response {} for transaction"
+                " {}".format(payload, response.json(), transaction_id))
 
             response_data = None
             response_code = self.QITAF_BALANCE_CALCULATION_FAILED
