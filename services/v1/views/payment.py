@@ -577,6 +577,9 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
 class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                                   ClientValidator,
                                   YouPayResponse):
+    def get_redeemed_amount(self, transaction_obj):
+        return (str(transaction_obj.redeemed_amount) if
+                transaction_obj.redeemed_amount else 0.0)
 
     def get_earn_points(self, **kwargs):
         '''
@@ -602,7 +605,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         if transaction_obj.brand_calculations is None:
             payload = {
                 'transaction_obj': transaction_obj,
-                "selected_amount": str(transaction_obj.amount),
+                "selected_amount": self.get_redeemed_amount(transaction_obj),
                 "client_code": (
                     NEQATY_CLIENT_CODE
                     if program_name == PAYMENT_METHOD_NEQATY else
