@@ -11,6 +11,7 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
+from integrations.constants import QITAF_CLIENT_CODE
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
@@ -423,6 +424,7 @@ class CalculateQitafBalance(APIView, YouPayTransactionCRUD):
                 payload = {
                     'transaction_obj': transaction_obj,
                     "selected_amount": selected_amount,
+                    "client_code": QITAF_CLIENT_CODE
                 }
 
                 qitaf_service = QitafServiceManager()
