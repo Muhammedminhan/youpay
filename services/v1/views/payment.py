@@ -615,6 +615,11 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.calculate_qitaf_balance(
                 payload)
+
+            if code == self.SUCCESS:
+                calculated_item_details = response_data.get(
+                    'calculated_item_details')
+
             logger.info(
                 "Brand Calculated for transaction {}".format(transaction_id))
 
@@ -654,8 +659,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     "reward_point")
                 earn_reference = response.get("partner_response").get(
                     "earn_reference")
-                calculated_item_details = response.get(
-                    "partner_response", {}).get("calculated_item_details")
 
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_QITAF)
