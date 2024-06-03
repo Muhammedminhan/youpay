@@ -675,14 +675,15 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                          "verify api".format(request_transaction_id))
             return None, None
 
-    def calculate_qitaf_balance(self, payload):
+    def calculate_qitaf_balance(self, data):
         """
         Calculate qitaf service charge
         """
 
         try:
-            transaction_obj = payload.get('transaction_obj')
-            selected_amount = payload.get('selected_amount')
+            transaction_obj = data.get('transaction_obj')
+            selected_amount = data.get('selected_amount')
+            client_code = data.get("client_code")
 
             payment_reference = transaction_obj.payment_reference
 
@@ -702,6 +703,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 "item_details_list": items_array,
                 "currency": brand_details.get("currency"),
                 "selected_amount": selected_amount,
+                "client_code": client_code,
             })
 
             url = self.qitaf_config.domain + QITAF_CALCULATE_BALANCE_API
