@@ -666,7 +666,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
             transaction_obj.earned_point = earned_points
-            transaction_obj.brand_calculations = calculated_item_details
+            if calculated_item_details:
+                transaction_obj.brand_calculations = calculated_item_details
             transaction_obj.save()
 
             is_success = True
