@@ -622,6 +622,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             if code == self.SUCCESS:
                 calculated_item_details = response_data.get(
                     'calculated_item_details')
+                transaction_obj.brand_calculations = calculated_item_details
 
             logger.info(
                 "Brand Calculated for transaction {}".format(transaction_id))
