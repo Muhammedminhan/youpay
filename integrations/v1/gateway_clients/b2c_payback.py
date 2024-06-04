@@ -20,9 +20,8 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     AMAZONPG_HUB_CODE,
                                     ADCB_AMAZON_VERIFY_API,
-                                    PAYMENT_REQUEST_VERIFY,
                                     B2C_REVERSE_REDEMPTION_API,
-                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION
+                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
                                     PAYMENT_REQUEST_VERIFY)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
@@ -52,6 +51,17 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     """
     Class to manage b2cpayback related operations
     """
+
+    def get_payment_header(self, b2c_config):
+        """
+        Returns headers
+        """
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': b2c_config.api_key,
+            'X-API-KEY': b2c_config.api_key
+        }
+        return headers
 
     def get_configurations(self, currency):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
