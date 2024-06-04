@@ -20,9 +20,9 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     AMAZONPG_HUB_CODE,
                                     ADCB_AMAZON_VERIFY_API,
-                                    PAYMENT_REQUEST_VERIFY,
                                     B2C_REVERSE_REDEMPTION_API,
-                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
+                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
+                                    PAYMENT_REQUEST_VERIFY)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,

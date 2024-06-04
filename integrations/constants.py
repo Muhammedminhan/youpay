@@ -100,6 +100,7 @@ PAYMENT_REQUEST_TYPE_CHOICES = (
     (PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
      PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
 )
+
 CHECKOUTPG_CACHE_KEY = 'checkoutpg_config'
 B2CP_CACHE_KEY = 'b2cp_config'
 TABBYPG_CACHE_KEY = 'tabbypg_config'
@@ -114,9 +115,9 @@ ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
 ADCB_VERIFY_API = "/payback/api/v1/verify"
 ADCB_AMAZON_VERIFY_API = "/payback/api/v1/amazon-verify"
 
-B2C_REVERSE_REDEMPTION_API = "/payback/api/v1/reverse-redemption/"
-
 CONTENT_TYPE_HEADERS = {'Content-Type': 'application/json'}
+
+B2C_REVERSE_REDEMPTION_API = "/payback/api/v1/reverse-redemption/"
 
 ADCB_CLIENT_CODE = 'ADCBTP'
 ADCB_TOKEN_TYPE = "card"
