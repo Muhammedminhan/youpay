@@ -565,7 +565,7 @@ def process_amazonpg_response_verification(**kwargs):
     transaction_id = kwargs.get('transaction_id')
     response = kwargs.get('response_data')
     response_data = {}
-
+    logger.info("Response is {}".format(response))
     try:
         response_data = response.json()
         status_code = response.status_code
@@ -574,6 +574,9 @@ def process_amazonpg_response_verification(**kwargs):
         msg = ('Response not received on AmazonPG Verify for transaction ,'
                '{}'.format(transaction_id))
         logger.error(msg)
+
+    logger.info("response_data is {}".format(response_data))
+    logger.info("status_code is {}".format(status_code))
 
     response_summary = response_data.get('message', 'No response message')
     reference_from_amazon = response_data.get("merchant_reference", None)
@@ -655,6 +658,22 @@ def process_amazonpg_response_verification(**kwargs):
             TRANSACTION_MSG: transaction_message,
             IS_SUCCESS: False
         }
+
+    a = {
+        'transaction_id': transaction_id,
+        "payment_status": payment_status,
+        "payment_reference": reference_from_amazon,
+        'is_gcc_card': response_data.get("is_gcc_card", None),
+        'is_flagged': is_flagged,
+        "approved": approved,
+        'is_fraud': is_fraud,
+        'card_issuer_country': response_data.get("card_issuer_country",
+                                                 None),
+        "response_summary": response_summary,
+        'is_payment_verified': True,
+    }
+
+    logger.info("Youpay updating data is {}".format(a))
 
     youpay_obj = YouPayTransactionCRUD()
     youpay_obj.update_youpay_transaction_data(
