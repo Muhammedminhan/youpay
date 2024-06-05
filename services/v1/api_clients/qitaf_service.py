@@ -347,9 +347,6 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
 
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
-                logger.info(
-                    "qitaf partial payment status true, response {}".format(
-                        response))
             else:
                 message = (
                     "couldnt process qitaf Verification for transaction id {}"
@@ -359,9 +356,6 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
 
                 code = self.response_obj.QITAF_VERIFICATION_FAILED_TO_PROCESS
                 response = self.format_b2c_response(response, code)
-                logger.info(
-                    "qitaf partial payment failed, response {}".format(
-                        response))
             return Response(response, status=status.HTTP_200_OK)
         else:
             try:
