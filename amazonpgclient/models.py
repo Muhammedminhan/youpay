@@ -8,7 +8,8 @@ from django.dispatch import receiver
 from core.models import AbstractDateTime, CustomerProfile
 from payments.constants import (PAYMENT_STATUS_CAPTURED, PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_FAILED,
-                                PAYMENT_STATUS_CANCELLED)
+                                PAYMENT_STATUS_CANCELLED,
+                                PAYMENT_STATUS_PENDING_REVIEW)
 from .constants import (TRANSACTION_PAYMENT_STATUS_CHOICES,
                         APG_PAYMENT_TRANSACTION_STATUS_CHOICES)
 
@@ -106,7 +107,8 @@ def prepare_youpay_transaction_update_data(instance, payment_reference,
         transaction_obj = (
             youpay_obj.get_youpay_transaction_data_with_payment_reference(
                 payment_reference))
-        if instance.payment_status == PAYMENT_STATUS_CAPTURED:
+        if instance.payment_status in [PAYMENT_STATUS_CAPTURED,
+                                       PAYMENT_STATUS_PENDING_REVIEW]:
             payment_status = PAYMENT_STATUS_PAID
         elif instance.payment_status == PAYMENT_STATUS_CANCELLED:
             payment_status = PAYMENT_STATUS_FAILED
