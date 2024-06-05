@@ -402,16 +402,16 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                                      headers=headers)
             if response:
                 logger.info(
-                    "Triggering mail success for transaction {}"
+                    "Redemption reversal success for transaction {}"
                     .format(transaction.transaction_id))
             else:
                 logger.error(
-                    "Triggering mail failed for transaction {} with response"
+                    "Redemption reversal  failed for transaction {} with response"
                     " {}".format(transaction.transaction_id, response.text))
 
         except Exception as e:
             logger.error(
-                "Triggering mail failed with error {}".format(
+                "Redemption reversal  failed with error {}".format(
                     str(e)))
 
         finally:
