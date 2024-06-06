@@ -4,9 +4,11 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
+from payments.constants import PAYMENT_STATUS_PAID, PAYMENT_STATUS_CANCELLED
 from services.v1.views.common import YouPayTransactionCRUD
 from .constant import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
-                       PURCHASE_PLATFORM_CHOICES, TABBY_YOUPAY_STATUS_DICT)
+                       PURCHASE_PLATFORM_CHOICES, TABBY_YOUPAY_STATUS_DICT,
+                       PAYMENT_STATUS_CLOSED)
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +93,10 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
                     instance.payment_reference, instance.status))
 
 
-def tabby_to_youpay_status(tabbypg_status):
+def tabby_to_youpay_status(tabbypg_data):
+    tabbypg_status = tabbypg_data.get('status')
+    is_paid = tabbypg_data.get('is_paid')
+
     payment_status = TABBY_YOUPAY_STATUS_DICT.get(tabbypg_status)
     if not payment_status:
         if tabbypg_status == PAYMENT_STATUS_NONE:
@@ -99,4 +104,10 @@ def tabby_to_youpay_status(tabbypg_status):
         logger.info(
             "Error status at tabbypgclient while trying to update "
             "youpaytransactiondata, status {}".format(tabbypg_status))
+
+    if payment_status == PAYMENT_STATUS_CLOSED and is_paid:
+        payment_status = PAYMENT_STATUS_PAID
+    elif payment_status == PAYMENT_STATUS_CLOSED and not is_paid:
+        payment_status = PAYMENT_STATUS_CANCELLED
+
     return payment_status
