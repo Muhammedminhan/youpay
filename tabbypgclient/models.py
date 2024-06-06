@@ -54,7 +54,8 @@ class TabbyPaymentData(models.Model):
 @receiver(post_save, sender=TabbyPaymentData)
 def update_youpaytransactiondata_on_webhook(sender, instance, created,
                                             **kwargs):
-    payment_status = tabby_to_youpay_status(instance.status)
+    payment_status = tabby_to_youpay_status(
+        {"status": instance.status, "is_paid": instance.is_paid})
     if payment_status:
         try:
             youpay_crud = YouPayTransactionCRUD()
@@ -64,7 +65,9 @@ def update_youpaytransactiondata_on_webhook(sender, instance, created,
             if transaction_obj:
                 data_to_update = {
                     'transaction_id': transaction_obj.transaction_id,
-                    "payment_status": payment_status
+                    "payment_status": payment_status,
+                    "approved": (True if payment_status == PAYMENT_STATUS_PAID
+                                 else False),
                 }
                 youpay_crud.update_youpay_transaction_data(
                             data_to_update)
