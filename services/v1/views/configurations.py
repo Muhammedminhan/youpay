@@ -128,21 +128,31 @@ class ConfigViewSet(ViewSet):
         checkoutpg_config = self.get_checkout_config(payment_options,
                                                      transaction)
         tabbypg_config = self.get_tabby_conf(payment_options)
+        # sessionkey = self.get_browser_value(transaction) if transaction else None
         b2c_configs = self.get_b2c_config(payment_options,
                                           transaction,
                                           partial_redemption_allowed_options)
-        # sessionkey = self.get_browser_value(transaction) if transaction else None
+        adcb_config = b2c_configs.get('adcb_config', {})
+        qitaf_config = b2c_configs.get('qitaf_config', {})
+        neqaty_config = b2c_configs.get('neqaty_config', {})
+        if not adcb_config and PAYMENT_OPTION_ADCB in payment_options:
+            payment_options[PAYMENT_OPTION_ADCB] = False
+        if not qitaf_config and PAYMENT_OPTION_QITAF in payment_options:
+            payment_options[PAYMENT_OPTION_QITAF] = False
+        if not neqaty_config and PAYMENT_OPTION_NEQATY in payment_options:
+            payment_options[PAYMENT_OPTION_NEQATY] = False
+            
         response_data = {
             "data": {
                 "api_client": api_client,
                 "payment_options": payment_options,
                 "checkoutpg_config": checkoutpg_config.response_data if
                 checkoutpg_config else None,
-                "adcb_config": b2c_configs.get('adcb_config', {}),
+                "adcb_config": adcb_config,
                 "tabbypg_config": tabbypg_config,
                 "applepay_config": self.get_applepay_config(payment_options),
                 "paypal_config": self.get_paypal_config(payment_options),
-                "neqaty_config": b2c_configs.get('neqaty_config', {}),
+                "neqaty_config": neqaty_config,
                 "amount": transaction.amount if transaction else None,
                 "currency": transaction.currency if transaction else None,
                 "country_code": transaction.country_code if transaction else
@@ -162,7 +172,7 @@ class ConfigViewSet(ViewSet):
                 else None,
                 "cart_base_amount": transaction.cart_base_amount if
                 transaction else None,
-                "qitaf_config": b2c_configs.get('qitaf_config', {}),
+                "qitaf_config": qitaf_config,
                 "citi_config": self.check_citi_allowed_denominations(
                     payment_options, transaction),
                 "redirect_url": self._get_redirect_url(transaction),
