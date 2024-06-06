@@ -513,6 +513,7 @@ def create_configuration_data(code, currency):
     """create configuration data"""
     from services.tasks import get_checkout_conf, get_b2c_conf
     config_data = None
+    response = None
     if code == CHECKOUTPG_HUB_CODE:
         response = get_checkout_conf(currency)
 

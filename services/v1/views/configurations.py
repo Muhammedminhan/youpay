@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
-from core.models import PaymentMethod
+from core.models import PaymentConfiguration
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
@@ -398,15 +398,15 @@ class ConfigViewSet(ViewSet):
         is_valid_amount = False
         if transaction.currency in [CURRENCY_UAE, CURRENCY_KSA]:
             if transaction.currency == CURRENCY_UAE:
-                payment_methods = PaymentMethod.objects.filter(
+                payment_config = PaymentConfiguration.objects.filter(
                     validations__AED__min__lte=float(transaction.amount),
                     validations__AED__max__gte=float(transaction.amount))
             elif transaction.currency == CURRENCY_KSA:
-                payment_methods = PaymentMethod.objects.filter(
+                payment_config = PaymentConfiguration.objects.filter(
                     validations__SAR__min__lte=float(transaction.amount),
                     validations__SAR__max__gte=float(transaction.amount)
                 )
-        if payment_methods:
+        if payment_config:
             is_valid_amount = True
         return is_valid_amount
 
