@@ -29,7 +29,6 @@ from payments.constants import (
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
-                                CURRENCY_UAE, CURRENCY_KSA,
                                 APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
                                 APPLEPAY_LABEL)
@@ -132,15 +131,6 @@ class ConfigViewSet(ViewSet):
         b2c_configs = self.get_b2c_config(payment_options,
                                           transaction,
                                           partial_redemption_allowed_options)
-        adcb_config = b2c_configs.get('adcb_config', {})
-        qitaf_config = b2c_configs.get('qitaf_config', {})
-        neqaty_config = b2c_configs.get('neqaty_config', {})
-        if not adcb_config and PAYMENT_OPTION_ADCB in payment_options:
-            payment_options[PAYMENT_OPTION_ADCB] = False
-        if not qitaf_config and PAYMENT_OPTION_QITAF in payment_options:
-            payment_options[PAYMENT_OPTION_QITAF] = False
-        if not neqaty_config and PAYMENT_OPTION_NEQATY in payment_options:
-            payment_options[PAYMENT_OPTION_NEQATY] = False
             
         response_data = {
             "data": {
@@ -148,11 +138,11 @@ class ConfigViewSet(ViewSet):
                 "payment_options": payment_options,
                 "checkoutpg_config": checkoutpg_config.response_data if
                 checkoutpg_config else None,
-                "adcb_config": adcb_config,
+                "adcb_config": b2c_configs.get('adcb_config', {}),
                 "tabbypg_config": tabbypg_config,
                 "applepay_config": self.get_applepay_config(payment_options),
                 "paypal_config": self.get_paypal_config(payment_options),
-                "neqaty_config": neqaty_config,
+                "neqaty_config": b2c_configs.get('neqaty_config', {}),
                 "amount": transaction.amount if transaction else None,
                 "currency": transaction.currency if transaction else None,
                 "country_code": transaction.country_code if transaction else
@@ -172,7 +162,7 @@ class ConfigViewSet(ViewSet):
                 else None,
                 "cart_base_amount": transaction.cart_base_amount if
                 transaction else None,
-                "qitaf_config": qitaf_config,
+                "qitaf_config": b2c_configs.get('qitaf_config', {}),
                 "citi_config": self.check_citi_allowed_denominations(
                     payment_options, transaction),
                 "redirect_url": self._get_redirect_url(transaction),
@@ -347,9 +337,6 @@ class ConfigViewSet(ViewSet):
 
     def get_b2c_config(self, payment_option, transaction,
                        partial_redemption_allowed_options):
-        is_valid_amount = self.validate_amount(transaction)
-        if not is_valid_amount:
-            return {}
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
         neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
@@ -402,23 +389,6 @@ class ConfigViewSet(ViewSet):
             if config["code"] == payment_method_code:
                 return config
         return {}
-
-    @staticmethod
-    def validate_amount(transaction):
-        is_valid_amount = False
-        if transaction.currency in [CURRENCY_UAE, CURRENCY_KSA]:
-            if transaction.currency == CURRENCY_UAE:
-                payment_config = PaymentConfiguration.objects.filter(
-                    validations__AED__min__lte=float(transaction.amount),
-                    validations__AED__max__gte=float(transaction.amount))
-            elif transaction.currency == CURRENCY_KSA:
-                payment_config = PaymentConfiguration.objects.filter(
-                    validations__SAR__min__lte=float(transaction.amount),
-                    validations__SAR__max__gte=float(transaction.amount)
-                )
-        if payment_config:
-            is_valid_amount = True
-        return is_valid_amount
 
     @staticmethod
     def get_session_key(request):

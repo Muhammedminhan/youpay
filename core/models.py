@@ -152,9 +152,6 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
         help_text='Indicates whether the payment method allows partial '
                   'redemption. Only affects payment methods that support '
                   'partial redemption.')
-    validations = models.JSONField(
-        null=True, blank=True,
-        help_text='Redemption currency and amount limit for validations')
 
     def __str__(self):
         return self.payment_method
