@@ -29,7 +29,6 @@ from payments.constants import (
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
-                                CURRENCY_UAE, CURRENCY_KSA,
                                 APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
                                 APPLEPAY_LABEL)
@@ -128,10 +127,11 @@ class ConfigViewSet(ViewSet):
         checkoutpg_config = self.get_checkout_config(payment_options,
                                                      transaction)
         tabbypg_config = self.get_tabby_conf(payment_options)
+        # sessionkey = self.get_browser_value(transaction) if transaction else None
         b2c_configs = self.get_b2c_config(payment_options,
                                           transaction,
                                           partial_redemption_allowed_options)
-        # sessionkey = self.get_browser_value(transaction) if transaction else None
+            
         response_data = {
             "data": {
                 "api_client": api_client,
@@ -337,9 +337,6 @@ class ConfigViewSet(ViewSet):
 
     def get_b2c_config(self, payment_option, transaction,
                        partial_redemption_allowed_options):
-        is_valid_amount = self.validate_amount(transaction)
-        if not is_valid_amount:
-            return {}
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
         neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
@@ -392,23 +389,6 @@ class ConfigViewSet(ViewSet):
             if config["code"] == payment_method_code:
                 return config
         return {}
-
-    @staticmethod
-    def validate_amount(transaction):
-        is_valid_amount = False
-        if transaction.currency in [CURRENCY_UAE, CURRENCY_KSA]:
-            if transaction.currency == CURRENCY_UAE:
-                payment_config = PaymentConfiguration.objects.filter(
-                    validations__AED__min__lte=float(transaction.amount),
-                    validations__AED__max__gte=float(transaction.amount))
-            elif transaction.currency == CURRENCY_KSA:
-                payment_config = PaymentConfiguration.objects.filter(
-                    validations__SAR__min__lte=float(transaction.amount),
-                    validations__SAR__max__gte=float(transaction.amount)
-                )
-        if payment_config:
-            is_valid_amount = True
-        return is_valid_amount
 
     @staticmethod
     def get_session_key(request):
