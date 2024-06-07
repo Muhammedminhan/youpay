@@ -31,6 +31,8 @@ def update_brand_details(transaction_obj):
     """
     to get the order details from the client
     """
+    status = False
+    brand_details = None
     try:
         if transaction_obj:
             client = transaction_obj.api_client
@@ -44,7 +46,7 @@ def update_brand_details(transaction_obj):
                 logger.error("Brand details path not found for client {} for"
                              " transaction {}".format(client.name,
                                                       transaction_id))
-                return False
+                return status, brand_details
 
             headers = {
                 'API-KEY': api_key,
@@ -64,22 +66,22 @@ def update_brand_details(transaction_obj):
                         transaction_id, response_data
                     ))
                 transaction_obj.save()
-                return True
+                status = True
+                brand_details = response_data
             else:
                 logger.error(
                     "Unable to get response on brand details for "
                     "transaction {}, error : {}".format(transaction_id,
                                                         response.text))
-                return False
         else:
             logger.error(
                 "Transaction not found while fetching brand details")
-            return False
+        return status, brand_details
 
     except Exception as e:
         logger.error(
             "Getting brand details failed with error {}".format(str(e)))
-        return False
+        return status, brand_details
 
 
 def get_redemption_details(transaction_obj, updated_brand_calculations):

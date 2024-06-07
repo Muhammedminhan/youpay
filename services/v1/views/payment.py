@@ -12,6 +12,7 @@ from core.utils import (decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded, encrypt_payment_data)
+from integrations.constants import NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE
 from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
@@ -571,3 +572,174 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
+                                  ClientValidator,
+                                  YouPayResponse):
+    def get_redeemed_amount(self, transaction_obj):
+        return (str(transaction_obj.redeemed_amount) if
+                transaction_obj.redeemed_amount else 0.0)
+
+    def get_earn_points(self, **kwargs):
+        '''
+        This method is used to get earn points by identifying the redemption
+        partner
+        '''
+        transaction_id = kwargs.get('transaction_id', None)
+        transaction_obj = kwargs.get('transaction_obj', None)
+        mobile_number = None
+        is_success = False
+        collect_enabled = False
+        earned_points = None
+        earn_reference = None
+        partner_response = None
+        partner_response_code = None
+        code = None
+        calculated_item_details = None
+        program_name = transaction_obj.points_collection_enabled_program
+        logger.info("Earn working for {}, for transaction {}".format(
+            program_name, transaction_id
+        ))
+
+        if transaction_obj.brand_calculations is None:
+            payload = {
+                'transaction_obj': transaction_obj,
+                "selected_amount": self.get_redeemed_amount(transaction_obj),
+                "client_code": (
+                    NEQATY_CLIENT_CODE
+                    if program_name == PAYMENT_METHOD_NEQATY else
+                    QITAF_CLIENT_CODE)
+            }
+
+            from integrations.v1.gateway_clients.qitaf_service import (
+                QitafServiceManager)
+
+            qitaf_service = QitafServiceManager()
+            response_data, code = qitaf_service.calculate_qitaf_balance(
+                payload)
+
+            if code == self.SUCCESS:
+                calculated_item_details = response_data.get(
+                    'calculated_item_details')
+                transaction_obj.brand_calculations = calculated_item_details
+
+            logger.info(
+                "Brand Calculated for transaction {}".format(transaction_id))
+
+        if program_name == PAYMENT_METHOD_NEQATY:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.neqaty_service import (
+                NeqatyServiceManager)
+            neqaty_obj = NeqatyServiceManager()
+            response, code = neqaty_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                calculated_item_details = response.get(
+                    "partner_response", {}).get("calculated_item_details")
+            message = "Pont Collect requested for {}".format(
+                PAYMENT_METHOD_NEQATY)
+
+
+        elif program_name == PAYMENT_METHOD_QITAF:
+            collect_enabled = transaction_obj.is_qitaf_enabled
+            mobile_number = transaction_obj.qitaf_phone_number
+
+            from services.v1.api_clients.qitaf_service import (
+                QitafCollectPointsAPIView)
+            qitaf_view_obj = QitafCollectPointsAPIView()
+            response, code, earned_points = qitaf_view_obj.collect_reward_point(
+                transaction_obj)
+            partner_response = response
+            partner_response_code = code
+
+            if code == self.SUCCESS:
+                earned_points = response.get("partner_response").get(
+                    "reward_point")
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+
+            message = "Pont Collect requested for {}".format(
+                PAYMENT_METHOD_QITAF)
+        else:
+            message = "Unknown redemption partner {}".format(
+                transaction_obj.points_collection_enabled_program)
+
+        if code == self.SUCCESS:
+            transaction_obj.earn_reference = earn_reference
+            transaction_obj.earned_point = earned_points
+            if calculated_item_details:
+                transaction_obj.brand_calculations = calculated_item_details
+            transaction_obj.save()
+
+            is_success = True
+
+        message = "{} status {}".format(message, is_success)
+
+        logger.info(
+            "Earn Partner response code is {}, response : {} for transaction:"
+            " {}".format(partner_response_code, partner_response,
+                         transaction_id))
+
+        return {
+            "status": is_success,
+            "message": message,
+            "mobile_number": mobile_number,
+            "earned_points": earned_points,
+            "program_name": program_name,
+            "collect_enabled": collect_enabled
+        }
+
+    def post(self, request):
+        try:
+
+            validate, client_pk = self.validate_client(request)
+            if not validate:
+                logger.info(
+                    "payment request client validation failed for {0}"
+                    .format("order_reference"))
+                self.return_data = self.get_400_message(
+                    message="Client Does Not Exist")
+                return Response(self.return_data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
+            data = self.request.data
+            transaction_id = decrypt_string(data.get('transaction_id'))
+            transaction_object = self.get_youpay_transaction_data(
+                transaction_id)
+
+            if transaction_object:
+                # call redemption partner earn flow
+                logger.info("Earn started for transaction_id: {}".format(
+                    transaction_id))
+
+                earn_response = self.get_earn_points(
+                    transaction_id=transaction_id,
+                    transaction_obj=transaction_object)
+
+                logger.info("EarnRedemptionPartnerPoints worked for "
+                            "transaction : {}, response : {}".format(
+                    transaction_id, earn_response))
+
+                response_data = {
+                    "status": earn_response.get("status"),
+                    "message": earn_response.get("message"),
+                }
+
+                return Response(response_data, status=status.HTTP_200_OK)
+            else:
+                response_data = {
+                    "status": status.HTTP_400_BAD_REQUEST,
+                    "message": "Transaction not found",
+                }
+                return Response(response_data,
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error("Error in Earn Redemption Partner Points api ",
+                         exc_info=e)
+            return Response({"error": str(e), })

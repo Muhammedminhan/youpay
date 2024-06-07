@@ -86,16 +86,15 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             self.transaction_id = str(self.transaction_obj.transaction_id)
             language = self.transaction_obj.language
 
-            is_updated = update_brand_details(
+            is_updated, brand_details = update_brand_details(
                 self.transaction_obj)
             if is_updated:
-                brand_details = self.transaction_obj.brand_details
                 brand_detail_items_set = brand_details.get("item_set", None)
                 data.update({
                     "brand_details": brand_details})
 
                 if not brand_detail_items_set or not len(
-                        brand_detail_items_set):
+                        brand_detail_items_set) or not is_updated:
                     logger.error("Brand details not found for transaction {}"
                                  "".format(self.transaction_id))
                     return None, self.BRAND_DETAILS_MISSING
@@ -104,7 +103,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             logger.info(
                 "Youpay sending request data to Neqaty point balance api "
-                "is {}".format(request_data))
+                "is {} for transaction {}".format(request_data,
+                                                  self.transaction_id))
 
             self.request_data = request_data
 
@@ -136,8 +136,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                     'payment_method': PAYMENT_METHOD_NEQATY,
                     'available_points': response_data.get(
-                        "partner_response").get("available_points")
-
+                        "partner_response").get("available_points"),
+                    "brand_details": brand_details
                 })
                 return formatted_response, self.SUCCESS
 
@@ -154,6 +154,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'payment_status': PAYMENT_STATUS_PENDING,
                     'payment_gateway': PAYMENT_GATEWAY_B2CPAYBACK,
                     'payment_method': PAYMENT_METHOD_NEQATY,
+                    "brand_details": brand_details
                 })
                 if language == LANGUAGE_CODE_AR:
                     message = partner_response.get("response_text_ar")
@@ -356,6 +357,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 code=NEQATY_CLIENT_CODE,
             ),
             "invoice_id": self.transaction_obj.invoice_id,
+            "brand_calculations": self.transaction_obj.brand_calculations,
             "customer_ip_address": self.transaction_obj.ip,
             "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
                 transaction_data.get("currency").upper()),
@@ -559,13 +561,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     card_bin = response_data.get("card_bin")
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
-
-                    collect_point_response_data, code = (
-                        self.handele_neqaty_collection(transaction_obj))
-                    if code == self.SUCCESS:
-                        earn_reference = collect_point_response_data.get(
-                            "partner_response").get("earn_reference")
-
+                    self.handele_neqaty_collection(transaction_obj)
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -603,8 +599,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_gcc_card': is_gcc_card,
                     'card_last4': card_last4,
                     'card_bin': card_bin,
-                    'card_issuer_country': card_issuer_country,
-                    'earn_reference': earn_reference,
+                    'card_issuer_country': card_issuer_country
                 }
 
                 logger.info("Neqaty Verification with b2c completed for "
@@ -667,6 +662,13 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "client_code": NEQATY_CLIENT_CODE,
                 "amount": str(paid_amount),
                 "platform": transaction_obj.platform,
+
+                "item_details_list": transaction_obj.brand_details.get(
+                    "item_set", None),
+                "brand_calculations": transaction_obj.brand_calculations,
+                "redeemed_amount": (
+                    str(transaction_obj.redeemed_amount) if
+                    transaction_obj.redeemed_amount else 0),
             }
 
             self.transaction_obj = transaction_obj
@@ -719,8 +721,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             )
 
     def handele_neqaty_collection(self, transaction_obj):
-        response = None
-        code = None
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
             if transaction_obj.points_collection_enabled_program != (
@@ -731,9 +731,3 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()
 
-            response, code = self.collect_points(transaction_obj)
-            logger.info(
-                "Checking for Reward Point for transaction : "
-                "{}, response : {}, code : {}".format(
-                    transaction_obj.transaction_id, response, code))
-        return response, code
