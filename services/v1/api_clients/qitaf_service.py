@@ -358,11 +358,9 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
                     "Qitaf Verification successful, payment status true for"
                     " transaction {}".format(transaction_id))
 
-                response['message'] = self.response_obj.PAYMENT_SUCCESS
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
             else:
-                response["message"] = self.response_obj.PAYMENT_FAILED
                 message = (
                     "couldnt process qitaf Verification for transaction id {}"
                     ", response : {}".format(transaction_id, response))
@@ -401,10 +399,10 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         errors = data.get('errors', None)
         results = data.get('results', None)
 
+        data['message'] = self.response_obj.MESSAGE.get(code)
         if results:
             data.pop('results')
             data['code'] = code
-            data['message'] = self.response_obj.MESSAGE.get(code)
 
         if errors:
             errors['message'] = COMMON_ERROR_MESSAGE_EN
