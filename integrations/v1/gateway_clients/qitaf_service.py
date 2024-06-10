@@ -352,6 +352,14 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = self.handle_qitaf_response(
                     response_data, self.transaction_obj, self.request_data)
                 return response_data, self.SUCCESS
+            elif response.status_code == 400:
+                response_data = response.json()
+                self.response_data = response_data
+                response_data = self.handle_qitaf_response(
+                    response_data, self.transaction_obj, self.request_data)
+                logger.info("qitaf redeem point api response: {} for {}"
+                            "".format(response_data, self.transaction_id))
+                return response_data, self.PAYMENT_FAILED
             elif response.status_code == 403:
                 msg = "Qitaf Forbidden, or partial redemption not supported"
                 logger.error("{}, {}".format(msg, response.text))
@@ -456,6 +464,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
     def handle_qitaf_response(self, response_data, payment_data,
                               request_data):
+        message = "API request completed successfully"
         youpay_update_data = {}
         logger.info(
             "handle_qitaf_response data {}".format(response_data))
@@ -467,17 +476,29 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         if is_full_redemption is False:
             # Handle qitaf partial redemption response
             redirect_url = response_data.get('url')
-            is_success = True
-            is_redirect = True
-            self.payment_status = PAYMENT_STATUS_PENDING
-            self.is_qitaf_enabled = True
-            self.redeemed_amount = response_data.get('redeemed_amount')
-            self.redeemed_point = response_data.get('redeemed_point')
-            self.payable_amount = response_data.get('payable_amount')
-            self.points_redeemed_mobile_number = response_data.get(
-                'redeemed_mobile_number')
-            self.points_collection_enabled_program = PAYMENT_METHOD_QITAF
-            self.point_collection_enabled = True
+
+            if redirect_url:
+                is_success = True
+                is_redirect = True
+                self.payment_status = PAYMENT_STATUS_PENDING
+                self.is_qitaf_enabled = True
+                self.point_collection_enabled = True
+                self.redeemed_amount = response_data.get('redeemed_amount')
+                self.redeemed_point = response_data.get('redeemed_point')
+                self.payable_amount = response_data.get('payable_amount')
+                self.points_redeemed_mobile_number = response_data.get(
+                    'redeemed_mobile_number')
+                self.points_collection_enabled_program = PAYMENT_METHOD_QITAF
+
+            else:
+                redirect_url = ('{}?transaction_id={}'.format(
+                    payment_data.failure_url,
+                    payment_data.transaction_id))
+                is_success = False
+                is_redirect = True
+                message = response_data.get("checkout_response_data", {}).get(
+                    "response_summary", "Payment Failed")
+                self.payment_status = PAYMENT_STATUS_DECLINED
         else:
             """Handle qiTaf full redemption response"""
             if str(response_data.get('response_code')) in ["0"]:
@@ -542,7 +563,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
         self.update_youpay_transaction_data(update_data)
         return_response = {
-            "message": "API request completed successfully",
+            "message": message,
             REDIRECT_URL: redirect_url,
             IS_REDIRECT: is_redirect,
             "qitaf_response": response_data,
