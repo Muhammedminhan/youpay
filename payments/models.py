@@ -45,7 +45,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     country_code = models.CharField(null=True, blank=True, max_length=15,
                                     db_index=True,
                                     help_text="used to store country_code")
-    ip = models.CharField(max_length=20, null=True, blank=True)
+    ip = models.CharField(max_length=50, null=True, blank=True)
     invoice_id = models.CharField(max_length=120, null=True, blank=True,
                                   db_index=True)
     order_reference = models.CharField(max_length=120, null=True, blank=True,
