@@ -17,7 +17,9 @@ from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     PAYMENT_REQUEST_AUTHENTICATE,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    PAYMENT_REQUEST_VERIFY)
+                                    PAYMENT_REQUEST_VERIFY,
+                                    B2C_REVERSE_REDEMPTION_API,
+                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
 from integrations.v1.gateway_clients.utils import (
     format_adcb_redemption_data,
     format_adcb_verify_data,
@@ -46,6 +48,17 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     """
     Class to manage b2cpayback related operations
     """
+
+    def get_payment_header(self, b2c_config):
+        """
+        Returns headers
+        """
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': b2c_config.api_key,
+            'X-API-KEY': b2c_config.api_key
+        }
+        return headers
 
     def get_configurations(self, currency):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
@@ -372,3 +385,41 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 "Exception occured on remove_collect_program_enabled",
                 exc_info=e)
             return None
+
+    def reverse_redemption_on_canceled_expired_transaction(self, transaction):
+        payload = {}
+        response = {}
+        try:
+            b2c_gateway_obj = get_payment_gateway_config(
+                B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+            b2c_payback_domain = b2c_gateway_obj.domain
+            url = b2c_payback_domain + B2C_REVERSE_REDEMPTION_API
+            payload = {
+                'reference_id': transaction.payment_reference
+            }
+            headers = self.get_payment_header(b2c_gateway_obj)
+            response = requests.post(url, data=json.dumps(payload),
+                                     headers=headers)
+            if response:
+                logger.info(
+                    "Redemption reversal success for transaction {}"
+                    .format(transaction.transaction_id))
+            else:
+                logger.error(
+                    "Redemption reversal  failed for transaction {} with response"
+                    " {}".format(transaction.transaction_id, response.text))
+
+        except Exception as e:
+            logger.error(
+                "Redemption reversal  failed with error {}".format(
+                    str(e)))
+
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=transaction,
+                transaction_id=transaction.transaction_id,
+                request_data=json.dumps(payload),
+                response_data=response.text,
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
+            )
