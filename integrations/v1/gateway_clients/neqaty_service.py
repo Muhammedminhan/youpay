@@ -561,7 +561,17 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     card_bin = response_data.get("card_bin")
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
-                    self.handele_neqaty_collection(transaction_obj)
+
+                    # Temp added
+                    collect_point_response_data, code = (
+                        self.handle_neqaty_collection(transaction_obj))
+
+                    # Temp added
+                    if code == self.SUCCESS:
+                        earn_reference = collect_point_response_data.get(
+                            "partner_response").get("earn_reference")
+
+
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -599,7 +609,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     'is_gcc_card': is_gcc_card,
                     'card_last4': card_last4,
                     'card_bin': card_bin,
-                    'card_issuer_country': card_issuer_country
+                    'card_issuer_country': card_issuer_country,
+                    'earn_reference': earn_reference,  # Temp added
                 }
 
                 logger.info("Neqaty Verification with b2c completed for "
@@ -720,7 +731,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 request_type=PAYMENT_REQUEST_COLLECT_POINTS,
             )
 
-    def handele_neqaty_collection(self, transaction_obj):
+    def handle_neqaty_collection(self, transaction_obj):
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
             if transaction_obj.points_collection_enabled_program != (
@@ -731,3 +742,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()
 
+            # Temp added
+            response, code = self.collect_points(transaction_obj)
+            logger.info(
+                "Checking for Reward Point for transaction : "
+                "{}, response : {}, code : {}".format(
+                    transaction_obj.transaction_id, response, code))
+        return response, code
