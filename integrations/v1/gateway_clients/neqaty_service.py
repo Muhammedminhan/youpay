@@ -564,7 +564,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
                     # Temp added
                     collect_point_response_data, code = (
-                        self.handele_neqaty_collection(transaction_obj))
+                        self.handle_neqaty_collection(transaction_obj))
 
                     # Temp added
                     if code == self.SUCCESS:
