@@ -166,12 +166,13 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
         app_config = get_app_config()
         params = '?id=' + encrypt_string(data.get('transaction_data', {}).get(
             'transaction_id')) + '&redemption_reference_id=' + data.get(
-            'data', {}).get('reference_id')
+            'data', {}).get(
+            'reference_id') + '&gateway_hub_code=' + AMAZONPG_HUB_CODE
 
         return add_payment_gateway_info_in_url(
             transaction_data=data.get('transaction_data'),
             app_config=app_config, params=params,
-            code=AMAZONPG_HUB_CODE)
+            code=B2CPAYBACK_HUB_CODE)
 
     def get_selected_amount(self, data):
         return data.get('data', {}).get('selected_amount')
