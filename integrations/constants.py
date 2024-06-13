@@ -126,6 +126,8 @@ ADCB_REDEMPTION_CURRENCY = "AED"
 TABBYPG_CREATE_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/'
 TABBYPG_VERIFY_PAYMENT_ENDPOINT = '/gateway/api/v1/payment/verify/'
 
+B2C_REVERSE_REDEMPTION_API = "/payback/api/v1/reverse-redemption/"
+
 AMAZONPG_AUTHENTICATE_API = "services/api/v1/authorization/"
 AMAZONPG_VERIFY_API = "services/api/v1/verify/"
 AMAZONPG_TOKENIZATION_API = "services/api/v1/tokenization/"

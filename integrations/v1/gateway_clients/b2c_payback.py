@@ -4,8 +4,8 @@ import logging
 import requests
 from rest_framework import status
 
-from core.constants import REQUEST_METHOD_POST, REQUEST_METHOD_GET, \
-    PAYMENT_GATEWAY_AMAZONPG
+from core.constants import (REQUEST_METHOD_POST, REQUEST_METHOD_GET,
+                            PAYMENT_GATEWAY_AMAZONPG)
 from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
                         decrypt_string
@@ -439,16 +439,16 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                                      headers=headers)
             if response:
                 logger.info(
-                    "Triggering mail success for transaction {}"
+                    "Redemption reversal success for transaction {}"
                     .format(transaction.transaction_id))
             else:
                 logger.error(
-                    "Triggering mail failed for transaction {} with response"
+                    "Redemption reversal  failed for transaction {} with response"
                     " {}".format(transaction.transaction_id, response.text))
 
         except Exception as e:
             logger.error(
-                "Triggering mail failed with error {}".format(
+                "Redemption reversal  failed with error {}".format(
                     str(e)))
 
         finally:
