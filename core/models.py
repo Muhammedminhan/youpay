@@ -127,9 +127,6 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
         'integrations.PaymentGateway', on_delete=models.CASCADE,
         blank=True, null=True,
         help_text='Payment gateway for the payment method')
-    validations = models.JSONField(
-        null=True, blank=True,
-        help_text='Redemption currency and amount limit for validations')
 
     def __str__(self):
         return self.payment_method

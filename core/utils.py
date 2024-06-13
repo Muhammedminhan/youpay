@@ -357,6 +357,7 @@ def process_checkoutpg_response_verification(**kwargs):
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
 
+        # Temp added
         if payment_status == PAYMENT_STATUS_PAID:
             response_obj = YouPayResponse()
             collect_point_response, code = handle_point_collection(
@@ -387,9 +388,8 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
             'is_payment_verified': is_payment_verified,
-            'earned_point': earned_point,
-            'earn_reference': earn_reference,
-            'points_collected_mobile_number': points_collected_mobile_number
+            'earn_reference': earn_reference,  # Temp added
+            'earned_point': earned_point,  # Temp added
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
@@ -397,6 +397,37 @@ def process_checkoutpg_response_verification(**kwargs):
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
 
+
+# Temp added
+def handle_point_collection(youpay_transaction, transaction_id, response_obj):
+    response_data = None
+    reward_point = None
+    earn_reference = None
+    code = None
+
+    """Point Collection Part"""
+    if youpay_transaction.point_collection_enabled:
+        if youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
+            from integrations.v1.gateway_clients.neqaty_service import (
+                NeqatyServiceManager)
+            neqaty_reward_point_obj = NeqatyServiceManager()
+
+            response, code = (
+                neqaty_reward_point_obj.collect_points(
+                    youpay_transaction))
+            if code == response_obj.SUCCESS:
+                earn_reference = response.get(
+                    "partner_response").get("earn_reference")
+
+            logger.info(
+                "Checking for Neqaty Reward Point for transaction : "
+                "{}, response : {}, code : {}".format(
+                    transaction_id, response, code))
+        response_data = {
+            "earn_reference": earn_reference,
+            "reward_point": reward_point,
+        }
+    return response_data, code
 
 def checkout_decline_check(response_data):
 
@@ -445,53 +476,6 @@ def format_pre_auth_payment_response_for_verify(response_data):
     return structured_dict
 
 
-def handle_point_collection(youpay_transaction, transaction_id, response_obj):
-    response_data = None
-    reward_point = None
-    earn_reference = None
-    code = None
-
-    """Point Collection Part"""
-    if youpay_transaction.point_collection_enabled:
-        if youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_QITAF:
-            from services.v1.api_clients.qitaf_service import (
-                QitafCollectPointsAPIView)
-            qitaf_reward_point_obj = QitafCollectPointsAPIView()
-
-            response, code = (
-                qitaf_reward_point_obj.collect_reward_point(
-                    youpay_transaction))
-            if code == response_obj.SUCCESS:
-                reward_point = response.get("partner_response", {}).get(
-                    "reward_point", 0)
-                earn_reference = response.get(
-                    "partner_response").get("earn_reference")
-            logger.info("Checking for Reward Point for transaction : "
-                        "{}, response : {}, code : {}".format(transaction_id,
-                                                              response, code))
-        elif youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
-            from integrations.v1.gateway_clients.neqaty_service import (
-                NeqatyServiceManager)
-            neqaty_reward_point_obj = NeqatyServiceManager()
-
-            response, code = (
-                neqaty_reward_point_obj.collect_points(
-                    youpay_transaction))
-            if code == response_obj.SUCCESS:
-                earn_reference = response.get(
-                    "partner_response").get("earn_reference")
-
-            logger.info(
-                "Checking for Neqaty Reward Point for transaction : "
-                "{}, response : {}, code : {}".format(
-                    transaction_id, response, code))
-        response_data = {
-            "earn_reference": earn_reference,
-            "reward_point": reward_point,
-        }
-    return response_data, code
-
-
 def get_payment_gateway_by_code(code):
     """get payment gateway object by code"""
     try:
@@ -514,6 +498,7 @@ def create_configuration_data(code, currency):
     """create configuration data"""
     from services.tasks import get_checkout_conf, get_b2c_conf
     config_data = None
+    response = None
     if code == CHECKOUTPG_HUB_CODE:
         response = get_checkout_conf(currency)
 
