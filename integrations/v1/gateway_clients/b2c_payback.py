@@ -274,7 +274,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             return None, None
 
     def verification(self, request_data):
-        request_transaction_id = request_data.get('transaction_id')
+        request_transaction_id = request_data.get('id')
         if request_transaction_id:
             try:
                 transaction_obj = self.get_youpay_transaction_data(
