@@ -24,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 SERVICES_APICLIENT = 'services.APIClient'
 
-
 # Create your models here.
 
 
@@ -257,11 +256,11 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         default=0, null=True, blank=True,
         help_text="used to store currency decimal notation")
     additional_vat = models.DecimalField(
-        decimal_places=4, max_digits=12, null=True, blank=True,
+        decimal_places=4, max_digits=12,  null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
         help_text="used to store new vat amount")
     additional_processing_fee = models.DecimalField(
-        decimal_places=4, max_digits=12, null=True, blank=True,
+        decimal_places=4, max_digits=12,  null=True, blank=True,
         validators=[DecimalValidator(12, 4)],
         help_text="used to store calculated processing fee")
     additional_processing_fee_vat = models.DecimalField(
@@ -457,7 +456,7 @@ class AdditionalCharge(AbstractDateTime):
         'payments.YouPayTransactionData', null=True, blank=True,
         on_delete=models.CASCADE, related_name="payment_transaction"
     )
-    payment_option = models.CharField(max_length=255, null=True, blank=True,
+    payment_option = models.CharField(max_length=255,  null=True, blank=True,
                                       help_text='Name of the payment option')
     additional_vat = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
