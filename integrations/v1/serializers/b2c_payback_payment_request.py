@@ -15,6 +15,10 @@ class PointBalanceRequestSerializer(serializers.Serializer):
     client_code = serializers.SerializerMethodField()
     invoice_id = serializers.SerializerMethodField()
     platform = serializers.SerializerMethodField()
+    language_code = serializers.SerializerMethodField()
+
+    def get_language_code(self, data):
+        return data.get('transaction_data', {}).get('language')
 
     def get_card_no(self, data):
         return data.get('data', {}).get('card_no')
