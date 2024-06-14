@@ -25,8 +25,8 @@ from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
-    PAYMENT_METHOD_NEQATY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_PENDING)
+    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_NEQATY,
+    PAYMENT_STATUS_FAILED, PAYMENT_STATUS_PENDING)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -357,6 +357,17 @@ def process_checkoutpg_response_verification(**kwargs):
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
 
+        # Temp added
+        if payment_status == PAYMENT_STATUS_PAID:
+            response_obj = YouPayResponse()
+            collect_point_response, code = handle_point_collection(
+                youpay_transaction,
+                transaction_id,
+                response_obj)
+            if code == response_obj.SUCCESS:
+                earn_reference = collect_point_response.get("earn_reference")
+                earned_point = collect_point_response.get("reward_point", 0)
+
     youpay_obj = YouPayTransactionCRUD()
 
     youpay_obj.update_youpay_transaction_data(
@@ -376,7 +387,9 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': is_payment_verified
+            'is_payment_verified': is_payment_verified,
+            'earn_reference': earn_reference,  # Temp added
+            'earned_point': earned_point,  # Temp added
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
@@ -385,8 +398,39 @@ def process_checkoutpg_response_verification(**kwargs):
     return redirect, response_data
 
 
-def checkout_decline_check(response_data):
+# Temp added
+def handle_point_collection(youpay_transaction, transaction_id, response_obj):
+    response_data = None
+    reward_point = None
+    earn_reference = None
+    code = None
 
+    """Point Collection Part"""
+    if youpay_transaction.point_collection_enabled:
+        if youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
+            from integrations.v1.gateway_clients.neqaty_service import (
+                NeqatyServiceManager)
+            neqaty_reward_point_obj = NeqatyServiceManager()
+
+            response, code = (
+                neqaty_reward_point_obj.collect_points(
+                    youpay_transaction))
+            if code == response_obj.SUCCESS:
+                earn_reference = response.get(
+                    "partner_response").get("earn_reference")
+
+            logger.info(
+                "Checking for Neqaty Reward Point for transaction : "
+                "{}, response : {}, code : {}".format(
+                    transaction_id, response, code))
+        response_data = {
+            "earn_reference": earn_reference,
+            "reward_point": reward_point,
+        }
+    return response_data, code
+
+
+def checkout_decline_check(response_data):
     response_code = str(response_data.get('response_code', None))
 
     if str(response_code).startswith(
