@@ -46,7 +46,7 @@ class NeqatyPointBalanceAPIView(APIView, YouPayTransactionCRUD):
                     "msisdn": mobile_number,
                     "transaction_obj": transaction_obj,
                     "currency": transaction_obj.currency,
-                    'language': transaction_obj.language,
+                    'language_code': transaction_obj.language,
                 }
                 neqaty_service = NeqatyServiceManager()
                 response_data, code = neqaty_service.point_balance(

@@ -677,7 +677,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "item_details_list": transaction_obj.brand_details.get(
                     "item_set", None),
                 "brand_calculations": transaction_obj.brand_calculations,
-                "language": transaction_obj.language,
+                "language_code": transaction_obj.language,
                 "redeemed_amount": (
                     str(transaction_obj.redeemed_amount) if
                     transaction_obj.redeemed_amount else 0),
