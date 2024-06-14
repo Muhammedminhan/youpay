@@ -86,15 +86,19 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 'available_points': transaction_obj.available_points,
                 'is_full_redemption': response.get('is_full_redemption')
             }
+
             if invoice_amount == selected_amount:  # full redemption
                 update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
+
             elif selected_amount > 0 and checkout_amount > 0:  # partial redemption
                 update_data['payment_method'] = (
                     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
                 update_data['payment_scheme'] = request.data.get('card_type')
+
             else:  # full amount from card
                 update_data['payment_method'] = PAYMENT_METHOD_ADCB_CARD_ONLY
                 update_data['payment_scheme'] = request.data.get('card_type')
+
             self.update_youpay_transaction_data(update_data)
             return Response(response, status=status.HTTP_200_OK)
         else:
