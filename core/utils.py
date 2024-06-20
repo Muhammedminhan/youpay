@@ -593,33 +593,12 @@ def process_amazonpg_response_verification(**kwargs):
     logger.info("Verify payment response data {}".format(response_data))
 
     if status_code == status.HTTP_200_OK:
-        if youpay_payment_reference and (
-                youpay_payment_reference != reference_from_amazon):
-            '''During pre auth check with AmazonPG, YouPay transaction data do
-             not contain payment reference'''
-
-            logger.error(
-                "Payment Reference mismatch found for transaction id {},"
-                " reference id from Amazon {}, YouPay reference {}"
-                "".format(transaction_id, reference_from_amazon,
-                          youpay_payment_reference))
-
-            redirect_url = get_redirect_url(youpay_transaction.failure_url,
-                                            transaction_id)
-            return_status = response_obj.PAYMENT_FAILED
-            response_data = {
-                IS_REDIRECT: True,
-                REDIRECT_URL: redirect_url,
-                TRANSACTION_MSG: {"response_summary": "Payment Failed"},
-                IS_SUCCESS: False
-            }
-            return response_data, return_status
-
         if response_data.get('is_capture') or response_data.get('in_review'):
             payment_status = PAYMENT_STATUS_PAID
             redirect_url = get_redirect_url(youpay_transaction.success_url,
                                             transaction_id)
             return_status = response_obj.SUCCESS
+            is_payment_verified = True
             approved = True
             return_response_data = {
                 IS_REDIRECT: True,
@@ -631,6 +610,7 @@ def process_amazonpg_response_verification(**kwargs):
             payment_status = PAYMENT_STATUS_FAILED
             redirect_url = get_redirect_url(youpay_transaction.failure_url,
                                             transaction_id)
+            is_payment_verified = True
             return_status = response_obj.PAYMENT_FAILED
             return_response_data = {
                 IS_REDIRECT: True,
@@ -640,6 +620,7 @@ def process_amazonpg_response_verification(**kwargs):
             }
 
     elif status_code == status.HTTP_307_TEMPORARY_REDIRECT:
+        is_payment_verified = False
         payment_status = PAYMENT_STATUS_PENDING
         return_status = response_obj.AMAZONPG_CONNECTION_RETRY
         return_response_data = {
@@ -647,6 +628,7 @@ def process_amazonpg_response_verification(**kwargs):
             'status': status.HTTP_307_TEMPORARY_REDIRECT
         }
     else:
+        is_payment_verified = True
         payment_status = PAYMENT_STATUS_FAILED
         return_status = response_obj.PAYMENT_FAILED
         redirect_url = get_redirect_url(youpay_transaction.failure_url,
@@ -688,7 +670,7 @@ def process_amazonpg_response_verification(**kwargs):
             'card_issuer_country': response_data.get("card_issuer_country",
                                                      None),
             "response_summary": response_summary,
-            'is_payment_verified': True,
+            'is_payment_verified': is_payment_verified,
         }
     )
     return return_response_data, return_status

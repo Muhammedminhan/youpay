@@ -14,7 +14,8 @@ from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
 from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
-                                   AmazonPGVerification, AmazonPGTokenization, AmazonPGSavedCard)
+                                   AmazonPGVerification, AmazonPGTokenization,
+                                   AmazonPGSavedCard)
 from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiPointRedemptionAPIView,
                                        CitiGenerateOTPAPIView)
@@ -81,7 +82,8 @@ urlpatterns = [
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view(),
          name='AmazonPGAuthentication'),
-    path('amazonpg/verify/', AmazonPGVerification.as_view()),
+    path('amazonpg/verify/', AmazonPGVerification.as_view(),
+         name='AmazonPGVerification'),
     path('amazonpg/saved-card/', AmazonPGSavedCard.as_view()),
 
     # Happy Credits endpoints
