@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
-from core.models import PaymentConfiguration
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
@@ -169,7 +168,8 @@ class ConfigViewSet(ViewSet):
                 "announcements": get_announcements(transaction.platform),
                 "is_guest": transaction.is_guest,
                 "allow_aed_converted_amount":
-                    transaction.api_client.allow_aed_converted_amount
+                    transaction.api_client.allow_aed_converted_amount,
+                "program": transaction.api_client.name
             },
         }
 
