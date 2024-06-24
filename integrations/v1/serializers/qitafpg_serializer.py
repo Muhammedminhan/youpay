@@ -37,7 +37,7 @@ class QitafPaymentRequestSerializer(serializers.Serializer):
         return data.get('transaction_obj').qitaf_phone_number
 
     def get_language_code(self, data):
-        return "en-us"
+        return data.get('transaction_obj').language
 
     def get_mobile_number(self, data):
         return data.get('transaction_obj').customer_phone

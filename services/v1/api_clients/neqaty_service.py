@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from core.messages import COMMON_ERROR_MESSAGE_EN
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
+from integrations.common import update_brand_details
 from integrations.constants import NEQATY_CLIENT_CODE
 from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
@@ -44,7 +45,8 @@ class NeqatyPointBalanceAPIView(APIView, YouPayTransactionCRUD):
                     'customer_email': transaction_obj.customer_email,
                     "msisdn": mobile_number,
                     "transaction_obj": transaction_obj,
-                    "currency": transaction_obj.currency
+                    "currency": transaction_obj.currency,
+                    'language_code': transaction_obj.language,
                 }
                 neqaty_service = NeqatyServiceManager()
                 response_data, code = neqaty_service.point_balance(
@@ -266,15 +268,25 @@ class UpdateNeqatyPhoneNumber(APIView, YouPayTransactionCRUD):
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
-                data = {
+                is_updated, brand_details = update_brand_details(
+                    transaction_obj)
+                if not is_updated:
+                    data = self.response_obj.get_error_dict(
+                        error_code=(
+                            self.response_obj.NEQATY_PHONE_NUMBER_SAVE_FAILED))
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                update_data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'points_collected_mobile_number': neqaty_phone_number,
                     'points_collection_enabled_program': PAYMENT_METHOD_NEQATY,
-                    'point_collection_enabled': True
+                    'point_collection_enabled': True,
+                    "brand_details": brand_details
                 }
                 neqaty_service = NeqatyServiceManager()
                 result = neqaty_service.update_points_collected_mobile_number(
-                    data)
+                    update_data)
                 if result:
                     data = self.response_obj.get_success_dict(
                         code=self.response_obj.NEQATY_PHONE_NUMBER_SAVED,

@@ -65,7 +65,7 @@ class CountryAdmin(AdminAbstract):
 
 class PaymentMethodAdmin(AdminAbstract):
     fields = ('payment_method', 'country', 'clients', 'active',
-              'guest_user_enabled', 'payment_gateway','validations',
+              'guest_user_enabled', 'payment_gateway',
               'created_at', 'updated_at', 'created_by', 'modified_by')
     list_display = ('payment_method', 'active',
                     'guest_user_enabled', 'payment_gateway')
@@ -76,7 +76,7 @@ class PaymentMethodAdmin(AdminAbstract):
 
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
-            return ('created_at', 'updated_at', 'created_by', 'modified_by')
+            return 'created_at', 'updated_at', 'created_by', 'modified_by'
         return (
             'payment_method', 'payment_gateway', 'created_at', 'updated_at',
             'created_by', 'modified_by')
@@ -162,8 +162,8 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
 class PaymentConfigurationAdmin(AdminAbstract):
     fields = ('payment_method', 'active',
               'guest_user_enabled', 'partial_redemption_allowed',
-              'payment_gateway', 'created_at', 'updated_at', 'created_by',
-              'modified_by')
+              'payment_gateway',  'created_at', 'updated_at',
+              'created_by', 'modified_by')
     list_display = ('payment_method', 'active',
                     'guest_user_enabled', 'payment_gateway')
     search_fields = ('payment_method', 'country', 'clients')
