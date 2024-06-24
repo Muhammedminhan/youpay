@@ -584,7 +584,6 @@ def process_amazonpg_response_verification(**kwargs):
 
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(transaction_id)
-    youpay_payment_reference = youpay_transaction.payment_reference
 
     is_flagged = response_data.get("flagged", False)
     is_fraud = response_data.get("fraud", False)
