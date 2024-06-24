@@ -9,13 +9,13 @@ from django.dispatch import receiver
 
 from core.constants import (PAYMENT_GATEWAY_CHOICES,
                             PURCHASE_PLATFORM_CHOICES,
-                            PAYMENT_REQUEST_LANGUAGE_CHOICES)
+                            PAYMENT_REQUEST_LANGUAGE_CHOICES,
+                            PAYMENT_GATEWAY_B2CPAYBACK)
 from core.exceptions import ClientWebhookFailed
 from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
-    PAYMENT_METHOD_CITI_REWARDS,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
     PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST,
     POINT_COLLECTION_PROGRAMS)
@@ -45,7 +45,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     country_code = models.CharField(null=True, blank=True, max_length=15,
                                     db_index=True,
                                     help_text="used to store country_code")
-    ip = models.CharField(max_length=20, null=True, blank=True)
+    ip = models.CharField(max_length=50, null=True, blank=True)
     invoice_id = models.CharField(max_length=120, null=True, blank=True,
                                   db_index=True)
     order_reference = models.CharField(max_length=120, null=True, blank=True,
@@ -319,9 +319,11 @@ def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
     2.Handle actions for reverting citi blocked balance
     """
     youpay_update_client(instance)
-    if instance.payment_method == PAYMENT_METHOD_CITI_REWARDS:
+
+    if (instance.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK and
+            instance.previous_status not in ALLOW_ARCHIVE_STATUS_LIST):
         if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
-            revert_citi_blocked_balance(instance)
+            reverse_redemption(instance)
 
 
 def youpay_update_client(instance):
@@ -370,6 +372,24 @@ def revert_citi_blocked_balance(instance):
         logger.error(
             "Exception occurred {} on signal while reverting citi blocked "
             "balance for {}, ".format(str(e), instance.transaction_id))
+
+
+def reverse_redemption(instance):
+    """
+    Handle actions to trigger mail on b2c-payback
+    """
+    try:
+        logger.info(
+            "trigger_mail_on_b2c signal initiated for {}".format(
+                instance.transaction_id))
+        from integrations.v1.gateway_clients.b2c_payback import (
+            B2CPaybackManager)
+        b2c_obj = B2CPaybackManager()
+        b2c_obj.reverse_redemption_on_canceled_expired_transaction(instance)
+    except Exception as e:
+        logger.error(
+            "Exception occurred {} on signal while triggering mail "
+            "for {}, ".format(str(e), instance.transaction_id))
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):

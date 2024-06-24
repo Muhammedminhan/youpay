@@ -10,6 +10,8 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
+from integrations.common import update_brand_details
+from integrations.constants import QITAF_CLIENT_CODE
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
@@ -32,13 +34,22 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
             if transaction_obj:
+                is_updated, brand_details = update_brand_details(
+                    transaction_obj)
+                if not is_updated:
+                    data = self.response_obj.get_error_dict(
+                        error_code=(
+                            self.response_obj.QITAF_PHONE_NUMBER_SAVE_FAILED))
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
                 data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'qitaf_phone_number': qitaf_phone_number,
                     'points_collected_mobile_number': qitaf_phone_number,
                     'points_collection_enabled_program': PAYMENT_METHOD_QITAF,
                     'point_collection_enabled': True,
-                    'is_qitaf_enabled': True
+                    'is_qitaf_enabled': True,
+                    "brand_details": brand_details
                 }
                 qitaf_service = QitafServiceManager()
                 result = qitaf_service.update_qitaf_phone_number(data)
@@ -163,7 +174,7 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             paid_amount = transaction_obj.brand_calculations.get(
                 'sum_card_payment_amount', 0)
         else:
-            paid_amount = transaction_obj.amount
+            paid_amount = float(transaction_obj.amount)
 
         data = {
             "mobile_number": transaction_obj.qitaf_phone_number,
@@ -190,13 +201,13 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             logger.info("Qitaf RewardPoint Failed for {} ".format(
                 transaction_obj.transaction_id,
             ))
-            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, 0
+            return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, None
 
         qitaf_service = QitafServiceManager()
         response_data, code = qitaf_service.collect_points(
             data)
 
-        return response_data, code
+        return response_data, code, None
 
 
 class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
@@ -236,6 +247,8 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "token": validated_data.get('token'),
                     "token_type": validated_data.get('token_type'),
                     "encrypted_id": request.data.get('transaction_id'),
+                    "brand_calculations": (
+                        qitaf_redemption_serializer.transaction_obj.brand_calculations),
                     "order_reference": transaction_order_reference
                 }
             )
@@ -345,11 +358,9 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
                     "Qitaf Verification successful, payment status true for"
                     " transaction {}".format(transaction_id))
 
-                response['message'] = self.response_obj.PAYMENT_SUCCESS
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
             else:
-                response["message"] = self.response_obj.PAYMENT_FAILED
                 message = (
                     "couldnt process qitaf Verification for transaction id {}"
                     ", response : {}".format(transaction_id, response))
@@ -388,10 +399,10 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         errors = data.get('errors', None)
         results = data.get('results', None)
 
+        data['message'] = self.response_obj.MESSAGE.get(code)
         if results:
             data.pop('results')
             data['code'] = code
-            data['message'] = self.response_obj.MESSAGE.get(code)
 
         if errors:
             errors['message'] = COMMON_ERROR_MESSAGE_EN
@@ -413,6 +424,7 @@ class CalculateQitafBalance(APIView, YouPayTransactionCRUD):
                 payload = {
                     'transaction_obj': transaction_obj,
                     "selected_amount": selected_amount,
+                    "client_code": QITAF_CLIENT_CODE
                 }
 
                 qitaf_service = QitafServiceManager()

@@ -34,7 +34,8 @@ from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
-                            AdditionalChargeCalculation)
+                            AdditionalChargeCalculation,
+                            EarnRedemptionPartnerPoints)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -59,6 +60,8 @@ urlpatterns = [
          name='CheckoutVerification'),
     path('payment-cancel/', PaymentCancelledView.as_view()),
     path('payment-expire/', TransactionExpireView.as_view()),
+    path('earn-points/', EarnRedemptionPartnerPoints.as_view(),
+         name="earn-points"),
 
     # b2cpayback endpoints
     path('adcb/point-balance/', B2CPaybackPointBalance.as_view()),
