@@ -169,7 +169,8 @@ class ConfigViewSet(ViewSet):
                 "is_guest": transaction.is_guest,
                 "allow_aed_converted_amount":
                     transaction.api_client.allow_aed_converted_amount,
-                "program": transaction.api_client.name
+                "program": transaction.api_client.name,
+                "platform": transaction.platform
             },
         }
 
