@@ -170,7 +170,8 @@ class ConfigViewSet(ViewSet):
                 "allow_aed_converted_amount":
                     transaction.api_client.allow_aed_converted_amount,
                 "program": transaction.api_client.name,
-                "platform": transaction.platform
+                "platform": transaction.platform,
+                "retry_count": transaction.retry_count
             },
         }
 
