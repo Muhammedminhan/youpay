@@ -134,24 +134,36 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
 
 class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
     payment_method = models.CharField(
-        max_length=100,
+        max_length=100, db_index=True,
         choices=PAYMENT_METHOD_MODEL_CHOICES,
         help_text='Chosen payment method')
     active = models.BooleanField(
-        default=False, help_text='Denotes whether the payment '
+        default=False, db_index=True, help_text='Denotes whether the payment '
                                  'method is active or not')
     guest_user_enabled = models.CharField(
-        choices=GUEST_USER_OPTIONS, max_length=200, null=True,
+        choices=GUEST_USER_OPTIONS, max_length=200, null=True, db_index=True,
         blank=True)
     payment_gateway = models.ForeignKey(
         'integrations.PaymentGateway', on_delete=models.CASCADE,
-        blank=True, null=True,
+        blank=True, null=True, db_index=True,
         help_text='Payment gateway for the payment method')
     partial_redemption_allowed = models.BooleanField(
-        default=False,
+        default=False, db_index=True,
         help_text='Indicates whether the payment method allows partial '
                   'redemption. Only affects payment methods that support '
                   'partial redemption.')
+    burn_full_redemption_enabled = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Indicates whether full redemption enabled or not')
+    partial_redemption_enabled = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Indicates whether partial redemption enabled ')
+    earn_enabled = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Indicates whether earn enabled or not')
+    earn_on_partial_redemption = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Indicates whether earn on partial redemption enabled')
 
     def __str__(self):
         return self.payment_method
