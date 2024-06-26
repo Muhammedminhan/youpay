@@ -155,9 +155,6 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
     burn_full_redemption_enabled = models.BooleanField(
         default=False, db_index=True,
         help_text='Indicates whether full redemption enabled or not')
-    partial_redemption_enabled = models.BooleanField(
-        default=False, db_index=True,
-        help_text='Indicates whether partial redemption enabled ')
     earn_enabled = models.BooleanField(
         default=False, db_index=True,
         help_text='Indicates whether earn enabled or not')
