@@ -162,6 +162,8 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
 class PaymentConfigurationAdmin(AdminAbstract):
     fields = ('payment_method', 'active',
               'guest_user_enabled', 'partial_redemption_allowed',
+              'burn_full_redemption_enabled', 'earn_enabled',
+              'earn_on_partial_redemption',
               'payment_gateway',  'created_at', 'updated_at',
               'created_by', 'modified_by')
     list_display = ('payment_method', 'active',
