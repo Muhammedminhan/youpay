@@ -130,7 +130,7 @@ class ConfigViewSet(ViewSet):
         b2c_configs = self.get_b2c_config(payment_options,
                                           transaction,
                                           payment_config_data)
-            
+
         response_data = {
             "data": {
                 "api_client": api_client,
