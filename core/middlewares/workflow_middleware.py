@@ -2,6 +2,8 @@ import json
 import logging
 
 from django.http import JsonResponse
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
 
 from core.constants import (
     MAX_PAYMENT_RETRY_COUNT,
@@ -279,6 +281,7 @@ class PaymentVerificationCheckMiddleware(object):
         self.get_response = get_response
         # One-time configuration and initialization.
         self.response = {}
+        self.transaction_obj = None
 
     def __call__(self, request):
         # Code to be executed for each request before
@@ -293,35 +296,40 @@ class PaymentVerificationCheckMiddleware(object):
         view_name = request.resolver_match.view_name
         try:
             if view_name in VERIFY_PAYMENT_CLASSES:
-                from core.utils import decrypt_string
-                from services.v1.views.common import (YouPayTransactionCRUD)
+                logger.info("Middleware : {} Started for clevertap {}".format(
+                    view_name, self.transaction_obj.transaction_id))
 
-                youpay_obj = YouPayTransactionCRUD()
-
-                transaction_id = decrypt_string(request.GET.get('id'))
-
-                logger.info("Middleware : {} Started for {}".format(
-                    view_name, transaction_id))
-
-                transaction_obj = youpay_obj.get_youpay_transaction_data(
-                    transaction_id)
                 clever_tap_data = {
-                    'platform': transaction_obj.platform,
-                    'country_code': transaction_obj.country_code,
-                    'is_guest': transaction_obj.is_guest,
-                    'program': transaction_obj.api_client.name,
-                    'retry_count': transaction_obj.retry_count,
+                    'platform': self.transaction_obj.platform,
+                    'country_code': self.transaction_obj.country_code,
+                    'is_guest': self.transaction_obj.is_guest,
+                    'program': self.transaction_obj.api_client.name,
+                    'retry_count': self.transaction_obj.retry_count,
                 }
                 response.data.update(clever_tap_data)
+            response.content = json.dumps(response.data)
             return response
 
-        except TransactionNotFound:
-            log_message = "PaymentVerificationCheckMiddleware Failure"
+        except Exception as e:
+            log_message = ("Verification middleware for clevertap process"
+                           " response failed, {}".format(str(e)))
             logger.error(log_message)
             youpay_message_obj = YouPayResponse()
-            self.common_error_response(
-                COMMON_ERROR_MESSAGE_EN,
-                youpay_message_obj.MIDDLEWARE_REDIRECTED)
+            error_data = {
+                'errors': {
+                    'message': COMMON_ERROR_MESSAGE_EN,
+                    'code': youpay_message_obj.MIDDLEWARE_REDIRECTED
+                }
+            }
+            response = Response(
+                data=error_data,
+                status=400
+            )
+            response.accepted_renderer = JSONRenderer()
+            response.accepted_media_type = "application/json"
+            response.renderer_context = {}
+            response.render()
+            return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         view_name = request.resolver_match.view_name
@@ -340,6 +348,7 @@ class PaymentVerificationCheckMiddleware(object):
             try:
                 transaction_obj = youpay_obj.get_youpay_transaction_data(
                     transaction_id)
+                self.transaction_obj = transaction_obj
 
                 self.check_transaction_obj(transaction_obj,
                                            youpay_message_obj)
