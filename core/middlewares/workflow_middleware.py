@@ -287,7 +287,41 @@ class PaymentVerificationCheckMiddleware(object):
         # Code to be executed for each request/response after
         # the view is called.
 
-        return response
+        return self.process_response(request, response)
+
+    def process_response(self, request, response):
+        view_name = request.resolver_match.view_name
+        try:
+            if view_name in VERIFY_PAYMENT_CLASSES:
+                from core.utils import decrypt_string
+                from services.v1.views.common import (YouPayTransactionCRUD)
+
+                youpay_obj = YouPayTransactionCRUD()
+
+                transaction_id = decrypt_string(request.GET.get('id'))
+
+                logger.info("Middleware : {} Started for {}".format(
+                    view_name, transaction_id))
+
+                transaction_obj = youpay_obj.get_youpay_transaction_data(
+                    transaction_id)
+                clever_tap_data = {
+                    'platform': transaction_obj.platform,
+                    'country_code': transaction_obj.country_code,
+                    'is_guest': transaction_obj.is_guest,
+                    'program': transaction_obj.api_client.name,
+                    'retry_count': transaction_obj.retry_count,
+                }
+                response.data.update(clever_tap_data)
+            return response
+
+        except TransactionNotFound:
+            log_message = "PaymentVerificationCheckMiddleware Failure"
+            logger.error(log_message)
+            youpay_message_obj = YouPayResponse()
+            self.common_error_response(
+                COMMON_ERROR_MESSAGE_EN,
+                youpay_message_obj.MIDDLEWARE_REDIRECTED)
 
     def process_view(self, request, view_func, view_args, view_kwargs):
         view_name = request.resolver_match.view_name
