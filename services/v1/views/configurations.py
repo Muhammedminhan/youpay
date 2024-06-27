@@ -129,7 +129,7 @@ class ConfigViewSet(ViewSet):
         # sessionkey = self.get_browser_value(transaction) if transaction else None
         b2c_configs = self.get_b2c_config(payment_options,
                                           transaction,
-                                          partial_redemption_allowed_options)
+                                          payment_config_data)
             
         response_data = {
             "data": {
