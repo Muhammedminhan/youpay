@@ -52,3 +52,8 @@ class TransactionMaxAttemptReached(Exception):
 class ClientWebhookFailed(Exception):
     """Exception to be raised when validation fails. """
     pass
+
+
+class PaymentConfigurationFailed(Exception):
+    """Exception to be raised when payment configuration fails."""
+    pass

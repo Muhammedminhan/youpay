@@ -6,6 +6,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.constants import PAYBACK_ACTION_EARN
+from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_payment_data,
@@ -28,7 +30,7 @@ from services.v1.serializers.payment_request import (
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
                                       AdditionalChargesUpdation)
 from services.v1.views.utils import (
-    reformat_payment_request_data
+    reformat_payment_request_data, payment_configuration_check
 )
 
 logger = logging.getLogger(__name__)
@@ -631,6 +633,11 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             collect_enabled = transaction_obj.point_collection_enabled
             mobile_number = transaction_obj.points_collected_mobile_number
 
+            payment_configuration_check(transaction_obj=transaction_obj,
+                                        payment_method=PAYMENT_METHOD_NEQATY,
+                                        payback_action=PAYBACK_ACTION_EARN
+                                        )
+
             from integrations.v1.gateway_clients.neqaty_service import (
                 NeqatyServiceManager)
             neqaty_obj = NeqatyServiceManager()
@@ -649,6 +656,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         elif program_name == PAYMENT_METHOD_QITAF:
             collect_enabled = transaction_obj.is_qitaf_enabled
             mobile_number = transaction_obj.qitaf_phone_number
+
+            payment_configuration_check(transaction_obj=transaction_obj,
+                                        payment_method=PAYMENT_METHOD_QITAF)
 
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
@@ -679,7 +689,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             is_success = True
 
-        message = "{} status {}".format(message, is_success)
+        message = "{} status {} for {}".format(message, is_success,
+                                               transaction_id)
 
         logger.info(
             "Earn Partner response code is {}, response : {} for transaction:"
@@ -733,11 +744,22 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 return Response(response_data, status=status.HTTP_200_OK)
             else:
                 response_data = {
-                    "status": status.HTTP_400_BAD_REQUEST,
+                    "status": False,
                     "message": "Transaction not found",
                 }
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
+
+        except PaymentConfigurationFailed as e:
+            response_data = {
+                "status": False,
+                "message": str(e),
+            }
+            logger.error(
+                "PaymentConfigurationFailed Validation failed for {}".format(
+                    transaction_id))
+            return Response(response_data,
+                            status=status.HTTP_200_OK)
 
         except Exception as e:
             logger.error("Error in Earn Redemption Partner Points api ",

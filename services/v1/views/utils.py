@@ -3,8 +3,10 @@ import logging
 
 from django.db.models import Q
 
-from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS)
+from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
+                            PAYBACK_ACTION_EARN, FORMAT_PARTIAL_PAYMENTS)
 from core.core_serializers import PaymentConfigurationSerializer
+from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, PaymentMethodConfig
 from integrations.constants import (
@@ -419,3 +421,44 @@ def get_payment_option_constant(payment_gateway, payment_method):
         (payment_gateway_value, payment_method_lower), None)
 
     return constant
+
+
+def payment_configuration_check(**kwargs):
+    payment_options = None,
+    payment_config_data = None
+    transaction_id = None
+    payment_method = None
+
+    transaction_obj = kwargs.get('transaction_obj', None)
+    payment_method = kwargs.get('payment_method', None)
+    payback_action = kwargs.get('payback_action', None)
+
+    client = transaction_obj.api_client.id
+    country = get_country_for_configuration(transaction_obj)
+    transaction_id = transaction_obj.transaction_id
+
+    payment_options, payment_config_data = get_payment_methods(
+        transaction_obj, client, country)
+
+    if payback_action == PAYBACK_ACTION_EARN:
+        if payment_method not in payment_config_data:
+            raise PaymentConfigurationFailed(
+                "PaymentConfiguration for {} is not active or unavailable for "
+                "transaction {}".format(payment_method, transaction_id))
+
+        payment_config_datum = payment_config_data[payment_method]
+
+        if payment_config_datum.get('earn_enabled') is False:
+            raise PaymentConfigurationFailed(
+                "Earn not enabled for PaymentConfiguration {} for "
+                "transaction {}".format(payment_method, transaction_id))
+
+        if transaction_obj.payment_method == FORMAT_PARTIAL_PAYMENTS.format(
+                payment_method) and payment_config_datum.get(
+            'earn_on_partial_redemption') is False:
+
+            raise PaymentConfigurationFailed(
+                "Earn on partial redemption for PaymentConfiguration {} for "
+                "transaction {}".format(payment_method, transaction_id))
+
+    return payment_options, payment_config_data
