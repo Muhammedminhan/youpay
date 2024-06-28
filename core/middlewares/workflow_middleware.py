@@ -286,7 +286,9 @@ class PaymentVerificationCheckMiddleware(object):
     def __call__(self, request):
         # Code to be executed for each request before
         # the view (and later middleware) are called.
+        logger.info("Middleware called with request: %s", request)
         response = self.get_response(request)
+        logger.info("Response received from view: %s", response)
         # Code to be executed for each request/response after
         # the view is called.
 
@@ -294,10 +296,14 @@ class PaymentVerificationCheckMiddleware(object):
 
     def process_response(self, request, response):
         view_name = request.resolver_match.view_name
+        logger.info("Processing response for view: %s", view_name)
+
         try:
             if view_name in VERIFY_PAYMENT_CLASSES:
-                logger.info("Middleware : {} Started for clevertap {}".format(
-                    view_name, self.transaction_obj.transaction_id))
+                logger.info("Middleware : %s Started for clevertap %s",
+                            view_name, self.transaction_obj.transaction_id)
+                logger.info("Transaction object details: %s",
+                            self.transaction_obj)
 
                 clever_tap_data = {
                     'platform': self.transaction_obj.platform,
@@ -306,14 +312,34 @@ class PaymentVerificationCheckMiddleware(object):
                     'program': self.transaction_obj.api_client.name,
                     'retry_count': self.transaction_obj.retry_count,
                 }
-                response.data.update(clever_tap_data)
-            response.content = json.dumps(response.data)
+                logger.info("CleverTap data to be added: %s",
+                            clever_tap_data)
+
+                if hasattr(response, 'data'):
+                    response.data.update(clever_tap_data)
+                    logger.info("Updated response data: %s", response.data)
+                else:
+                    response_data = json.loads(response.content)
+                    response_data.update(clever_tap_data)
+                    response.content = json.dumps(response_data)
+                    logger.info("Updated response content: %s",
+                                response.content)
+
+            # Ensure response is JSON
+            if hasattr(response, 'data'):
+                response.content = JSONRenderer().render(response.data)
+                response['Content-Type'] = 'application/json'
+                logger.info(
+                    "Final response content set with application/json: %s",
+                    response.content)
+
+            logger.info("Returning response: %s", response)
             return response
 
         except Exception as e:
-            log_message = ("Verification middleware for clevertap process"
-                           " response failed, {}".format(str(e)))
-            logger.error(log_message)
+            log_message = "Verification middleware for clevertap process response failed: %s" % str(
+                e)
+            logger.error(log_message, exc_info=True)
             youpay_message_obj = YouPayResponse()
             error_data = {
                 'errors': {
@@ -329,6 +355,7 @@ class PaymentVerificationCheckMiddleware(object):
             response.accepted_media_type = "application/json"
             response.renderer_context = {}
             response.render()
+            logger.info("Returning error response: %s", response)
             return response
 
     def process_view(self, request, view_func, view_args, view_kwargs):
