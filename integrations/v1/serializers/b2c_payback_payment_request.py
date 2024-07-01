@@ -36,27 +36,18 @@ class PointBalanceRequestSerializer(serializers.Serializer):
 
 
 class AuthenticateRequestSerializer(serializers.Serializer):
-    is_save_user_token = serializers.SerializerMethodField()
     client_code = serializers.SerializerMethodField()
     platform = serializers.SerializerMethodField()
     invoice_amount = serializers.SerializerMethodField()
-    channel_code = serializers.SerializerMethodField()
-    invoice_id = serializers.SerializerMethodField()
-    customer_ip_address = serializers.SerializerMethodField()
     customer_email = serializers.SerializerMethodField()
     reference_id = serializers.SerializerMethodField()
-    token_type = serializers.SerializerMethodField()
-    card_type = serializers.SerializerMethodField()
-    redemption_currency = serializers.SerializerMethodField()
     selected_amount = serializers.SerializerMethodField()
     checkout_amount = serializers.SerializerMethodField()
-    response_url = serializers.SerializerMethodField()
     amount_in_aed = serializers.SerializerMethodField()
     invoice_currency = serializers.SerializerMethodField()
     order_reference = serializers.SerializerMethodField()
-
-    def get_is_save_user_token(self, data):
-        return False
+    customer_ip_address = serializers.SerializerMethodField()
+    invoice_id = serializers.SerializerMethodField()
 
     def get_client_code(self, data):
         return ADCB_CLIENT_CODE
@@ -67,22 +58,49 @@ class AuthenticateRequestSerializer(serializers.Serializer):
     def get_invoice_amount(self, data):
         return str(data.get('transaction_data', {}).get('amount'))
 
-    def get_channel_code(self, data):
-        if float(data.get('data', {}).get('checkout_amount')) > 0:
-            return CHECKOUT_UAE_CHANNEL_CODE
-        return data.get('transaction_data', {}).get('channel_code')
+    def get_customer_email(self, data):
+        return str(data.get('transaction_data', {}).get('customer_email'))
 
-    def get_invoice_id(self, data):
-        return data.get('transaction_data', {}).get('invoice_id')
+    def get_reference_id(self, data):
+        return data.get('data', {}).get('reference_id')
+
+    def get_selected_amount(self, data):
+        return data.get('data', {}).get('selected_amount')
+
+    def get_checkout_amount(self, data):
+        return data.get('data', {}).get('checkout_amount')
+
+    def get_amount_in_aed(self, data):
+        return str(data.get('transaction_data', {}).get('amount'))
+
+    def get_invoice_currency(self, data):
+        return ADCB_REDEMPTION_CURRENCY
+
+    def get_order_reference(self, data):
+        return str(data.get('transaction_data', {}).get('order_reference'))
 
     def get_customer_ip_address(self, data):
         return data.get('transaction_data', {}).get('ip')
 
-    def get_customer_email(self, data):
-        return data.get('transaction_data', {}).get('customer_email')
+    def get_invoice_id(self, data):
+        return data.get('transaction_data', {}).get('invoice_id')
 
-    def get_reference_id(self, data):
-        return data.get('data', {}).get('reference_id')
+
+class AuthenticateCheckoutRequestSerializer(AuthenticateRequestSerializer):
+    is_save_user_token = serializers.SerializerMethodField()
+    channel_code = serializers.SerializerMethodField()
+    token_type = serializers.SerializerMethodField()
+    card_type = serializers.SerializerMethodField()
+    redemption_currency = serializers.SerializerMethodField()
+    response_url = serializers.SerializerMethodField()
+
+    def get_is_save_user_token(self, data):
+        return False
+
+    def get_channel_code(self, data):
+        if float(data.get('data', {}).get('checkout_amount')) > 0:
+            return CHECKOUT_UAE_CHANNEL_CODE
+        return data.get('transaction_data', {}).get('channel_code')
 
     def get_token_type(self, data):
         return ADCB_TOKEN_TYPE
@@ -92,12 +110,6 @@ class AuthenticateRequestSerializer(serializers.Serializer):
 
     def get_redemption_currency(self, data):
         return ADCB_REDEMPTION_CURRENCY
-
-    def get_selected_amount(self, data):
-        return data.get('data', {}).get('selected_amount')
-
-    def get_checkout_amount(self, data):
-        return data.get('data', {}).get('checkout_amount')
 
     def get_response_url(self, data):
         app_config = get_app_config()
@@ -110,41 +122,17 @@ class AuthenticateRequestSerializer(serializers.Serializer):
             app_config=app_config, params=params,
             code=B2CPAYBACK_HUB_CODE)
 
-    def get_amount_in_aed(self, data):
-        return str(data.get('transaction_data', {}).get('amount'))
 
-    def get_invoice_currency(self, data):
-        return ADCB_REDEMPTION_CURRENCY
-
-    def get_order_reference(self, data):
-        return str(data.get('transaction_data', {}).get('order_reference'))
-
-
-class AuthenticateRequestAmazonSerializer(serializers.Serializer):
+class AuthenticateAmazonRequestSerializer(AuthenticateRequestSerializer):
     currency = serializers.SerializerMethodField()
     card_number = serializers.SerializerMethodField()
-    customer_email = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
-    response_url = serializers.SerializerMethodField()
-    selected_amount = serializers.SerializerMethodField()
-    checkout_amount = serializers.SerializerMethodField()
-    order_reference = serializers.SerializerMethodField()
-    reference_id = serializers.SerializerMethodField()
-    invoice_id = serializers.SerializerMethodField()
-    customer_ip_address = serializers.SerializerMethodField()
     language = serializers.SerializerMethodField()
-    platform = serializers.SerializerMethodField()
     payment_method = serializers.SerializerMethodField()
     cvv = serializers.SerializerMethodField()
-    client_code = serializers.SerializerMethodField()
-    invoice_amount = serializers.SerializerMethodField()
     gateway = serializers.SerializerMethodField()
     expiry_date = serializers.SerializerMethodField()
-    amount_in_aed = serializers.SerializerMethodField()
-    invoice_currency = serializers.SerializerMethodField()
-
-    def get_expiry_date(self, data):
-        return data.get('data', {}).get('expiry_date')
+    response_url = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return str(data.get('transaction_data', {}).get('currency'))
@@ -152,17 +140,23 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
     def get_card_number(self, data):
         return data.get('data', {}).get('card_number')
 
-    def get_customer_email(self, data):
-        return str(data.get('transaction_data', {}).get('customer_email'))
-
     def get_customer_phone(self, data):
         return str(data.get('transaction_data', {}).get('customer_phone'))
 
-    def get_client_code(self, data):
-        return ADCB_CLIENT_CODE
+    def get_language(self, data):
+        return data.get('transaction_data', {}).get('language')
 
-    def get_invoice_amount(self, data):
-        return str(data.get('transaction_data', {}).get('amount'))
+    def get_payment_method(self, data):
+        return data.get('data', {}).get('payment_method')
+
+    def get_cvv(self, data):
+        return data.get('data', {}).get('cvv')
+
+    def get_gateway(self, data):
+        return data.get('data', {}).get('gateway')
+
+    def get_expiry_date(self, data):
+        return data.get('data', {}).get('expiry_date')
 
     def get_response_url(self, data):
         app_config = get_app_config()
@@ -175,42 +169,3 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
             transaction_data=data.get('transaction_data'),
             app_config=app_config, params=params,
             code=B2CPAYBACK_HUB_CODE)
-
-    def get_selected_amount(self, data):
-        return data.get('data', {}).get('selected_amount')
-
-    def get_checkout_amount(self, data):
-        return data.get('data', {}).get('checkout_amount')
-
-    def get_order_reference(self, data):
-        return str(data.get('transaction_data', {}).get('order_reference'))
-
-    def get_reference_id(self, data):
-        return data.get('data', {}).get('reference_id')
-
-    def get_invoice_id(self, data):
-        return data.get('transaction_data', {}).get('invoice_id')
-
-    def get_customer_ip_address(self, data):
-        return data.get('transaction_data', {}).get('ip')
-
-    def get_language(self, data):
-        return data.get('transaction_data', {}).get('language')
-
-    def get_platform(self, data):
-        return data.get('transaction_data', {}).get('platform')
-
-    def get_payment_method(self, data):
-        return data.get('data', {}).get('payment_method')
-
-    def get_cvv(self, data):
-        return data.get('data', {}).get('cvv')
-
-    def get_gateway(self, data):
-        return data.get('data', {}).get('gateway')
-
-    def get_amount_in_aed(self, data):
-        return str(data.get('transaction_data', {}).get('amount'))
-
-    def get_invoice_currency(self, data):
-        return ADCB_REDEMPTION_CURRENCY
