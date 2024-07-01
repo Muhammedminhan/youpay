@@ -30,8 +30,8 @@ from integrations.v1.gateway_clients.utils import (
     get_adcb_redemption_redirect_url
 )
 from integrations.v1.serializers.b2c_payback_payment_request import (
-    PointBalanceRequestSerializer,
-    AuthenticateRequestSerializer, AuthenticateRequestAmazonSerializer
+    PointBalanceRequestSerializer, AuthenticateAmazonRequestSerializer,
+    AuthenticateCheckoutRequestSerializer
 )
 from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
@@ -177,10 +177,10 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             update_data = {}
             gateway = request_data.get("gateway")
             if gateway and gateway.lower() == PAYMENT_GATEWAY_AMAZONPG:
-                authenticate_request_data = AuthenticateRequestAmazonSerializer(
+                authenticate_request_data = AuthenticateAmazonRequestSerializer(
                     request_dict)
             else:
-                authenticate_request_data = AuthenticateRequestSerializer(
+                authenticate_request_data = AuthenticateCheckoutRequestSerializer(
                     request_dict)
                 update_data = {
                     'cko-card-token': request_data.get('cko-card-token')}
