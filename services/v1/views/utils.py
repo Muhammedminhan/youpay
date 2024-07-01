@@ -9,6 +9,7 @@ from core.core_serializers import PaymentConfigurationSerializer
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, PaymentMethodConfig
+from core.utils import get_cached_payment_method_config
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
@@ -348,7 +349,9 @@ def get_payment_methods(transaction, client, country):
                                      client=client,
                                      country=country, active=True,
                                      guest_user_enabled=True)
-        payment_method_configs = PaymentMethodConfig.objects.filter(
+
+        payment_method_config_qs = get_cached_payment_method_config()
+        payment_method_configs = payment_method_config_qs.filter(
             payment_method_query)
 
         payment_options = {}

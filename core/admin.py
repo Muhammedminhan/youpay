@@ -9,6 +9,7 @@ from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
                         GUEST_USER_CUSTOM)
 from .models import (AppConfig, Currency, Country, PaymentMethod,
                      PaymentConfiguration, PaymentMethodConfig)
+from .utils import invalidate_cached_payment_method_config
 
 admin.site.site_header = 'YouPay Administration'
 
@@ -63,24 +64,17 @@ class CountryAdmin(AdminAbstract):
     raw_id_fields = ('currency',)
 
 
-class PaymentMethodAdmin(AdminAbstract):
-    fields = ('payment_method', 'country', 'clients', 'active',
-              'guest_user_enabled', 'payment_gateway',
-              'created_at', 'updated_at', 'created_by', 'modified_by')
-    list_display = ('payment_method', 'active',
-                    'guest_user_enabled', 'payment_gateway')
-    search_fields = ('payment_method', 'country', 'clients')
+class PaymentMethodConfigAdmin(admin.ModelAdmin):
+    list_display = ('payment_method', 'client', 'country', 'active',
+                    'guest_user_enabled')
+    search_fields = ('payment_method',)
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
-                   'payment_gateway',)
-    filter_horizontal = ('clients', 'country')
+                   'client', 'country')
+    list_editable = ('client', 'country', 'active', 'guest_user_enabled')
 
-    def get_readonly_fields(self, request, obj=None):
-        if obj is None:
-            return 'created_at', 'updated_at', 'created_by', 'modified_by'
-        return (
-            'payment_method', 'payment_gateway', 'created_at', 'updated_at',
-            'created_by', 'modified_by')
-
+    def save_model(self, request, obj, form, change):
+        invalidate_cached_payment_method_config()
+        super().save_model(request, obj, form, change)
 
 class SliderCheckboxInput(forms.CheckboxInput):
     template_name = 'core/admin/widgets/slider_checkbox.html'
@@ -141,6 +135,8 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
                 form.cleaned_data['guest_user_enabled'] = False
                 form.instance.save()
 
+        invalidate_cached_payment_method_config()
+
         return super().save(commit)
 
 
@@ -175,30 +171,6 @@ class PaymentConfigurationAdmin(AdminAbstract):
     form = PaymentConfigurationAdminForm
     inlines = [PaymentMethodConfigInline]
 
-    actions = ['create_payment_method_configs']
-
-    def create_payment_method_configs(self, request, queryset):
-        countries = Country.objects.all()
-        clients = APIClient.objects.all()
-        for payment_configuration in queryset:
-            for country in countries:
-                for client in clients:
-                    PaymentMethodConfig.objects.get_or_create(
-                        payment_method=payment_configuration,
-                        country=country,
-                        client=client,
-                        defaults={'active': True,
-                                  'guest_user_enabled': True}
-                    )
-
-        self.message_user(request, 'Successfully created '
-                                   'PaymentMethodConfig instances for '
-                                   'selected PaymentConfiguration objects.')
-
-    create_payment_method_configs.short_description = ('Create '
-                                                       'PaymentMethodConfig'
-                                                       ' instances')
-
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
             return (
@@ -211,5 +183,5 @@ class PaymentConfigurationAdmin(AdminAbstract):
 admin.site.register(AppConfig, AppConfigAdmin)
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(Country, CountryAdmin)
-admin.site.register(PaymentMethod, PaymentMethodAdmin)
+admin.site.register(PaymentMethodConfig, PaymentMethodConfigAdmin)
 admin.site.register(PaymentConfiguration, PaymentConfigurationAdmin)

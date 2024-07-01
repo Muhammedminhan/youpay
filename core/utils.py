@@ -17,9 +17,10 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
-from core.models import AppConfig, Currency
+from core.models import AppConfig, Currency, PaymentMethodConfig
 from core.response_messages import YouPayResponse
-from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, \
+    PAYMENT_METHOD_CONFIG_CACHE_KEY
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
@@ -159,6 +160,32 @@ def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
             logging.error('No gateway configuration instance found.')
             return None
     return gateway_config
+
+
+def get_cached_payment_method_config():
+    try:
+        cache_key = PAYMENT_METHOD_CONFIG_CACHE_KEY
+        payment_method_configs = cache.get(cache_key, None)
+        if payment_method_configs is None:
+            payment_method_configs = PaymentMethodConfig.objects.all()
+            cache.set(cache_key, payment_method_configs)
+
+        return payment_method_configs
+
+    except Exception as e:
+        logger.error(
+            "Error on getting cached PaymentMethodConfig : {}".format(e))
+        return PaymentMethodConfig.objects.none()
+
+
+def invalidate_cached_payment_method_config():
+    try:
+        cache_key = PAYMENT_METHOD_CONFIG_CACHE_KEY
+        cache.delete(cache_key)
+    except Exception as e:
+        logger.error(
+            "Error on invalidating cached PaymentMethodConfig : {}".format(e))
+
 
 
 def decimal_rounded(amount, decimal_notation):
