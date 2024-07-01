@@ -140,6 +140,8 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
     invoice_amount = serializers.SerializerMethodField()
     gateway = serializers.SerializerMethodField()
     expiry_date = serializers.SerializerMethodField()
+    amount_in_aed = serializers.SerializerMethodField()
+    invoice_currency = serializers.SerializerMethodField()
 
     def get_expiry_date(self, data):
         return data.get('data', {}).get('expiry_date')
@@ -206,3 +208,9 @@ class AuthenticateRequestAmazonSerializer(serializers.Serializer):
 
     def get_gateway(self, data):
         return data.get('data', {}).get('gateway')
+
+    def get_amount_in_aed(self, data):
+        return str(data.get('transaction_data', {}).get('amount'))
+
+    def get_invoice_currency(self, data):
+        return ADCB_REDEMPTION_CURRENCY
