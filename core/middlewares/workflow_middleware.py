@@ -286,9 +286,7 @@ class PaymentVerificationCheckMiddleware(object):
     def __call__(self, request):
         # Code to be executed for each request before
         # the view (and later middleware) are called.
-        logger.info("Middleware called with request: %s", request)
         response = self.get_response(request)
-        logger.info("Response received from view: %s", response)
         # Code to be executed for each request/response after
         # the view is called.
 
@@ -296,12 +294,12 @@ class PaymentVerificationCheckMiddleware(object):
 
     def process_response(self, request, response):
         view_name = request.resolver_match.view_name
-        logger.info("Processing response for view: %s", view_name)
+        logger.info("Processing response for view: {}".format(view_name))
 
         try:
             if view_name in VERIFY_PAYMENT_CLASSES:
-                logger.info("Middleware : %s Started for clevertap %s",
-                            view_name, self.transaction_obj.transaction_id)
+                logger.info("Middleware : {} Started for clevertap {}".format(
+                    view_name, self.transaction_obj.transaction_id))
 
                 clever_tap_data = {
                     'platform': self.transaction_obj.platform,
@@ -325,7 +323,7 @@ class PaymentVerificationCheckMiddleware(object):
 
         except Exception as e:
             log_message = ("Verification middleware for clevertap process "
-                           "response failed: %s" % str(e))
+                           "response failed: {}".format(str(e)))
             logger.error(log_message, exc_info=True)
             youpay_message_obj = YouPayResponse()
             error_data = {
