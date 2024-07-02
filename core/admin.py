@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.core.cache import cache
 
 from services.models import APIClient
+from services.v1.constants import B2C_PAYBACK_GATEWAY_CODE
 from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
                         GUEST_USER_CUSTOM)
 from .models import (AppConfig, Currency, Country, PaymentMethod,
@@ -178,12 +179,6 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
 
 
 class PaymentConfigurationAdmin(AdminAbstract):
-    fields = ('payment_method', 'active',
-              'guest_user_enabled', 'partial_redemption_allowed',
-              'burn_full_redemption_enabled', 'earn_enabled',
-              'earn_on_partial_redemption',
-              'payment_gateway',  'created_at', 'updated_at',
-              'created_by', 'modified_by')
     list_display = ('payment_method', 'active',
                     'guest_user_enabled', 'payment_gateway')
     search_fields = ('payment_method', 'country', 'clients')
@@ -193,6 +188,20 @@ class PaymentConfigurationAdmin(AdminAbstract):
     form = PaymentConfigurationAdminForm
     inlines = [PaymentMethodConfigInline]
 
+    def get_fields(self, request, obj=None):
+        fields = ('payment_method', 'active',
+                  'guest_user_enabled', 'partial_redemption_allowed',
+                  'burn_full_redemption_enabled', 'earn_enabled',
+                  'earn_on_partial_redemption',
+                  'payment_gateway', 'created_at', 'updated_at',
+                  'created_by', 'modified_by')
+
+        if obj.payment_gateway.code != B2C_PAYBACK_GATEWAY_CODE:
+            fields = ('payment_method', 'active',
+                      'guest_user_enabled',
+                      'payment_gateway', 'created_at', 'updated_at',
+                      'created_by', 'modified_by')
+        return fields
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
             return (
