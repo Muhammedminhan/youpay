@@ -154,6 +154,28 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['guest_user_enabled'].required = True
 
+    def clean(self):
+        cleaned_data = self.cleaned_data
+
+        earn_enabled = cleaned_data.get('earn_enabled', False)
+        earn_on_partial_redemption = cleaned_data.get(
+            'earn_on_partial_redemption', False)
+
+        burn_full_redemption_enabled = cleaned_data.get(
+            'burn_full_redemption_enabled', False)
+        partial_redemption_allowed = cleaned_data.get(
+            'partial_redemption_allowed', False)
+
+        if partial_redemption_allowed and not burn_full_redemption_enabled:
+            raise forms.ValidationError(
+                "Partial redemption cannot be enabled unless burn full "
+                "redemption enabled")
+        if earn_on_partial_redemption and not earn_enabled:
+            raise forms.ValidationError(
+                "Earn on partial redemption cannot be enabled unless earn "
+                "enabled")
+        return cleaned_data
+
 
 class PaymentConfigurationAdmin(AdminAbstract):
     fields = ('payment_method', 'active',
