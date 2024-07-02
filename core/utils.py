@@ -293,7 +293,7 @@ def process_checkoutpg_response_verification(**kwargs):
     payment_method = kwargs.get('payment_method')
     payment_gateway = kwargs.get('payment_gateway')
     channel_code = kwargs.get('channel_code')
-    response_code = kwargs.get('response_code')
+    response_code = kwargs.get('response_data', {}).get('response_code')
 
     reference_from_checkout = response_data.get("reference")
 
