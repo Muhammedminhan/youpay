@@ -371,7 +371,7 @@ class ConfigViewSet(ViewSet):
             if neqaty_enabled:
                 this__config_data = (
                     payment_config_data.get(
-                        PAYMENT_OPTION_QITAF, False))
+                        PAYMENT_OPTION_NEQATY, False))
                 neqaty_config = self.get_each_b2c_config(config_list,
                                                          NEQATY_CLIENT_CODE)
                 neqaty_config.update(**this__config_data)
