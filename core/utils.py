@@ -187,6 +187,21 @@ def invalidate_cached_payment_method_config():
             "Error on invalidating cached PaymentMethodConfig : {}".format(e))
 
 
+def auto_enable_or_disable_point_collection(query):
+    """
+    Input Payment Config Query
+    Output : True or False
+    """
+    payment_method_config = get_cached_payment_method_config()
+    if payment_method_config:
+        payment_method_config_data = payment_method_config.filter(query)
+        if payment_method_config_data.count():
+            payment_method_config_datum = payment_method_config_data.first()
+            return payment_method_config_datum.earn_on_partial_redemption
+
+    return False
+
+
 
 def decimal_rounded(amount, decimal_notation):
     if not isinstance(amount, Decimal):
