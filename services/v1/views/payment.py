@@ -682,7 +682,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 calculated_item_details = response.get(
                     "partner_response", {}).get("calculated_item_details")
             message = "Pont Collect requested for {}".format(
-                PAYMENT_METHOD_NEQATY)
+                PAYMENT_METHOD_MOKAFA)
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.points_collection_enabled_program)
