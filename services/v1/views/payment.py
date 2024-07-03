@@ -20,7 +20,7 @@ from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_METHOD_CITI_REWARDS,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_METHOD_NEQATY)
+                                PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_MOKAFA)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -645,7 +645,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_NEQATY)
 
-
         elif program_name == PAYMENT_METHOD_QITAF:
             collect_enabled = transaction_obj.is_qitaf_enabled
             mobile_number = transaction_obj.qitaf_phone_number
@@ -666,6 +665,24 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_QITAF)
+
+        elif program_name == PAYMENT_METHOD_MOKAFA:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.mokafa_service import (
+                MokafaServiceManager)
+            mokafa_obj = MokafaServiceManager()
+            response, code = mokafa_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                calculated_item_details = response.get(
+                    "partner_response", {}).get("calculated_item_details")
+            message = "Pont Collect requested for {}".format(
+                PAYMENT_METHOD_NEQATY)
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.points_collection_enabled_program)
