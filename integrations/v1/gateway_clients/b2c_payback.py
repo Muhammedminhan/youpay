@@ -352,13 +352,13 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     def get_collect_enabled_program(self, transaction_obj):
         try:
             data = {}
-            points_collection_enabled_program = (
-                transaction_obj.points_collection_enabled_program)
+            point_program = (
+                transaction_obj.point_program)
             points_collected_mobile_number = (
                 transaction_obj.points_collected_mobile_number)
             data = {
-                "points_collection_enabled_program": (
-                    points_collection_enabled_program),
+                "point_program": (
+                    point_program),
                 "points_collected_mobile_number": (
                     points_collected_mobile_number),
             }
@@ -373,7 +373,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     def remove_collect_program_enabled(self, transaction_obj):
         try:
             transaction_obj.point_collection_enabled = False
-            transaction_obj.points_collection_enabled_program = None
+            transaction_obj.point_program = None
             transaction_obj.is_qitaf_enabled = False
             transaction_obj.qitaf_phone_number = None
             transaction_obj.points_collected_mobile_number = None

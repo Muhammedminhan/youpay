@@ -724,10 +724,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
     def handle_neqaty_collection(self, transaction_obj):
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
-            if transaction_obj.points_collection_enabled_program != (
+            if transaction_obj.point_program != (
                     PAYMENT_METHOD_NEQATY):
                 transaction_obj.points_collected_mobile_number = (
                     transaction_obj.points_redeemed_mobile_number)
-                transaction_obj.points_collection_enabled_program = (
+                transaction_obj.point_program = (
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()

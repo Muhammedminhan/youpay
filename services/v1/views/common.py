@@ -139,8 +139,8 @@ class YouPayTransactionCRUD(object):
             'points_collected_mobile_number', None)
         data_dict['points_redeemed_mobile_number'] = data.get(
             'points_redeemed_mobile_number', None)
-        data_dict['points_collection_enabled_program'] = data.get(
-            'points_collection_enabled_program', None)
+        data_dict['point_program'] = data.get(
+            'point_program', None)
         data_dict['earn_reference'] = data.get('earn_reference', None)
 
         data_dict['additional_vat'] = data.get('additional_vat', None)

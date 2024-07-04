@@ -46,7 +46,7 @@ class UpdateQitafPhoneNumber(APIView, YouPayTransactionCRUD):
                     'transaction_id': transaction_obj.transaction_id,
                     'qitaf_phone_number': qitaf_phone_number,
                     'points_collected_mobile_number': qitaf_phone_number,
-                    'points_collection_enabled_program': PAYMENT_METHOD_QITAF,
+                    'point_program': PAYMENT_METHOD_QITAF,
                     'point_collection_enabled': True,
                     'is_qitaf_enabled': True,
                     "brand_details": brand_details
