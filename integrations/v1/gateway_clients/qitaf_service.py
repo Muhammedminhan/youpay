@@ -521,6 +521,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 self.points_redeemed_mobile_number = response_data.get(
                     'redeemed_mobile_number')
+                self.point_program = PAYMENT_METHOD_QITAF
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
