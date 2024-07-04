@@ -349,7 +349,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                          "verify api")
             return None, None
 
-    def get_collect_enabled_program(self, transaction_obj):
+    def get_point_program(self, transaction_obj):
         try:
             data = {}
             point_program = (
