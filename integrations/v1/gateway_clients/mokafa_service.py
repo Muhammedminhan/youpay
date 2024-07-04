@@ -42,6 +42,18 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         }
         return headers
 
+    def update_points_collected_mobile_number(self, data):
+        """
+        To update mokafa phone number
+        """
+        try:
+            return self.update_youpay_transaction_data(data)
+        except Exception as e:
+            error = ("Exception in updating points_collected_mobile_number "
+                     "for mokafa: {}").format(e)
+            logger.error(error)
+            return False
+
     def collect_points(self, transaction_obj):
         """
         calls mokafa points collecting api
