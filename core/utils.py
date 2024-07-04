@@ -17,16 +17,16 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
-from core.models import AppConfig, Currency, PaymentMethodConfig
-from core.response_messages import YouPayResponse
-from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, \
-    PAYMENT_METHOD_CONFIG_CACHE_KEY
+from core.models import (AppConfig, Currency, PaymentMethodConfig,
+                         PaymentConfiguration)
+from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
+                                    PAYMENT_METHOD_CONFIG_CACHE_KEY,
+                                    PAYMENT_CONFIG_CACHE_KEY)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
-    PAYMENT_METHOD_NEQATY)
+    PAYMENT_STATUS_REJECTED_RETRY)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -187,17 +187,32 @@ def invalidate_cached_payment_method_config():
             "Error on invalidating cached PaymentMethodConfig : {}".format(e))
 
 
+def get_cached_payment_config():
+    try:
+        cache_key = PAYMENT_CONFIG_CACHE_KEY
+        payment_configs = cache.get(cache_key, None)
+        if payment_configs is None:
+            payment_configs = PaymentConfiguration.objects.all()
+            cache.set(cache_key, payment_configs)
+
+        return payment_configs
+
+    except Exception as e:
+        logger.error(
+            "Error on getting cached PaymentConfiguration : {}".format(e))
+        return PaymentConfiguration.objects.none()
+
 def auto_enable_or_disable_point_collection(query):
     """
     Input Payment Config Query
     Output : True or False
     """
-    payment_method_config = get_cached_payment_method_config()
-    if payment_method_config:
-        payment_method_config_data = payment_method_config.filter(query)
-        if payment_method_config_data.count():
-            payment_method_config_datum = payment_method_config_data.first()
-            return payment_method_config_datum.earn_on_partial_redemption
+    payment_config = get_cached_payment_config()
+    if payment_config:
+        payment_config_data = payment_config.filter(query)
+        if payment_config_data.count():
+            payment_config_datum = payment_config_data.first()
+            return payment_config_datum.earn_on_partial_redemption
 
     return False
 
