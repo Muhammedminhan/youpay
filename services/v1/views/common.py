@@ -247,12 +247,18 @@ class YouPayTransactionCRUD(object):
                         [PAYMENT_METHOD_TOUCHPOINTS,
                          PAYMENT_METHOD_TOUCHPOINTS_AND_CARD]):
                     transaction_obj.point_program = PAYMENT_METHOD_ADCB
+            else:
+                logger.info(
+                    f"Not {PAYMENT_GATEWAY_B2CPAYBACK}, "
+                    f"{type(transaction_obj.payment_gateway)}")
 
-        logger.info(
-            f"update_point_program_on_transaction_obj payment_status : "
-            f"{transaction_obj.payment_status}, payment_gateway:"
-            f" {transaction_obj.payment_gateway}, payment_method: "
-            f"{transaction_obj.payment_method}  ")
+            logger.info(
+                f"update_point_program_on_transaction_obj payment_status : "
+                f"{transaction_obj.payment_status}, payment_gateway:"
+                f" {transaction_obj.payment_gateway}, payment_method: "
+                f"{transaction_obj.payment_method}, "
+                f"point_program :{transaction_obj.point_program},"
+                f"transaction_id :{transaction_obj.transaction_id} ")
 
         return transaction_obj
 
