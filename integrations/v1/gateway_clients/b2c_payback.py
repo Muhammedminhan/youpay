@@ -31,7 +31,8 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
     AuthenticateRequestSerializer
 )
 from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
-                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED,
+                                PAYMENT_METHOD_ADCB)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -48,6 +49,13 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     """
     Class to manage b2cpayback related operations
     """
+
+    def __init__(self, **kwargs):
+        self.redemption_status = None
+        self.transaction_obj = None
+        self.payment_status = False
+        self.response_data = {}
+        self.approved_status = False
 
     def get_payment_header(self, b2c_config):
         """
@@ -263,6 +271,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             return None, None
 
     def verification(self, request_data):
+        """works when ADCB Partial and ADCB card cases"""
+
         request_transaction_id = request_data.get('transaction_id')
         if request_transaction_id:
             try:
@@ -308,32 +318,15 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     request_type=PAYMENT_REQUEST_VERIFY
                 )
                 if response_data:
-                    update_data = {
-                        'transaction_id': transaction_obj.transaction_id,
-                        'payment_status': payment_status,
-                        'payment_reference': (
-                            response_data.get('payment_reference')
-                            if response_data.get('payment_reference')
-                            else response_data.get(
-                                'results', {}).get('reference_id')),
-                        'is_flagged': response_data.get('is_flagged', False),
-                        'approved': approved_status,
-                        'redeemed_amount': response_data.get(
-                            'results', {}).get('redeemed_amount'),
-                        'redeemed_points': response_data.get(
-                            'results', {}).get('redeemed_points'),
-                        'is_gcc_card': True,
-                        'available_amount': response_data.get(
-                            'results', {}).get('available_amount'),
-                        'available_points': transaction_obj.available_points,
-                        'payable_amount': transaction_obj.payable_amount,
-                        'is_full_redemption':
-                            transaction_obj.is_full_redemption,
+                    self.redemption_status = response_data.get(
+                        'redemption_status', False)
+                    self.transaction_obj = transaction_obj
+                    self.payment_status = payment_status
+                    self.response_data = response_data
+                    self.approved_status = approved_status
 
-                        # if redirecting then it will be a verified payment
-                        'is_payment_verified': response_data["is_redirect"]
-                    }
-                    self.update_youpay_transaction_data(update_data)
+                    self.update_youpay_transaction_data(
+                        self.prepare_update_transaction_data())
                     return response_data, transaction_obj
                 else:
                     logger.error(
@@ -349,6 +342,41 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                          "verify api")
             return None, None
 
+    def prepare_update_transaction_data(self, ):
+        transaction_obj = self.transaction_obj
+        payment_status = self.payment_status
+        response_data = self.response_data
+        approved_status = self.approved_status
+        redemption_status = self.redemption_status
+
+        return {
+            'transaction_id': transaction_obj.transaction_id,
+            'payment_status': payment_status,
+            'payment_reference': (
+                response_data.get('payment_reference')
+                if response_data.get('payment_reference')
+                else response_data.get(
+                    'results', {}).get('reference_id')),
+            'is_flagged': response_data.get('is_flagged', False),
+            'approved': approved_status,
+            'redeemed_amount': response_data.get(
+                'results', {}).get('redeemed_amount'),
+            'redeemed_points': response_data.get(
+                'results', {}).get('redeemed_points'),
+            'is_gcc_card': True,
+            'available_amount': response_data.get(
+                'results', {}).get('available_amount'),
+            'available_points': transaction_obj.available_points,
+            'payable_amount': transaction_obj.payable_amount,
+            'is_full_redemption':
+                transaction_obj.is_full_redemption,
+
+            # if redirecting then it will be a verified payment
+            'is_payment_verified': response_data["is_redirect"],
+            'point_program': (PAYMENT_METHOD_ADCB if
+                              redemption_status else
+                              None),
+        }
     def get_point_program(self, transaction_obj):
         try:
             data = {}

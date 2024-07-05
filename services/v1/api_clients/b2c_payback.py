@@ -15,7 +15,7 @@ from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import (
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_TOUCHPOINTS,
     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD, PAYMENT_METHOD_ADCB_CARD_ONLY,
-    PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING
+    PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING, PAYMENT_METHOD_ADCB
 )
 from services.v1.constants import B2C_PAYBACK_NO_RESPONSE_MESSAGE
 from services.v1.views.common import YouPayTransactionCRUD
@@ -141,7 +141,10 @@ class B2CPaybackRedemption(APIView, YouPayTransactionCRUD):
                         'results', {}).get('available_amount'),
                     'available_points': transaction_obj.available_points,
                     'payable_amount': transaction_obj.payable_amount,
-                    'is_full_redemption': transaction_obj.is_full_redemption
+                    'is_full_redemption': transaction_obj.is_full_redemption,
+                    'point_program': (PAYMENT_METHOD_ADCB if
+                                      transaction_obj.is_full_redemption else
+                                      None),
                 }
                 self.update_youpay_transaction_data(update_data)
             else:
