@@ -1,6 +1,6 @@
 import logging
 
-from django.db import models
+from django.db import models, transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -171,8 +171,10 @@ class ADCBTransactionData(ADCBAbstractDateTime):
 
 @receiver(post_save, sender=ADCBTransactionData)
 def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
-    calculate_adcb_card_charges(instance)
-    update_youpaytransactiondata_on_webhook(instance)
+    # calculate_adcb_card_charges(instance)
+    transaction.on_commit(
+        lambda: update_youpaytransactiondata_on_webhook(instance))
+    # update_youpaytransactiondata_on_webhook(instance)
 
 
 def calculate_adcb_card_charges(instance):
