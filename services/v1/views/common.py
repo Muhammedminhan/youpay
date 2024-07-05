@@ -26,7 +26,8 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_QITAFAND_CARD,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_ADCB,
-                                PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
+                                PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
+                                PAYMENT_METHOD_TOUCHPOINTS)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -243,9 +244,15 @@ class YouPayTransactionCRUD(object):
 
                 """ADCB point program handler"""
                 if (transaction_obj.payment_method in
-                        [PAYMENT_METHOD_ADCB,
+                        [PAYMENT_METHOD_TOUCHPOINTS,
                          PAYMENT_METHOD_TOUCHPOINTS_AND_CARD]):
                     transaction_obj.point_program = PAYMENT_METHOD_ADCB
+
+        logger.info(
+            f"update_point_program_on_transaction_obj payment_status : "
+            f"{transaction_obj.payment_status}, payment_gateway:"
+            f" {transaction_obj.payment_gateway}, payment_method: "
+            f"{transaction_obj.payment_method}  ")
 
         return transaction_obj
 
