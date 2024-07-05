@@ -6,7 +6,7 @@ from rest_framework import status
 from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
     PURCHASE_PLATFORM_IOS,
-    PURCHASE_PLATFORM_ANDROID
+    PURCHASE_PLATFORM_ANDROID, PAYMENT_GATEWAY_B2CPAYBACK
 )
 from core.messages import (
     ERROR_MISSING_FIELDS, IS_SUCCESS
@@ -25,7 +25,8 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_QITAFAND_CARD,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_METHOD_NEQATY)
+                                PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_ADCB,
+                                PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -209,6 +210,10 @@ class YouPayTransactionCRUD(object):
                 if data_dict.get('is_full_redemption') == False:
                     transaction_obj.is_full_redemption = False
                     saved_fields.append('is_full_redemption')
+
+                self.update_point_program_on_transaction_obj(
+                    transaction_obj)
+
                 transaction_obj.save(update_fields=saved_fields)
                 logger.info("Transaction object updated successfully for {}"
                             ", status :{}, updated fields {}".format(
@@ -230,6 +235,19 @@ class YouPayTransactionCRUD(object):
             logger.error("Unable to update the transaction object, {0}"
                          "".format(str(e)))
             return False
+
+    def update_point_program_on_transaction_obj(self, transaction_obj):
+        
+        if transaction_obj.payment_status == PAYMENT_STATUS_PAID:
+            if transaction_obj.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+
+                """ADCB point program handler"""
+                if (transaction_obj.payment_method in
+                        [PAYMENT_METHOD_ADCB,
+                         PAYMENT_METHOD_TOUCHPOINTS_AND_CARD]):
+                    transaction_obj.point_program = PAYMENT_METHOD_ADCB
+
+        return transaction_obj
 
     def get_settlement_entity(self, **kwargs):
         """
