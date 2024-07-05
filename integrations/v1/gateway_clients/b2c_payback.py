@@ -323,7 +323,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                             if response_data.get('payment_reference')
                             else response_data.get(
                                 'results', {}).get('reference_id')),
-                        'is_flagged': response_data.get('is_flagged', False),
+                        'is_flagged': response_data.get('is_flagged', None),
                         'approved': approved_status,
                         'redeemed_amount': response_data.get(
                             'results', {}).get('redeemed_amount'),
