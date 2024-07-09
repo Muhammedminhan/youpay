@@ -53,6 +53,10 @@ class YouPayTransactionCRUD(object):
     YouPay Transaction Data CRUD Operations will be here
     """
 
+    def __init__(self):
+        self.saved_fields = []
+
+
     def create_youpay_transaction_data(self, request):
         serializer = YouPayTransactionDataSerializer(data=request)
         if serializer.is_valid():
@@ -202,24 +206,25 @@ class YouPayTransactionCRUD(object):
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
-                saved_fields = [
+                self.saved_fields = [
                     'updated_at'
                 ]
-                saved_fields = get_saved_fields(saved_fields,
+                self.saved_fields = get_saved_fields(self.saved_fields,
                                                 data_dict,
                                                 transaction_obj)
                 if data_dict.get('is_full_redemption') == False:
                     transaction_obj.is_full_redemption = False
-                    saved_fields.append('is_full_redemption')
+                    self.saved_fields.append('is_full_redemption')
 
                 self.update_point_program_on_transaction_obj(
                     transaction_obj)
 
-                transaction_obj.save(update_fields=saved_fields)
-                logger.info("Transaction object updated successfully for {}"
-                            ", status :{}, updated fields {}".format(
-                    transaction_id, transaction_obj.payment_status,
-                    saved_fields))
+                transaction_obj.save(update_fields=self.saved_fields)
+                logger.info(
+                    "Transaction object updated successfully for {}, status :"
+                    "{}, updated fields {}".format(
+                        transaction_id, transaction_obj.payment_status,
+                        self.saved_fields))
 
                 if (transaction_obj.payment_status == PAYMENT_STATUS_PAID
                         and not transaction_obj.gateway_charge):
@@ -247,6 +252,7 @@ class YouPayTransactionCRUD(object):
                         [PAYMENT_METHOD_TOUCHPOINTS,
                          PAYMENT_METHOD_TOUCHPOINTS_AND_CARD]):
                     transaction_obj.point_program = PAYMENT_METHOD_ADCB
+                    self.saved_fields.append("point_program")
             else:
                 logger.info(
                     f"Not {PAYMENT_GATEWAY_B2CPAYBACK}, "
