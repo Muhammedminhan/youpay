@@ -42,8 +42,7 @@ class WebhookListener(APIView, WebhookDataFormat):
         track_info = None
         try:
 
-            invoice_pk = self.get_invoice_id(
-                str(request_data.get('payment_reference', None)))
+            invoice_pk = request_data.get("invoice_id")
 
             payment_reference = request_data.get('payment_reference', None)
             transaction_obj = get_transaction_object(payment_reference)
