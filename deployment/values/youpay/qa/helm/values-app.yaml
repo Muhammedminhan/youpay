@@ -38,10 +38,10 @@ deployment:
           value: 'DJANGO_SETTINGS_MODULE'
       port: 8000
       memory:
-        requests: 400Mi
+        requests: 350Mi
         limits: 500Mi
       cpu:
-        requests: 100m
+        requests: 80m
       health:
         path: '/health/'
         port: 8000
