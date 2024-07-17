@@ -19,14 +19,13 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig, Currency
-from core.response_messages import YouPayResponse
 from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
-    PAYMENT_METHOD_NEQATY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_PENDING)
+    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_STATUS_FAILED,
+    PAYMENT_STATUS_PENDING)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -507,7 +506,6 @@ def process_amazonpg_response_verification(**kwargs):
     Function to process AmazonPG response verification and update in YouPay
     transaction table.
     """
-    response_obj = YouPayResponse()
     transaction_id = kwargs.get('transaction_id')
     response = kwargs.get('response_data')
     response_data = {}
@@ -543,7 +541,7 @@ def process_amazonpg_response_verification(**kwargs):
             payment_status = PAYMENT_STATUS_PAID
             redirect_url = get_redirect_url(youpay_transaction.success_url,
                                             transaction_id)
-            return_status = response_obj.SUCCESS
+            return_status = True
             is_payment_verified = True
             approved = True
             return_response_data = {
@@ -557,7 +555,7 @@ def process_amazonpg_response_verification(**kwargs):
             redirect_url = get_redirect_url(youpay_transaction.failure_url,
                                             transaction_id)
             is_payment_verified = True
-            return_status = response_obj.PAYMENT_FAILED
+            return_status = False
             return_response_data = {
                 IS_REDIRECT: True,
                 REDIRECT_URL: redirect_url,
@@ -568,7 +566,7 @@ def process_amazonpg_response_verification(**kwargs):
     elif status_code == status.HTTP_307_TEMPORARY_REDIRECT:
         is_payment_verified = False
         payment_status = PAYMENT_STATUS_PENDING
-        return_status = response_obj.AMAZONPG_CONNECTION_RETRY
+        return_status = True
         return_response_data = {
             'retry': True,
             'status': status.HTTP_307_TEMPORARY_REDIRECT
@@ -576,7 +574,7 @@ def process_amazonpg_response_verification(**kwargs):
     else:
         is_payment_verified = True
         payment_status = PAYMENT_STATUS_FAILED
-        return_status = response_obj.PAYMENT_FAILED
+        return_status = False
         redirect_url = get_redirect_url(youpay_transaction.failure_url,
                                         transaction_id)
 
