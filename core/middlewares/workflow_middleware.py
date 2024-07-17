@@ -293,9 +293,9 @@ class PaymentVerificationCheckMiddleware(object):
         return self.process_response(request, response)
 
     def process_response(self, request, response):
-        view_name = request.resolver_match.view_name
-        logger.info("Processing response for view: {}".format(view_name))
-
+        view_name = ""
+        if request.resolver_match:
+            view_name = request.resolver_match.view_name
         try:
             if view_name in VERIFY_PAYMENT_CLASSES:
                 logger.info("Middleware : {} Started for clevertap {}".format(
