@@ -22,10 +22,11 @@ from integrations.v1.serializers.amazonpg_payment_request import (
     AmazonPGApplepayPaymentRequestSerializer,
 )
 from payments.constants import (
-    PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
+    PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD,
     PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_AUTHORIZED
+    PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_AUTHORIZED,
+    PAYMENT_STATUS_PENDING, PAYMENT_STATUS_FAILED
 )
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -230,14 +231,21 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                             response.text))
                         self.payment_reference = response_data.get(
                             "payment_reference")
+                    self.payment_status = PAYMENT_STATUS_FAILED
 
-                        self.update_youpay_transaction_data(
-                            self.prepare_data_to_update())
-                        return ({"error": response.json()},
-                                self.AMAZONPG_CONNECTION_ERROR)
+                    self.update_youpay_transaction_data(
+                        self.prepare_data_to_update())
 
-                    return ({"error": response.text},
-                            self.AMAZONPG_CONNECTION_ERROR)
+                    redirect_url = transaction_obj.failure_url
+                    return_response_data = {
+                        'is_redirect': True,
+                        'redirect_url': redirect_url,
+                        'transaction_message': 'Payment Failed',
+                        'is_success': False
+                    }
+
+                    return (return_response_data,
+                            self.PAYMENT_FAILED)
                 else:
                     logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
                     return {None}, self.AMAZONPG_CONNECTION_ERROR
@@ -302,7 +310,11 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                     transaction_id=transaction_id,
                     response_data=response))
 
-            return response_data, return_status
+            if return_status:
+                code = self.SUCCESS
+            else:
+                code = self.PAYMENT_FAILED
+            return response_data, code
 
         except Exception as e:
             logger.error("Exception in amazonpg verify session: {}"

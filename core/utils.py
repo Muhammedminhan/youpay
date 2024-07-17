@@ -19,14 +19,13 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig, Currency
-from core.response_messages import YouPayResponse
 from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
-    PAYMENT_METHOD_NEQATY, PAYMENT_STATUS_FAILED, PAYMENT_STATUS_PENDING)
+    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_STATUS_FAILED,
+    PAYMENT_STATUS_PENDING)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -357,16 +356,6 @@ def process_checkoutpg_response_verification(**kwargs):
             is_flagged = response_data.get("risk", {}).get("flagged")
             is_payment_verified = True
 
-        # Temp added
-        if payment_status == PAYMENT_STATUS_PAID:
-            response_obj = YouPayResponse()
-            collect_point_response, code = handle_point_collection(
-                youpay_transaction,
-                transaction_id,
-                response_obj)
-            if code == response_obj.SUCCESS:
-                earn_reference = collect_point_response.get("earn_reference")
-                earned_point = collect_point_response.get("reward_point", 0)
 
     youpay_obj = YouPayTransactionCRUD()
 
@@ -387,9 +376,7 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': is_payment_verified,
-            'earn_reference': earn_reference,  # Temp added
-            'earned_point': earned_point,  # Temp added
+            'is_payment_verified': is_payment_verified
         }
     )
     redirect, response_data = is_redirect(transaction_id, response_data)
@@ -397,37 +384,6 @@ def process_checkoutpg_response_verification(**kwargs):
     # redirect - boolean, response_data - response data(dict) for frontend
     return redirect, response_data
 
-
-# Temp added
-def handle_point_collection(youpay_transaction, transaction_id, response_obj):
-    response_data = None
-    reward_point = None
-    earn_reference = None
-    code = None
-
-    """Point Collection Part"""
-    if youpay_transaction.point_collection_enabled:
-        if youpay_transaction.points_collection_enabled_program == PAYMENT_METHOD_NEQATY:
-            from integrations.v1.gateway_clients.neqaty_service import (
-                NeqatyServiceManager)
-            neqaty_reward_point_obj = NeqatyServiceManager()
-
-            response, code = (
-                neqaty_reward_point_obj.collect_points(
-                    youpay_transaction))
-            if code == response_obj.SUCCESS:
-                earn_reference = response.get(
-                    "partner_response").get("earn_reference")
-
-            logger.info(
-                "Checking for Neqaty Reward Point for transaction : "
-                "{}, response : {}, code : {}".format(
-                    transaction_id, response, code))
-        response_data = {
-            "earn_reference": earn_reference,
-            "reward_point": reward_point,
-        }
-    return response_data, code
 
 def checkout_decline_check(response_data):
 
@@ -550,7 +506,6 @@ def process_amazonpg_response_verification(**kwargs):
     Function to process AmazonPG response verification and update in YouPay
     transaction table.
     """
-    response_obj = YouPayResponse()
     transaction_id = kwargs.get('transaction_id')
     response = kwargs.get('response_data')
     response_data = {}
@@ -582,33 +537,12 @@ def process_amazonpg_response_verification(**kwargs):
     logger.info("Verify payment response data {}".format(response_data))
 
     if status_code == status.HTTP_200_OK:
-        if youpay_payment_reference and (
-                youpay_payment_reference != reference_from_amazon):
-            '''During pre auth check with AmazonPG, YouPay transaction data do
-             not contain payment reference'''
-
-            logger.error(
-                "Payment Reference mismatch found for transaction id {},"
-                " reference id from Amazon {}, YouPay reference {}"
-                "".format(transaction_id, reference_from_amazon,
-                          youpay_payment_reference))
-
-            redirect_url = get_redirect_url(youpay_transaction.failure_url,
-                                            transaction_id)
-            return_status = response_obj.PAYMENT_FAILED
-            response_data = {
-                IS_REDIRECT: True,
-                REDIRECT_URL: redirect_url,
-                TRANSACTION_MSG: {"response_summary": "Payment Failed"},
-                IS_SUCCESS: False
-            }
-            return response_data, return_status
-
         if response_data.get('is_capture') or response_data.get('in_review'):
             payment_status = PAYMENT_STATUS_PAID
             redirect_url = get_redirect_url(youpay_transaction.success_url,
                                             transaction_id)
-            return_status = response_obj.SUCCESS
+            return_status = True
+            is_payment_verified = True
             approved = True
             return_response_data = {
                 IS_REDIRECT: True,
@@ -620,7 +554,8 @@ def process_amazonpg_response_verification(**kwargs):
             payment_status = PAYMENT_STATUS_FAILED
             redirect_url = get_redirect_url(youpay_transaction.failure_url,
                                             transaction_id)
-            return_status = response_obj.PAYMENT_FAILED
+            is_payment_verified = True
+            return_status = False
             return_response_data = {
                 IS_REDIRECT: True,
                 REDIRECT_URL: redirect_url,
@@ -629,15 +564,17 @@ def process_amazonpg_response_verification(**kwargs):
             }
 
     elif status_code == status.HTTP_307_TEMPORARY_REDIRECT:
+        is_payment_verified = False
         payment_status = PAYMENT_STATUS_PENDING
-        return_status = response_obj.AMAZONPG_CONNECTION_RETRY
+        return_status = True
         return_response_data = {
             'retry': True,
             'status': status.HTTP_307_TEMPORARY_REDIRECT
         }
     else:
+        is_payment_verified = True
         payment_status = PAYMENT_STATUS_FAILED
-        return_status = response_obj.PAYMENT_FAILED
+        return_status = False
         redirect_url = get_redirect_url(youpay_transaction.failure_url,
                                         transaction_id)
 
@@ -677,7 +614,7 @@ def process_amazonpg_response_verification(**kwargs):
             'card_issuer_country': response_data.get("card_issuer_country",
                                                      None),
             "response_summary": response_summary,
-            'is_payment_verified': True,
+            'is_payment_verified': is_payment_verified,
         }
     )
     return return_response_data, return_status

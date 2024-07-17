@@ -85,7 +85,8 @@ urlpatterns = [
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view(),
          name='AmazonPGAuthentication'),
-    path('amazonpg/verify/', AmazonPGVerification.as_view()),
+    path('amazonpg/verify/', AmazonPGVerification.as_view(),
+         name='AmazonPGVerification'),
     path('amazonpg/saved-card/', AmazonPGSavedCard.as_view()),
 
     # Happy Credits endpoints
