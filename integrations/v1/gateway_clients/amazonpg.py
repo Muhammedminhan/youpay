@@ -310,7 +310,11 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                     transaction_id=transaction_id,
                     response_data=response))
 
-            return response_data, return_status
+            if return_status:
+                code = self.SUCCESS
+            else:
+                code = self.PAYMENT_FAILED
+            return response_data, code
 
         except Exception as e:
             logger.error("Exception in amazonpg verify session: {}"
