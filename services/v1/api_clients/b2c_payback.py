@@ -249,7 +249,7 @@ class CollectProgramManagement(APIView, YouPayTransactionCRUD):
                 decrypt_string(pk))
             if transaction_obj:
                 payback = B2CPaybackManager()
-                response = payback.get_collect_enabled_program(
+                response = payback.get_point_program(
                     transaction_obj)
                 if response:
                     response_data = self.response_obj.get_success_dict(

@@ -352,6 +352,7 @@ def process_checkoutpg_response_verification(**kwargs):
     payment_method = kwargs.get('payment_method')
     payment_gateway = kwargs.get('payment_gateway')
     channel_code = kwargs.get('channel_code')
+    response_code = kwargs.get('response_data', {}).get('response_code')
 
     reference_from_checkout = response_data.get("reference")
 
@@ -371,24 +372,31 @@ def process_checkoutpg_response_verification(**kwargs):
             " reference id from checkout {}, youpay referance {}"
             "".format(transaction_id, reference_from_checkout,
                       youpay_payment_referance))
-
-        redirect_url = (youpay_transaction.failure_url +
+        if response_code.startswith(
+                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
+            logger.info(
+                "transaction failed for transaction id {}, pre-auth soft "
+                "decline response code {}".format(
+                    transaction_id, response_code))
+        else:
+            redirect_url = (youpay_transaction.failure_url +
                         '?transaction_id=' + transaction_id)
-        response_data = {
-            IS_REDIRECT: True,
-            REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: {"response_summary": "Payment Failed"},
-            IS_SUCCESS: False
-        }
+            response_data = {
+                IS_REDIRECT: True,
+                REDIRECT_URL: redirect_url,
+                TRANSACTION_MSG: {"response_summary": "Payment Failed"},
+                IS_SUCCESS: False
+            }
 
-        return False, response_data
+            return False, response_data
 
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
             response_data)
 
     logger.info(
-        "Verify payment response data {}".format(response_data))
+        "Verify payment response data for transaction {} --> {}".format(
+            transaction_id, response_data))
     response_code = response_data.get('response_code', None)
 
     is_flagged = response_data.get("is_flagged")
