@@ -433,6 +433,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "payment_method": self.payment_method,
                 "name_on_card": name_on_card,
                 "point_collection_enabled": self.point_collection_enabled,
+                "point_program": payment_data.point_program
             }
         }
         update_data.update(youpay_update_data)
@@ -453,7 +454,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             self.response_data = response_data
             logger.info("Neqaty redeem point api response: {}".format(
                 response_data))
-
+            self.transaction_obj.point_program = PAYMENT_METHOD_NEQATY
             response_data = self.handle_neqaty_response(
                 response_data, self.transaction_obj, request_data)
             return response_data, self.SUCCESS
@@ -724,10 +725,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
     def handle_neqaty_collection(self, transaction_obj):
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
-            if transaction_obj.points_collection_enabled_program != (
+            if transaction_obj.point_program != (
                     PAYMENT_METHOD_NEQATY):
                 transaction_obj.points_collected_mobile_number = (
                     transaction_obj.points_redeemed_mobile_number)
-                transaction_obj.points_collection_enabled_program = (
+                transaction_obj.point_program = (
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()

@@ -18,7 +18,7 @@ from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
     PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST,
-    POINT_COLLECTION_PROGRAMS)
+    POINT_PROGRAMS)
 
 logger = logging.getLogger(__name__)
 
@@ -177,9 +177,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     points_redeemed_mobile_number = models.CharField(
         max_length=20, null=True, blank=True,
         help_text="Mobile number associated with the redemption of points ")
-    points_collection_enabled_program = models.CharField(
-        choices=POINT_COLLECTION_PROGRAMS, max_length=200, null=True,
-        blank=True, help_text="Program selected for the collection of points")
+    point_program = models.CharField(
+        choices=POINT_PROGRAMS, max_length=200, null=True,
+        blank=True, help_text="denotes point program used for the txn")
     point_collection_enabled = models.BooleanField(
         null=True, blank=True, default=False, db_index=True,
         help_text='If the point collection enabled or not')
@@ -579,7 +579,7 @@ class ArchivedYouPayTransactionData(models.Model):
         max_length=20, null=True, blank=True)
     points_redeemed_mobile_number = models.CharField(
         max_length=20, null=True, blank=True)
-    points_collection_enabled_program = models.CharField(
+    point_program = models.CharField(
         max_length=20, null=True, blank=True)
     point_collection_enabled = models.BooleanField(
         null=True, blank=True, default=False, db_index=True)
