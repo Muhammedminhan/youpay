@@ -196,7 +196,7 @@ class PaymentConfigurationAdmin(AdminAbstract):
                   'payment_gateway', 'created_at', 'updated_at',
                   'created_by', 'modified_by')
 
-        if obj.payment_gateway.code != B2C_PAYBACK_GATEWAY_CODE:
+        if obj and obj.payment_gateway.code != B2C_PAYBACK_GATEWAY_CODE:
             fields = ('payment_method', 'active',
                       'guest_user_enabled',
                       'payment_gateway', 'created_at', 'updated_at',
