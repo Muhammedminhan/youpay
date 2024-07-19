@@ -2,6 +2,7 @@ import json
 import logging
 
 import requests
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -13,7 +14,8 @@ from core.response_messages import YouPayResponse
 from core.utils import (decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
-                        decimal_rounded, encrypt_payment_data)
+                        decimal_rounded, encrypt_payment_data,
+                        get_cached_payment_method_config)
 from integrations.constants import NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE
 from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
@@ -30,7 +32,8 @@ from services.v1.serializers.payment_request import (
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
                                       AdditionalChargesUpdation)
 from services.v1.views.utils import (
-    reformat_payment_request_data, payment_configuration_check
+    reformat_payment_request_data, payment_configuration_check,
+    get_country_for_configuration
 )
 
 logger = logging.getLogger(__name__)
@@ -706,8 +709,69 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             "collect_enabled": collect_enabled
         }
 
+    def validate_earn_enabled(self, transaction_obj):
+        """
+        Function to check whether earn is enabled or not
+        """
+
+        country = get_country_for_configuration(transaction_obj)
+        if not country:
+            logger.error(
+                "Unregistered Country ({}) received for transaction {}".format(
+                    transaction_obj.country_code,
+                    transaction_obj.transaction_id
+                )
+            )
+            raise PaymentConfigurationFailed(
+                "Country not registered for transaction {}".format(
+                    transaction_obj.transaction_id))
+
+        query_obj = {
+            'payment_method__active': True,
+            'client__id': transaction_obj.api_client.id,
+            'country__iso_code': transaction_obj.country_code,
+            'payment_method__payment_method': transaction_obj.payment_method,
+            'active': True
+        }
+
+        if transaction_obj.is_guest:
+            query_obj['guest_user_enabled'] = True
+
+        payment_method_query = Q(**query_obj)
+        payment_method_config_qs = get_cached_payment_method_config()
+        payment_method_configs = payment_method_config_qs.filter(
+            payment_method_query)
+
+        if not payment_method_configs.exists():
+            raise PaymentConfigurationFailed(
+                "No Active Payment Configuration for transaction-{}, "
+                "client-({}), country-({}), guest user status-({}), payment "
+                "method-({}), is_full_redemption-({})".format(
+                    transaction_obj.transaction_id,
+                    transaction_obj.api_client,
+                    transaction_obj.country_code,
+                    transaction_obj.is_guest,
+                    transaction_obj.payment_method,
+                    transaction_obj.is_full_redemption
+                )
+            )
+
+        payment_method_config = payment_method_configs.first()
+        earn_enabled = payment_method_config.payment_method.earn_enabled
+        if not transaction_obj.is_full_redemption:
+            earn_enabled = payment_method_config.payment_method.earn_on_partial_redemption
+
+        if not earn_enabled:
+            raise PaymentConfigurationFailed(
+                "Earn is disabled in youpay for transaction {}".format(
+                    transaction_obj.transaction_id
+                )
+            )
+
+        return earn_enabled
     def post(self, request):
         try:
+            transaction_id = None
 
             validate, client_pk = self.validate_client(request)
             if not validate:
@@ -728,6 +792,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 logger.info("Earn started for transaction_id: {}".format(
                     transaction_id))
 
+                self.validate_earn_enabled(transaction_object)
+
                 earn_response = self.get_earn_points(
                     transaction_id=transaction_id,
                     transaction_obj=transaction_object)
@@ -745,7 +811,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             else:
                 response_data = {
                     "status": False,
-                    "message": "Transaction not found",
+                    "message": "Transaction({}) not found".format(
+                        transaction_id),
                 }
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
