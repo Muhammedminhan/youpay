@@ -727,9 +727,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 "".format(self.class_name, transaction_obj.country_code,
                           transaction_obj.transaction_id)
             )
-            raise PaymentConfigurationFailed(
-                "Country not registered for transaction {}".format(
-                    transaction_obj.transaction_id))
+            # raise PaymentConfigurationFailed(
+            #     "Country not registered for transaction {}".format(
+            #         transaction_obj.transaction_id))
 
         query_obj = {
             'payment_method__active': True,
@@ -748,18 +748,33 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             payment_method_query)
 
         if not payment_method_configs.exists():
-            raise PaymentConfigurationFailed(
-                "No Active Payment Configuration for transaction-{}, "
+            msg = (
+                "{} No Active Payment Configuration for transaction-{}, "
                 "client-({}), country-({}), guest user status-({}), payment "
                 "method-({}), is_full_redemption-({})".format(
+                    self.class_name,
                     transaction_obj.transaction_id,
                     transaction_obj.api_client,
                     transaction_obj.country_code,
                     transaction_obj.is_guest,
                     transaction_obj.payment_method,
                     transaction_obj.is_full_redemption
-                )
-            )
+                ))
+
+            logger.error(msg)
+
+            # raise PaymentConfigurationFailed(
+            #     "No Active Payment Configuration for transaction-{}, "
+            #     "client-({}), country-({}), guest user status-({}), payment "
+            #     "method-({}), is_full_redemption-({})".format(
+            #         transaction_obj.transaction_id,
+            #         transaction_obj.api_client,
+            #         transaction_obj.country_code,
+            #         transaction_obj.is_guest,
+            #         transaction_obj.payment_method,
+            #         transaction_obj.is_full_redemption
+            #     )
+            # )
 
         payment_method_config = payment_method_configs.first()
         earn_enabled = payment_method_config.payment_method.earn_enabled
@@ -767,11 +782,15 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             earn_enabled = payment_method_config.payment_method.earn_on_partial_redemption
 
         if not earn_enabled:
-            raise PaymentConfigurationFailed(
-                "Earn is disabled in youpay for transaction {}".format(
-                    transaction_obj.transaction_id
-                )
-            )
+            msg = ("{} Earn is disabled in youpay for transaction {}".format(
+                self.class_name, transaction_obj.transaction_id
+            ))
+            logger.error(msg)
+            # raise PaymentConfigurationFailed(
+            #     "Earn is disabled in youpay for transaction {}".format(
+            #         transaction_obj.transaction_id
+            #     )
+            # )
 
         return earn_enabled
     def post(self, request):
