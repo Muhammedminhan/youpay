@@ -583,6 +583,11 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
 class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                                   ClientValidator,
                                   YouPayResponse):
+
+    def __init__(self, ):
+        self.class_name = "{}:".format(self.__class__.__name__)
+
+
     def get_redeemed_amount(self, transaction_obj):
         return (str(transaction_obj.redeemed_amount) if
                 transaction_obj.redeemed_amount else 0.0)
@@ -604,8 +609,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         code = None
         calculated_item_details = None
         program_name = transaction_obj.point_program
-        logger.info("Earn working for {}, for transaction {}".format(
-            program_name, transaction_id
+        logger.info("{} working for {}, for transaction {}".format(
+            self.class_name, program_name, transaction_id
         ))
 
         if transaction_obj.brand_calculations is None:
@@ -630,8 +635,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     'calculated_item_details')
                 transaction_obj.brand_calculations = calculated_item_details
 
-            logger.info(
-                "Brand Calculated for transaction {}".format(transaction_id))
+            logger.info("{} Brand Calculated for transaction {}".format(
+                self.class_name, transaction_id))
 
         if program_name == PAYMENT_METHOD_NEQATY:
             collect_enabled = transaction_obj.point_collection_enabled
@@ -697,9 +702,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                                                transaction_id)
 
         logger.info(
-            "Earn Partner response code is {}, response : {} for transaction:"
-            " {}".format(partner_response_code, partner_response,
-                         transaction_id))
+            "{} Partner response code is {}, response : {} for transaction:"
+            " {}".format(self.class_name, partner_response_code,
+                         partner_response, transaction_id))
 
         return {
             "status": is_success,
@@ -718,10 +723,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         country = get_country_for_configuration(transaction_obj)
         if not country:
             logger.error(
-                "Unregistered Country ({}) received for transaction {}".format(
-                    transaction_obj.country_code,
-                    transaction_obj.transaction_id
-                )
+                "{} Unregistered Country ({}) received for transaction {}"
+                "".format(self.class_name, transaction_obj.country_code,
+                          transaction_obj.transaction_id)
             )
             raise PaymentConfigurationFailed(
                 "Country not registered for transaction {}".format(
@@ -777,11 +781,11 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             validate, client_pk = self.validate_client(request)
             if not validate:
                 logger.info(
-                    "payment request client validation failed for {0}"
-                    .format("order_reference"))
-                self.return_data = self.get_400_message(
+                    "{} payment request client validation failed"
+                    .format(self.class_name))
+                return_data = self.get_400_message(
                     message="Client Does Not Exist")
-                return Response(self.return_data.get('errors'),
+                return Response(return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
             data = self.request.data
             transaction_id = decrypt_string(data.get('transaction_id'))
@@ -790,8 +794,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             if transaction_object:
                 # call redemption partner earn flow
-                logger.info("Earn started for transaction_id: {}".format(
-                    transaction_id))
+                logger.info("{} started for transaction_id: {}".format(
+                    self.class_name, transaction_id))
 
                 self.validate_earn_enabled(transaction_object)
 
@@ -799,9 +803,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     transaction_id=transaction_id,
                     transaction_obj=transaction_object)
 
-                logger.info("EarnRedemptionPartnerPoints worked for "
-                            "transaction : {}, response : {}".format(
-                    transaction_id, earn_response))
+                logger.info("{} worked for transaction : {}, response : {}"
+                            "".format(self.class_name, transaction_id,
+                                      earn_response))
 
                 response_data = {
                     "status": earn_response.get("status"),
@@ -824,12 +828,12 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 "message": str(e),
             }
             logger.error(
-                "PaymentConfigurationFailed Validation failed for {}".format(
-                    transaction_id))
+                "{} PaymentConfigurationFailed Validation failed for {}"
+                "".format(self.class_name, transaction_id))
             return Response(response_data,
                             status=status.HTTP_200_OK)
 
         except Exception as e:
-            logger.error("Error in Earn Redemption Partner Points api ",
-                         exc_info=e)
+            logger.error("{} Error in Earn Redemption Partner Points api "
+                         "".format(self.class_name), exc_info=e)
             return Response({"error": str(e), })
