@@ -19,7 +19,6 @@ from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
                          PaymentConfiguration)
-
 from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                                     PAYMENT_METHOD_CONFIG_CACHE_KEY,
                                     PAYMENT_CONFIG_CACHE_KEY)

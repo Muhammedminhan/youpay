@@ -811,8 +811,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             else:
                 response_data = {
                     "status": False,
-                    "message": "Transaction({}) not found".format(
-                        transaction_id),
+                    "message": "Transaction not found",
                 }
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
