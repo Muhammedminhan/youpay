@@ -32,7 +32,8 @@ from services.v1.serializers.payment_request import (
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
                                       AdditionalChargesUpdation)
 from services.v1.views.utils import (
-    reformat_payment_request_data, payment_configuration_check,
+    reformat_payment_request_data,
+    payment_configuration_check,
     get_country_for_configuration
 )
 
@@ -811,7 +812,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             else:
                 response_data = {
                     "status": False,
-                    "message": "Transaction not found",
+                    "message": "Transaction({}) not found".format(
+                        transaction_id),
                 }
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
