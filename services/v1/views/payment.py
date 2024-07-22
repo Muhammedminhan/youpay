@@ -24,8 +24,8 @@ from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_METHOD_CITI_REWARDS,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_METHOD_NEQATY,
-                                PAYMENT_METHOD_CONFIG_MAPPING)
+                                PAYMENT_METHOD_NEQATY)
+from payments.constants import PAYMENT_METHOD_CONFIG_MAPPING
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
