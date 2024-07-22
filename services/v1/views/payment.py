@@ -758,13 +758,15 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         if not payment_method_configs.exists():
             msg = (
                 "{} No Active Payment Configuration for transaction-{}, "
-                "client-({}), country-({}), guest user status-({}), payment "
-                "method-({}), is_full_redemption-({})".format(
+                "client-({}), country-({}), guest user status-({}), point "
+                "program | payment method-({}|{}), is_full_redemption-({})"
+                "".format(
                     self.class_name,
                     transaction_obj.transaction_id,
                     transaction_obj.api_client,
                     transaction_obj.country_code,
                     transaction_obj.is_guest,
+                    transaction_obj.point_program,
                     transaction_obj.payment_method,
                     transaction_obj.is_full_redemption
                 ))
