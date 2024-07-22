@@ -24,7 +24,8 @@ from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_METHOD_CITI_REWARDS,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_METHOD_NEQATY)
+                                PAYMENT_METHOD_NEQATY,
+                                PAYMENT_METHOD_CONFIG_MAPPING)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -727,15 +728,17 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 "".format(self.class_name, transaction_obj.country_code,
                           transaction_obj.transaction_id)
             )
-            # raise PaymentConfigurationFailed(
-            #     "Country not registered for transaction {}".format(
-            #         transaction_obj.transaction_id))
+            raise PaymentConfigurationFailed(
+                "Country not registered for transaction {}".format(
+                    transaction_obj.transaction_id))
 
         query_obj = {
             'payment_method__active': True,
             'client__id': transaction_obj.api_client.id,
             'country__iso_code': transaction_obj.country_code,
-            'payment_method__payment_method': transaction_obj.payment_method,
+            'payment_method__payment_method': (
+                PAYMENT_METHOD_CONFIG_MAPPING.get(
+                    transaction_obj.payment_method)),
             'active': True
         }
 
@@ -765,18 +768,18 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             logger.error(msg)
 
-            # raise PaymentConfigurationFailed(
-            #     "No Active Payment Configuration for transaction-{}, "
-            #     "client-({}), country-({}), guest user status-({}), payment "
-            #     "method-({}), is_full_redemption-({})".format(
-            #         transaction_obj.transaction_id,
-            #         transaction_obj.api_client,
-            #         transaction_obj.country_code,
-            #         transaction_obj.is_guest,
-            #         transaction_obj.payment_method,
-            #         transaction_obj.is_full_redemption
-            #     )
-            # )
+            raise PaymentConfigurationFailed(
+                "No Active Payment Configuration for transaction-{}, "
+                "client-({}), country-({}), guest user status-({}), payment "
+                "method-({}), is_full_redemption-({})".format(
+                    transaction_obj.transaction_id,
+                    transaction_obj.api_client,
+                    transaction_obj.country_code,
+                    transaction_obj.is_guest,
+                    transaction_obj.payment_method,
+                    transaction_obj.is_full_redemption
+                )
+            )
 
         payment_method_config = payment_method_configs.first()
         earn_enabled = payment_method_config.payment_method.earn_enabled
@@ -788,11 +791,11 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 self.class_name, transaction_obj.transaction_id
             ))
             logger.error(msg)
-            # raise PaymentConfigurationFailed(
-            #     "Earn is disabled in youpay for transaction {}".format(
-            #         transaction_obj.transaction_id
-            #     )
-            # )
+            raise PaymentConfigurationFailed(
+                "Earn is disabled in youpay for transaction {}".format(
+                    transaction_obj.transaction_id
+                )
+            )
 
         return earn_enabled
     def post(self, request):
