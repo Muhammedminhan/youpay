@@ -218,11 +218,11 @@ class YouPayResponse(object):
 
             self.MOKAFA_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.MOKAFA_PHONE_NUMBER_SAVE_FAILED: (
-                "MOKAFA Phone number failed to save"),
+                "MOKAFA Phone/cic number failed to save"),
             self.MOKAFA_PHONE_NUMBER_SAVED: (
-                "MOKAFA Phone number updated"),
+                "MOKAFA Phone/cic number updated"),
             self.MOKAFA_PHONE_NUMBER_FAILED_TO_FETCH: (
-                "MOKAFA Phone number failed to fetch"),
+                "MOKAFA Phone/cic number failed to fetch"),
             self.MOKAFA_ALREADY_COLLECTED: "MOKAFA Reward collected Already.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (

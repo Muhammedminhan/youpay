@@ -174,6 +174,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     points_collected_mobile_number = models.CharField(
         max_length=20, null=True, blank=True,
         help_text="Mobile number associated with the collection of points")
+    points_collected_cic_number = models.CharField(
+        max_length=30, null=True, blank=True,
+        help_text="CIC number associated with the collection of points")
     points_redeemed_mobile_number = models.CharField(
         max_length=20, null=True, blank=True,
         help_text="Mobile number associated with the redemption of points ")
@@ -577,6 +580,8 @@ class ArchivedYouPayTransactionData(models.Model):
         db_index=True, null=True, blank=True)
     points_collected_mobile_number = models.CharField(
         max_length=20, null=True, blank=True)
+    points_collected_cic_number = models.CharField(
+        max_length=30, null=True, blank=True)
     points_redeemed_mobile_number = models.CharField(
         max_length=20, null=True, blank=True)
     point_program = models.CharField(

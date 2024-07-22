@@ -12,7 +12,8 @@ from core.utils import (decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded, encrypt_payment_data)
-from integrations.constants import NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE
+from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
+                                    MOKAFA_CLIENT_CODE)
 from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
@@ -603,13 +604,16 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         ))
 
         if transaction_obj.brand_calculations is None:
+            if program_name == PAYMENT_METHOD_NEQATY:
+                client_code = NEQATY_CLIENT_CODE
+            elif program_name == PAYMENT_METHOD_MOKAFA:
+                client_code = MOKAFA_CLIENT_CODE
+            else:
+                client_code = QITAF_CLIENT_CODE
             payload = {
                 'transaction_obj': transaction_obj,
                 "selected_amount": self.get_redeemed_amount(transaction_obj),
-                "client_code": (
-                    NEQATY_CLIENT_CODE
-                    if program_name == PAYMENT_METHOD_NEQATY else
-                    QITAF_CLIENT_CODE)
+                "client_code": client_code
             }
 
             from integrations.v1.gateway_clients.qitaf_service import (
@@ -679,6 +683,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             if code == self.SUCCESS:
                 earn_reference = response.get("partner_response").get(
                     "earn_reference")
+                earned_points = response.get("partner_response").get(
+                    "earned_points")
                 calculated_item_details = response.get(
                     "partner_response", {}).get("calculated_item_details")
             message = "Pont Collect requested for {}".format(

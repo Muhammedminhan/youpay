@@ -21,6 +21,7 @@ class UpdateMokafaPhoneNumber(APIView, YouPayTransactionCRUD):
         try:
             transaction_id = request.data.get('transaction_id')
             mokafa_phone_number = request.data.get('mokafa_phone_number')
+            mokafa_cic_number = request.data.get('mokafa_cic_number')
 
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id))
@@ -37,7 +38,8 @@ class UpdateMokafaPhoneNumber(APIView, YouPayTransactionCRUD):
                 update_data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'points_collected_mobile_number': mokafa_phone_number,
-                    'points_collection_enabled_program': PAYMENT_METHOD_MOKAFA,
+                    'points_collected_cic_number': mokafa_cic_number,
+                    'point_program': PAYMENT_METHOD_MOKAFA,
                     'point_collection_enabled': True,
                     "brand_details": brand_details
                 }
@@ -51,8 +53,8 @@ class UpdateMokafaPhoneNumber(APIView, YouPayTransactionCRUD):
                     )
                     return Response(data, status=status.HTTP_200_OK)
                 else:
-                    logger.error("Couldn't Update Mokafa phone number for {}"
-                                 "".format(transaction_obj.transaction_id))
+                    logger.error("Couldn't Update Mokafa phone/cic number for"
+                                 " {}".format(transaction_obj.transaction_id))
                     data = self.response_obj.get_error_dict(
                         error_code=(
                             self.response_obj.MOKAFA_PHONE_NUMBER_SAVE_FAILED))

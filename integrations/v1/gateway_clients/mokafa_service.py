@@ -78,6 +78,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
             request_data = {
                 "mobile_number": transaction_obj.points_collected_mobile_number,
+                "cic_number": transaction_obj.points_collected_cic_number,
                 "customer_email": transaction_obj.customer_email,
                 "customer_name": transaction_obj.customer_name,
                 "invoice_id": transaction_obj.invoice_id,
@@ -94,6 +95,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 "redeemed_amount": (
                     str(transaction_obj.redeemed_amount) if
                     transaction_obj.redeemed_amount else 0),
+                "apiclient":  transaction_obj.api_client.name,
+                "source_payment_method": transaction_obj.payment_method
             }
 
             self.transaction_obj = transaction_obj

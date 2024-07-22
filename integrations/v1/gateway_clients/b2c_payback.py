@@ -351,17 +351,22 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
 
     def get_point_program(self, transaction_obj):
         try:
-            data = {}
             point_program = (
                 transaction_obj.point_program)
             points_collected_mobile_number = (
                 transaction_obj.points_collected_mobile_number)
+            points_collected_cic_number = (
+                transaction_obj.points_collected_cic_number)
             data = {
                 "point_program": (
-                    point_program),
-                "points_collected_mobile_number": (
-                    points_collected_mobile_number),
+                    point_program)
             }
+            if points_collected_mobile_number:
+                data['points_collected_mobile_number'] = (
+                    points_collected_mobile_number)
+            if points_collected_cic_number:
+                data['points_collected_cic_number'] = (
+                    points_collected_cic_number)
 
             return data
         except Exception as e:
