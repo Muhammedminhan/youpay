@@ -597,7 +597,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         partner_response_code = None
         code = None
         calculated_item_details = None
-        program_name = transaction_obj.points_collection_enabled_program
+        program_name = transaction_obj.point_program
         logger.info("Earn working for {}, for transaction {}".format(
             program_name, transaction_id
         ))
@@ -685,7 +685,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 PAYMENT_METHOD_MOKAFA)
         else:
             message = "Unknown redemption partner {}".format(
-                transaction_obj.points_collection_enabled_program)
+                transaction_obj.point_program)
 
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference

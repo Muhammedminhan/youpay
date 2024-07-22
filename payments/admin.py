@@ -92,7 +92,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'is_full_redemption', 'earned_point', 'earn_reference',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
-                       'points_collection_enabled_program',
+                       'point_program',
                        'point_collection_enabled',
                        'maximum_redeemable_points',
                        'minimum_redeemable_points', 'amount_conversion_rate',
@@ -243,7 +243,7 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
                        'is_full_redemption', 'earned_point',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
-                       'points_collection_enabled_program',
+                       'point_program',
                        'point_collection_enabled',
                        )
         }),
