@@ -742,6 +742,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         if transaction_obj.is_guest:
             query_obj['guest_user_enabled'] = True
 
+        logger.info("{} Query filter ".format(query_obj))
+
         payment_method_query = Q(**query_obj)
         payment_method_config_qs = get_cached_payment_method_config()
         payment_method_configs = payment_method_config_qs.filter(
