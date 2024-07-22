@@ -17,7 +17,8 @@ from core.utils import (decrypt_payment_data,
                         decimal_rounded, encrypt_payment_data,
                         get_cached_payment_method_config)
 from integrations.constants import NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE
-from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
+from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
+                                ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
                                 PAYMENT_STATUS_PAID, ALLOW_EXPIRE_STATUS_LIST,
@@ -25,7 +26,6 @@ from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY)
-from payments.constants import PAYMENT_METHOD_CONFIG_MAPPING
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
