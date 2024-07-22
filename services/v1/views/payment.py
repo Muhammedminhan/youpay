@@ -732,13 +732,16 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 "Country not registered for transaction {}".format(
                     transaction_obj.transaction_id))
 
+        payment_method = (
+            transaction_obj.point_program if transaction_obj.point_program
+            else transaction_obj.payment_method)
+
         query_obj = {
             'payment_method__active': True,
             'client__id': transaction_obj.api_client.id,
             'country__iso_code': transaction_obj.country_code,
             'payment_method__payment_method': (
-                PAYMENT_METHOD_CONFIG_MAPPING.get(
-                    transaction_obj.payment_method)),
+                PAYMENT_METHOD_CONFIG_MAPPING.get(payment_method)),
             'active': True
         }
 
