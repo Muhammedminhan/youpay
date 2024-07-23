@@ -788,20 +788,18 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
         payment_method_config = payment_method_configs.first()
         earn_enabled = payment_method_config.payment_method.earn_enabled
+        earn_msg = "{} Earn is disabled in youpay for transaction {}".format(
+            self.class_name, transaction_obj.transaction_id
+        )
 
         if not transaction_obj.is_full_redemption == False:
             earn_enabled = payment_method_config.payment_method.earn_on_partial_redemption
-
+            earn_msg = ("{} Partial Earn is disabled in youpay for "
+                        "transaction {}").format(
+                self.class_name, transaction_obj.transaction_id)
         if not earn_enabled:
-            msg = ("{} Earn is disabled in youpay for transaction {}".format(
-                self.class_name, transaction_obj.transaction_id
-            ))
-            logger.error(msg)
-            raise PaymentConfigurationFailed(
-                "Earn is disabled in youpay for transaction {}".format(
-                    transaction_obj.transaction_id
-                )
-            )
+            logger.error(earn_msg)
+            raise PaymentConfigurationFailed(earn_msg)
 
         return earn_enabled
     def post(self, request):
