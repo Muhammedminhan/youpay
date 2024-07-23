@@ -3,7 +3,8 @@ from django.contrib import admin
 from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
 from payments.adminActions import (archive_transaction_data,
-                                   collect_neqaty_points_for_transaction)
+                                   collect_neqaty_points_for_transaction,
+                                   sync_qitaf_earn_to_purchase_request)
 from payments.forms import AnnouncementForm
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification, AdditionalCharge,
@@ -19,11 +20,15 @@ class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
 
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
     actions = [archive_transaction_data,
-               collect_neqaty_points_for_transaction]
+               collect_neqaty_points_for_transaction,
+               sync_qitaf_earn_to_purchase_request]
     archive_transaction_data.short_description = (
         "Archive Selected Transaction data")
     collect_neqaty_points_for_transaction.short_description = (
         "Collect Neqaty points for the transaction")
+    sync_qitaf_earn_to_purchase_request.short_description = (
+        "Sync qitaf earn data"
+    )
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'order_reference',
