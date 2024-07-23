@@ -15,7 +15,8 @@ from payments.constants import (ALLOW_ARCHIVE_STATUS_LIST,
                                 PAYMENT_STATUS_PAID,
                                 PAYMENT_METHOD_QITAFAND_CARD,
                                 QITAF_EARN_SYNC_URL)
-from payments.models import (ArchivedYouPayTransactionData)
+from payments.models import (ArchivedYouPayTransactionData,
+                             YouPayTransactionData)
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
             if transaction.earn_reference:
                 earn_reference = transaction.earn_reference
             else:
-                earn_reference = transaction.transaction_id
+                earn_reference = None
             data = {
                 'invoice': transaction.invoice_id,
                 'reference_id': earn_reference,
@@ -172,6 +173,18 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
                 {"transactions": json_data}))
         if response.status_code == status.HTTP_201_CREATED:
             messages.success(request, "Transactions sent successfully.")
+            response_json = response.json()
+            logger.info("response data for earn data {}".format(
+                response_json))
+            update_data = response_json.get("data")
+            from django.db import transaction
+            with transaction.atomic:
+                for transaction_details in update_data:
+                    transaction_id = transaction_details.get("transaction_id")
+                    earn_reference = transaction_details.get("reference_id")
+                    YouPayTransactionData.objects.filter(
+                        transaction_id=transaction_id).update(
+                        earn_reference=earn_reference)
         else:
             logger.error("Error while syncing qitaf earn transactions, "
                          "response {}".format(response.text))
