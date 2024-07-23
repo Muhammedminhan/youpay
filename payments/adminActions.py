@@ -145,7 +145,7 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
             if transaction.earn_reference:
                 earn_reference = transaction.earn_reference
             else:
-                earn_reference = transaction.transaction_id
+                earn_reference = None
             data = {
                 'invoice': transaction.invoice_id,
                 'reference_id': earn_reference,
@@ -174,6 +174,8 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
         if response.status_code == status.HTTP_201_CREATED:
             messages.success(request, "Transactions sent successfully.")
             response_json = response.json()
+            logger.info("response data for earn data {}".format(
+                response_json))
             update_data = response_json.get("data")
             from django.db import transaction
             with transaction.atomic:
