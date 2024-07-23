@@ -177,14 +177,12 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
             logger.info("response data for earn data {}".format(
                 response_json))
             update_data = response_json.get("data")
-            from django.db import transaction
-            with transaction.atomic:
-                for transaction_details in update_data:
-                    transaction_id = transaction_details.get("transaction_id")
-                    earn_reference = transaction_details.get("reference_id")
-                    YouPayTransactionData.objects.filter(
-                        transaction_id=transaction_id).update(
-                        earn_reference=earn_reference)
+            for transaction_details in update_data:
+                transaction_id = transaction_details.get("transaction_id")
+                earn_reference = transaction_details.get("reference_id")
+                YouPayTransactionData.objects.filter(
+                    transaction_id=transaction_id).update(
+                    earn_reference=earn_reference)
         else:
             logger.error("Error while syncing qitaf earn transactions, "
                          "response {}".format(response.text))
