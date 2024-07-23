@@ -1,11 +1,20 @@
+import json
 import logging
+import requests
 
 from django.contrib import messages
+from django.core.serializers.json import DjangoJSONEncoder
 
+from rest_framework import status
 from core.response_messages import YouPayResponse
+from integrations.constants import B2CPAYBACK_HUB_CODE
+from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
-from payments.constants import ALLOW_ARCHIVE_STATUS_LIST, PAYMENT_STATUS_PAID
+from payments.constants import (ALLOW_ARCHIVE_STATUS_LIST,
+                                PAYMENT_STATUS_PAID,
+                                PAYMENT_METHOD_QITAFAND_CARD,
+                                QITAF_EARN_SYNC_URL)
 from payments.models import (ArchivedYouPayTransactionData)
 
 logger = logging.getLogger(__name__)
@@ -113,5 +122,65 @@ def collect_neqaty_points_for_transaction(modeladmin, request, queryset):
         response_message = ("Collecting points of neqaty failed with error : "
                             "{}".format(str(e)))
         logger.error(response_message)
+        modeladmin.message_user(request, response_message,
+                                level=messages.ERROR)
+
+
+def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
+    try:
+        if queryset.count() > 10:
+            modeladmin.message_user(
+                request, "You can only select 10 transaction to process.",
+                level=messages.WARNING)
+            return
+        transactions_data = []
+        for transaction in queryset:
+            logger.info("Sending qitaf sync data for transaction id "
+                        "{}".format(transaction.transaction_id))
+            if transaction.payment_method == PAYMENT_METHOD_QITAFAND_CARD:
+                earn_amount = transaction.payable_amount
+            else:
+                earn_amount = transaction.amount
+            if transaction.earn_reference:
+                earn_reference = transaction.earn_reference
+            else:
+                earn_reference = transaction.transaction_id
+            data = {
+                'invoice': transaction.invoice_id,
+                'reference_id': earn_reference,
+                'platform': transaction.platform,
+                'customer_name': transaction.customer_name,
+                'customer_email': transaction.customer_email,
+                'transaction_id': str(transaction.transaction_id),
+                'payment_method': transaction.payment_method,
+                'source_api_client': transaction.api_client.name,
+                'earned_points': transaction.earned_point,
+                'brand_calculations': transaction.brand_calculations,
+                'currency': transaction.currency,
+                'amount': earn_amount,
+                'mobile_number': transaction.points_collected_mobile_number,
+                'gateway_reference': transaction.payment_reference
+            }
+            transactions_data.append(data)
+        gateway = PaymentGateway.objects.get(code=B2CPAYBACK_HUB_CODE)
+        url = gateway.domain + QITAF_EARN_SYNC_URL
+        logger.info("sync url {} ".format(url))
+        json_data = json.dumps(transactions_data, cls=DjangoJSONEncoder)
+        response = requests.post(url, json={"transactions": json_data})
+        logger.info(
+            "qitaf sync admin action data {}".format(
+                {"transactions": json_data}))
+        if response.status_code == status.HTTP_201_CREATED:
+            messages.success(request, "Transactions sent successfully.")
+        else:
+            logger.error("Error while syncing qitaf earn transactions, "
+                         "response {}".format(response.text))
+            messages.error(request,
+                           "Failed to sync transactions "
+                           "with B2Cpayback!")
+    except Exception as e:
+        response_message = (
+            "Syncing qitaf earn failed with error : {}".format(str(e)))
+        logger.error(response_message, exc_info=e)
         modeladmin.message_user(request, response_message,
                                 level=messages.ERROR)
