@@ -139,13 +139,15 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
                         "{}".format(transaction.transaction_id))
             if transaction.payment_method == PAYMENT_METHOD_QITAFAND_CARD:
                 earn_amount = transaction.payable_amount
-                gateway_reference = ""
             else:
                 earn_amount = transaction.amount
-                gateway_reference = transaction.payment_reference
+            if transaction.earn_reference:
+                earn_reference = transaction.earn_reference
+            else:
+                earn_reference = transaction.transaction_id
             data = {
                 'invoice': transaction.invoice_id,
-                'reference_id': transaction.earn_reference,
+                'reference_id': earn_reference,
                 'platform': transaction.platform,
                 'customer_name': transaction.customer_name,
                 'customer_email': transaction.customer_email,
@@ -157,7 +159,7 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
                 'currency': transaction.currency,
                 'amount': earn_amount,
                 'mobile_number': transaction.points_collected_mobile_number,
-                'gateway_reference': gateway_reference
+                'gateway_reference': transaction.payment_reference
             }
             transactions_data.append(data)
         gateway = PaymentGateway.objects.get(code=B2CPAYBACK_HUB_CODE)
