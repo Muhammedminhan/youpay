@@ -792,7 +792,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             self.class_name, transaction_obj.transaction_id
         )
 
-        if not transaction_obj.is_full_redemption == False:
+        if transaction_obj.is_full_redemption == False:
             earn_enabled = payment_method_config.payment_method.earn_on_partial_redemption
             earn_msg = ("{} Partial Earn is disabled in youpay for "
                         "transaction {}").format(
