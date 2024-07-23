@@ -143,6 +143,8 @@ class YouPayTransactionCRUD(object):
             'point_collection_enabled', None)
         data_dict['points_collected_mobile_number'] = data.get(
             'points_collected_mobile_number', None)
+        data_dict['points_collected_cic_number'] = data.get(
+            'points_collected_cic_number', None)
         data_dict['points_redeemed_mobile_number'] = data.get(
             'points_redeemed_mobile_number', None)
         data_dict['point_program'] = data.get('point_program', None)
