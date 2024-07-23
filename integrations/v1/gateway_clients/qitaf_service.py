@@ -1,3 +1,4 @@
+import inspect
 import json
 import logging
 
@@ -5,7 +6,7 @@ import requests
 from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
-                            REQUEST_METHOD_GET)
+                            REQUEST_METHOD_GET, LANGUAGE_ENGLISH)
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
@@ -70,6 +71,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.point_program = None
         self.point_collection_enabled = False
         self.brand_calculations = None
+
+        self.class_name = "{}:".format(self.__class__.__name__)
 
     def get_configurations(self, amount, currency, transaction_id):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
@@ -463,6 +466,25 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                          "{}".format(e))
             return {"error": error}, self.QITAF_CONNECTION_ERROR
 
+    def qitaf_error_response_message(self, response_data):
+        message = ""
+        try:
+            qitaf_error_msg = (response_data.get('response_text', "")
+                               if self.transaction_obj.language == LANGUAGE_ENGLISH
+                               else response_data.get('response_text_ar', ""))
+
+            checkout_error_message = response_data.get(
+                "checkout_response_data", {}).get(
+                "response_summary", "")
+            message = qitaf_error_msg if qitaf_error_msg else checkout_error_message
+        except Exception as e:
+            logger.error(
+                "{} Exception occurred on {}, err {} ".format(
+                    self.class_name, inspect.currentframe().f_code.co_name,
+                    e))
+
+        return message
+
     def handle_qitaf_response(self, response_data, payment_data,
                               request_data):
         message = "API request completed successfully"
@@ -497,8 +519,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                     payment_data.transaction_id))
                 is_success = False
                 is_redirect = True
-                message = response_data.get("checkout_response_data", {}).get(
-                    "response_summary", "Payment Failed")
+                message = self.qitaf_error_response_message(response_data)
+
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
             """Handle qiTaf full redemption response"""
@@ -530,6 +552,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 '''Qitaf full redemption Failure case'''
                 self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
                 is_redirect = False
+                message = self.qitaf_error_response_message(response_data)
+
         self.payment_method = (
             PAYMENT_METHOD_QITAF if is_full_redemption
             else PAYMENT_METHOD_QITAFAND_CARD)
@@ -565,7 +589,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
         self.update_youpay_transaction_data(update_data)
         return_response = {
-            "message": message,
+            "message": message if message else "Payment Failed",
             REDIRECT_URL: redirect_url,
             IS_REDIRECT: is_redirect,
             "qitaf_response": response_data,
