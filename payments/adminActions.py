@@ -135,6 +135,8 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
             return
         transactions_data = []
         for transaction in queryset:
+            logger.info("Sending qitaf sync data for transaction id "
+                        "{}".format(transaction.transaction_id))
             if transaction.payment_method == PAYMENT_METHOD_QITAFAND_CARD:
                 earn_amount = transaction.payable_amount
             else:
@@ -151,7 +153,8 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
                 'earned_points': transaction.earned_point,
                 'brand_calculations': transaction.brand_calculations,
                 'currency': transaction.currency,
-                'amount': earn_amount
+                'amount': earn_amount,
+                'mobile_number': transaction.points_collected_mobile_number
             }
             transactions_data.append(data)
         gateway = PaymentGateway.objects.get(code=B2CPAYBACK_HUB_CODE)
