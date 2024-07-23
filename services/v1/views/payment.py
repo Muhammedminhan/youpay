@@ -788,7 +788,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
         payment_method_config = payment_method_configs.first()
         earn_enabled = payment_method_config.payment_method.earn_enabled
-        if not transaction_obj.is_full_redemption:
+
+        if not transaction_obj.is_full_redemption == False:
             earn_enabled = payment_method_config.payment_method.earn_on_partial_redemption
 
         if not earn_enabled:
