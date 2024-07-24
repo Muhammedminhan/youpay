@@ -67,7 +67,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.VAT_amount = None
         self.payment_gateway = PAYMENT_GATEWAY_B2CPAYBACK
         self.points_redeemed_mobile_number = None
-        self.points_collection_enabled_program = None
+        self.point_program = None
         self.point_collection_enabled = False
         self.brand_calculations = None
 
@@ -489,7 +489,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 self.payable_amount = response_data.get('payable_amount')
                 self.points_redeemed_mobile_number = response_data.get(
                     'redeemed_mobile_number')
-                self.points_collection_enabled_program = PAYMENT_METHOD_QITAF
+                self.point_program = PAYMENT_METHOD_QITAF
 
             else:
                 redirect_url = ('{}?transaction_id={}'.format(
@@ -521,6 +521,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 self.points_redeemed_mobile_number = response_data.get(
                     'redeemed_mobile_number')
+                self.point_program = PAYMENT_METHOD_QITAF
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
@@ -555,8 +556,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 "name_on_card": name_on_card,
                 "points_redeemed_mobile_number": (
                     self.points_redeemed_mobile_number),
-                "points_collection_enabled_program": (
-                    self.points_collection_enabled_program),
+                "point_program": (
+                    self.point_program),
                 "brand_calculations": self.brand_calculations
             }
         }
@@ -764,10 +765,10 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         response = None
         code = None
         if transaction_obj.point_collection_enabled:
-            if transaction_obj.points_collection_enabled_program != (
+            if transaction_obj.point_program != (
                     PAYMENT_METHOD_QITAF):
                 transaction_obj.points_collected_mobile_number = (
                     transaction_obj.points_redeemed_mobile_number)
-                transaction_obj.points_collection_enabled_program = (
+                transaction_obj.point_program = (
                     PAYMENT_METHOD_QITAF)
                 transaction_obj.save()

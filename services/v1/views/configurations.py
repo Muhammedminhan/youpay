@@ -13,7 +13,7 @@ from core.utils import (decrypt_string, get_gateway_additional_fee,
                         decrypt_browser_value)
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
-                                    NEQATY_CLIENT_CODE)
+                                    NEQATY_CLIENT_CODE, MOKAFA_CLIENT_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -24,7 +24,7 @@ from payments.constants import (
     PAYMENT_OPTION_PAYPAL, PAYMENT_OPTION_CITI_REWARDS, PAYMENT_OPTION_QITAF,
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
-    PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY
+    PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
@@ -142,6 +142,7 @@ class ConfigViewSet(ViewSet):
                 "applepay_config": self.get_applepay_config(payment_options),
                 "paypal_config": self.get_paypal_config(payment_options),
                 "neqaty_config": b2c_configs.get('neqaty_config', {}),
+                "mokafa_config": b2c_configs.get('mokafa_config', {}),
                 "amount": transaction.amount if transaction else None,
                 "currency": transaction.currency if transaction else None,
                 "country_code": transaction.country_code if transaction else
@@ -342,8 +343,10 @@ class ConfigViewSet(ViewSet):
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
         neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
+        mokafa_enabled = payment_option.get(PAYMENT_OPTION_MOKAFA, False)
         config_dict = {}
-        if True in [adcb_enabled, qitaf_enabled, neqaty_enabled]:
+        if True in [adcb_enabled, qitaf_enabled, neqaty_enabled,
+                    mokafa_enabled]:
             b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
                                                 transaction.currency)
             config_list = (b2c_config.response_data.get("results") if
@@ -383,6 +386,15 @@ class ConfigViewSet(ViewSet):
                 }
                 neqaty_config.update(additional_config)
                 config_dict['neqaty_config'] = neqaty_config
+
+            if mokafa_enabled:
+                this__config_data = (
+                    partial_redemption_allowed_options.get(
+                        PAYMENT_OPTION_MOKAFA, False))
+                mokafa_config = self.get_each_b2c_config(config_list,
+                                                         MOKAFA_CLIENT_CODE)
+                mokafa_config.update(**this__config_data)
+                config_dict['mokafa_config'] = mokafa_config
         return config_dict
 
     @staticmethod

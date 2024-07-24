@@ -3,7 +3,8 @@ from django.contrib import admin
 from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
 from payments.adminActions import (archive_transaction_data,
-                                   collect_neqaty_points_for_transaction)
+                                   collect_neqaty_points_for_transaction,
+                                   sync_qitaf_earn_to_purchase_request)
 from payments.forms import AnnouncementForm
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification, AdditionalCharge,
@@ -19,11 +20,15 @@ class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
 
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
     actions = [archive_transaction_data,
-               collect_neqaty_points_for_transaction]
+               collect_neqaty_points_for_transaction,
+               sync_qitaf_earn_to_purchase_request]
     archive_transaction_data.short_description = (
         "Archive Selected Transaction data")
     collect_neqaty_points_for_transaction.short_description = (
         "Collect Neqaty points for the transaction")
+    sync_qitaf_earn_to_purchase_request.short_description = (
+        "Sync qitaf earn data"
+    )
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'order_reference',
@@ -92,7 +97,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'is_full_redemption', 'earned_point', 'earn_reference',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
-                       'points_collection_enabled_program',
+                       'point_program',
                        'point_collection_enabled',
                        'maximum_redeemable_points',
                        'minimum_redeemable_points', 'amount_conversion_rate',
@@ -243,7 +248,7 @@ class ArchivedYouPayTransactionDataAdmin(admin.ModelAdmin):
                        'is_full_redemption', 'earned_point',
                        'points_collected_mobile_number',
                        'points_redeemed_mobile_number',
-                       'points_collection_enabled_program',
+                       'point_program',
                        'point_collection_enabled',
                        )
         }),

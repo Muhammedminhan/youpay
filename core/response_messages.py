@@ -137,6 +137,14 @@ class YouPayResponse(object):
 
     """Qitaf related ends"""
 
+    """Mokafa related begins"""
+    MOKAFA_CONNECTION_ERROR = 7002
+    MOKAFA_PHONE_NUMBER_SAVE_FAILED = 7003
+    MOKAFA_PHONE_NUMBER_SAVED = 7004
+    MOKAFA_PHONE_NUMBER_FAILED_TO_FETCH = 7005
+    MOKAFA_ALREADY_COLLECTED = 7402
+    """Mokafa related ends """
+
     MESSAGE = {}
 
     def __init__(self):
@@ -207,6 +215,15 @@ class YouPayResponse(object):
             self.NEQATY_NOT_SUPPORTED: "NEQATY Forbidden, or partial redemption not supported.",
             self.NEQATY_ALREADY_COLLECTED: "NEQATY Reward collected Already.",
             self.NEQATY_BALANCE_CALCULATION_FAILED: "NEQATY Balance calculation failed.",
+
+            self.MOKAFA_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.MOKAFA_PHONE_NUMBER_SAVE_FAILED: (
+                "MOKAFA Phone/cic number failed to save"),
+            self.MOKAFA_PHONE_NUMBER_SAVED: (
+                "MOKAFA Phone/cic number updated"),
+            self.MOKAFA_PHONE_NUMBER_FAILED_TO_FETCH: (
+                "MOKAFA Phone/cic number failed to fetch"),
+            self.MOKAFA_ALREADY_COLLECTED: "MOKAFA Reward collected Already.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
