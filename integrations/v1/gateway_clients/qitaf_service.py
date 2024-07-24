@@ -772,11 +772,9 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         """
         Updating program, mobile number etc on Qitaf Verification
         """
-        response = None
-        code = None
         if transaction_obj.point_collection_enabled:
-            if transaction_obj.point_program != (
-                    PAYMENT_METHOD_QITAF):
+            if (transaction_obj.point_program != PAYMENT_METHOD_QITAF or
+                    not transaction_obj.points_collected_mobile_number):
                 transaction_obj.points_collected_mobile_number = (
                     transaction_obj.points_redeemed_mobile_number)
                 transaction_obj.point_program = (
