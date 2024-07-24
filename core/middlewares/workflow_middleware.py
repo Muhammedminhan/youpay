@@ -307,6 +307,7 @@ class PaymentVerificationCheckMiddleware(object):
                     'is_guest': self.transaction_obj.is_guest,
                     'program': self.transaction_obj.api_client.name,
                     'retry_count': self.transaction_obj.retry_count,
+                    'payment_method': self.transaction_obj.payment_method
                 }
 
                 if hasattr(response, 'data'):
