@@ -190,3 +190,8 @@ NEQATY_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"
 NEQATY_VERIFY_API = "/payback/api/v1/verify"
 NEQATY_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
 REDEMPTION_PARTNER_NEQATY = "NEQATY"
+
+# Mokafa related constants
+MOKAFA_CLIENT_CODE = 'PAYMTMKF'
+MOKAFA_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
+REDEMPTION_PARTNER_MOKAFA = "MOKAFA"

@@ -388,8 +388,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
     def handle_card_payment_response(self, response_data, payment_data,
                                      is_card=False):
         logger.info(
-            "card payment response handling, checkoutpg response {} ".format(
-                response_data))
+            "card payment response handling, checkoutpg response for "
+            "transaction {} is {} ".format(
+                self.transaction_id, response_data))
         if response_data.get(
                 'status') == 200 and response_data.get(IS_REDIRECT) is True:
             # 3ds case
@@ -420,8 +421,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     payment_gateway=self.payment_gateway,
                     channel_code=self.channel_code,
                 ))
-            logger.info("pre auth verification method response "
-                        "data {}".format(response_data))
+            logger.info("pre auth verification method response data {} for "
+                        "transaction {}".format(response_data,
+                                                self.transaction_id))
             if redirect:
                 response_data.pop('transaction_message')
                 return response_data, self.SUCCESS
