@@ -302,7 +302,7 @@ class PaymentVerificationCheckMiddleware(object):
                     view_name, self.transaction_obj.transaction_id))
 
                 clever_tap_data = {
-                    'platform': self.transaction_obj.platform,
+                    'platform': self.transaction_obj.platform.upper(),
                     'country_code': self.transaction_obj.country_code,
                     'is_guest': self.transaction_obj.is_guest,
                     'program': self.transaction_obj.api_client.name,
