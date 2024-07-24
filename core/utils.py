@@ -203,6 +203,7 @@ def get_cached_payment_config():
             "Error on getting cached PaymentConfiguration : {}".format(e))
         return PaymentConfiguration.objects.none()
 
+
 def auto_enable_or_disable_point_collection(query):
     """
     Input Payment Config Query
@@ -215,9 +216,7 @@ def auto_enable_or_disable_point_collection(query):
         if payment_config_data.count():
             payment_config_datum = payment_config_data.first()
             return payment_config_datum.earn_on_partial_redemption
-
     return False
-
 
 
 def decimal_rounded(amount, decimal_notation):
