@@ -10,6 +10,7 @@ from adcbpgclient.libs.authentication import SignatureAuthentication
 from adcbpgclient.models import ADCBTransactionData
 from integrations.common import WebhookDataFormat
 from payments.constants import PAYMENT_SCHEME_NONE
+from payments.models import YouPayTransactionData
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,16 @@ def get_purchase_request_object(reference):
         return purchase_obj
 
 
+def get_youpay_transaction_object(transaction_id):
+    try:
+        transaction_id = transaction_id.split('|')
+        transaction_obj = YouPayTransactionData.objects.get(
+            transaction_id=transaction_id[-1])
+    except YouPayTransactionData.DoesNotExist:
+        transaction_obj = None
+    return transaction_obj
+
+
 class WebhookListener(APIView, WebhookDataFormat):
     authentication_classes = (SignatureAuthentication,)
 
@@ -36,9 +47,18 @@ class WebhookListener(APIView, WebhookDataFormat):
             invoice = str(request_data.get('invoice', None))
             logger.info("B2cpayback webhook received for invoice {} is "
                         "{}".format(invoice, request_data))
-
             reference = request_data.get('reference_id', None)
+            source_transaction_id = request_data.get('source_transaction_id',
+                                                     None)
             transaction_obj = get_purchase_request_object(reference)
+            if source_transaction_id and request_data.get('earned_points'):
+                youpay_transaction_obj = get_youpay_transaction_object(
+                    source_transaction_id)
+                if youpay_transaction_obj:
+                    youpay_transaction_obj.earned_point = request_data.get(
+                        'earned_points')
+                    youpay_transaction_obj.save(update_fields=['earned_point',
+                                                               'updated_at'])
             if transaction_obj:
                 logger.info(
                     "B2cpayback webhook listener updating data for invoice "

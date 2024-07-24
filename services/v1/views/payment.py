@@ -16,7 +16,8 @@ from core.utils import (decrypt_payment_data,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded, encrypt_payment_data,
                         get_cached_payment_method_config)
-from integrations.constants import NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE
+from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
+                                    MOKAFA_CLIENT_CODE)
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
@@ -25,7 +26,8 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_CITI_REWARDS,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_METHOD_NEQATY)
+                                PAYMENT_METHOD_NEQATY,
+                                PAYMENT_METHOD_MOKAFA)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -614,30 +616,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             self.class_name, program_name, transaction_id
         ))
 
-        if transaction_obj.brand_calculations is None:
-            payload = {
-                'transaction_obj': transaction_obj,
-                "selected_amount": self.get_redeemed_amount(transaction_obj),
-                "client_code": (
-                    NEQATY_CLIENT_CODE
-                    if program_name == PAYMENT_METHOD_NEQATY else
-                    QITAF_CLIENT_CODE)
-            }
-
-            from integrations.v1.gateway_clients.qitaf_service import (
-                QitafServiceManager)
-
-            qitaf_service = QitafServiceManager()
-            response_data, code = qitaf_service.calculate_qitaf_balance(
-                payload)
-
-            if code == self.SUCCESS:
-                calculated_item_details = response_data.get(
-                    'calculated_item_details')
-                transaction_obj.brand_calculations = calculated_item_details
-
-            logger.info("{} Brand Calculated for transaction {}".format(
-                self.class_name, transaction_id))
+        self.call_brand_calculation(transaction_obj, program_name)
 
         if program_name == PAYMENT_METHOD_NEQATY:
             collect_enabled = transaction_obj.point_collection_enabled
@@ -659,9 +638,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     "earn_reference")
                 calculated_item_details = response.get(
                     "partner_response", {}).get("calculated_item_details")
-            message = "Pont Collect requested for {}".format(
+            message = "Pont Collect requested for: {}".format(
                 PAYMENT_METHOD_NEQATY)
-
 
         elif program_name == PAYMENT_METHOD_QITAF:
             collect_enabled = transaction_obj.is_qitaf_enabled
@@ -686,6 +664,27 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_QITAF)
+
+        elif program_name == PAYMENT_METHOD_MOKAFA:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.mokafa_service import (
+                MokafaServiceManager)
+            mokafa_obj = MokafaServiceManager()
+            response, code = mokafa_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                earned_points = response.get("partner_response").get(
+                    "earned_points")
+                calculated_item_details = response.get(
+                    "partner_response", {}).get("calculated_item_details")
+            message = "Pont Collect requested for {}".format(
+                PAYMENT_METHOD_MOKAFA)
+
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.point_program)
@@ -715,6 +714,40 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             "program_name": program_name,
             "collect_enabled": collect_enabled
         }
+
+    def call_brand_calculation(self, transaction_obj, program_name):
+        if transaction_obj.brand_calculations is None:
+            client_code = self.get_client_code(program_name)
+
+            payload = {
+                'transaction_obj': transaction_obj,
+                "selected_amount": self.get_redeemed_amount(transaction_obj),
+                "client_code": client_code
+            }
+
+            from integrations.v1.gateway_clients.qitaf_service import (
+                QitafServiceManager)
+
+            qitaf_service = QitafServiceManager()
+            response_data, code = qitaf_service.calculate_qitaf_balance(
+                payload)
+
+            if code == self.SUCCESS:
+                calculated_item_details = response_data.get(
+                    'calculated_item_details')
+                transaction_obj.brand_calculations = calculated_item_details
+
+            logger.info("{} Brand Calculated for transaction {}".format(
+                self.class_name, transaction_obj.transaction_id))
+
+    def get_client_code(self, program_name):
+        if program_name == PAYMENT_METHOD_NEQATY:
+            client_code = NEQATY_CLIENT_CODE
+        elif program_name == PAYMENT_METHOD_MOKAFA:
+            client_code = MOKAFA_CLIENT_CODE
+        else:
+            client_code = QITAF_CLIENT_CODE
+        return client_code
 
     def validate_earn_enabled(self, transaction_obj):
         """
