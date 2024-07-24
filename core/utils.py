@@ -207,6 +207,7 @@ def auto_enable_or_disable_point_collection(query):
     """
     Input Payment Config Query
     Output : True or False
+    Objective: to check whether we need to enable earn on partial redemption
     """
     payment_config = get_cached_payment_config()
     if payment_config:
