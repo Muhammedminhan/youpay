@@ -27,7 +27,8 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY,
-                                PAYMENT_METHOD_MOKAFA)
+                                PAYMENT_METHOD_MOKAFA,
+                                REDEEM_AMOUNT_APPLICABLE_LIST)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -592,8 +593,19 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
 
     def get_redeemed_amount(self, transaction_obj):
-        return (str(transaction_obj.redeemed_amount) if
+
+        redeemed_amount = (transaction_obj.redeemed_amount if
                 transaction_obj.redeemed_amount else 0.0)
+
+        if transaction_obj.payment_method not in REDEEM_AMOUNT_APPLICABLE_LIST:
+            """
+            This case happens if customer switches payment method just before
+            payment through b2c payback, this will let to reset the 
+            brand calculations with selected amount 0
+            """
+            redeemed_amount = 0.0
+
+        return str(redeemed_amount)
 
     def get_earn_points(self, **kwargs):
         '''
