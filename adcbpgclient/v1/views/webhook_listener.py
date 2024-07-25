@@ -30,9 +30,8 @@ def get_purchase_request_object(reference):
 
 def get_youpay_transaction_object(transaction_id):
     try:
-        transaction_id = transaction_id.split('|')
         transaction_obj = YouPayTransactionData.objects.get(
-            transaction_id=transaction_id[-1])
+            transaction_id=transaction_id)
     except YouPayTransactionData.DoesNotExist:
         transaction_obj = None
     return transaction_obj

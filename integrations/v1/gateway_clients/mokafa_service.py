@@ -106,7 +106,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 "Youpay sending request data to mokafa point collection api "
                 "is {}".format(request_data))
 
-            request_data['transaction_id'] = "youpay|" + self.transaction_id
+            request_data['transaction_id'] = self.transaction_id
             self.request_data = request_data
 
             payload = json.dumps(request_data)
