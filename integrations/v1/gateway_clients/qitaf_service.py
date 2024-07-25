@@ -2,13 +2,15 @@ import json
 import logging
 
 import requests
+from django.db.models import Q
 from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
-                        decrypt_string)
+                        decrypt_string,
+                        auto_enable_or_disable_point_collection)
 from integrations.common import update_brand_details
 from integrations.constants import (
     QITAF_CALCULATE_BALANCE_API, QITAF_OTP_GENERATION_API,
@@ -67,7 +69,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         self.VAT_amount = None
         self.payment_gateway = PAYMENT_GATEWAY_B2CPAYBACK
         self.points_redeemed_mobile_number = None
-        self.points_collection_enabled_program = None
+        self.point_program = None
         self.point_collection_enabled = False
         self.brand_calculations = None
 
@@ -483,13 +485,19 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = True
                 self.payment_status = PAYMENT_STATUS_PENDING
                 self.is_qitaf_enabled = True
-                self.point_collection_enabled = True
+                self.point_collection_enabled = (
+                    auto_enable_or_disable_point_collection(
+                        Q(
+                            payment_method=PAYMENT_METHOD_QITAF, active=True,
+                            earn_on_partial_redemption=True
+                        ))
+                )
                 self.redeemed_amount = response_data.get('redeemed_amount')
                 self.redeemed_point = response_data.get('redeemed_point')
                 self.payable_amount = response_data.get('payable_amount')
                 self.points_redeemed_mobile_number = response_data.get(
                     'redeemed_mobile_number')
-                self.points_collection_enabled_program = PAYMENT_METHOD_QITAF
+                self.point_program = PAYMENT_METHOD_QITAF
 
             else:
                 redirect_url = ('{}?transaction_id={}'.format(
@@ -521,6 +529,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 self.points_redeemed_mobile_number = response_data.get(
                     'redeemed_mobile_number')
+                self.point_program = PAYMENT_METHOD_QITAF
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
@@ -555,8 +564,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 "name_on_card": name_on_card,
                 "points_redeemed_mobile_number": (
                     self.points_redeemed_mobile_number),
-                "points_collection_enabled_program": (
-                    self.points_collection_enabled_program),
+                "point_program": (
+                    self.point_program),
                 "brand_calculations": self.brand_calculations
             }
         }
@@ -760,14 +769,14 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             return None, self.QITAF_BALANCE_CALCULATION_FAILED
 
     def handle_qitaf_collection(self, transaction_obj):
-        """Qitaf Reward Point flow"""
-        response = None
-        code = None
+        """
+        Updating program, mobile number etc on Qitaf Verification
+        """
         if transaction_obj.point_collection_enabled:
-            if transaction_obj.points_collection_enabled_program != (
-                    PAYMENT_METHOD_QITAF):
+            if (transaction_obj.point_program != PAYMENT_METHOD_QITAF or
+                    not transaction_obj.points_collected_mobile_number):
                 transaction_obj.points_collected_mobile_number = (
                     transaction_obj.points_redeemed_mobile_number)
-                transaction_obj.points_collection_enabled_program = (
+                transaction_obj.point_program = (
                     PAYMENT_METHOD_QITAF)
                 transaction_obj.save()

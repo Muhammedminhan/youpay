@@ -2,25 +2,32 @@ import json
 import logging
 
 import requests
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.constants import PAYBACK_ACTION_EARN
+from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
-                        decimal_rounded, encrypt_payment_data)
-from integrations.constants import NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE
-from payments.constants import (ALLOW_CANCEL_STATUS_LIST,
+                        decimal_rounded, encrypt_payment_data,
+                        get_cached_payment_method_config)
+from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
+                                    MOKAFA_CLIENT_CODE)
+from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
+                                ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
                                 PAYMENT_STATUS_EXPIRED,
                                 PAYMENT_STATUS_PAID, ALLOW_EXPIRE_STATUS_LIST,
                                 PAYMENT_METHOD_CITI_REWARDS,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_METHOD_NEQATY)
+                                PAYMENT_METHOD_NEQATY,
+                                PAYMENT_METHOD_MOKAFA)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -28,7 +35,9 @@ from services.v1.serializers.payment_request import (
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
                                       AdditionalChargesUpdation)
 from services.v1.views.utils import (
-    reformat_payment_request_data
+    reformat_payment_request_data,
+    payment_configuration_check,
+    get_country_for_configuration
 )
 
 logger = logging.getLogger(__name__)
@@ -577,6 +586,11 @@ class AdditionalChargeCalculation(APIView, AdditionalChargesUpdation,
 class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                                   ClientValidator,
                                   YouPayResponse):
+
+    def __init__(self, ):
+        self.class_name = "{}:".format(self.__class__.__name__)
+
+
     def get_redeemed_amount(self, transaction_obj):
         return (str(transaction_obj.redeemed_amount) if
                 transaction_obj.redeemed_amount else 0.0)
@@ -597,39 +611,21 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         partner_response_code = None
         code = None
         calculated_item_details = None
-        program_name = transaction_obj.points_collection_enabled_program
-        logger.info("Earn working for {}, for transaction {}".format(
-            program_name, transaction_id
+        program_name = transaction_obj.point_program
+        logger.info("{} working for {}, for transaction {}".format(
+            self.class_name, program_name, transaction_id
         ))
 
-        if transaction_obj.brand_calculations is None:
-            payload = {
-                'transaction_obj': transaction_obj,
-                "selected_amount": self.get_redeemed_amount(transaction_obj),
-                "client_code": (
-                    NEQATY_CLIENT_CODE
-                    if program_name == PAYMENT_METHOD_NEQATY else
-                    QITAF_CLIENT_CODE)
-            }
-
-            from integrations.v1.gateway_clients.qitaf_service import (
-                QitafServiceManager)
-
-            qitaf_service = QitafServiceManager()
-            response_data, code = qitaf_service.calculate_qitaf_balance(
-                payload)
-
-            if code == self.SUCCESS:
-                calculated_item_details = response_data.get(
-                    'calculated_item_details')
-                transaction_obj.brand_calculations = calculated_item_details
-
-            logger.info(
-                "Brand Calculated for transaction {}".format(transaction_id))
+        self.call_brand_calculation(transaction_obj, program_name)
 
         if program_name == PAYMENT_METHOD_NEQATY:
             collect_enabled = transaction_obj.point_collection_enabled
             mobile_number = transaction_obj.points_collected_mobile_number
+
+            payment_configuration_check(transaction_obj=transaction_obj,
+                                        payment_method=PAYMENT_METHOD_NEQATY,
+                                        payback_action=PAYBACK_ACTION_EARN
+                                        )
 
             from integrations.v1.gateway_clients.neqaty_service import (
                 NeqatyServiceManager)
@@ -642,13 +638,15 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     "earn_reference")
                 calculated_item_details = response.get(
                     "partner_response", {}).get("calculated_item_details")
-            message = "Pont Collect requested for {}".format(
+            message = "Pont Collect requested for: {}".format(
                 PAYMENT_METHOD_NEQATY)
-
 
         elif program_name == PAYMENT_METHOD_QITAF:
             collect_enabled = transaction_obj.is_qitaf_enabled
             mobile_number = transaction_obj.qitaf_phone_number
+
+            payment_configuration_check(transaction_obj=transaction_obj,
+                                        payment_method=PAYMENT_METHOD_QITAF)
 
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
@@ -666,9 +664,30 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_QITAF)
+
+        elif program_name == PAYMENT_METHOD_MOKAFA:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.mokafa_service import (
+                MokafaServiceManager)
+            mokafa_obj = MokafaServiceManager()
+            response, code = mokafa_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                earned_points = response.get("partner_response").get(
+                    "earned_points")
+                calculated_item_details = response.get(
+                    "partner_response", {}).get("calculated_item_details")
+            message = "Pont Collect requested for {}".format(
+                PAYMENT_METHOD_MOKAFA)
+
         else:
             message = "Unknown redemption partner {}".format(
-                transaction_obj.points_collection_enabled_program)
+                transaction_obj.point_program)
 
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
@@ -679,12 +698,13 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             is_success = True
 
-        message = "{} status {}".format(message, is_success)
+        message = "{} status {} for {}".format(message, is_success,
+                                               transaction_id)
 
         logger.info(
-            "Earn Partner response code is {}, response : {} for transaction:"
-            " {}".format(partner_response_code, partner_response,
-                         transaction_id))
+            "{} Partner response code is {}, response : {} for transaction:"
+            " {}".format(self.class_name, partner_response_code,
+                         partner_response, transaction_id))
 
         return {
             "status": is_success,
@@ -695,17 +715,141 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             "collect_enabled": collect_enabled
         }
 
+    def call_brand_calculation(self, transaction_obj, program_name):
+        if transaction_obj.brand_calculations is None:
+            client_code = self.get_client_code(program_name)
+
+            payload = {
+                'transaction_obj': transaction_obj,
+                "selected_amount": self.get_redeemed_amount(transaction_obj),
+                "client_code": client_code
+            }
+
+            from integrations.v1.gateway_clients.qitaf_service import (
+                QitafServiceManager)
+
+            qitaf_service = QitafServiceManager()
+            response_data, code = qitaf_service.calculate_qitaf_balance(
+                payload)
+
+            if code == self.SUCCESS:
+                calculated_item_details = response_data.get(
+                    'calculated_item_details')
+                transaction_obj.brand_calculations = calculated_item_details
+
+            logger.info("{} Brand Calculated for transaction {}".format(
+                self.class_name, transaction_obj.transaction_id))
+
+    def get_client_code(self, program_name):
+        if program_name == PAYMENT_METHOD_NEQATY:
+            client_code = NEQATY_CLIENT_CODE
+        elif program_name == PAYMENT_METHOD_MOKAFA:
+            client_code = MOKAFA_CLIENT_CODE
+        else:
+            client_code = QITAF_CLIENT_CODE
+        return client_code
+
+    def validate_earn_enabled(self, transaction_obj):
+        """
+        Function to check whether earn is enabled or not
+        """
+
+        country = get_country_for_configuration(transaction_obj)
+        if not country:
+            logger.error(
+                "{} Unregistered Country ({}) received for transaction {}"
+                "".format(self.class_name, transaction_obj.country_code,
+                          transaction_obj.transaction_id)
+            )
+            raise PaymentConfigurationFailed(
+                "Country not registered for transaction {}".format(
+                    transaction_obj.transaction_id))
+
+        payment_method = (
+            transaction_obj.point_program if transaction_obj.point_program
+            else transaction_obj.payment_method)
+
+        query_obj = {
+            'payment_method__active': True,
+            'client__id': transaction_obj.api_client.id,
+            'country__iso_code': transaction_obj.country_code,
+            'payment_method__payment_method': (
+                PAYMENT_METHOD_CONFIG_MAPPING.get(payment_method)),
+            'active': True
+        }
+
+        if transaction_obj.is_guest:
+            query_obj['guest_user_enabled'] = True
+
+        logger.info("{} Query filter ".format(query_obj))
+
+        payment_method_query = Q(**query_obj)
+        payment_method_config_qs = get_cached_payment_method_config()
+        payment_method_configs = payment_method_config_qs.filter(
+            payment_method_query)
+
+        if not payment_method_configs.exists():
+            msg = (
+                "{} No Active Payment Configuration for transaction-{}, "
+                "client-({}), country-({}), guest user status-({}), point "
+                "program | payment method-({}|{}), is_full_redemption-({})"
+                "".format(
+                    self.class_name,
+                    transaction_obj.transaction_id,
+                    transaction_obj.api_client,
+                    transaction_obj.country_code,
+                    transaction_obj.is_guest,
+                    transaction_obj.point_program,
+                    transaction_obj.payment_method,
+                    transaction_obj.is_full_redemption
+                ))
+
+            logger.error(msg)
+
+            raise PaymentConfigurationFailed(
+                "No Active Payment Configuration for transaction-{}, "
+                "client-({}), country-({}), guest user status-({}), payment "
+                "method-({}), is_full_redemption-({})".format(
+                    transaction_obj.transaction_id,
+                    transaction_obj.api_client,
+                    transaction_obj.country_code,
+                    transaction_obj.is_guest,
+                    transaction_obj.payment_method,
+                    transaction_obj.is_full_redemption
+                )
+            )
+
+        payment_method_config = payment_method_configs.first()
+        earn_enabled = payment_method_config.payment_method.earn_enabled
+        earn_msg = "{} Earn is disabled in youpay for transaction {}".format(
+            self.class_name, transaction_obj.transaction_id
+        )
+
+        if transaction_obj.is_full_redemption == False:
+            """
+            Case to check whether transaction is earn, and partial
+            """
+            earn_enabled = payment_method_config.payment_method.earn_on_partial_redemption
+            earn_msg = ("{} Partial Earn is disabled in youpay for "
+                        "transaction {}").format(
+                self.class_name, transaction_obj.transaction_id)
+        if not earn_enabled:
+            logger.error(earn_msg)
+            raise PaymentConfigurationFailed(earn_msg)
+
+        return earn_enabled
     def post(self, request):
         try:
+            transaction_id = None
 
             validate, client_pk = self.validate_client(request)
             if not validate:
                 logger.info(
-                    "payment request client validation failed for {0}"
-                    .format("order_reference"))
-                self.return_data = self.get_400_message(
+                    "{} payment request client validation failed"
+                    .format(self.class_name))
+                return_data = self.get_400_message(
                     message="Client Does Not Exist")
-                return Response(self.return_data.get('errors'),
+                return Response(return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
             data = self.request.data
             transaction_id = decrypt_string(data.get('transaction_id'))
@@ -714,16 +858,18 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
 
             if transaction_object:
                 # call redemption partner earn flow
-                logger.info("Earn started for transaction_id: {}".format(
-                    transaction_id))
+                logger.info("{} started for transaction_id: {}".format(
+                    self.class_name, transaction_id))
+
+                self.validate_earn_enabled(transaction_object)
 
                 earn_response = self.get_earn_points(
                     transaction_id=transaction_id,
                     transaction_obj=transaction_object)
 
-                logger.info("EarnRedemptionPartnerPoints worked for "
-                            "transaction : {}, response : {}".format(
-                    transaction_id, earn_response))
+                logger.info("{} worked for transaction : {}, response : {}"
+                            "".format(self.class_name, transaction_id,
+                                      earn_response))
 
                 response_data = {
                     "status": earn_response.get("status"),
@@ -733,13 +879,25 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 return Response(response_data, status=status.HTTP_200_OK)
             else:
                 response_data = {
-                    "status": status.HTTP_400_BAD_REQUEST,
-                    "message": "Transaction not found",
+                    "status": False,
+                    "message": "Transaction({}) not found".format(
+                        transaction_id),
                 }
                 return Response(response_data,
                                 status=status.HTTP_400_BAD_REQUEST)
 
+        except PaymentConfigurationFailed as e:
+            response_data = {
+                "status": False,
+                "message": str(e),
+            }
+            logger.error(
+                "{} PaymentConfigurationFailed Validation failed for {}"
+                "".format(self.class_name, transaction_id))
+            return Response(response_data,
+                            status=status.HTTP_200_OK)
+
         except Exception as e:
-            logger.error("Error in Earn Redemption Partner Points api ",
-                         exc_info=e)
+            logger.error("{} Error in Earn Redemption Partner Points api "
+                         "".format(self.class_name), exc_info=e)
             return Response({"error": str(e), })

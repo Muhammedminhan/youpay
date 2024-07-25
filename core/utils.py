@@ -20,6 +20,11 @@ from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig, Currency
 from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
+from core.models import (AppConfig, Currency, PaymentMethodConfig,
+                         PaymentConfiguration)
+from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
+                                    PAYMENT_METHOD_CONFIG_CACHE_KEY,
+                                    PAYMENT_CONFIG_CACHE_KEY)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
@@ -161,6 +166,62 @@ def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
     return gateway_config
 
 
+def get_cached_payment_method_config():
+    try:
+        cache_key = PAYMENT_METHOD_CONFIG_CACHE_KEY
+        payment_method_configs = cache.get(cache_key, None)
+        if payment_method_configs is None:
+            payment_method_configs = PaymentMethodConfig.objects.all()
+            cache.set(cache_key, payment_method_configs)
+
+        return payment_method_configs
+
+    except Exception as e:
+        logger.error(
+            "Error on getting cached PaymentMethodConfig : {}".format(e))
+        return PaymentMethodConfig.objects.none()
+
+
+def invalidate_cached_payment_method_config():
+    try:
+        cache_key = PAYMENT_METHOD_CONFIG_CACHE_KEY
+        cache.delete(cache_key)
+    except Exception as e:
+        logger.error(
+            "Error on invalidating cached PaymentMethodConfig : {}".format(e))
+
+
+def get_cached_payment_config():
+    try:
+        cache_key = PAYMENT_CONFIG_CACHE_KEY
+        payment_configs = cache.get(cache_key, None)
+        if payment_configs is None:
+            payment_configs = PaymentConfiguration.objects.all()
+            cache.set(cache_key, payment_configs)
+
+        return payment_configs
+
+    except Exception as e:
+        logger.error(
+            "Error on getting cached PaymentConfiguration : {}".format(e))
+        return PaymentConfiguration.objects.none()
+
+
+def auto_enable_or_disable_point_collection(query):
+    """
+    Input Payment Config Query
+    Output : True or False
+    Objective: to check whether we need to enable earn on partial redemption
+    """
+    payment_config = get_cached_payment_config()
+    if payment_config:
+        payment_config_data = payment_config.filter(query)
+        if payment_config_data.count():
+            payment_config_datum = payment_config_data.first()
+            return payment_config_datum.earn_on_partial_redemption
+    return False
+
+
 def decimal_rounded(amount, decimal_notation):
     if not isinstance(amount, Decimal):
         amount = Decimal(amount)
@@ -293,6 +354,7 @@ def process_checkoutpg_response_verification(**kwargs):
     payment_method = kwargs.get('payment_method')
     payment_gateway = kwargs.get('payment_gateway')
     channel_code = kwargs.get('channel_code')
+    response_code = kwargs.get('response_data', {}).get('response_code')
 
     reference_from_checkout = response_data.get("reference")
 
@@ -312,24 +374,31 @@ def process_checkoutpg_response_verification(**kwargs):
             " reference id from checkout {}, youpay referance {}"
             "".format(transaction_id, reference_from_checkout,
                       youpay_payment_referance))
+        if response_code.startswith(
+                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
+            logger.info(
+                "transaction failed for transaction id {}, pre-auth soft "
+                "decline response code {}".format(
+                    transaction_id, response_code))
+        else:
+            redirect_url = get_redirect_url(youpay_transaction.failure_url,
+                                            transaction_id)
+            response_data = {
+                IS_REDIRECT: True,
+                REDIRECT_URL: redirect_url,
+                TRANSACTION_MSG: {"response_summary": "Payment Failed"},
+                IS_SUCCESS: False
+            }
 
-        redirect_url = get_redirect_url(youpay_transaction.failure_url,
-                                        transaction_id)
-        response_data = {
-            IS_REDIRECT: True,
-            REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: {"response_summary": "Payment Failed"},
-            IS_SUCCESS: False
-        }
-
-        return False, response_data
+            return False, response_data
 
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
             response_data)
 
     logger.info(
-        "Verify payment response data {}".format(response_data))
+        "Verify payment response data for transaction {} --> {}".format(
+            transaction_id, response_data))
     response_code = response_data.get('response_code', None)
 
     is_flagged = response_data.get("is_flagged")

@@ -34,10 +34,10 @@ deployment:
       command: '[]'
       port: 6379
       memory:
-        requests: 150Mi
+        requests: 20Mi
         limits: 500Mi
       cpu:
-        requests: 250m
+        requests: 10m
         limits: 300m
 
   nodeSelector:
