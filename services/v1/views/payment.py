@@ -716,29 +716,31 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         }
 
     def call_brand_calculation(self, transaction_obj, program_name):
-        if transaction_obj.brand_calculations is None:
-            client_code = self.get_client_code(program_name)
+        """
+        Update brand calculations
+        """
+        client_code = self.get_client_code(program_name)
 
-            payload = {
-                'transaction_obj': transaction_obj,
-                "selected_amount": self.get_redeemed_amount(transaction_obj),
-                "client_code": client_code
-            }
+        payload = {
+            'transaction_obj': transaction_obj,
+            "selected_amount": self.get_redeemed_amount(transaction_obj),
+            "client_code": client_code
+        }
 
-            from integrations.v1.gateway_clients.qitaf_service import (
-                QitafServiceManager)
+        from integrations.v1.gateway_clients.qitaf_service import (
+            QitafServiceManager)
 
-            qitaf_service = QitafServiceManager()
-            response_data, code = qitaf_service.calculate_qitaf_balance(
-                payload)
+        qitaf_service = QitafServiceManager()
+        response_data, code = qitaf_service.calculate_qitaf_balance(
+            payload)
 
-            if code == self.SUCCESS:
-                calculated_item_details = response_data.get(
-                    'calculated_item_details')
-                transaction_obj.brand_calculations = calculated_item_details
+        if code == self.SUCCESS:
+            calculated_item_details = response_data.get(
+                'calculated_item_details')
+            transaction_obj.brand_calculations = calculated_item_details
 
-            logger.info("{} Brand Calculated for transaction {}".format(
-                self.class_name, transaction_obj.transaction_id))
+        logger.info("{} Brand Calculated for transaction {}".format(
+            self.class_name, transaction_obj.transaction_id))
 
     def get_client_code(self, program_name):
         if program_name == PAYMENT_METHOD_NEQATY:
