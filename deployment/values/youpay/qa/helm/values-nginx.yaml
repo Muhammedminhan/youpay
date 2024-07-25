@@ -38,10 +38,10 @@ deployment:
       command: '["sh", "-c", "sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /ygag/nginx/conf/nginx.conf ; sh /ygag/nginx/entrypoint.sh"]'
       port: 80
       memory:
-        requests: 32Mi
+        requests: 20Mi
         limits: 64Mi
       cpu:
-        requests: 10m
+        requests: 5m
         limits: 100m
       health:
         path: '/nginx-health'

@@ -349,19 +349,24 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                          "verify api")
             return None, None
 
-    def get_collect_enabled_program(self, transaction_obj):
+    def get_point_program(self, transaction_obj):
         try:
-            data = {}
-            points_collection_enabled_program = (
-                transaction_obj.points_collection_enabled_program)
+            point_program = (
+                transaction_obj.point_program)
             points_collected_mobile_number = (
                 transaction_obj.points_collected_mobile_number)
+            points_collected_cic_number = (
+                transaction_obj.points_collected_cic_number)
             data = {
-                "points_collection_enabled_program": (
-                    points_collection_enabled_program),
-                "points_collected_mobile_number": (
-                    points_collected_mobile_number),
+                "point_program": (
+                    point_program)
             }
+            if points_collected_mobile_number:
+                data['points_collected_mobile_number'] = (
+                    points_collected_mobile_number)
+            if points_collected_cic_number:
+                data['points_collected_cic_number'] = (
+                    points_collected_cic_number)
 
             return data
         except Exception as e:
@@ -373,7 +378,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     def remove_collect_program_enabled(self, transaction_obj):
         try:
             transaction_obj.point_collection_enabled = False
-            transaction_obj.points_collection_enabled_program = None
+            transaction_obj.point_program = None
             transaction_obj.is_qitaf_enabled = False
             transaction_obj.qitaf_phone_number = None
             transaction_obj.points_collected_mobile_number = None
