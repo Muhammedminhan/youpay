@@ -605,6 +605,14 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             """
             redeemed_amount = 0.0
 
+        logger.info(
+            "{} get_redeemed_amount, payment method{} for {} is {}".format(
+                self.class_name,
+                transaction_obj.payment_method,
+                transaction_obj.transaction_id,
+                redeemed_amount
+            ))
+
         return str(redeemed_amount)
 
     def get_earn_points(self, **kwargs):
