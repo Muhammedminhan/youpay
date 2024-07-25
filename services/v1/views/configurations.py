@@ -89,7 +89,7 @@ class ConfigViewSet(ViewSet):
             if not client:
                 return self._client_not_found_response()
 
-            payment_options, partial_redemption_allowed_options = (
+            payment_options, payment_config_data = (
                 get_payment_methods(transaction, client, country))
 
             if transaction.session_id != session_id:
@@ -98,8 +98,7 @@ class ConfigViewSet(ViewSet):
             response_data = self.retrieve_response(
                 transaction=transaction,
                 payment_options=payment_options,
-                partial_redemption_allowed_options=
-                partial_redemption_allowed_options,
+                payment_config_data=payment_config_data,
                 client=client
             )
 
@@ -113,8 +112,8 @@ class ConfigViewSet(ViewSet):
     def retrieve_response(self, **kwargs):
         transaction = kwargs.get('transaction')
         payment_options = kwargs.get('payment_options')
-        partial_redemption_allowed_options = kwargs.get(
-            'partial_redemption_allowed_options')
+        payment_config_data = kwargs.get(
+            'payment_config_data')
         client = kwargs.get('client')
 
         api_client = {
@@ -129,8 +128,8 @@ class ConfigViewSet(ViewSet):
         # sessionkey = self.get_browser_value(transaction) if transaction else None
         b2c_configs = self.get_b2c_config(payment_options,
                                           transaction,
-                                          partial_redemption_allowed_options)
-            
+                                          payment_config_data)
+
         response_data = {
             "data": {
                 "api_client": api_client,
@@ -339,7 +338,7 @@ class ConfigViewSet(ViewSet):
         return checkout_config
 
     def get_b2c_config(self, payment_option, transaction,
-                       partial_redemption_allowed_options):
+                       payment_config_data):
         adcb_enabled = payment_option.get(PAYMENT_OPTION_ADCB, False)
         qitaf_enabled = payment_option.get(PAYMENT_OPTION_QITAF, False)
         neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
@@ -354,43 +353,39 @@ class ConfigViewSet(ViewSet):
             if adcb_enabled:
                 adcb_config = self.get_each_b2c_config(config_list,
                                                        ADCB_CLIENT_CODE)
-                partial_redemption_allowed = (
-                    partial_redemption_allowed_options.get(
-                        PAYMENT_OPTION_ADCB, False))
-                adcb_config[
-                    'partial_redemption_allowed'] = partial_redemption_allowed
+                this__config_data = (
+                    payment_config_data.get(
+                        PAYMENT_OPTION_ADCB, {}))
+                adcb_config.update(**this__config_data)
                 config_dict['adcb_config'] = adcb_config
 
             if qitaf_enabled:
-                partial_redemption_allowed = (
-                    partial_redemption_allowed_options.get(
-                        PAYMENT_OPTION_QITAF, False))
+                this__config_data = (
+                    payment_config_data.get(
+                        PAYMENT_OPTION_QITAF, {}))
                 qitaf_config = self.get_each_b2c_config(config_list,
                                                         QITAF_CLIENT_CODE)
                 additional_config = {
                     'qitaf_phone_number': transaction.qitaf_phone_number,
                     'is_qitaf_enabled': transaction.is_qitaf_enabled,
-                    'partial_redemption_allowed': partial_redemption_allowed
+                    **this__config_data
                 }
                 qitaf_config.update(additional_config)
                 config_dict['qitaf_config'] = qitaf_config
 
             if neqaty_enabled:
-                partial_redemption_allowed = (
-                    partial_redemption_allowed_options.get(
-                        PAYMENT_OPTION_QITAF, False))
+                this__config_data = (
+                    payment_config_data.get(
+                        PAYMENT_OPTION_NEQATY, {}))
                 neqaty_config = self.get_each_b2c_config(config_list,
                                                          NEQATY_CLIENT_CODE)
-                additional_config = {
-                    'partial_redemption_allowed': partial_redemption_allowed
-                }
-                neqaty_config.update(additional_config)
+                neqaty_config.update(**this__config_data)
                 config_dict['neqaty_config'] = neqaty_config
 
             if mokafa_enabled:
                 this__config_data = (
-                    partial_redemption_allowed_options.get(
-                        PAYMENT_OPTION_MOKAFA, False))
+                    payment_config_data.get(
+                        PAYMENT_OPTION_MOKAFA, {}))
                 mokafa_config = self.get_each_b2c_config(config_list,
                                                          MOKAFA_CLIENT_CODE)
                 mokafa_config.update(**this__config_data)

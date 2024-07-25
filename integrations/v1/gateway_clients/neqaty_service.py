@@ -3,6 +3,7 @@ import json
 import logging
 
 import requests
+from django.db.models import Q
 from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
@@ -11,7 +12,8 @@ from core.messages import (REDIRECT_URL, IS_REDIRECT, IS_SUCCESS,
                            GATEWAY_ERROR_OCCURRED)
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
-                        decrypt_string)
+                        decrypt_string,
+                        auto_enable_or_disable_point_collection)
 from integrations.common import update_brand_details, get_redemption_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
@@ -391,7 +393,13 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     amount = payment_data.brand_calculations.get(
                         'sum_net_amount', None)
                     name_on_card = request_data.get("customer_name")
-                    self.point_collection_enabled = True
+
+                    self.point_collection_enabled = (
+                        auto_enable_or_disable_point_collection(Q(
+                            payment_method=PAYMENT_METHOD_NEQATY, active=True,
+                            earn_on_partial_redemption=True
+                        )))
+
 
                 else:
                     redirect_url = ('{}?transaction_id={}'.format(
@@ -723,10 +731,13 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             )
 
     def handle_neqaty_collection(self, transaction_obj):
+        """
+        Updating program, mobile number etc... on Neqaty Verification
+        """
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
-            if transaction_obj.point_program != (
-                    PAYMENT_METHOD_NEQATY):
+            if (transaction_obj.point_program != PAYMENT_METHOD_NEQATY or
+                    not transaction_obj.points_collected_mobile_number):
                 transaction_obj.points_collected_mobile_number = (
                     transaction_obj.points_redeemed_mobile_number)
                 transaction_obj.point_program = (
