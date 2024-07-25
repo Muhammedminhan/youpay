@@ -86,10 +86,8 @@ urlpatterns = [
     path('amazonpg/tokenization/', AmazonPGTokenization.as_view()),
     path('amazonpg/authentication/', AmazonPGAuthentication.as_view(),
          name='AmazonPGAuthentication'),
-    path('amazonpg/verify/', AmazonPGVerification.as_view(),
-         name='AmazonPGVerification'),
-    path('amazonpg/saved-card/', AmazonPGSavedCard.as_view(),
-         name='AmazonPGSavedCard'),
+    path('amazonpg/verify/', AmazonPGVerification.as_view()),
+    path('amazonpg/saved-card/', AmazonPGSavedCard.as_view()),
 
     # Happy Credits endpoints
     path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),
@@ -114,15 +112,14 @@ urlpatterns = [
     path('qitaf/collect/', QitafCollectPointsAPIView.as_view()),
     path('qitaf/redeem-points/', QitafRedeemPointsAPIView.as_view(),
          name='QitafRedeemPointsAPIView'),
-    path('qitaf/verify/', QitafVerify.as_view(), name='QitafVerify'),
+    path('qitaf/verify/', QitafVerify.as_view()),
     path('qitaf/calculate-balance/', CalculateQitafBalance.as_view()),
 
     # Neqaty Endpoints
     path('neqaty/point-balance/', NeqatyPointBalanceAPIView.as_view()),
-    path('neqaty/generate-otp/', NeqatyGenerateOTPAPIView.as_view(),
-         name='NeqatyGenerateOTPAPIView'),
+    path('neqaty/generate-otp/', NeqatyGenerateOTPAPIView.as_view()),
     path('neqaty/redeem-points/', NeqatyRedeemPointsAPIView.as_view()),
-    path('neqaty/verify/', NeqatyVerify.as_view(), name='NeqatyVerify'),
+    path('neqaty/verify/', NeqatyVerify.as_view()),
     path('neqaty/update-phone-number/', UpdateNeqatyPhoneNumber.as_view()),
 
     # Mokafa Endpoints
