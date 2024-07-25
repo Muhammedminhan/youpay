@@ -10,7 +10,7 @@ from rest_framework.viewsets import ViewSet
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
-                        decrypt_browser_value)
+                        decrypt_browser_value, get_display_platform)
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFA_CLIENT_CODE)
@@ -170,7 +170,7 @@ class ConfigViewSet(ViewSet):
                 "allow_aed_converted_amount":
                     transaction.api_client.allow_aed_converted_amount,
                 "program": transaction.api_client.name,
-                "platform": transaction.platform.upper(),
+                "platform": get_display_platform(transaction.platform),
                 "retry_count": transaction.retry_count
             },
         }

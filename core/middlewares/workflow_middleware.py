@@ -18,6 +18,7 @@ from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
     MIDDLEWARE_ALREADY_PAID_MESSAGE)
 from core.response_messages import YouPayResponse
+from core.utils import get_display_platform
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
@@ -302,7 +303,8 @@ class PaymentVerificationCheckMiddleware(object):
                     view_name, self.transaction_obj.transaction_id))
 
                 clever_tap_data = {
-                    'platform': self.transaction_obj.platform.upper(),
+                    'platform': get_display_platform(
+                        self.transaction_obj.platform),
                     'country_code': self.transaction_obj.country_code,
                     'is_guest': self.transaction_obj.is_guest,
                     'program': self.transaction_obj.api_client.name,
