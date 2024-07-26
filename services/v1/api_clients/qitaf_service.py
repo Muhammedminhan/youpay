@@ -367,8 +367,7 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
 
                 logger.error(message)
 
-                code = self.response_obj.QITAF_VERIFICATION_FAILED_TO_PROCESS
-                response = self.format_b2c_response(response, code)
+                response = self.format_b2c_response(response, None)
             return Response(response, status=status.HTTP_200_OK)
         else:
             try:
@@ -399,7 +398,8 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         errors = data.get('errors', None)
         results = data.get('results', None)
 
-        data['message'] = self.response_obj.MESSAGE.get(code)
+        data['message'] = (self.response_obj.MESSAGE.get(
+            code) if code else data.get('message', None))
         if results:
             data.pop('results')
             data['code'] = code
