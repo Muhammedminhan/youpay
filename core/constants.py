@@ -91,7 +91,6 @@ VERIFY_PAYMENT_CLASSES = [
     'AmazonPGVerification',
     'QitafVerify',
     'NeqatyVerify'
-
 ]
 
 QITAF_REWARD_POINT_MIN_AMT = 10
