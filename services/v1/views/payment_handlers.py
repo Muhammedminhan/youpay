@@ -13,7 +13,7 @@ class PaymentHandlers(YouPayTransactionCRUD):
     """To Handle payment requests To/from client"""
 
     def __init__(self, ):
-        self.class_name = "{}:".format(self.__class__.__name__)
+        self.class_name = "{}:".format("GatewayRequest")
 
     def create_youpay_to_payment_gateways_data(self, **kwargs):
         """method to create the payment request data """
