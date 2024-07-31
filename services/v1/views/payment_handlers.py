@@ -38,8 +38,7 @@ class PaymentHandlers(YouPayTransactionCRUD):
             # checks weather the transaction object is passed or not
             if transaction_obj:
                 transaction_id = transaction_obj.transaction_id
-                logger.info("{} data creating for {}, data :  "
-                            "".format(self.class_name, transaction_id))
+
                 create_object = {
                     'payment_request_data': json.loads(
                         json.dumps(json.loads(payment_request_data))),
@@ -49,6 +48,9 @@ class PaymentHandlers(YouPayTransactionCRUD):
                     'request_type': request_type,
                     'request_method': request_method
                 }
+                logger.info("{} data creating for {}, data : {} "
+                            "".format(self.class_name, transaction_id,
+                                      create_object))
                 YoupayToPaymentGatewaysData.objects.create(**create_object)
             else:
                 logger.error(
