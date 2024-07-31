@@ -1,3 +1,4 @@
+import inspect
 import json
 import logging
 
@@ -11,8 +12,13 @@ logger = logging.getLogger(__name__)
 class PaymentHandlers(YouPayTransactionCRUD):
     """To Handle payment requests To/from client"""
 
+    def __init__(self, ):
+        self.class_name = "{}:".format(self.__class__.__name__)
+
     def create_youpay_to_payment_gateways_data(self, **kwargs):
         """method to create the payment request data """
+        transaction_id = None
+        method_name = inspect.currentframe().f_code.co_name
         try:
             payment_request_data = kwargs.get('request_data', None)
             payment_response_data = kwargs.get('response_data', None)
@@ -31,6 +37,9 @@ class PaymentHandlers(YouPayTransactionCRUD):
 
             # checks weather the transaction object is passed or not
             if transaction_obj:
+                transaction_id = transaction_obj.transaction_id
+                logger.info("{} data creating for {}, data :  "
+                            "".format(self.class_name, transaction_id))
                 create_object = {
                     'payment_request_data': json.loads(
                         json.dumps(json.loads(payment_request_data))),
@@ -41,13 +50,12 @@ class PaymentHandlers(YouPayTransactionCRUD):
                     'request_method': request_method
                 }
                 YoupayToPaymentGatewaysData.objects.create(**create_object)
-                logger.info("YoupayToPaymentGateways data created for {}"
-                            "".format(transaction_obj))
             else:
                 logger.error(
-                    "YoupayToPaymentGateways failed to save, unable to find "
-                    "the transaction object for {}".format(transaction_obj))
+                    "{} Unable to find the transaction data "
+                    " for {}".format(self.class_name, transaction_id))
         except Exception as e:
             logger.error(
-                "YoupayToPaymentGateways data failed to save, {0}".format(
+                "{} Exception on {}, for {},err {} ".format(
+                    self.class_name, method_name, transaction_id,
                     str(e)), exc_info=True)
