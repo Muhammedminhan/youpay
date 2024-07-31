@@ -12,11 +12,10 @@ logger = logging.getLogger(__name__)
 class PaymentHandlers(YouPayTransactionCRUD):
     """To Handle payment requests To/from client"""
 
-    def __init__(self, ):
-        self.class_name = "{}:".format("GatewayRequest")
-
     def create_youpay_to_payment_gateways_data(self, **kwargs):
         """method to create the payment request data """
+        class_name = "{}:".format("GatewayRequest")
+
         transaction_id = None
         method_name = inspect.currentframe().f_code.co_name
         try:
@@ -49,15 +48,15 @@ class PaymentHandlers(YouPayTransactionCRUD):
                     'request_method': request_method
                 }
                 logger.info("{} data creating for {}, data : {} "
-                            "".format(self.class_name, transaction_id,
+                            "".format(class_name, transaction_id,
                                       create_object))
                 YoupayToPaymentGatewaysData.objects.create(**create_object)
             else:
                 logger.error(
                     "{} Unable to find the transaction data "
-                    " for {}".format(self.class_name, transaction_id))
+                    " for {}".format(class_name, transaction_id))
         except Exception as e:
             logger.error(
                 "{} Exception on {}, for {},err {} ".format(
-                    self.class_name, method_name, transaction_id,
+                    class_name, method_name, transaction_id,
                     str(e)), exc_info=True)
