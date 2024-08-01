@@ -500,10 +500,10 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             self.name_on_card = response_data.get("name_on_card")
 
             self.update_youpay_transaction_data(self.prepare_data_to_update())
-            
+
             return_response_data = {
                 'is_redirect': True,
-                'redirect_url': transaction_obj.success_url,
+                'redirect_url': response_data.get("redirect_url"),
                 'is_success': True
             }
             return return_response_data, self.SUCCESS
