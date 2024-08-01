@@ -211,16 +211,12 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         request_type=PAYMENT_REQUEST_AUTHENTICATE
                     )
 
-                    if response:
-                        response_data = response.json()
-                        response_data, response_code = (
-                            self.handle_authenticate_resposne(response_data,
-                                                              transaction_obj))
-                        logger.info("amazonpg payment response: {}"
-                                    .format(response_data))
-                        return response_data, response_code
-                    return ({"error": response.text},
-                            self.AMAZONPG_CONNECTION_ERROR)
+                    response_data, response_code = (
+                        self.handle_authenticate_response(response,
+                                                          transaction_obj))
+                    logger.info("amazonpg payment response: {}"
+                                .format(response_data))
+                    return response_data, response_code
                 logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
                 return {None}, self.AMAZONPG_CONNECTION_ERROR
             else:
@@ -436,17 +432,13 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         request_type=PAYMENT_REQUEST_AUTHENTICATE
                     )
 
-                    if response:
-                        response_data = response.json()
-                        response_data, response_code = (
-                            self.handle_authenticate_resposne(response_data,
-                                                              transaction_obj))
-                        logger.info("amazonpg payment response: {}"
-                                    .format(response_data))
-                        return response_data, response_code
+                    response_data, response_code = (
+                        self.handle_authenticate_response(response,
+                                                          transaction_obj))
+                    logger.info("amazonpg payment response: {}"
+                                .format(response_data))
+                    return response_data, response_code
 
-                    return ({"error": response.text},
-                            self.AMAZONPG_CONNECTION_ERROR)
                 else:
                     logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
                     return {None}, self.AMAZONPG_CONNECTION_ERROR
@@ -488,12 +480,18 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
             return None, None
 
-    def handle_authenticate_resposne(self, response_data, transaction_obj):
+    def handle_authenticate_response(self, response, transaction_obj):
         """
         Handle the authentication response, update transaction data,
         and return appropriate response based on payment status.
         """
-        if response_data.get('status') == 200:
+        try:
+            response_data = response.json()
+            status_code = response_data.get('status')
+        except ValueError:
+            status_code = status.HTTP_400_BAD_REQUEST
+            response_data = {}
+        if status_code == 200:
             self.payment_reference = response_data.get("payment_reference")
             self.payment_status = PAYMENT_STATUS_PENDING
             self.payment_scheme = response_data.get("payment_scheme")
@@ -509,7 +507,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
             return return_response_data, self.SUCCESS
 
         logger.error(
-            "Error in amazonpg payment, {}".format(response_data.get('text')))
+            "Error in amazonpg payment, {}".format(response.text))
         self.payment_reference = response_data.get("payment_reference")
         self.payment_status = PAYMENT_STATUS_FAILED
 
