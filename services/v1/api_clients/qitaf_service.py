@@ -198,8 +198,10 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             return None, response_obj.QITAF_ALREADY_COLLECTED, transaction_obj.earned_point
 
         if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
-            logger.info("Qitaf RewardPoint Failed for {} ".format(
-                transaction_obj.transaction_id,
+            logger.info("Qitaf RewardPoint Failed for {}, reason min point{} "
+                        "for qitaf collection is not met, actual amount is {}"
+                        " ".format(transaction_obj.transaction_id,
+                                   QITAF_REWARD_POINT_MIN_AMT, data["amount"]
             ))
             return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, None
 
