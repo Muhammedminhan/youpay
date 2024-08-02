@@ -588,7 +588,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                                   YouPayResponse):
 
     def __init__(self, ):
-        self.class_name = "{}:".format(self.__class__.__name__)
+        self.class_name = "{}:".format("EarnRedemptionPartnerPoints")
 
 
     def get_redeemed_amount(self, transaction_obj):
@@ -697,12 +697,18 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             transaction_obj.save()
 
             is_success = True
+            message += " collection success"
         else:
+
             reset_calculated_item_details = response.get(
                 "partner_response", {}).get("calculated_item_details")
+            message += " collection failed"
+
             if reset_calculated_item_details:
                 transaction_obj.brand_calculations = reset_calculated_item_details
                 transaction_obj.save()
+                message += " earn discount reset success"
+
 
         message = "{} status {} for {}".format(message, is_success,
                                                transaction_id)
