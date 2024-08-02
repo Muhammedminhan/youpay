@@ -8,7 +8,8 @@ from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.mokafa_service import MokafaServiceManager
-from payments.constants import PAYMENT_METHOD_MOKAFA
+from payments.constants import PAYMENT_METHOD_MOKAFAA
+from services.v1.serializers.payment_request import OTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ class UpdateMokafaPhoneNumber(APIView, YouPayTransactionCRUD):
                     'transaction_id': transaction_obj.transaction_id,
                     'points_collected_mobile_number': mokafa_phone_number,
                     'points_collected_cic_number': mokafa_cic_number,
-                    'point_program': PAYMENT_METHOD_MOKAFA,
+                    'point_program': PAYMENT_METHOD_MOKAFAA,
                     'point_collection_enabled': True,
                     "brand_details": brand_details
                 }
@@ -67,6 +68,50 @@ class UpdateMokafaPhoneNumber(APIView, YouPayTransactionCRUD):
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class MokafaaGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        request for handling mokafaa generate otp api
+        """
+        logger.info("MokafaaGenerateOTPAPIView request data : {}".format(
+            request.data))
+
+        try:
+            mobile_number = request.data.get('mobile_number')
+            otp_serializer = OTPSerializer(data=request.data)
+            if otp_serializer.is_valid(raise_exception=True):
+                transaction_obj = otp_serializer.transaction_obj
+                payload = {'request_data': {
+                    'transaction_obj': transaction_obj,
+                    "mobile_number": mobile_number
+                }}
+                mokafaa_service = MokafaServiceManager()
+                response_data, code = mokafaa_service.generate_otp(payload)
+
+                if response_data and code == self.response_obj.SUCCESS:
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(
+                "Exception occurred on MokafaaGenerateOTPAPIView : {}".format(
+                    str(e)), exc_info=True)
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

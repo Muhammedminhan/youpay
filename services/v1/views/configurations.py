@@ -14,7 +14,7 @@ from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_display_program)
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
-                                    NEQATY_CLIENT_CODE, MOKAFA_CLIENT_CODE)
+                                    NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -388,7 +388,7 @@ class ConfigViewSet(ViewSet):
                     payment_config_data.get(
                         PAYMENT_OPTION_MOKAFA, {}))
                 mokafa_config = self.get_each_b2c_config(config_list,
-                                                         MOKAFA_CLIENT_CODE)
+                                                         MOKAFAA_CLIENT_CODE)
                 mokafa_config.update(**this__config_data)
                 config_dict['mokafa_config'] = mokafa_config
         return config_dict

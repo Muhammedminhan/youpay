@@ -9,8 +9,11 @@ from core.utils import get_payment_gateway_config
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_COLLECT_POINTS,
-    MOKAFA_EARN_POINTS_API, MOKAFA_CLIENT_CODE, )
-from payments.constants import PAYMENT_METHOD_MOKAFA
+    MOKAFAA_EARN_POINTS_API, MOKAFAA_CLIENT_CODE,
+    PAYMENT_REQUEST_GENERATE_OTP, MOKAFAA_OTP_GENERATION_API)
+from integrations.v1.serializers.mokafaa_serializers import (
+    MokafaaPaymentRequestSerializer)
+from payments.constants import PAYMENT_METHOD_MOKAFAA
 
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -54,6 +57,84 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error(error)
             return False
 
+    @staticmethod
+    def get_mokafaa_payment_data(data):
+        """
+        returns data to be passed to b2c_payback
+        """
+        if data.get('transaction_obj'):
+            payment_data = MokafaaPaymentRequestSerializer(data)
+            return payment_data.data
+        else:
+            logger.error(
+                "transaction_data or request_data or token_type data "
+                "is not available")
+            return None
+
+    def generate_otp(self, data):
+        """
+        calls mokafaa otp generating api and returns otp
+        """
+        try:
+            request_data = data['request_data']
+            self.transaction_obj = request_data.get('transaction_obj')
+            self.transaction_id = self.transaction_obj.transaction_id
+            payload = self.get_mokafaa_payment_data(request_data)
+            mokafaa_phone_number = request_data.get("mobile_number")
+
+            data = {
+                'transaction_id': str(self.transaction_id),
+                'mokafaa_phone_number': mokafaa_phone_number,
+            }
+
+            payload.update(data)
+            self.request_data = payload
+            payload['apiclient'] = self.transaction_obj.api_client.name
+            payload['client_code'] = MOKAFAA_CLIENT_CODE
+            logger.info(
+                "Youpay sending request data to mokafaa generate otp api "
+                "is {}".format(payload))
+            url = self.mokafa_config.domain + MOKAFAA_OTP_GENERATION_API
+            headers = self.get_payment_header()
+
+            response = requests.post(url, data=json.dumps(payload),
+                                     headers=headers)
+            logger.info("Response from Mokafaa service {}".format(response))
+            if response:
+                response_data = response.json()
+                logger.info("Mokafaa payment response: {}".format(
+                    response_data))
+                self.response_data = response_data
+                self.update_youpay_transaction_data({
+                    'transaction_id': self.transaction_obj.transaction_id,
+                    'payment_reference': response_data.get(
+                        'payment_reference'),
+                    'points_redeemed_mobile_number': mokafaa_phone_number,
+                })
+
+                return response_data, self.SUCCESS
+
+            logger.error("Error in mokafaa otp, {}".format(response.json()))
+            self.response_data = response.json()
+
+            return ({"error": response.json()},
+                    self.MOKAFA_CONNECTION_ERROR)
+
+        except Exception as e:
+            error = "Exception in mokafaa generate otp api: {}".format(e)
+            logger.error(error, exc_info=True)
+            self.response_data = {}
+            return {"error": error}, self.MOKAFA_CONNECTION_ERROR
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_GENERATE_OTP,
+            )
+
     def collect_points(self, transaction_obj):
         """
         calls mokafa points collecting api
@@ -70,7 +151,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 return None, response_obj.MOKAFA_ALREADY_COLLECTED
 
             if transaction_obj.payment_method in [
-                PAYMENT_METHOD_MOKAFA
+                PAYMENT_METHOD_MOKAFAA
             ]:
                 paid_amount = transaction_obj.payable_amount
             else:
@@ -84,7 +165,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 "invoice_id": transaction_obj.invoice_id,
                 "gateway_reference": transaction_obj.payment_reference,
                 "currency": transaction_obj.currency,
-                "client_code": MOKAFA_CLIENT_CODE,
+                "client_code": MOKAFAA_CLIENT_CODE,
                 "amount": str(paid_amount),
                 "platform": transaction_obj.platform,
 
@@ -111,7 +192,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
             payload = json.dumps(request_data)
 
-            url = self.mokafa_config.domain + MOKAFA_EARN_POINTS_API
+            url = self.mokafa_config.domain + MOKAFAA_EARN_POINTS_API
             headers = self.get_payment_header()
             response = requests.post(url, data=payload, headers=headers)
             logger.info("Response from mokafa point collection api {}"
