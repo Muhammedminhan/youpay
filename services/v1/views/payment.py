@@ -697,19 +697,25 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             transaction_obj.save()
 
             is_success = True
-            message += " collection success"
+            logger.info(
+                "{} collection success for program {}, tid :{}".format(
+                    self.class_name, program_name, transaction_id
+                ))
         else:
-
+            reset = False
             reset_calculated_item_details = response.get(
                 "partner_response", {}).get("calculated_item_details")
-            message += " collection failed"
-
             if reset_calculated_item_details:
                 transaction_obj.brand_calculations = reset_calculated_item_details
                 transaction_obj.save()
-                message += " earn discount reset success"
+                reset = True
 
-
+            logger.info(
+                "{} collection failed for program {}, tid :{}, rest status : "
+                "{}, reset data {}".format(
+                    self.class_name, program_name, transaction_id,
+                    reset, reset_calculated_item_details
+                ))
         message = "{} status {} for {}".format(message, is_success,
                                                transaction_id)
 
