@@ -78,14 +78,19 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'AmazonPGAuthentication',
     'HappyCreditsDebitBalance',
     'CitiGenerateOTPAPIView',
-    'QitafRedeemPointsAPIView'
+    'QitafRedeemPointsAPIView',
+    'NeqatyGenerateOTPAPIView',
+    'AmazonPGSavedCard'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
     # these names are specified in the urls
     'CheckoutVerification',
     'B2CPaybackVerify',
-    'TabbyPGVerification'
+    'TabbyPGVerification',
+    'AmazonPGVerification',
+    'QitafVerify',
+    'NeqatyVerify'
 ]
 
 QITAF_REWARD_POINT_MIN_AMT = 10

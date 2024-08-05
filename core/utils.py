@@ -26,8 +26,7 @@ from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_METHOD_QITAF,
-    PAYMENT_METHOD_NEQATY)
+    PAYMENT_STATUS_REJECTED_RETRY)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -565,3 +564,21 @@ def decrypt_browser_value(encrypted_value):
     decrypted_value = fer_instance.decrypt(encrypted_value).decode()
     logger.info("decrypted cookie key is {}".format(decrypted_value))
     return decrypted_value
+
+
+def get_display_platform(platform):
+    """
+    Converts platform to display it in required formats for clevertap.
+
+    Args:
+        platform (str): The platform stored ('Web', 'Mweb', 'Android', 'IOS').
+    Returns:
+        str: The display platform name ('WEB', 'MWEB', 'Android', 'iOS').
+    """
+    platform_map = {
+        'Web': 'WEB',
+        'Mweb': 'MWEB',
+        'Android': 'Android',
+        'IOS': 'iOS'
+    }
+    return platform_map.get(platform, platform)
