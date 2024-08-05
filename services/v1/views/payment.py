@@ -689,6 +689,11 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             message = "Unknown redemption partner {}".format(
                 transaction_obj.point_program)
 
+        logger.info("{} {} API response received {}".format(
+            self.class_name, program_name,
+            response
+        ))
+
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
             transaction_obj.earned_point = earned_points
