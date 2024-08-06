@@ -714,7 +714,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 "calculated_item_details")
             if reset_calculated_item_details:
                 transaction_obj.brand_calculations = reset_calculated_item_details
-                transaction_obj.save()
+                self.point_program_reset(transaction_obj)
                 reset = True
 
             logger.info(
@@ -786,6 +786,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 "".format(self.class_name, transaction_obj.country_code,
                           transaction_obj.transaction_id)
             )
+            self.point_program_reset(transaction_obj)
             raise PaymentConfigurationFailed(
                 "Country not registered for transaction {}".format(
                     transaction_obj.transaction_id))
@@ -814,6 +815,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             payment_method_query)
 
         if not payment_method_configs.exists():
+            self.point_program_reset(transaction_obj)
             msg = (
                 "{} No Active Payment Configuration for transaction-{}, "
                 "client-({}), country-({}), guest user status-({}), point "
@@ -860,9 +862,15 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 self.class_name, transaction_obj.transaction_id)
         if not earn_enabled:
             logger.error(earn_msg)
+            self.point_program_reset(transaction_obj)
             raise PaymentConfigurationFailed(earn_msg)
 
         return earn_enabled
+
+    def point_program_reset(self, transaction_obj):
+        transaction_obj.point_program = None
+        transaction_obj.save()
+
     def post(self, request):
         try:
             transaction_id = None
