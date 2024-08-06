@@ -26,7 +26,7 @@ from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY)
+    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_SCHEME_MADA)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -351,6 +351,7 @@ def process_checkoutpg_response_verification(**kwargs):
     payment_gateway = kwargs.get('payment_gateway')
     channel_code = kwargs.get('channel_code')
     response_code = kwargs.get('response_data', {}).get('response_code')
+    payment_scheme = get_payment_scheme(response_data)
 
     reference_from_checkout = response_data.get("reference")
 
@@ -433,7 +434,7 @@ def process_checkoutpg_response_verification(**kwargs):
             "response_summary": response_data.get("response_summary"),
             "card_bin": response_data.get("card_bin"),
             "card_last4": response_data.get("card_last4"),
-            'payment_scheme': response_data.get("payment_scheme"),
+            'payment_scheme': payment_scheme,
             'is_gcc_card': response_data.get("is_gcc_card"),
             'is_flagged': is_flagged,
             'is_fraud': response_data.get("is_fraud"),
@@ -488,7 +489,7 @@ def format_pre_auth_payment_response_for_verify(response_data):
         "is_flagged": response_data.get("risk", {}).get("flagged"),
         "card_bin": response_data.get("source", {}).get("bin"),
         "card_last4": response_data.get("source", {}).get("last4"),
-        "payment_scheme": response_data.get("source", {}).get("scheme"),
+        "payment_scheme": get_payment_scheme(response_data.get("source", {})),
         "is_gcc_card": response_data.get("is_gcc_card"),
         "card_issuer_country": response_data.get("source", {}).get(
             "issuer_country")}
@@ -582,3 +583,14 @@ def get_display_platform(platform):
         'IOS': 'iOS'
     }
     return platform_map.get(platform, platform)
+
+
+def get_payment_scheme(response_data):
+    """
+    Determines the payment scheme based on the local scheme as
+    PAYMENT_SCHEME_MADA is only available in local scheme.
+    """
+    if response_data.get("local_scheme") == PAYMENT_SCHEME_MADA:
+        return PAYMENT_SCHEME_MADA
+    else:
+        response_data.get("payment_scheme")

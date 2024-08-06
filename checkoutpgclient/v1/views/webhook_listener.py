@@ -7,7 +7,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from checkoutpgclient.constants import PAYMENT_METHOD_CARD
+from checkoutpgclient.constants import (PAYMENT_METHOD_CARD,
+                                        PAYMENT_SCHEME_MADA)
 from checkoutpgclient.libs.authentication import YoupayAuthentication
 from checkoutpgclient.models import TransactionData
 from integrations.common import WebhookDataFormat
@@ -79,9 +80,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     transaction_obj.card_bin = card_bin
                 if card_last4:
                     transaction_obj.card_last4 = card_last4
-                transaction_obj.payment_scheme = request_data.get(
-                    'payment_scheme',
-                    None)
+                transaction_obj.payment_scheme = self.get_payment_scheme(
+                    request_data)
                 transaction_obj.issuer_bank = self.get_issuer_bank(
                     request_data.get('api_response_data'))
                 transaction_obj.three_ds_check = self.get_three_ds(
@@ -128,8 +128,7 @@ class WebhookListener(APIView, WebhookDataFormat):
                     card_last4=request_data.get('card_last4', None),
                     payment_method=request_data.get('payment_method',
                                                     PAYMENT_METHOD_CARD),
-                    payment_scheme=request_data.get('payment_scheme',
-                                                    None),
+                    payment_scheme=self.get_payment_scheme(request_data),
                     payment_id=request_data.get('payment_id',
                                                 None),
                     financial_action_response_data=request_data.get(
@@ -182,3 +181,14 @@ class WebhookListener(APIView, WebhookDataFormat):
             },
             content_type='application/json'
         )
+
+    def get_payment_scheme(self, request_data):
+        """
+        Determines the payment scheme based on the local scheme as
+        PAYMENT_SCHEME_MADA is only available in local scheme.
+        """
+        if request_data.get('api_response_data', {}).get('source', {}).get(
+                'scheme_local') == PAYMENT_SCHEME_MADA:
+            return PAYMENT_SCHEME_MADA
+        else:
+            return request_data.get('payment_scheme', None)
