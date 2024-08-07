@@ -715,6 +715,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             if reset_calculated_item_details:
                 transaction_obj.brand_calculations = reset_calculated_item_details
                 reset = True
+                transaction_obj.save()
 
             logger.info(
                 "{} collection failed for program {}, tid :{}, rest status : "
