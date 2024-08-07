@@ -7,11 +7,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
-from core.models import PaymentConfiguration
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
-                        decrypt_browser_value)
+                        decrypt_browser_value, get_display_platform)
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFA_CLIENT_CODE)
@@ -169,7 +168,10 @@ class ConfigViewSet(ViewSet):
                 "announcements": get_announcements(transaction.platform),
                 "is_guest": transaction.is_guest,
                 "allow_aed_converted_amount":
-                    transaction.api_client.allow_aed_converted_amount
+                    transaction.api_client.allow_aed_converted_amount,
+                "program": transaction.api_client.name,
+                "platform": get_display_platform(transaction.platform),
+                "retry_count": transaction.retry_count
             },
         }
 

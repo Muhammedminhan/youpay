@@ -198,8 +198,10 @@ class QitafCollectPointsAPIView(APIView, YouPayTransactionCRUD):
             return None, response_obj.QITAF_ALREADY_COLLECTED, transaction_obj.earned_point
 
         if data["amount"] < QITAF_REWARD_POINT_MIN_AMT:
-            logger.info("Qitaf RewardPoint Failed for {} ".format(
-                transaction_obj.transaction_id,
+            logger.info("Qitaf RewardPoint Failed for {}, reason min point{} "
+                        "for qitaf collection is not met, actual amount is {}"
+                        " ".format(transaction_obj.transaction_id,
+                                   QITAF_REWARD_POINT_MIN_AMT, data["amount"]
             ))
             return None, response_obj.QITAF_REWARD_POINT_MIN_AMT_NOT_MET, None
 
@@ -367,8 +369,7 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
 
                 logger.error(message)
 
-                code = self.response_obj.QITAF_VERIFICATION_FAILED_TO_PROCESS
-                response = self.format_b2c_response(response, code)
+                response = self.format_b2c_response(response, None)
             return Response(response, status=status.HTTP_200_OK)
         else:
             try:
@@ -399,7 +400,8 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
         errors = data.get('errors', None)
         results = data.get('results', None)
 
-        data['message'] = self.response_obj.MESSAGE.get(code)
+        data['message'] = (self.response_obj.MESSAGE.get(
+            code) if code else data.get('message', None))
         if results:
             data.pop('results')
             data['code'] = code
