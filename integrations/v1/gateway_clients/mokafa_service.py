@@ -11,8 +11,8 @@ from core.utils import get_payment_gateway_config, get_app_config
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_COLLECT_POINTS,
-    MOKAFAA_EARN_POINTS_API, MOKAFAA_CLIENT_CODE,
-    PAYMENT_REQUEST_GENERATE_OTP, MOKAFAA_OTP_GENERATION_API,
+    B2CP_EARN_POINTS_API, MOKAFAA_CLIENT_CODE,
+    PAYMENT_REQUEST_GENERATE_OTP, B2CP_OTP_GENERATION_API,
     MOKAFAA_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     CHECKOUTPG_PAYMENT_CONFIGURATIONS)
 from integrations.v1.serializers.mokafaa_serializers import (
@@ -121,12 +121,11 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             logger.info(
                 "Youpay sending request data to mokafaa generate otp api "
                 "is {}".format(payload))
-            url = self.mokafa_config.domain + MOKAFAA_OTP_GENERATION_API
+            url = self.mokafa_config.domain + B2CP_OTP_GENERATION_API
             headers = self.get_payment_header()
 
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
-            logger.info("Response from Mokafaa service {}".format(response))
             if response:
                 response_data = response.json()
                 logger.info("Mokafaa payment response: {}".format(
@@ -220,7 +219,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
             payload = json.dumps(request_data)
 
-            url = self.mokafa_config.domain + MOKAFAA_EARN_POINTS_API
+            url = self.mokafa_config.domain + B2CP_EARN_POINTS_API
             headers = self.get_payment_header()
             response = requests.post(url, data=payload, headers=headers)
             logger.info("Response from mokafa point collection api {}"

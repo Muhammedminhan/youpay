@@ -200,3 +200,7 @@ MOKAFAA_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
 MOKAFAA_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
 MOKAFAA_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"
 REDEMPTION_PARTNER_MOKAFAA = "MOKAFAA"
+
+# B2c_payback related common constants
+B2CP_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
+B2CP_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"

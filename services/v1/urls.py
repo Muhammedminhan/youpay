@@ -22,8 +22,9 @@ from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiGenerateOTPAPIView)
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
-from .api_clients.mokafa_service import UpdateMokafaPhoneNumber, \
-    MokafaaGenerateOTPAPIView, MokafaaRedeemPointsAPIView
+from .api_clients.mokafa_service import (UpdateMokafaPhoneNumber,
+                                         MokafaaGenerateOTPAPIView,
+                                         MokafaaRedeemPointsAPIView)
 from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyGenerateOTPAPIView,
                                          NeqatyRedeemPointsAPIView,
