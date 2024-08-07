@@ -424,6 +424,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                     " transaction id {} response is : {} ".format(
                         self.transaction_id, verify_response))
                 logger.error(msg)
+
                 return (verify_response,
                         self.CLIENT_TRANSACTION_VERIFICATION_FAILED)
 
