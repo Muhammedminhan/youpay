@@ -198,4 +198,5 @@ REDEMPTION_PARTNER_NEQATY = "NEQATY"
 MOKAFAA_CLIENT_CODE = 'PAYMTMKF'
 MOKAFAA_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
 MOKAFAA_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
+MOKAFAA_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"
 REDEMPTION_PARTNER_MOKAFAA = "MOKAFAA"

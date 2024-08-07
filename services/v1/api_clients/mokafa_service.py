@@ -4,10 +4,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN, \
+    COMMON_ERROR_MESSAGE_EN_CODE
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.mokafa_service import MokafaServiceManager
+from integrations.v1.serializers.mokafaa_serializers import \
+    MokafaaRedemptionSerializer
 from payments.constants import PAYMENT_METHOD_MOKAFAA
 from services.v1.serializers.payment_request import OTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
@@ -115,3 +119,92 @@ class MokafaaGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        request for handling mokafaa points redemption api
+        1.full redemption
+        2.partial redemption
+        """
+        try:
+            logger.info("MokafaaRedeemPointsAPIView API triggered, request "
+                        "data: {}".format(request.data))
+            mokafaa_redemption_serializer = MokafaaRedemptionSerializer(
+                data=request.data, context={'request': request})
+
+            mokafaa_redemption_serializer.is_valid(raise_exception=True)
+            validated_data = mokafaa_redemption_serializer.data
+
+            points_redemption_data = validated_data
+
+            selected_amount_in_req = request.data.get("selected_amount")
+            transaction_order_reference = (
+                mokafaa_redemption_serializer.transaction_obj.order_reference)
+            points_redemption_data.update(
+                {
+                    "transaction_obj": mokafaa_redemption_serializer.transaction_obj,
+                    "referance_id": mokafaa_redemption_serializer.transaction_obj.payment_reference,
+                    "pin_number": validated_data.get('pin_number'),
+                    "selected_amount": selected_amount_in_req,
+                    "checkout_amount": validated_data.get('checkout_amount'),
+                    "is_save_user_token": validated_data.get(
+                        'is_save_user_token'),
+                    "customer_name": validated_data.get('customer_name'),
+                    "cvv": validated_data.get('cvv'),
+                    "token": validated_data.get('token'),
+                    "token_type": validated_data.get('token_type'),
+                    "encrypted_id": request.data.get('transaction_id'),
+                    "brand_calculations": (
+                        mokafaa_redemption_serializer.transaction_obj.brand_calculations),
+                    "order_reference": transaction_order_reference
+                }
+            )
+            mokafaa_service = MokafaServiceManager()
+            response_data, code = mokafaa_service.redeem_points(
+                points_redemption_data)
+            if response_data and code == 1000:
+                formatted_res = mokafaa_response_formatter(response_data, code)
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=formatted_res
+                )
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                """Need to show error message to Front end
+                so data = self.response_obj.get_error_dict(error_code=code)
+                """
+                return Response(response_data,
+                                status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error("Exception {}".format(str(e)), exc_info=True)
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+def mokafaa_response_formatter(data, code):
+    """
+    Mokafaa Response format method
+    """
+
+    mokafaa_response = data.get('mokafaa_response')
+    errors = data.get('errors')
+    is_success = data.get(IS_SUCCESS)
+    if mokafaa_response:
+        message = mokafaa_response.get("reason")
+        data['code'] = code
+        data['reason'], data['message'] = message, message
+        data[IS_SUCCESS] = is_success
+        data.pop('qitaf_response', None)
+    if errors:
+        errors['message'] = COMMON_ERROR_MESSAGE_EN
+        errors['code'] = code
+
+    if not data.get('message'):
+        data['message'] = COMMON_ERROR_MESSAGE_EN
+        data['code'] = COMMON_ERROR_MESSAGE_EN_CODE
+    return data

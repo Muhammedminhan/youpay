@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from core.utils import decrypt_string
+
 
 class MokafaaPaymentRequestSerializer(serializers.Serializer):
     invoice_id = serializers.SerializerMethodField()
@@ -46,3 +48,61 @@ class MokafaaPaymentRequestSerializer(serializers.Serializer):
 
     def get_amount_in_aed(self, data):
         return str(data.get('transaction_obj').amount_in_aed)
+
+
+class MokafaaRedemptionSerializer(serializers.Serializer):
+    selected_amount = serializers.SerializerMethodField()
+    checkout_amount = serializers.SerializerMethodField()
+    pin_number = serializers.SerializerMethodField()
+    is_save_user_token = serializers.SerializerMethodField()
+    customer_name = serializers.SerializerMethodField()
+    token = serializers.SerializerMethodField()
+    cvv = serializers.SerializerMethodField()
+    token_type = serializers.SerializerMethodField()
+
+    def get_selected_amount(self, data):
+        data = self.context.get('request').data
+        return data.get('selected_amount')
+
+    def get_checkout_amount(self, data):
+        data = self.context.get('request').data
+        return data.get('checkout_amount')
+
+    def get_pin_number(self, data):
+        data = self.context.get('request').data
+        return data.get('pin_number')
+
+    def get_is_save_user_token(self, data):
+        data = self.context.get('request').data
+        return data.get('is_save_user_token')
+
+    def get_customer_name(self, data):
+        data = self.context.get('request').data
+        return data.get('customer_name')
+
+    def get_token(self, data):
+        data = self.context.get('request').data
+        return data.get('token')
+
+    def get_cvv(self, data):
+        data = self.context.get('request').data
+        return data.get('cvv')
+
+    @property
+    def transaction_obj(self):
+        data = self.context.get('request').data
+        transaction_id = data.get('transaction_id')
+        from services.v1.views.common import YouPayTransactionCRUD
+        obj = YouPayTransactionCRUD()
+        transaction_obj = obj.get_youpay_transaction_data(
+            decrypt_string(transaction_id))
+        if transaction_obj:
+            return transaction_obj
+        else:
+            raise serializers.ValidationError((
+                "MokafaaRedeemSerializer : Transaction not found with ID"
+                " {}".format(transaction_id)))
+
+    def get_token_type(self, data):
+        data = self.context.get('request').data
+        return data.get('token_type')

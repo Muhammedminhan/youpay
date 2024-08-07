@@ -137,12 +137,13 @@ class YouPayResponse(object):
 
     """Qitaf related ends"""
 
-    """Mokafa related begins"""
+    """Mokafaa related begins"""
     MOKAFA_CONNECTION_ERROR = 7002
     MOKAFA_PHONE_NUMBER_SAVE_FAILED = 7003
     MOKAFA_PHONE_NUMBER_SAVED = 7004
     MOKAFA_PHONE_NUMBER_FAILED_TO_FETCH = 7005
     MOKAFA_ALREADY_COLLECTED = 7402
+    MOKAFA_NOT_SUPPORTED = 7404
     """Mokafa related ends """
 
     MESSAGE = {}
@@ -224,6 +225,7 @@ class YouPayResponse(object):
             self.MOKAFA_PHONE_NUMBER_FAILED_TO_FETCH: (
                 "MOKAFA Phone/cic number failed to fetch"),
             self.MOKAFA_ALREADY_COLLECTED: "MOKAFA Reward collected Already.",
+            self.MOKAFA_NOT_SUPPORTED: "Mokafaa Forbidden, or partial redemption not supported.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),

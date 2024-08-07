@@ -10,10 +10,13 @@ from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_COLLECT_POINTS,
     MOKAFAA_EARN_POINTS_API, MOKAFAA_CLIENT_CODE,
-    PAYMENT_REQUEST_GENERATE_OTP, MOKAFAA_OTP_GENERATION_API)
+    PAYMENT_REQUEST_GENERATE_OTP, MOKAFAA_OTP_GENERATION_API,
+    MOKAFAA_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION)
 from integrations.v1.serializers.mokafaa_serializers import (
     MokafaaPaymentRequestSerializer)
-from payments.constants import PAYMENT_METHOD_MOKAFAA
+from payments.constants import PAYMENT_METHOD_MOKAFAA, LANGUAGE_CODE_AR
+from payments.serializers.youpay_payments import \
+    YouPayTransactionDataSerializer
 
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -229,4 +232,107 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data=json.dumps(self.response_data),
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_COLLECT_POINTS,
+            )
+
+    def redeem_points(self, data):
+        """
+        calls mokafaa points redeem api
+        """
+        try:
+            self.request_data = data
+            self.transaction_obj = self.request_data.get('transaction_obj')
+            self.transaction_id = self.transaction_obj.transaction_id
+            payload = self.request_data
+            language = self.transaction_obj.language
+
+            serializer = YouPayTransactionDataSerializer(self.transaction_obj)
+            transaction_data = serializer.data
+            payload.update(self.prepare_redeem_payload(transaction_data))
+            payload.pop('transaction_obj')
+            source_payment_method = PAYMENT_METHOD_MOKAFAA
+            payload.update({"source_payment_method": source_payment_method})
+
+            verify_response, verify_status = self.verify_transaction(
+                transaction_data, payment_method=PAYMENT_METHOD_MOKAFAA)
+            if not verify_response:
+                msg = (
+                    "Youpay Mokafaa transaction verification failed for"
+                    " transaction id {} response is : {} ".format(
+                        self.transaction_id, verify_response))
+                logger.error(msg)
+                return verify_response, \
+                       self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+
+            is_verified = verify_response.get('is_verified', False)
+            if not is_verified and verify_response:
+                msg = (
+                    "Youpay Mokafaa transaction verification failed for"
+                    " transaction id {} response is : {} ".format(
+                        self.transaction_id, verify_response))
+                logger.error(msg)
+                self.response_data = verify_response
+                return verify_response, \
+                       self.CLIENT_TRANSACTION_VERIFICATION_FAILED
+
+            url = self.mokafa_config.domain + MOKAFAA_REDEEM_POINTS_API
+            headers = self.get_payment_header()
+
+            logger.info(
+                "Youpay sending request data to mokafaa redeem point api is {}"
+                " headers {} ".format(payload, headers))
+
+            response = requests.post(url, data=json.dumps(payload),
+                                     headers=headers)
+
+            if response:
+                response_data = response.json()
+                self.response_data = response_data
+                logger.info("mokafaa redeem point api response: {}".format(
+                    response_data))
+                response_data = self.handle_mokafaa_response(
+                    response_data, self.transaction_obj, self.request_data)
+                return response_data, self.SUCCESS
+            elif response.status_code == 400:
+                response_data = response.json()
+                self.response_data = response_data
+                response_data = self.handle_mokafaa_response(
+                    response_data, self.transaction_obj, self.request_data)
+                logger.info("mokafaa redeem point api response: {} for {}"
+                            "".format(response_data, self.transaction_id))
+                return response_data, self.PAYMENT_FAILED
+            elif response.status_code == 403:
+                msg = "Mokafaa Forbidden, or partial redemption not supported"
+                logger.error("{}, {}".format(msg, response.text))
+                return {"errors": msg}, self.MOKAFA_NOT_SUPPORTED
+            else:
+                logger.error("Error in mokafaa redeem point api, {}"
+                             "".format(response.text))
+                self.response_data = response.json()
+                if language == LANGUAGE_CODE_AR:
+                    message = self.response_data.get("response_text_ar")
+                else:
+                    message = self.response_data.get("response_text")
+
+                err_obj = {
+                    "message": message,
+                    "code": self.response_data.get("response_code"),
+                    "is_full_redemption": self.response_data.get(
+                        "is_full_redemption")
+                }
+                return {"errors": err_obj}, self.MOKAFA_CONNECTION_ERROR
+
+        except Exception as e:
+            error = "Exception in mokafaa redeem point api: {}".format(e)
+            logger.error("Exception in mokafaa redeem point api: "
+                         "{}".format(e), exc_info=True)
+            return {"errors": error}, self.MOKAFA_CONNECTION_ERROR
+
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_REDEMPTION,
             )
