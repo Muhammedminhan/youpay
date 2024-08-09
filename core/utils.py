@@ -607,7 +607,7 @@ def get_display_program(api_client):
     client_code = api_client.client_code
 
     api_client_map = {
-        'RERECORDS': 'Ecom',
+        'ECOMORDS': 'Ecom',
         'EMAPIGRPGFT': 'Group Gift',
         'MYREWDB': 'Dukhan Bank',
         'MYREWPMI': 'PMI',
