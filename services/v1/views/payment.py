@@ -27,7 +27,8 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY,
-                                PAYMENT_METHOD_MOKAFA)
+                                PAYMENT_METHOD_MOKAFA,
+                                REDEEM_AMOUNT_APPLICABLE_LIST)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -588,12 +589,31 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                                   YouPayResponse):
 
     def __init__(self, ):
-        self.class_name = "{}:".format(self.__class__.__name__)
+        self.class_name = "{}:".format("EarnRedemptionPartnerPoints")
 
 
     def get_redeemed_amount(self, transaction_obj):
-        return (str(transaction_obj.redeemed_amount) if
+
+        redeemed_amount = (transaction_obj.redeemed_amount if
                 transaction_obj.redeemed_amount else 0.0)
+
+        if transaction_obj.payment_method not in REDEEM_AMOUNT_APPLICABLE_LIST:
+            """
+            This case happens if customer switches payment method just before
+            payment through b2c payback, this will let to reset the 
+            brand calculations with selected amount 0
+            """
+            redeemed_amount = 0.0
+
+        logger.info(
+            "{} get_redeemed_amount, payment method{} for {} is {}".format(
+                self.class_name,
+                transaction_obj.payment_method,
+                transaction_obj.transaction_id,
+                redeemed_amount
+            ))
+
+        return str(redeemed_amount)
 
     def get_earn_points(self, **kwargs):
         '''
@@ -688,6 +708,12 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.point_program)
+            response = None
+
+        logger.info("{} {} API response received {}".format(
+            self.class_name, program_name,
+            response
+        ))
 
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
@@ -697,7 +723,26 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             transaction_obj.save()
 
             is_success = True
+            logger.info(
+                "{} collection success for program {}, tid :{}".format(
+                    self.class_name, program_name, transaction_id
+                ))
+        else:
+            reset = False
+            reset_calculated_item_details = response.get(
+                "partner_response", {}).get("partner_response", {}).get(
+                "calculated_item_details")
+            if reset_calculated_item_details:
+                transaction_obj.brand_calculations = reset_calculated_item_details
+                reset = True
+                transaction_obj.save()
 
+            logger.info(
+                "{} collection failed for program {}, tid :{}, rest status : "
+                "{}, reset data {}".format(
+                    self.class_name, program_name, transaction_id,
+                    reset, reset_calculated_item_details
+                ))
         message = "{} status {} for {}".format(message, is_success,
                                                transaction_id)
 
@@ -716,29 +761,31 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         }
 
     def call_brand_calculation(self, transaction_obj, program_name):
-        if transaction_obj.brand_calculations is None:
-            client_code = self.get_client_code(program_name)
+        """
+        Update brand calculations
+        """
+        client_code = self.get_client_code(program_name)
 
-            payload = {
-                'transaction_obj': transaction_obj,
-                "selected_amount": self.get_redeemed_amount(transaction_obj),
-                "client_code": client_code
-            }
+        payload = {
+            'transaction_obj': transaction_obj,
+            "selected_amount": self.get_redeemed_amount(transaction_obj),
+            "client_code": client_code
+        }
 
-            from integrations.v1.gateway_clients.qitaf_service import (
-                QitafServiceManager)
+        from integrations.v1.gateway_clients.qitaf_service import (
+            QitafServiceManager)
 
-            qitaf_service = QitafServiceManager()
-            response_data, code = qitaf_service.calculate_qitaf_balance(
-                payload)
+        qitaf_service = QitafServiceManager()
+        response_data, code = qitaf_service.calculate_qitaf_balance(
+            payload)
 
-            if code == self.SUCCESS:
-                calculated_item_details = response_data.get(
-                    'calculated_item_details')
-                transaction_obj.brand_calculations = calculated_item_details
+        if code == self.SUCCESS:
+            calculated_item_details = response_data.get(
+                'calculated_item_details')
+            transaction_obj.brand_calculations = calculated_item_details
 
-            logger.info("{} Brand Calculated for transaction {}".format(
-                self.class_name, transaction_obj.transaction_id))
+        logger.info("{} Brand Calculated for transaction {}".format(
+            self.class_name, transaction_obj.transaction_id))
 
     def get_client_code(self, program_name):
         if program_name == PAYMENT_METHOD_NEQATY:
@@ -838,6 +885,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             raise PaymentConfigurationFailed(earn_msg)
 
         return earn_enabled
+    
     def post(self, request):
         try:
             transaction_id = None
