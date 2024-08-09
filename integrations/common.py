@@ -41,7 +41,7 @@ def update_brand_details(transaction_obj):
                 logger.info("Brand Details already exists for {}".format(
                     transaction_obj.brand_details))
 
-                return status, brand_details
+                return status, transaction_obj.brand_details
 
             client = transaction_obj.api_client
             api_key = client.api_key
