@@ -26,7 +26,8 @@ from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_SCHEME_MADA)
+    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_STATUS_FAILED,
+    PAYMENT_STATUS_PENDING, PAYMENT_SCHEME_MADA)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
