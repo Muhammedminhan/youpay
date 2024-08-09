@@ -122,6 +122,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                 transaction_obj.financial_action_response_data = (
                     request_data.get(
                         'financial_action_response_data'))
+                transaction_obj.brand_calculations = (
+                    request_data.get('brand_calculations'))
                 if request_data.get('checkoutpg_response_data'):
                     transaction_obj.issuer_bank = self.get_issuer_bank(
                         request_data.get('checkoutpg_response_data'))
@@ -192,7 +194,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     financial_action_response_data=(
                         request_data.get(
                             'financial_action_response_data')),
-                )
+                    brand_calculations=(request_data.get(
+                        'brand_calculations')))
             response_data = {'message': "B2cpayback webhook listener "
                                         "successfully processed data",
                              'status': True}

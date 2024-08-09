@@ -589,7 +589,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                                   YouPayResponse):
 
     def __init__(self, ):
-        self.class_name = "{}:".format(self.__class__.__name__)
+        self.class_name = "{}:".format("EarnRedemptionPartnerPoints")
 
 
     def get_redeemed_amount(self, transaction_obj):
@@ -708,6 +708,12 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.point_program)
+            response = None
+
+        logger.info("{} {} API response received {}".format(
+            self.class_name, program_name,
+            response
+        ))
 
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
@@ -717,7 +723,26 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             transaction_obj.save()
 
             is_success = True
+            logger.info(
+                "{} collection success for program {}, tid :{}".format(
+                    self.class_name, program_name, transaction_id
+                ))
+        else:
+            reset = False
+            reset_calculated_item_details = response.get(
+                "partner_response", {}).get("partner_response", {}).get(
+                "calculated_item_details")
+            if reset_calculated_item_details:
+                transaction_obj.brand_calculations = reset_calculated_item_details
+                reset = True
+                transaction_obj.save()
 
+            logger.info(
+                "{} collection failed for program {}, tid :{}, rest status : "
+                "{}, reset data {}".format(
+                    self.class_name, program_name, transaction_id,
+                    reset, reset_calculated_item_details
+                ))
         message = "{} status {} for {}".format(message, is_success,
                                                transaction_id)
 
@@ -860,6 +885,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             raise PaymentConfigurationFailed(earn_msg)
 
         return earn_enabled
+    
     def post(self, request):
         try:
             transaction_id = None
