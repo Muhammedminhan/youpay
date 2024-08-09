@@ -30,6 +30,7 @@ from payments.constants import (PAYMENT_METHOD_MOKAFAA, LANGUAGE_CODE_AR,
                                 PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                 PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_DECLINED)
+
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
