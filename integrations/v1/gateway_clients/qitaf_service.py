@@ -750,6 +750,15 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             is_updated, brand_details = update_brand_details(transaction_obj)
 
+            logger.info(
+                "RETURNED BRAND DETAILS: {}, for {}".format(brand_details,
+                                                            transaction_id
+                                                            ))
+            logger.info(
+                "RETURNED BRAND DETAILS: type: {} for {}".format(
+                    type(
+                        brand_details), transaction_id))
+
             items_array = brand_details.get("item_set", None)
 
             if not items_array or not len(items_array) or not is_updated:
