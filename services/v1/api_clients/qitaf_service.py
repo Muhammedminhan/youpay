@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import QITAF_REWARD_POINT_MIN_AMT
+from core.constants import QITAF_REWARD_POINT_MIN_AMT, PAYBACK_ACTION_BURN
 from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
@@ -426,7 +426,8 @@ class CalculateQitafBalance(APIView, YouPayTransactionCRUD):
                 payload = {
                     'transaction_obj': transaction_obj,
                     "selected_amount": selected_amount,
-                    "client_code": QITAF_CLIENT_CODE
+                    "client_code": QITAF_CLIENT_CODE,
+                    "payback_action": PAYBACK_ACTION_BURN
                 }
 
                 qitaf_service = QitafServiceManager()

@@ -769,7 +769,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         payload = {
             'transaction_obj': transaction_obj,
             "selected_amount": self.get_redeemed_amount(transaction_obj),
-            "client_code": client_code
+            "client_code": client_code,
+            "payback_action": PAYBACK_ACTION_EARN
         }
 
         from integrations.v1.gateway_clients.qitaf_service import (
