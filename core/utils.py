@@ -613,7 +613,10 @@ def get_display_program(api_client):
         'MYREWPMI': 'PMI',
         'MYREWNBKM': '	NBK Miles',
         'MYREWVF': 'Vodafone',
-        'MYREWNBUPP': 'NBK UEFA PWR PROGRAM'
+        'MYREWNBUPP': 'NBK UEFA PWR PROGRAM',
+        'MYREWSP': 'Spectrum',
+        'MYREWNBK': 'NBK',
+        'MYREWABKEM': 'ABK E-Mall',
     }
     program_name = api_client_map.get(client_code, None)
 
