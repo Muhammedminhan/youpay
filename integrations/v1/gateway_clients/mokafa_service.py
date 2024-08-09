@@ -127,7 +127,9 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.error("Error in mokafa point collection api, {}"
                              "".format(response.text))
                 self.response_data = response.json()
-                return {"error": response.text}, self.MOKAFA_CONNECTION_ERROR
+                return {"error": response.text,
+                        "partner_response": response.json()
+                        }, self.MOKAFA_CONNECTION_ERROR
             else:
                 msg = ("unable to get response from b2c_payback-mokafa for "
                        "point collection")
