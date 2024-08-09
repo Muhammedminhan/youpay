@@ -582,3 +582,30 @@ def get_display_platform(platform):
         'IOS': 'iOS'
     }
     return platform_map.get(platform, platform)
+
+
+def get_display_program(api_client):
+    """
+    Converts api_client name to display it in required formats for clevertap.
+    Args:
+        api_client (obj)
+    Returns:
+        str: The display api_client name if code present else client name
+    """
+    client_code = api_client.client_code
+
+    api_client_map = {
+        'RERECORDS': 'Ecom',
+        'EMAPIGRPGFT': 'Group Gift',
+        'MYREWDB': 'Dukhan Bank',
+        'MYREWPMI': 'PMI',
+        'MYREWNBKM': '	NBK Miles',
+        'MYREWVF': 'Vodafone',
+        'MYREWNBUPP': 'NBK UEFA PWR PROGRAM'
+    }
+    program_name = api_client_map.get(client_code, None)
+
+    if program_name:
+        return program_name
+    else:
+        return api_client.name
