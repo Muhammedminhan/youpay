@@ -4,14 +4,14 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.messages import IS_SUCCESS, COMMON_ERROR_MESSAGE_EN, \
-    COMMON_ERROR_MESSAGE_EN_CODE
+from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
+                           COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.mokafa_service import MokafaServiceManager
-from integrations.v1.serializers.mokafaa_serializers import \
-    MokafaaRedemptionSerializer
+from integrations.v1.serializers.mokafaa_serializers import (
+    MokafaaRedemptionSerializer)
 from payments.constants import PAYMENT_METHOD_MOKAFAA
 from services.v1.serializers.payment_request import OTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
@@ -146,9 +146,12 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                 mokafaa_redemption_serializer.transaction_obj.order_reference)
             points_redemption_data.update(
                 {
-                    "transaction_obj": mokafaa_redemption_serializer.transaction_obj,
-                    "referance_id": mokafaa_redemption_serializer.transaction_obj.payment_reference,
-                    "pin_number": validated_data.get('pin_number'),
+                    "transaction_obj": (
+                        mokafaa_redemption_serializer.transaction_obj),
+                    "referance_id": (
+                        mokafaa_redemption_serializer.transaction_obj.
+                        payment_reference),
+                    "one_time_password": validated_data.get('pin_number'),
                     "selected_amount": selected_amount_in_req,
                     "checkout_amount": validated_data.get('checkout_amount'),
                     "is_save_user_token": validated_data.get(
@@ -159,14 +162,21 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "token_type": validated_data.get('token_type'),
                     "encrypted_id": request.data.get('transaction_id'),
                     "brand_calculations": (
-                        mokafaa_redemption_serializer.transaction_obj.brand_calculations),
-                    "order_reference": transaction_order_reference
+                        mokafaa_redemption_serializer.transaction_obj.
+                        brand_calculations),
+                    "order_reference": transaction_order_reference,
+                    "transaction_id": str(
+                        mokafaa_redemption_serializer.transaction_obj.
+                        transaction_id),
+                    "language_code": (
+                        mokafaa_redemption_serializer.transaction_obj.language
+                    ),
                 }
             )
             mokafaa_service = MokafaServiceManager()
             response_data, code = mokafaa_service.redeem_points(
                 points_redemption_data)
-            if response_data and code == 1000:
+            if response_data and code == mokafaa_service.SUCCESS:
                 formatted_res = mokafaa_response_formatter(response_data, code)
                 data = self.response_obj.get_success_dict(
                     code=code,
@@ -199,7 +209,7 @@ def mokafaa_response_formatter(data, code):
         data['code'] = code
         data['reason'], data['message'] = message, message
         data[IS_SUCCESS] = is_success
-        data.pop('qitaf_response', None)
+        data.pop('mokafaa_response', None)
     if errors:
         errors['message'] = COMMON_ERROR_MESSAGE_EN
         errors['code'] = code

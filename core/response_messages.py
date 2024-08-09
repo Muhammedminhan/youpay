@@ -35,6 +35,10 @@ class YouPayResponse(object):
     TRANSACTION_ALREADY_CLOSED = 1600
     REQUIRED_DATA_MISSING = 1601
     DATA_CORRUPTED = 1602
+    OTP_ERROR = 1010
+    OTP_EXPIRED = 1017
+    INSUFFICIENT_BALANCE = 1018
+
     """Youpay related ends"""
 
     """checkoutpg related begins"""
@@ -144,15 +148,13 @@ class YouPayResponse(object):
     MOKAFA_PHONE_NUMBER_FAILED_TO_FETCH = 7005
     MOKAFA_ALREADY_COLLECTED = 7402
     MOKAFA_NOT_SUPPORTED = 7404
+
     """Mokafa related ends """
 
     MESSAGE = {}
 
     def __init__(self):
         super(YouPayResponse, self).__init__()
-        service_unavailable = (
-            "The service is temporarily unavailable, please try again "
-            "later.")
 
         self.MESSAGE.update({
             self.UNKNOWN_ERR: "Something went wrong",
@@ -161,6 +163,10 @@ class YouPayResponse(object):
             self.PAYMENT_SUCCESS: "Transaction success",
             self.PAYMENT_FAILED: "Payment failed",
             self.BRAND_DETAILS_MISSING: "Brand details missing",
+            self.OTP_ERROR: "Invalid OTP",
+            self.OTP_EXPIRED: "OTP is expired",
+            self.INSUFFICIENT_BALANCE: (
+                "Balance is insufficient for redemptions"),
 
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
@@ -225,7 +231,8 @@ class YouPayResponse(object):
             self.MOKAFA_PHONE_NUMBER_FAILED_TO_FETCH: (
                 "MOKAFA Phone/cic number failed to fetch"),
             self.MOKAFA_ALREADY_COLLECTED: "MOKAFA Reward collected Already.",
-            self.MOKAFA_NOT_SUPPORTED: "Mokafaa Forbidden, or partial redemption not supported.",
+            self.MOKAFA_NOT_SUPPORTED: (
+                "Mokafaa Forbidden, or partial redemption not supported."),
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),
