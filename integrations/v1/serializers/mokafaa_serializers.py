@@ -66,7 +66,9 @@ class MokafaaRedemptionSerializer(serializers.Serializer):
 
     def get_checkout_amount(self, data):
         data = self.context.get('request').data
-        return data.get('checkout_amount')
+        checkout_amount = (data.get('checkout_amount') if
+                           data.get('checkout_amount') else 0)
+        return checkout_amount
 
     def get_pin_number(self, data):
         data = self.context.get('request').data

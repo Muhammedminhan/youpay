@@ -171,6 +171,9 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "language_code": (
                         mokafaa_redemption_serializer.transaction_obj.language
                     ),
+                    "currency": (
+                        mokafaa_redemption_serializer.transaction_obj.currency
+                    )
                 }
             )
             mokafaa_service = MokafaServiceManager()
