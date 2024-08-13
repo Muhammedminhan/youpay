@@ -3,11 +3,13 @@ import json
 import logging
 
 import requests
+from django.db.models import Q
 
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK
 from core.messages import REDIRECT_URL, IS_REDIRECT
 from core.response_messages import YouPayResponse
-from core.utils import get_payment_gateway_config, get_app_config
+from core.utils import (get_payment_gateway_config, get_app_config,
+                        auto_enable_or_disable_point_collection)
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_COLLECT_POINTS,
@@ -19,7 +21,10 @@ from integrations.v1.serializers.mokafaa_serializers import (
     MokafaaPaymentRequestSerializer)
 from payments.constants import (PAYMENT_METHOD_MOKAFAA, LANGUAGE_CODE_AR,
                                 PAYMENT_STATUS_PAID,
-                                PAYMENT_STATUS_DECLINED_RETRY)
+                                PAYMENT_STATUS_DECLINED_RETRY,
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_STATUS_PENDING,
+                                PAYMENT_STATUS_DECLINED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
@@ -130,10 +135,10 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = response.json()
                 logger.info("Mokafaa payment response: {}".format(
                     response_data))
-                self.response_data = response_data
+                self.response_data = response_data.get("partner_response")
                 self.update_youpay_transaction_data({
                     'transaction_id': self.transaction_obj.transaction_id,
-                    'payment_reference': response_data.get(
+                    'payment_reference': self.response_data.get(
                         'payment_reference'),
                     'points_redeemed_mobile_number': mokafaa_phone_number,
                 })
@@ -273,7 +278,10 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             transaction_data = serializer.data
             payload.update(self.prepare_redeem_payload(transaction_data))
             payload.pop('transaction_obj')
-            source_payment_method = PAYMENT_METHOD_MOKAFAA
+            source_payment_method = (PAYMENT_METHOD_MOKAFAA_AND_CARD
+                                     if float(self.request_data.get(
+                'checkout_amount')) > 0 else
+                                     PAYMENT_METHOD_MOKAFAA)
             payload.update({"source_payment_method": source_payment_method})
 
             verify_response, verify_status = self.verify_transaction(
@@ -373,35 +381,69 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         name_on_card = partner_response.get("customer_name", "")
 
         is_full_redemption = partner_response.get("is_full_redemption", False)
-        if response_data.get('code') == self.SUCCESS:
-            self.payment_status = PAYMENT_STATUS_PAID
-            self.approved = True
-            paid_amount = partner_response.get('invoice_amount')
-            if paid_amount:
-                self.amount = paid_amount
-                update_data['amount'] = self.amount
+        if is_full_redemption is False:
+            redirect_url = partner_response.get('redirect_url')
 
-            self.redeemed_amount = float(
-                partner_response.get('redeemed_amount'))
-            self.redeemed_point = abs(partner_response.get('pointsAmount'))
+            if redirect_url:
+                is_success = True
+                is_redirect = True
+                self.payment_status = PAYMENT_STATUS_PENDING
+                self.point_collection_enabled = (
+                    auto_enable_or_disable_point_collection(
+                        Q(
+                            payment_method=PAYMENT_METHOD_MOKAFAA,
+                            active=True,
+                            earn_on_partial_redemption=True
+                        ))
+                )
+                self.redeemed_amount = partner_response.get('redeemed_amount')
+                self.redeemed_point = partner_response.get('redeemed_point')
+                self.payable_amount = partner_response.get('payable_amount')
+                self.points_redeemed_mobile_number = partner_response.get(
+                    'redeemed_mobile_number')
+                self.point_program = PAYMENT_METHOD_MOKAFAA
 
-            self.payable_amount = 0
-            self.service_fee = 0
-            self.VAT_amount = 0
+            else:
+                redirect_url = ('{}?transaction_id={}'.format(
+                    payment_data.failure_url,
+                    payment_data.transaction_id))
+                is_success = False
+                is_redirect = True
+                message = self.mokafaa_error_response_message(response_data)
 
-            self.points_redeemed_mobile_number = partner_response.get(
-                'redeemed_mobile_number')
-            self.point_program = PAYMENT_METHOD_MOKAFAA
-
-            redirect_url = ('{}?transaction_id={}'.format(
-                payment_data.success_url, payment_data.transaction_id))
-            is_success, is_redirect = True, True
+                self.payment_status = PAYMENT_STATUS_DECLINED
         else:
-            self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
-            is_redirect = False
-            message = self.mokafaa_error_response_message(response_data)
+            if response_data.get('code') == self.SUCCESS:
+                self.payment_status = PAYMENT_STATUS_PAID
+                self.approved = True
+                paid_amount = partner_response.get('invoice_amount')
+                if paid_amount:
+                    self.amount = paid_amount
+                    update_data['amount'] = self.amount
 
-        self.payment_method = PAYMENT_METHOD_MOKAFAA
+                self.redeemed_amount = float(
+                    partner_response.get('redeemed_amount'))
+                self.redeemed_point = abs(partner_response.get('pointsAmount'))
+
+                self.payable_amount = 0
+                self.service_fee = 0
+                self.VAT_amount = 0
+
+                self.points_redeemed_mobile_number = partner_response.get(
+                    'redeemed_mobile_number')
+                self.point_program = PAYMENT_METHOD_MOKAFAA
+
+                redirect_url = ('{}?transaction_id={}'.format(
+                    payment_data.success_url, payment_data.transaction_id))
+                is_success, is_redirect = True, True
+            else:
+                self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                is_redirect = False
+                message = self.mokafaa_error_response_message(response_data)
+
+        self.payment_method = (
+            PAYMENT_METHOD_MOKAFAA if is_full_redemption
+            else PAYMENT_METHOD_MOKAFAA_AND_CARD)
 
         youpay_update_data = {
             **update_data,

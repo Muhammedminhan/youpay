@@ -173,7 +173,12 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     ),
                     "currency": (
                         mokafaa_redemption_serializer.transaction_obj.currency
-                    )
+                    ),
+                    "amount_in_aed": str(
+                        mokafaa_redemption_serializer.transaction_obj.
+                        amount_in_aed),
+                    "card_number": validated_data.get("card_number"),
+                    "card_expiry": validated_data.get("card_expiry"),
                 }
             )
             mokafaa_service = MokafaServiceManager()

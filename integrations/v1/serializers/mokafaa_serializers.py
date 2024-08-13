@@ -59,6 +59,8 @@ class MokafaaRedemptionSerializer(serializers.Serializer):
     token = serializers.SerializerMethodField()
     cvv = serializers.SerializerMethodField()
     token_type = serializers.SerializerMethodField()
+    card_number = serializers.SerializerMethodField()
+    card_expiry = serializers.SerializerMethodField()
 
     def get_selected_amount(self, data):
         data = self.context.get('request').data
@@ -108,3 +110,11 @@ class MokafaaRedemptionSerializer(serializers.Serializer):
     def get_token_type(self, data):
         data = self.context.get('request').data
         return data.get('token_type')
+
+    def get_card_number(self, data):
+        data = self.context.get('request').data
+        return data.get('card_number')
+
+    def get_card_expiry(self, data):
+        data = self.context.get('request').data
+        return data.get('card_expiry')
