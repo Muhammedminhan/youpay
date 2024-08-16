@@ -6,8 +6,8 @@ import requests
 from django.db.models import Q
 from rest_framework import status
 
-from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK, \
-    REQUEST_METHOD_GET
+from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
+                            REQUEST_METHOD_GET)
 from core.messages import REDIRECT_URL, IS_REDIRECT, IS_SUCCESS
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
