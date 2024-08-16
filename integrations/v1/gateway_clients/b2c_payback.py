@@ -9,6 +9,7 @@ from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
                         decrypt_string
                         )
+from integrations.common import update_brand_details
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
@@ -165,6 +166,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             transaction_data = YouPayTransactionDataSerializer(
                 transaction_obj)
 
+            is_updated, brand_details = update_brand_details(
+                transaction_obj)
+
             request_dict = {
                 'data': request_data,
                 'transaction_data': transaction_data.data
@@ -172,7 +176,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             authenticate_request_data = AuthenticateRequestSerializer(
                 request_dict)
             update_data = {
-                'cko-card-token': request_data.get('cko-card-token')}
+                'cko-card-token': request_data.get('cko-card-token'),
+                "item_details_list": brand_details
+            }
             update_data.update(authenticate_request_data.data)
             request_data_json = json.dumps(update_data)
             b2c_gateway_obj = get_payment_gateway_config(
