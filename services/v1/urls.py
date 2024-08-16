@@ -24,7 +24,8 @@ from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
 from .api_clients.mokafa_service import (UpdateMokafaPhoneNumber,
                                          MokafaaGenerateOTPAPIView,
-                                         MokafaaRedeemPointsAPIView)
+                                         MokafaaRedeemPointsAPIView,
+                                         MokafaaVerify)
 from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyGenerateOTPAPIView,
                                          NeqatyRedeemPointsAPIView,
@@ -131,4 +132,5 @@ urlpatterns = [
     path('mokafa/update-phone-number/', UpdateMokafaPhoneNumber.as_view()),
     path('mokafaa/generate-otp/', MokafaaGenerateOTPAPIView.as_view()),
     path('mokafaa/redeem-points/', MokafaaRedeemPointsAPIView.as_view()),
+    path('mokafaa/verify/', MokafaaVerify.as_view()),
 ]

@@ -148,6 +148,8 @@ class YouPayResponse(object):
     MOKAFA_PHONE_NUMBER_FAILED_TO_FETCH = 7005
     MOKAFA_ALREADY_COLLECTED = 7402
     MOKAFA_NOT_SUPPORTED = 7404
+    MOKAFAA_VERIFICATION_FAILED = 7007
+    MOKAFAA_VERIFICATION_EXCEPTION = 7008
 
     """Mokafa related ends """
 
@@ -233,6 +235,8 @@ class YouPayResponse(object):
             self.MOKAFA_ALREADY_COLLECTED: "MOKAFA Reward collected Already.",
             self.MOKAFA_NOT_SUPPORTED: (
                 "Mokafaa Forbidden, or partial redemption not supported."),
+            self.MOKAFAA_VERIFICATION_FAILED: "Verification failed",
+            self.MOKAFAA_VERIFICATION_EXCEPTION: "Verification failed.",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),

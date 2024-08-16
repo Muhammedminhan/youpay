@@ -4,19 +4,24 @@ import logging
 
 import requests
 from django.db.models import Q
+from rest_framework import status
 
-from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK
-from core.messages import REDIRECT_URL, IS_REDIRECT
+from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK, \
+    REQUEST_METHOD_GET
+from core.messages import REDIRECT_URL, IS_REDIRECT, IS_SUCCESS
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
-                        auto_enable_or_disable_point_collection)
+                        auto_enable_or_disable_point_collection,
+                        decrypt_string)
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_COLLECT_POINTS,
     B2CP_EARN_POINTS_API, MOKAFAA_CLIENT_CODE,
     PAYMENT_REQUEST_GENERATE_OTP, B2CP_OTP_GENERATION_API,
-    MOKAFAA_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS)
+    B2CP_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
+    CHECKOUTPG_PAYMENT_CONFIGURATIONS, B2CP_VERIFY_API,
+    PAYMENT_REQUEST_VERIFY)
+from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.mokafaa_serializers import (
     MokafaaPaymentRequestSerializer)
 from payments.constants import (PAYMENT_METHOD_MOKAFAA, LANGUAGE_CODE_AR,
@@ -263,6 +268,133 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 request_type=PAYMENT_REQUEST_COLLECT_POINTS,
             )
 
+    def verification(self, request_data):
+        """Mokafaa Verification with b2c"""
+        earned_point = None
+        payment_scheme = None
+        phone_number = None
+        earn_reference = None
+        points_collected_mobile_number = None
+
+        request_transaction_id = request_data.get('transaction_id')
+        logger.info(
+            "Mokafaa Verification with b2c started for transaction {},"
+            " data --> {}".format(request_transaction_id, request_data))
+
+        if request_transaction_id:
+            try:
+                transaction_id = decrypt_string(request_transaction_id)
+                transaction_obj = self.get_youpay_transaction_data(
+                    transaction_id)
+
+                formatted_data = format_verify_data(
+                    request_data, transaction_obj)
+                gateway_obj = get_payment_gateway_config(
+                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+
+                mokafaa_domain = gateway_obj.domain
+                url = (mokafaa_domain + B2CP_VERIFY_API +
+                       "?&redemption_partner=MOKAFAA")
+                headers = {'Content-Type': 'application/json'}
+                formatted_data.pop("transaction_id")
+                response = requests.get(url, params=formatted_data,
+                                        headers=headers)
+
+                return_response_data = {}
+                if response.status_code == status.HTTP_200_OK and (
+                        response.json().get(
+                            "status").lower() == PAYMENT_STATUS_PAID):
+                    """Redemption verified successfully"""
+                    logger.info(
+                        "Mokafaa Verification with b2c completed for "
+                        "transaction {}".format(transaction_id))
+
+                    response_data = response.json()
+                    return_response_data["is_redirect"] = True
+                    redirect_url = (transaction_obj.success_url +
+                                    '?transaction_id=' + transaction_id)
+
+                    return_response_data["redirect_url"] = redirect_url
+
+                    approved = response_data.get("approved", False)
+                    is_flagged = response_data.get("is_flagged", False)
+                    is_gcc_card = response_data.get("is_gcc_card", False)
+                    payment_status = PAYMENT_STATUS_PAID
+                    return_response_data[IS_SUCCESS] = True
+                    card_last4 = response_data.get("card_last4")
+                    card_bin = response_data.get("card_bin")
+                    card_issuer_country = response_data.get(
+                        "card_issuer_country")
+                    payment_scheme = response_data.get("payment_scheme")
+
+                    self.handle_mokafaa_collection(transaction_obj)
+                else:
+                    """Redemption failed"""
+                    payment_status = PAYMENT_STATUS_DECLINED
+                    return_response_data[IS_SUCCESS] = False
+                    return_response_data['is_redirect'] = True
+                    return_response_data['redirect_url'] = (
+                            transaction_obj.failure_url +
+                            '?transaction_id=' + transaction_id)
+                    approved = False
+                    is_flagged = False
+                    is_gcc_card = False
+                    card_last4 = ""
+                    card_bin = ""
+                    card_issuer_country = ""
+                    response_data = response.json()
+                    return_response_data["message"] = response_data.get(
+                        "response_summary", "Payment Failed")
+
+                return_response_data["payment_status"] = payment_status
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=json.dumps(formatted_data),
+                    response_data=json.dumps(response_data),
+                    request_method=REQUEST_METHOD_GET,
+                    request_type=PAYMENT_REQUEST_VERIFY
+                )
+
+                from services.v1.api_clients.mokafa_service import (
+                get_calculated_youpay_transaction_data_with_mokafaa_balance)
+
+                """update youpay transaction data with Mokafaa balance 
+                calculation on successfull payment"""
+                calculated_youpay_transaction_data = (
+                    get_calculated_youpay_transaction_data_with_mokafaa_balance(
+                        transaction_obj))
+
+                update_data = {
+                    'transaction_id': str(transaction_obj.transaction_id),
+                    'payment_status': payment_status,
+                    'is_flagged': is_flagged,
+                    'approved': approved,
+                    'is_gcc_card': is_gcc_card,
+                    'earned_point': earned_point,
+                    'card_last4': card_last4,
+                    'card_bin': card_bin,
+                    'card_issuer_country': card_issuer_country,
+                    'payment_scheme': payment_scheme
+                }
+                update_data.update(calculated_youpay_transaction_data)
+
+                logger.info("Mokafaa Verification with b2c completed for "
+                            "transaction {}, data to be updating {}".format(
+                    transaction_id, update_data))
+                self.update_youpay_transaction_data(update_data)
+                return return_response_data, transaction_obj
+
+            except Exception as e:
+                logger.error(
+                    "Verify api call to Mokafaa failed for transaction {}"
+                    "".format(request_transaction_id), exc_info=e)
+                return None, None
+        else:
+            logger.error("Invalid transaction id ({}) received for Mokafaa "
+                         "verify api".format(request_transaction_id))
+            return None, None
+
     def redeem_points(self, data):
         """
         calls mokafaa points redeem api
@@ -306,7 +438,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 return (verify_response,
                         self.CLIENT_TRANSACTION_VERIFICATION_FAILED)
 
-            url = self.mokafa_config.domain + MOKAFAA_REDEEM_POINTS_API
+            url = self.mokafa_config.domain + B2CP_REDEEM_POINTS_API
             headers = self.get_payment_header()
 
             logger.info(
@@ -397,8 +529,9 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                         ))
                 )
                 self.redeemed_amount = partner_response.get('redeemed_amount')
-                self.redeemed_point = partner_response.get('redeemed_point')
-                self.payable_amount = partner_response.get('payable_amount')
+                self.redeemed_point = partner_response.get(
+                    'redeemedTouchPoints')
+                self.payable_amount = partner_response.get('checkout_amount')
                 self.points_redeemed_mobile_number = partner_response.get(
                     'redeemed_mobile_number')
                 self.point_program = PAYMENT_METHOD_MOKAFAA
@@ -520,3 +653,17 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             "client_code": MOKAFAA_CLIENT_CODE,
         }
         return redeem_payload
+
+    @staticmethod
+    def handle_mokafaa_collection(transaction_obj):
+        """
+        Updating program, mobile number etc on Mokafaa Verification
+        """
+        if transaction_obj.point_collection_enabled:
+            if (transaction_obj.point_program != PAYMENT_METHOD_MOKAFAA or
+                    not transaction_obj.points_collected_mobile_number):
+                transaction_obj.points_collected_mobile_number = (
+                    transaction_obj.points_redeemed_mobile_number)
+                transaction_obj.point_program = (
+                    PAYMENT_METHOD_MOKAFAA)
+                transaction_obj.save()

@@ -1,3 +1,4 @@
+import json
 import logging
 
 from rest_framework import status
@@ -204,6 +205,82 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
+class MokafaaVerify(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def get(self, request, *args, **kwargs):
+        manager_obj = MokafaServiceManager()
+        payment_data = {
+            'transaction_id': request.query_params.get('id'),
+            'redemption_partner': request.query_params.get(
+                'redemption_partner'),
+            'redemption_reference_id': request.query_params.get(
+                'redemption_reference_id'),
+            'cko-session-id': request.query_params.get(
+                'cko-session-id')}
+        response, transaction_obj = manager_obj.verification(payment_data)
+        transaction_id = (transaction_obj.transaction_id if transaction_obj
+                          else None)
+        if response:
+            logger.info("MokafaaVerify Response {}".format(response))
+            if response.get('is_success') and response.get('is_redirect'):
+                logger.info(
+                    "Mokafaa Verification successful, payment status true for"
+                    " transaction {}".format(transaction_id))
+
+                code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
+                response = self.format_b2c_response(response, code)
+            else:
+                message = (
+                    "couldnt process Mokafaa Verification for transaction id"
+                    " {}, response : {}".format(transaction_id, response))
+
+                logger.error(message)
+
+                response = self.format_b2c_response(response, None)
+            return Response(response, status=status.HTTP_200_OK)
+        else:
+            try:
+                response_text = json.loads(response.text)
+                resp_code = response_text.get('code', False)
+                message = response_text.get('message', None)
+                response = {'errors': {
+                    'code': resp_code, 'message': message}}
+                code = self.response_obj.MOKAFAA_VERIFICATION_FAILED
+                logger.error("Verification failed for : {}, reason : {}"
+                             .format(transaction_id, response))
+                response = self.format_b2c_response(response, code)
+
+            except Exception as e:
+                logger.error("Exception occurred for transaction id : {}, "
+                             "reason : {}".format(transaction_id, str(e)))
+
+                response = {'errors': {
+                    'code': "400",
+                    'message': "Unable to process verification"}
+                }
+                code = self.response_obj.MOKAFAA_VERIFICATION_EXCEPTION
+                response = self.format_b2c_response(response, code)
+            return Response(response, status=status.HTTP_400_BAD_REQUEST)
+
+    def format_b2c_response(self, data, code):
+
+        errors = data.get('errors', None)
+        results = data.get('results', None)
+
+        data['message'] = (self.response_obj.MESSAGE.get(
+            code) if code else data.get('message', None))
+        if results:
+            data.pop('results')
+            data['code'] = code
+
+        if errors:
+            errors['message'] = COMMON_ERROR_MESSAGE_EN
+            errors['code'] = code
+
+        return data
+
+
 def mokafaa_response_formatter(data, code):
     """
     Mokafaa Response format method
@@ -226,3 +303,44 @@ def mokafaa_response_formatter(data, code):
         data['message'] = COMMON_ERROR_MESSAGE_EN
         data['code'] = COMMON_ERROR_MESSAGE_EN_CODE
     return data
+
+
+def get_calculated_youpay_transaction_data_with_mokafaa_balance(
+        transaction_obj):
+    """
+    The idea is to replace the additional_data with the mokafaa balance
+     calculation response from the mokafaa service
+    """
+
+    brand_calculations = transaction_obj.brand_calculations
+    youpay_update_data = {}
+    if brand_calculations:
+        amount = brand_calculations.get('sum_net_amount', None)
+        base_amount = brand_calculations.get('sum_gift_base_value',
+                                             None)
+        redeemed_amount = brand_calculations.get(
+            'sum_redemption_points', None)
+        redeemed_point = brand_calculations.get(
+            'sum_redemption_points', None)
+        payable_amount = brand_calculations.get(
+            'sum_card_payment_amount', None)
+        service_fee = brand_calculations.get(
+            'sum_applied_service_charge', None)
+        vat_amount = brand_calculations.get('sum_applied_vat', None)
+
+        youpay_update_data = {
+            'redeemed_amount': redeemed_amount,
+            'redeemed_points': redeemed_point,
+            'amount': amount,
+            'payable_amount': payable_amount,
+            'service_fee': service_fee,
+            'base_amount': base_amount,
+            'VAT_amount': vat_amount,
+            'payment_method': transaction_obj.payment_method,
+        }
+    else:
+        logger.error("Brand calculation is empty for transaction {}".format(
+            transaction_obj.transaction_id
+        ))
+
+    return youpay_update_data
