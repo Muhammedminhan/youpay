@@ -12,16 +12,14 @@ from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string,
                         auto_enable_or_disable_point_collection)
-from integrations.common import update_brand_details
 from integrations.constants import (
-    QITAF_CALCULATE_BALANCE_API, QITAF_OTP_GENERATION_API,
-    QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
-    QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
-    QITAF_HEADERS,
-    QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
-    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY)
+     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
+     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
+     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
+     QITAF_HEADERS,
+     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
+     CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
+     CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY)
 from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -733,67 +731,6 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Invalid transaction id ({}) received for Qitaf "
                          "verify api".format(request_transaction_id))
             return None, None
-
-    def calculate_qitaf_balance(self, data):
-        """
-        Calculate qitaf service charge
-        """
-
-        try:
-            transaction_obj = data.get('transaction_obj')
-            selected_amount = data.get('selected_amount')
-            client_code = data.get("client_code")
-
-            payment_reference = transaction_obj.payment_reference
-
-            transaction_id = transaction_obj.transaction_id
-
-            is_updated, brand_details = update_brand_details(transaction_obj)
-
-            items_array = brand_details.get("item_set", None)
-
-            if not items_array or not len(items_array) or not is_updated:
-                logger.error("Brand details not found for transaction {}"
-                             "".format(transaction_obj.transaction_id))
-                return None, self.BRAND_DETAILS_MISSING
-
-            payload = json.dumps({
-                "payment_reference": payment_reference,
-                "item_details_list": items_array,
-                "currency": brand_details.get("currency"),
-                "selected_amount": selected_amount,
-                "client_code": client_code,
-                "payback_action": data.get("payback_action"),
-            })
-
-            url = self.qitaf_config.domain + QITAF_CALCULATE_BALANCE_API
-            headers = self.get_payment_header()
-            response = requests.post(url, data=payload, headers=headers)
-
-            logger.info(
-                "Calculate balance api payload {}, response {} for transaction"
-                " {}".format(payload, response.json(), transaction_id))
-
-            response_data = None
-            response_code = self.QITAF_BALANCE_CALCULATION_FAILED
-            if response:
-                response_data = response.json()
-                if response_data.get('status', False):
-                    calculated_balance = response_data.get(
-                        'calculated_item_details')
-                    update_data = {
-                        'transaction_id': transaction_obj.transaction_id,
-                        "brand_details": brand_details,
-                        "brand_calculations": calculated_balance
-                    }
-                    self.update_youpay_transaction_data(update_data)
-                    response_code = self.SUCCESS
-            return response_data, response_code
-
-        except Exception as e:
-            logger.error("Exception in calculate_qitaf_balance: "
-                         "{}".format(e), exc_info=True)
-            return None, self.QITAF_BALANCE_CALCULATION_FAILED
 
     def handle_qitaf_collection(self, transaction_obj):
         """

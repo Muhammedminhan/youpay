@@ -6,7 +6,8 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
                                                  B2CPaybackRedemption,
                                                  B2CPaybackVerify,
-                                                 CollectProgramManagement)
+                                                 CollectProgramManagement,
+                                                 CalculateBalance)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
                                                 PaypalPayment,
@@ -29,8 +30,7 @@ from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          UpdateNeqatyPhoneNumber)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
-    QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify,
-    CalculateQitafBalance)
+    QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
@@ -74,6 +74,7 @@ urlpatterns = [
     path('b2cpayback/collect-program/<str:pk>',
          CollectProgramManagement.as_view(),
          name='collect_program_management'),
+    path('point-program/calculate-balance/', CalculateBalance.as_view()),
 
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view(),
@@ -115,7 +116,6 @@ urlpatterns = [
     path('qitaf/redeem-points/', QitafRedeemPointsAPIView.as_view(),
          name='QitafRedeemPointsAPIView'),
     path('qitaf/verify/', QitafVerify.as_view(), name='QitafVerify'),
-    path('qitaf/calculate-balance/', CalculateQitafBalance.as_view()),
 
     # Neqaty Endpoints
     path('neqaty/point-balance/', NeqatyPointBalanceAPIView.as_view()),
