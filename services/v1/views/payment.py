@@ -18,6 +18,7 @@ from core.utils import (decrypt_payment_data,
                         get_cached_payment_method_config)
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
                                     MOKAFA_CLIENT_CODE)
+from integrations.v1.gateway_clients.utils import calculate_balance
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
@@ -775,12 +776,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             "payback_action": PAYBACK_ACTION_EARN
         }
 
-        from integrations.v1.gateway_clients.qitaf_service import (
-            QitafServiceManager)
-
-        qitaf_service = QitafServiceManager()
-        response_data, code = qitaf_service.calculate_qitaf_balance(
-            payload)
+        response_data, code = calculate_balance(payload)
 
         if code == self.SUCCESS:
             calculated_item_details = response_data.get(

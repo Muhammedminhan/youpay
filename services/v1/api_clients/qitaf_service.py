@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import QITAF_REWARD_POINT_MIN_AMT, PAYBACK_ACTION_BURN
+from core.constants import QITAF_REWARD_POINT_MIN_AMT
 from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
@@ -411,53 +411,6 @@ class QitafVerify(APIView, YouPayTransactionCRUD):
             errors['code'] = code
 
         return data
-
-
-class CalculateQitafBalance(APIView, YouPayTransactionCRUD):
-    response_obj = YouPayResponse()
-
-    def post(self, request):
-        try:
-            transaction_id = request.data.get('transaction_id')
-            selected_amount = request.data.get('selected_amount')
-            transaction_obj = self.get_youpay_transaction_data(
-                decrypt_string(transaction_id))
-            if transaction_obj:
-                payload = {
-                    'transaction_obj': transaction_obj,
-                    "selected_amount": selected_amount,
-                    "client_code": QITAF_CLIENT_CODE,
-                    "payback_action": PAYBACK_ACTION_BURN
-                }
-
-                qitaf_service = QitafServiceManager()
-                response_data, code = qitaf_service.calculate_qitaf_balance(
-                    payload)
-
-                logger.info("Reward Point(Collect Points) API response {}, "
-                            "code : {}".format(response_data, code, ))
-                if response_data:
-
-                    data = self.response_obj.get_success_dict(
-                        code=code,
-                        success_dict=response_data
-                    )
-                    return Response(data, status=status.HTTP_200_OK)
-                else:
-                    data = self.response_obj.get_error_dict(error_code=code)
-                    return Response(data,
-                                    status=status.HTTP_400_BAD_REQUEST)
-            else:
-                data = self.response_obj.get_error_dict(
-                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
-                logger.error(
-                    "QitafCollectPointsAPIView : Transaction not found for {}"
-                    "".format(transaction_id))
-                return Response(data, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            data = self.response_obj.get_400_message(message=str(e))
-            return Response(data.get('errors'),
-                            status=status.HTTP_400_BAD_REQUEST)
 
 
 def get_calculated_youpay_transaction_data_with_qitaf_balance(
