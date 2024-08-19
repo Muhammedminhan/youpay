@@ -272,6 +272,7 @@ def calculate_balance(data):
             "currency": brand_details.get("currency"),
             "selected_amount": selected_amount,
             "client_code": client_code,
+            "payback_action": data.get("payback_action"),
         })
 
         url = b2c_config.domain + QITAF_CALCULATE_BALANCE_API
