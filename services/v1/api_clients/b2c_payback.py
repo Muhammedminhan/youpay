@@ -86,7 +86,8 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 'payable_amount': checkout_amount,
                 'available_amount': transaction_obj.available_amount,
                 'available_points': transaction_obj.available_points,
-                'is_full_redemption': response.get('is_full_redemption')
+                'is_full_redemption': response.get('is_full_redemption'),
+                'brand_calculations': response.get('brand_calculations')
             }
 
             if invoice_amount == selected_amount:  # full redemption
