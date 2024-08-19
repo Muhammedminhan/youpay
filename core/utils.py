@@ -595,3 +595,33 @@ def get_payment_scheme(response_data):
         return PAYMENT_SCHEME_MADA
     else:
         response_data.get("payment_scheme")
+
+
+def get_display_program(api_client):
+    """
+    Converts api_client name to display it in required formats for clevertap.
+    Args:
+        api_client (obj)
+    Returns:
+        str: The display api_client name if code present else client name
+    """
+    client_code = api_client.client_code
+
+    api_client_map = {
+        'ECOMORDS': 'Ecom',
+        'EMAPIGRPGFT': 'Group Gift',
+        'MYREWDB': 'Dukhan Bank',
+        'MYREWPMI': 'PMI',
+        'MYREWNBKM': '	NBK Miles',
+        'MYREWVF': 'Vodafone',
+        'MYREWNBUPP': 'NBK UEFA PWR PROGRAM',
+        'MYREWSP': 'Spectrum',
+        'MYREWNBK': 'NBK',
+        'MYREWABKEM': 'ABK E-Mall',
+    }
+    program_name = api_client_map.get(client_code, None)
+
+    if program_name:
+        return program_name
+    else:
+        return api_client.name

@@ -18,7 +18,7 @@ from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
     MIDDLEWARE_ALREADY_PAID_MESSAGE)
 from core.response_messages import YouPayResponse
-from core.utils import get_display_platform
+from core.utils import get_display_platform, get_display_program
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
@@ -307,7 +307,8 @@ class PaymentVerificationCheckMiddleware(object):
                         self.transaction_obj.platform),
                     'country_code': self.transaction_obj.country_code,
                     'is_guest': self.transaction_obj.is_guest,
-                    'program': self.transaction_obj.api_client.name,
+                    'program': get_display_program(
+                        self.transaction_obj.api_client),
                     'retry_count': self.transaction_obj.retry_count,
                     'payment_method': self.transaction_obj.payment_method
                 }
