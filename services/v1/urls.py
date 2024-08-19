@@ -26,6 +26,7 @@ from .api_clients.mokafa_service import (UpdateMokafaPhoneNumber,
                                          MokafaaGenerateOTPAPIView,
                                          MokafaaRedeemPointsAPIView,
                                          MokafaaVerify)
+
 from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyGenerateOTPAPIView,
                                          NeqatyRedeemPointsAPIView,
