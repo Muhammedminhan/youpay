@@ -76,6 +76,7 @@ def reformat_payment_request_data(data):
             'additional_vat_percentage')
         data['additional_currency_decimal_notation'] = (
             order.get('additional_currency_decimal_notation'))
+        data['order_id'] = order.get('order_id')
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')
