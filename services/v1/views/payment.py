@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import PAYBACK_ACTION_EARN, SOURCE_ADMIN_ACTION
+from core.constants import PAYBACK_ACTION_EARN
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
