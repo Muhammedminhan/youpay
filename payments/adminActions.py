@@ -7,7 +7,6 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 from rest_framework import status
 
-from core.constants import SOURCE_ADMIN_ACTION
 from core.response_messages import YouPayResponse
 from integrations.constants import B2CPAYBACK_HUB_CODE
 from integrations.models import PaymentGateway
@@ -100,8 +99,7 @@ def collect_b2c_program_points_for_transaction(modeladmin, request, queryset):
                 earn_obj = EarnRedemptionPartnerPoints()
                 earn_response = earn_obj.get_earn_points(
                     transaction_obj=transaction,
-                    transaction_id=transaction.transaction_id,
-                    source=SOURCE_ADMIN_ACTION
+                    transaction_id=transaction.transaction_id
                 )
             else:
                 raise Exception("Program Name not available in the "

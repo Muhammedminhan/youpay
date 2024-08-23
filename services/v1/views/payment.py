@@ -644,12 +644,9 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             collect_enabled = transaction_obj.point_collection_enabled
             mobile_number = transaction_obj.points_collected_mobile_number
 
-            if source != SOURCE_ADMIN_ACTION:
-                '''Need to check if the source is not from admin action'''
-                payment_configuration_check(transaction_obj=transaction_obj,
-                                            payment_method=PAYMENT_METHOD_NEQATY,
-                                            payback_action=PAYBACK_ACTION_EARN
-                                            )
+            payment_configuration_check(transaction_obj=transaction_obj,
+                                        payment_method=PAYMENT_METHOD_NEQATY,
+                                        payback_action=PAYBACK_ACTION_EARN)
 
             from integrations.v1.gateway_clients.neqaty_service import (
                 NeqatyServiceManager)
@@ -669,10 +666,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             collect_enabled = transaction_obj.is_qitaf_enabled
             mobile_number = transaction_obj.qitaf_phone_number
 
-            if source != SOURCE_ADMIN_ACTION:
-                '''Need to check if the source is not from admin action'''
-                payment_configuration_check(transaction_obj=transaction_obj,
-                                            payment_method=PAYMENT_METHOD_QITAF)
+            payment_configuration_check(transaction_obj=transaction_obj,
+                                        payment_method=PAYMENT_METHOD_QITAF)
 
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
