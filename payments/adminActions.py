@@ -132,7 +132,7 @@ def collect_b2c_program_points_for_transaction(modeladmin, request, queryset):
 
     except Exception as e:
         response_message = ("Admin Action Earn Failed : {}".format(str(e)))
-        logger.error(response_message)
+        logger.error(response_message, exc_info=True)
         modeladmin.message_user(request, response_message,
                                 level=messages.ERROR)
 

@@ -623,7 +623,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         '''
         transaction_id = kwargs.get('transaction_id', None)
         transaction_obj = kwargs.get('transaction_obj', None)
-        source = kwargs.get('source', None)
         mobile_number = None
         is_success = False
         collect_enabled = False
