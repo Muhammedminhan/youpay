@@ -736,7 +736,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             reset = False
             reset_calculated_item_details = response.get(
                 "partner_response", {}).get("partner_response", {}).get(
-                "calculated_item_details")
+                "calculated_item_details") if response else None
             if reset_calculated_item_details:
                 transaction_obj.brand_calculations = reset_calculated_item_details
                 reset = True
