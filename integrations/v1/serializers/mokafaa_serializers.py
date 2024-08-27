@@ -118,4 +118,3 @@ class MokafaaRedemptionSerializer(serializers.Serializer):
     def get_card_expiry(self, data):
         data = self.context.get('request').data
         return data.get('card_expiry')
-
