@@ -1,9 +1,0 @@
-namespace:
-  - name: 'youpay-[JIRA_ID]'
-    annotations:
-      field.cattle.io/projectId: 'c-m-mwl52l26:p-v5mpt'
-
-    resource_quota_disabled:
-      requests.cpu: "3340m"
-      requests.memory: 6856Mi
-      limits.memory: 10080Mi
