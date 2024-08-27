@@ -171,7 +171,7 @@ class YouPayResponse(object):
             self.OTP_ERROR: "Invalid OTP",
             self.OTP_EXPIRED: "OTP is expired",
             self.INSUFFICIENT_BALANCE: (
-                "Balance is insufficient for redemptions"),
+                "This member balance is insufficient for redemptions"),
 
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
