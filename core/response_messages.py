@@ -38,6 +38,7 @@ class YouPayResponse(object):
     OTP_ERROR = 1010
     OTP_EXPIRED = 1017
     INSUFFICIENT_BALANCE = 1018
+    OTP_STILL_VALID = 1019
 
     """Youpay related ends"""
 
@@ -150,6 +151,8 @@ class YouPayResponse(object):
     MOKAFA_NOT_SUPPORTED = 7404
     MOKAFAA_VERIFICATION_FAILED = 7007
     MOKAFAA_VERIFICATION_EXCEPTION = 7008
+    MOKAFAA_PAYMENT_FAILED = 7009
+    MOKAFAA_OTP_STILL_VALID = 7010
 
     """Mokafa related ends """
 
@@ -237,6 +240,7 @@ class YouPayResponse(object):
                 "Mokafaa Forbidden, or partial redemption not supported."),
             self.MOKAFAA_VERIFICATION_FAILED: "Verification failed",
             self.MOKAFAA_VERIFICATION_EXCEPTION: "Verification failed.",
+            self.MOKAFAA_OTP_STILL_VALID: "Last generated OTP is still valid",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
                 "Transaction verification failed"),

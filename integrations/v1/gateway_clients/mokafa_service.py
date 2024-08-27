@@ -60,7 +60,6 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         self.amount = None
         self.redeemed_point = None
         self.redeemed_amount = None
-        self.redeemed_points = None
         self.payable_amount = None
         self.service_fee = None
         self.base_amount = None
@@ -152,7 +151,10 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
             logger.error("Error in mokafaa otp, {}".format(response.json()))
             self.response_data = response.json()
-
+            error_code = self.response_data.get('code')
+            if error_code == self.OTP_STILL_VALID:
+                return ({"error": response.json()},
+                        self.MOKAFAA_OTP_STILL_VALID)
             return ({"error": response.json()},
                     self.MOKAFA_CONNECTION_ERROR)
 
@@ -187,7 +189,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 return None, response_obj.MOKAFA_ALREADY_COLLECTED
 
             if transaction_obj.payment_method in [
-                PAYMENT_METHOD_MOKAFAA
+                PAYMENT_METHOD_MOKAFAA, PAYMENT_METHOD_MOKAFAA_AND_CARD
             ]:
                 paid_amount = transaction_obj.payable_amount
             else:
@@ -272,9 +274,6 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         """Mokafaa Verification with b2c"""
         earned_point = None
         payment_scheme = None
-        phone_number = None
-        earn_reference = None
-        points_collected_mobile_number = None
 
         request_transaction_id = request_data.get('transaction_id')
         logger.info(
@@ -424,7 +423,6 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                     " transaction id {} response is : {} ".format(
                         self.transaction_id, verify_response))
                 logger.error(msg)
-
                 return (verify_response,
                         self.CLIENT_TRANSACTION_VERIFICATION_FAILED)
 
@@ -512,7 +510,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         update_data = {}
         partner_response = response_data.get('partner_response')
         name_on_card = partner_response.get("customer_name", "")
-
+        language = payment_data.language
         is_full_redemption = partner_response.get("is_full_redemption", False)
         if is_full_redemption is False:
             redirect_url = partner_response.get('redirect_url')
@@ -543,7 +541,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                     payment_data.transaction_id))
                 is_success = False
                 is_redirect = True
-                message = self.mokafaa_error_response_message(response_data)
+                message = self.mokafaa_error_response_message(response_data,
+                                                              language)
 
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
@@ -557,7 +556,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
                 self.redeemed_amount = float(
                     partner_response.get('redeemed_amount'))
-                self.redeemed_point = abs(partner_response.get('pointsAmount'))
+                self.redeemed_point = partner_response.get(
+                    'redeemedTouchPoints')
 
                 self.payable_amount = 0
                 self.service_fee = 0
@@ -573,7 +573,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             else:
                 self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
                 is_redirect = False
-                message = self.mokafaa_error_response_message(response_data)
+                message = self.mokafaa_error_response_message(response_data,
+                                                              language)
 
         self.payment_method = (
             PAYMENT_METHOD_MOKAFAA if is_full_redemption
@@ -606,7 +607,6 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             }
         }
         update_data.update(youpay_update_data)
-
         self.update_youpay_transaction_data(update_data)
         return_response = {
             "message": message if message else "Payment Failed",
@@ -617,11 +617,20 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         }
         return return_response
 
-    def mokafaa_error_response_message(self, response_data):
+    def mokafaa_error_response_message(self, response_data, language):
         message = ""
         try:
             code = response_data.get("code")
-            message = self.MESSAGE.get(code)
+            partner_response = response_data.get('partner_response')
+            if code == self.MOKAFAA_PAYMENT_FAILED:
+                message = partner_response.get("checkout_response_data", {}).get(
+                                            "response_summary", "")
+            elif language == LANGUAGE_CODE_AR:
+                message = partner_response.get("response_text_ar")
+            elif self.MESSAGE.get(code):
+                message = self.MESSAGE.get(code)
+            else:
+                message = partner_response.get("response_text")
         except Exception as e:
             logger.error(
                 "{} Exception occurred on {}, err {} ".format(

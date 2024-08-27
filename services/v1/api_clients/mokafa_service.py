@@ -143,6 +143,7 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             points_redemption_data = validated_data
 
             selected_amount_in_req = request.data.get("selected_amount")
+            customer_name = request.data.get("customer_name")
             transaction_order_reference = (
                 mokafaa_redemption_serializer.transaction_obj.order_reference)
             points_redemption_data.update(
@@ -157,7 +158,7 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "checkout_amount": validated_data.get('checkout_amount'),
                     "is_save_user_token": validated_data.get(
                         'is_save_user_token'),
-                    "customer_name": validated_data.get('customer_name'),
+                    "customer_name": customer_name,
                     "cvv": validated_data.get('cvv'),
                     "token": validated_data.get('token'),
                     "token_type": validated_data.get('token_type'),
@@ -320,8 +321,6 @@ def get_calculated_youpay_transaction_data_with_mokafaa_balance(
                                              None)
         redeemed_amount = brand_calculations.get(
             'sum_redemption_points', None)
-        redeemed_point = brand_calculations.get(
-            'sum_redemption_points', None)
         payable_amount = brand_calculations.get(
             'sum_card_payment_amount', None)
         service_fee = brand_calculations.get(
@@ -330,7 +329,6 @@ def get_calculated_youpay_transaction_data_with_mokafaa_balance(
 
         youpay_update_data = {
             'redeemed_amount': redeemed_amount,
-            'redeemed_points': redeemed_point,
             'amount': amount,
             'payable_amount': payable_amount,
             'service_fee': service_fee,

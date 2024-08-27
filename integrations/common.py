@@ -39,7 +39,7 @@ def update_brand_details(transaction_obj):
             if transaction_obj.brand_details:
                 status = True
                 logger.info("Brand Details already exists for {}".format(
-                    transaction_obj.brand_details))
+                    transaction_obj.transaction_id))
 
                 return status, transaction_obj.brand_details
 

@@ -131,7 +131,9 @@ urlpatterns = [
 
     # Mokafaa Endpoints
     path('mokafa/update-phone-number/', UpdateMokafaPhoneNumber.as_view()),
-    path('mokafaa/generate-otp/', MokafaaGenerateOTPAPIView.as_view()),
-    path('mokafaa/redeem-points/', MokafaaRedeemPointsAPIView.as_view()),
-    path('mokafaa/verify/', MokafaaVerify.as_view()),
+    path('mokafaa/generate-otp/', MokafaaGenerateOTPAPIView.as_view(),
+         name='MokafaaGenerateOTPAPIView'),
+    path('mokafaa/redeem-points/', MokafaaRedeemPointsAPIView.as_view(),
+         name='MokafaaRedeemPointsAPIView'),
+    path('mokafaa/verify/', MokafaaVerify.as_view(), name='MokafaaVerify'),
 ]
