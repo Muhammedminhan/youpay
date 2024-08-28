@@ -17,8 +17,9 @@ from core.utils import (decrypt_payment_data,
                         decimal_rounded, encrypt_payment_data,
                         get_cached_payment_method_config)
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
-                                    MOKAFA_CLIENT_CODE)
+                                    MOKAFAA_CLIENT_CODE)
 from integrations.v1.gateway_clients.utils import calculate_balance
+
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
@@ -28,8 +29,9 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY,
-                                PAYMENT_METHOD_MOKAFA,
-                                REDEEM_AMOUNT_APPLICABLE_LIST)
+                                PAYMENT_METHOD_MOKAFAA,
+                                REDEEM_AMOUNT_APPLICABLE_LIST,
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -313,10 +315,11 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
         amount = transaction_obj.amount
         if payment_method in [PAYMENT_METHOD_CITI_REWARDS,
-                              PAYMENT_METHOD_QITAF]:
+                              PAYMENT_METHOD_QITAF, PAYMENT_METHOD_MOKAFAA]:
             amount = transaction_obj.base_amount
         elif payment_method in [PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_METHOD_NEQATY]:
+                                PAYMENT_METHOD_NEQATY,
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD]:
             amount = transaction_obj.brand_calculations.get(
                 'sum_net_amount', None)
 
@@ -688,7 +691,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_QITAF)
 
-        elif program_name == PAYMENT_METHOD_MOKAFA:
+        elif program_name == PAYMENT_METHOD_MOKAFAA:
             collect_enabled = transaction_obj.point_collection_enabled
             mobile_number = transaction_obj.points_collected_mobile_number
 
@@ -706,7 +709,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 calculated_item_details = response.get(
                     "partner_response", {}).get("calculated_item_details")
             message = "Pont Collect requested for {}".format(
-                PAYMENT_METHOD_MOKAFA)
+                PAYMENT_METHOD_MOKAFAA)
 
         else:
             message = "Unknown redemption partner {}".format(
@@ -789,8 +792,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
     def get_client_code(self, program_name):
         if program_name == PAYMENT_METHOD_NEQATY:
             client_code = NEQATY_CLIENT_CODE
-        elif program_name == PAYMENT_METHOD_MOKAFA:
-            client_code = MOKAFA_CLIENT_CODE
+        elif program_name == PAYMENT_METHOD_MOKAFAA:
+            client_code = MOKAFAA_CLIENT_CODE
         else:
             client_code = QITAF_CLIENT_CODE
         return client_code

@@ -17,7 +17,7 @@ from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
 from payments.constants import (PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_QITAFAND_CARD)
-from services.v1.serializers.payment_request import QitafOTPSerializer
+from services.v1.serializers.payment_request import OTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -91,7 +91,7 @@ class QitafGenerateOTPAPIView(APIView, YouPayTransactionCRUD):
 
         try:
             mobile_number = request.data.get('mobile_number')
-            otp_serializer = QitafOTPSerializer(data=request.data)
+            otp_serializer = OTPSerializer(data=request.data)
             if otp_serializer.is_valid(raise_exception=True):
                 transaction_obj = otp_serializer.transaction_obj
                 payload = {'request_data': {

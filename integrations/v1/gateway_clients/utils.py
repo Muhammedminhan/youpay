@@ -96,7 +96,7 @@ def format_adcb_verify_data(request_data, transaction_obj):
     return request_data
 
 
-def format_qitaf_verify_data(request_data, transaction_obj):
+def format_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
     request_data['channel_code'] = CHECKOUT_SAUDI_CHANNEL_CODE
     return request_data

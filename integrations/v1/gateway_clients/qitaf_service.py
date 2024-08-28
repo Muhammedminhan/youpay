@@ -13,14 +13,14 @@ from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string,
                         auto_enable_or_disable_point_collection)
 from integrations.constants import (
-     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
-     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
-     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
-     QITAF_HEADERS,
-     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
-     CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
-     CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY)
-from integrations.v1.gateway_clients.utils import format_qitaf_verify_data
+    QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
+    QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
+    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
+    QITAF_HEADERS,
+    QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
+    CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
+    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY)
+from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
 )
@@ -624,7 +624,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
 
-                formatted_data = format_qitaf_verify_data(
+                formatted_data = format_verify_data(
                     request_data, transaction_obj)
                 gateway_obj = get_payment_gateway_config(
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
