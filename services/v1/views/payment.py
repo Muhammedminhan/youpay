@@ -637,7 +637,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             self.class_name, program_name, transaction_id
         ))
 
-        self.call_brand_calculation(transaction_obj, program_name)
 
         if program_name == PAYMENT_METHOD_NEQATY:
             collect_enabled = transaction_obj.point_collection_enabled
@@ -646,6 +645,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             payment_configuration_check(transaction_obj=transaction_obj,
                                         payment_method=PAYMENT_METHOD_NEQATY,
                                         payback_action=PAYBACK_ACTION_EARN)
+            self.call_brand_calculation(transaction_obj, program_name)
 
             from integrations.v1.gateway_clients.neqaty_service import (
                 NeqatyServiceManager)
@@ -669,6 +669,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             payment_configuration_check(transaction_obj=transaction_obj,
                                         payback_action=PAYBACK_ACTION_EARN,
                                         payment_method=PAYMENT_METHOD_QITAF)
+            self.call_brand_calculation(transaction_obj, program_name)
 
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
@@ -692,6 +693,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 PAYMENT_METHOD_QITAF)
 
         elif program_name == PAYMENT_METHOD_MOKAFA:
+            self.call_brand_calculation(transaction_obj, program_name)
             collect_enabled = transaction_obj.point_collection_enabled
             mobile_number = transaction_obj.points_collected_mobile_number
 
