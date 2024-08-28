@@ -307,6 +307,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     browser_value = models.CharField(
         max_length=250, null=True, blank=True, db_index=True,
         help_text='string generated for browser session key')
+    order_id = models.CharField(
+        max_length=50, null=True, blank=True,
+        help_text="id related to the order received from client")
 
 
 @receiver(post_init, sender=YouPayTransactionData)

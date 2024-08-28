@@ -80,7 +80,8 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'CitiGenerateOTPAPIView',
     'QitafRedeemPointsAPIView',
     'NeqatyGenerateOTPAPIView',
-    'AmazonPGSavedCard'
+    'AmazonPGSavedCard',
+    'MokafaaRedeemPointsAPIView'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
@@ -90,7 +91,8 @@ VERIFY_PAYMENT_CLASSES = [
     'TabbyPGVerification',
     'AmazonPGVerification',
     'QitafVerify',
-    'NeqatyVerify'
+    'NeqatyVerify',
+    'MokafaaVerify',
 ]
 
 QITAF_REWARD_POINT_MIN_AMT = 10
