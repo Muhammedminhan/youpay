@@ -667,6 +667,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             mobile_number = transaction_obj.qitaf_phone_number
 
             payment_configuration_check(transaction_obj=transaction_obj,
+                                        payback_action=PAYBACK_ACTION_EARN,
                                         payment_method=PAYMENT_METHOD_QITAF)
 
             from services.v1.api_clients.qitaf_service import (
