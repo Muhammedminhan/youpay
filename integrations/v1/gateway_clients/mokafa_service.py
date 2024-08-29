@@ -135,7 +135,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
-            if response:
+            if response.status_code == status.HTTP_200_OK:
                 response_data = response.json()
                 logger.info("Mokafaa payment response: {}".format(
                     response_data))
@@ -236,7 +236,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             response = requests.post(url, data=payload, headers=headers)
             logger.info("Response from mokafa point collection api {}"
                         "".format(response))
-            if response:
+            if response.status_code == status.HTTP_200_OK:
                 response_data = response.json()
                 self.response_data = response_data
                 logger.info("mokafa point collection api response: {}".format(
@@ -380,7 +380,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
                 logger.info("Mokafaa Verification with b2c completed for "
                             "transaction {}, data to be updating {}".format(
-                    transaction_id, update_data))
+                                transaction_id, update_data))
                 self.update_youpay_transaction_data(update_data)
                 return return_response_data, transaction_obj
 
@@ -411,7 +411,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             payload.pop('transaction_obj')
             source_payment_method = (PAYMENT_METHOD_MOKAFAA_AND_CARD
                                      if float(self.request_data.get(
-                'checkout_amount')) > 0 else
+                                        'checkout_amount')) > 0 else
                                      PAYMENT_METHOD_MOKAFAA)
             payload.update({"source_payment_method": source_payment_method})
 
@@ -446,8 +446,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
-
-            if response:
+            if response.status_code == status.HTTP_200_OK:
                 response_data = response.json()
                 self.response_data = response_data
                 logger.info("mokafaa redeem point api response: {}".format(
@@ -470,19 +469,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             else:
                 logger.error("Error in mokafaa redeem point api, {}"
                              "".format(response.text))
-                self.response_data = response.json()
-                if language == LANGUAGE_CODE_AR:
-                    message = self.response_data.get("response_text_ar")
-                else:
-                    message = self.response_data.get("response_text")
-
-                err_obj = {
-                    "message": message,
-                    "code": self.response_data.get("response_code"),
-                    "is_full_redemption": self.response_data.get(
-                        "is_full_redemption")
-                }
-                return {"errors": err_obj}, self.MOKAFA_CONNECTION_ERROR
+                msg = self.MESSAGE.get(self.MOKAFA_CONNECTION_ERROR)
+                return {"errors": msg}, self.MOKAFA_CONNECTION_ERROR
 
         except Exception as e:
             error = "Exception in mokafaa redeem point api: {}".format(e)
