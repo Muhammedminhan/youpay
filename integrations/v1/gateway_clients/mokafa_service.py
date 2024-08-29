@@ -611,14 +611,14 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             code = response_data.get("code")
             partner_response = response_data.get('partner_response')
             if code == self.MOKAFAA_PAYMENT_FAILED:
-                message = partner_response.get("checkout_response_data", {}).get(
-                                            "response_summary", "")
+                message = partner_response.get("checkout_response_data",
+                                               {}).get("response_summary", "")
             elif language == LANGUAGE_CODE_AR:
                 message = partner_response.get("response_text_ar")
-            elif self.MESSAGE.get(code):
-                message = self.MESSAGE.get(code)
-            else:
+            elif partner_response.get("response_text"):
                 message = partner_response.get("response_text")
+            else:
+                message = self.MESSAGE.get(code)
         except Exception as e:
             logger.error(
                 "{} Exception occurred on {}, err {} ".format(
