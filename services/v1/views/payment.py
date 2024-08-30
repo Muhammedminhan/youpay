@@ -696,9 +696,13 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 PAYMENT_METHOD_QITAF)
 
         elif program_name == PAYMENT_METHOD_MOKAFAA:
-            self.call_brand_calculation(transaction_obj, program_name)
             collect_enabled = transaction_obj.point_collection_enabled
             mobile_number = transaction_obj.points_collected_mobile_number
+
+            payment_configuration_check(transaction_obj=transaction_obj,
+                                        payback_action=PAYBACK_ACTION_EARN,
+                                        payment_method=PAYMENT_METHOD_MOKAFAA)
+            self.call_brand_calculation(transaction_obj, program_name)
 
             from integrations.v1.gateway_clients.mokafa_service import (
                 MokafaServiceManager)
