@@ -640,16 +640,14 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             self.class_name, program_name, transaction_id
         ))
 
+        payment_configuration_check(transaction_obj=transaction_obj,
+                                    payment_method=program_name,
+                                    payback_action=PAYBACK_ACTION_EARN)
         self.call_brand_calculation(transaction_obj, program_name)
 
         if program_name == PAYMENT_METHOD_NEQATY:
             collect_enabled = transaction_obj.point_collection_enabled
             mobile_number = transaction_obj.points_collected_mobile_number
-
-            payment_configuration_check(transaction_obj=transaction_obj,
-                                        payment_method=PAYMENT_METHOD_NEQATY,
-                                        payback_action=PAYBACK_ACTION_EARN
-                                        )
 
             from integrations.v1.gateway_clients.neqaty_service import (
                 NeqatyServiceManager)
@@ -662,15 +660,13 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     "earn_reference")
                 calculated_item_details = response.get(
                     "partner_response", {}).get("calculated_item_details")
+                is_success = True
             message = "Pont Collect requested for: {}".format(
                 PAYMENT_METHOD_NEQATY)
 
         elif program_name == PAYMENT_METHOD_QITAF:
             collect_enabled = transaction_obj.is_qitaf_enabled
             mobile_number = transaction_obj.qitaf_phone_number
-
-            payment_configuration_check(transaction_obj=transaction_obj,
-                                        payment_method=PAYMENT_METHOD_QITAF)
 
             from services.v1.api_clients.qitaf_service import (
                 QitafCollectPointsAPIView)
@@ -681,6 +677,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             partner_response_code = code
 
             if code == self.SUCCESS:
+                partner_response_status = response.get("status", False)
+                is_success = partner_response_status
                 earned_points = response.get("partner_response").get(
                     "reward_point")
                 earn_reference = response.get("partner_response").get(
@@ -708,6 +706,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                     "earned_points")
                 calculated_item_details = response.get(
                     "partner_response", {}).get("calculated_item_details")
+                is_success = True
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_MOKAFAA)
 
@@ -728,7 +727,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
                 transaction_obj.brand_calculations = calculated_item_details
             transaction_obj.save()
 
-            is_success = True
             logger.info(
                 "{} collection success for program {}, tid :{}".format(
                     self.class_name, program_name, transaction_id
@@ -737,7 +735,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             reset = False
             reset_calculated_item_details = response.get(
                 "partner_response", {}).get("partner_response", {}).get(
-                "calculated_item_details")
+                "calculated_item_details") if response else None
             if reset_calculated_item_details:
                 transaction_obj.brand_calculations = reset_calculated_item_details
                 reset = True
