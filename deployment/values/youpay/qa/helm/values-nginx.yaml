@@ -14,11 +14,22 @@ service:
     protocol: 'TCP'
     targetPort: 80
 
+enableHPA: false
 hpa:
   name: 'youpay-[JIRA_ID]-nginx-hpa'
   minReplicas: 2
   maxReplicas: 2
   targetCPUUtilizationPercentage: 80
+
+enableKedaCron: true
+keda:
+  name: 'youpay-[JIRA_ID]-nginx-keda'
+  minReplicas: 0
+  desiredReplicas: 2
+  maxReplicas: 2
+  start: "0 7 * * 1-5"
+  end: "0 22 * * 1-5"
+  cpu: 80
 
 pdb:
   name: 'youpay-[JIRA_ID]-nginx-pdb'
