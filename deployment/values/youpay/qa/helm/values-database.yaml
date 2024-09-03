@@ -27,6 +27,18 @@ statefulset:
   maxReplicas: 1
   targetCPUUtilizationPercentage: 80
 
+enableHPA: false
+
+enableKedaCron: true
+keda:
+  name: 'youpay-[JIRA_ID]-database-keda'
+  minReplicas: 0
+  desiredReplicas: 1
+  maxReplicas: 1
+  start: "0 7 * * 1-5"
+  end: "0 22 * * 1-5"
+  cpu: 80
+
 pdb:
   name: 'youpay-[JIRA_ID]-database-pdb'
   minAvailable: 100%
