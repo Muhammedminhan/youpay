@@ -280,7 +280,7 @@ class UpdateNeqatyPhoneNumber(APIView, YouPayTransactionCRUD):
                 update_data = {
                     'transaction_id': transaction_obj.transaction_id,
                     'points_collected_mobile_number': neqaty_phone_number,
-                    'points_collection_enabled_program': PAYMENT_METHOD_NEQATY,
+                    'point_program': PAYMENT_METHOD_NEQATY,
                     'point_collection_enabled': True,
                     "brand_details": brand_details
                 }

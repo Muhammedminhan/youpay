@@ -6,7 +6,7 @@ from rest_framework import status
 from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
     PURCHASE_PLATFORM_IOS,
-    PURCHASE_PLATFORM_ANDROID
+    PURCHASE_PLATFORM_ANDROID, PAYMENT_GATEWAY_B2CPAYBACK
 )
 from core.messages import (
     ERROR_MISSING_FIELDS, IS_SUCCESS
@@ -25,7 +25,11 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_QITAF,
                                 PAYMENT_METHOD_QITAFAND_CARD,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
-                                PAYMENT_METHOD_NEQATY)
+                                PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_ADCB,
+                                PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
+                                PAYMENT_METHOD_TOUCHPOINTS,
+                                PAYMENT_METHOD_MOKAFAA,
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -50,6 +54,10 @@ class YouPayTransactionCRUD(object):
     """
     YouPay Transaction Data CRUD Operations will be here
     """
+
+    def __init__(self):
+        self.saved_fields = []
+
 
     def create_youpay_transaction_data(self, request):
         serializer = YouPayTransactionDataSerializer(data=request)
@@ -137,10 +145,11 @@ class YouPayTransactionCRUD(object):
             'point_collection_enabled', None)
         data_dict['points_collected_mobile_number'] = data.get(
             'points_collected_mobile_number', None)
+        data_dict['points_collected_cic_number'] = data.get(
+            'points_collected_cic_number', None)
         data_dict['points_redeemed_mobile_number'] = data.get(
             'points_redeemed_mobile_number', None)
-        data_dict['points_collection_enabled_program'] = data.get(
-            'points_collection_enabled_program', None)
+        data_dict['point_program'] = data.get('point_program', None)
         data_dict['earn_reference'] = data.get('earn_reference', None)
 
         data_dict['additional_vat'] = data.get('additional_vat', None)
@@ -180,7 +189,10 @@ class YouPayTransactionCRUD(object):
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD,
                                            PAYMENT_METHOD_NEQATY_AND_CARD,
-                                           PAYMENT_METHOD_NEQATY]:
+                                           PAYMENT_METHOD_NEQATY,
+                                           PAYMENT_METHOD_MOKAFAA,
+                                           PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                           ]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
             service_fee = data.get('service_fee', None)
@@ -201,20 +213,25 @@ class YouPayTransactionCRUD(object):
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
-                saved_fields = [
+                self.saved_fields = [
                     'updated_at'
                 ]
-                saved_fields = get_saved_fields(saved_fields,
+                self.saved_fields = get_saved_fields(self.saved_fields,
                                                 data_dict,
                                                 transaction_obj)
                 if data_dict.get('is_full_redemption') == False:
                     transaction_obj.is_full_redemption = False
-                    saved_fields.append('is_full_redemption')
-                transaction_obj.save(update_fields=saved_fields)
-                logger.info("Transaction object updated successfully for {}"
-                            ", status :{}, updated fields {}".format(
-                    transaction_id, transaction_obj.payment_status,
-                    saved_fields))
+                    self.saved_fields.append('is_full_redemption')
+
+                self.update_point_program_on_transaction_obj(
+                    transaction_obj)
+
+                transaction_obj.save(update_fields=self.saved_fields)
+                logger.info(
+                    "Transaction object updated successfully for {}, status :"
+                    "{}, updated fields {}".format(
+                        transaction_id, transaction_obj.payment_status,
+                        self.saved_fields))
 
                 if (transaction_obj.payment_status == PAYMENT_STATUS_PAID
                         and not transaction_obj.gateway_charge):
@@ -231,6 +248,32 @@ class YouPayTransactionCRUD(object):
             logger.error("Unable to update the transaction object, {0}"
                          "".format(str(e)))
             return False
+
+    def update_point_program_on_transaction_obj(self, transaction_obj):
+        
+        if transaction_obj.payment_status == PAYMENT_STATUS_PAID:
+            if transaction_obj.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK:
+
+                """ADCB point program handler"""
+                if (transaction_obj.payment_method in
+                        [PAYMENT_METHOD_TOUCHPOINTS,
+                         PAYMENT_METHOD_TOUCHPOINTS_AND_CARD]):
+                    transaction_obj.point_program = PAYMENT_METHOD_ADCB
+                    self.saved_fields.append("point_program")
+            else:
+                logger.info(
+                    f"Not {PAYMENT_GATEWAY_B2CPAYBACK}, "
+                    f"{type(transaction_obj.payment_gateway)}")
+
+            logger.info(
+                f"update_point_program_on_transaction_obj payment_status : "
+                f"{transaction_obj.payment_status}, payment_gateway:"
+                f" {transaction_obj.payment_gateway}, payment_method: "
+                f"{transaction_obj.payment_method}, "
+                f"point_program :{transaction_obj.point_program},"
+                f"transaction_id :{transaction_obj.transaction_id} ")
+
+        return transaction_obj
 
     def get_settlement_entity(self, **kwargs):
         """

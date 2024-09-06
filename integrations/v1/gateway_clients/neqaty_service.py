@@ -3,6 +3,7 @@ import json
 import logging
 
 import requests
+from django.db.models import Q
 from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
@@ -11,7 +12,8 @@ from core.messages import (REDIRECT_URL, IS_REDIRECT, IS_SUCCESS,
                            GATEWAY_ERROR_OCCURRED)
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
-                        decrypt_string)
+                        decrypt_string,
+                        auto_enable_or_disable_point_collection)
 from integrations.common import update_brand_details, get_redemption_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
@@ -391,7 +393,13 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     amount = payment_data.brand_calculations.get(
                         'sum_net_amount', None)
                     name_on_card = request_data.get("customer_name")
-                    self.point_collection_enabled = True
+
+                    self.point_collection_enabled = (
+                        auto_enable_or_disable_point_collection(Q(
+                            payment_method=PAYMENT_METHOD_NEQATY, active=True,
+                            earn_on_partial_redemption=True
+                        )))
+
 
                 else:
                     redirect_url = ('{}?transaction_id={}'.format(
@@ -433,6 +441,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "payment_method": self.payment_method,
                 "name_on_card": name_on_card,
                 "point_collection_enabled": self.point_collection_enabled,
+                "point_program": payment_data.point_program
             }
         }
         update_data.update(youpay_update_data)
@@ -453,7 +462,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             self.response_data = response_data
             logger.info("Neqaty redeem point api response: {}".format(
                 response_data))
-
+            self.transaction_obj.point_program = PAYMENT_METHOD_NEQATY
             response_data = self.handle_neqaty_response(
                 response_data, self.transaction_obj, request_data)
             return response_data, self.SUCCESS
@@ -700,7 +709,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 logger.error("Error in neqaty point collection api, {}"
                              "".format(response.text))
                 self.response_data = response.json()
-                return {"error": response.text}, self.NEQATY_CONNECTION_ERROR
+                return {"error": response.text,
+                        "partner_response": response.json()
+                        }, self.NEQATY_CONNECTION_ERROR
             else:
                 msg = ("unable to get response from b2c_payback-neqaty for "
                        "point collection")
@@ -722,12 +733,15 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             )
 
     def handle_neqaty_collection(self, transaction_obj):
+        """
+        Updating program, mobile number etc... on Neqaty Verification
+        """
         if transaction_obj.point_collection_enabled:
             """If point collection enabled"""
-            if transaction_obj.points_collection_enabled_program != (
-                    PAYMENT_METHOD_NEQATY):
+            if (transaction_obj.point_program != PAYMENT_METHOD_NEQATY or
+                    not transaction_obj.points_collected_mobile_number):
                 transaction_obj.points_collected_mobile_number = (
                     transaction_obj.points_redeemed_mobile_number)
-                transaction_obj.points_collection_enabled_program = (
+                transaction_obj.point_program = (
                     PAYMENT_METHOD_NEQATY)
                 transaction_obj.save()

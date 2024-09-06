@@ -10,11 +10,22 @@ service:
     protocol: 'TCP'
     targetPort: 8000
 
+enableHPA: false
 hpa:
   name: 'youpay-[JIRA_ID]-worker-hpa'
   minReplicas: 1
   maxReplicas: 1
   targetCPUUtilizationPercentage: 80
+
+enableKedaCron: true
+keda:
+  name: 'youpay-[JIRA_ID]-worker-keda'
+  minReplicas: 0
+  desiredReplicas: 1
+  maxReplicas: 1
+  start: "0 7 * * 1-5"
+  end: "0 22 * * 1-5"
+  cpu: 80
 
 pdb:
   name: 'youpay-[JIRA_ID]-worker-pdb'
@@ -34,10 +45,10 @@ deployment:
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; source /etc/profile.d/application-env.sh ; sh /ygag/deployment/app/worker-entrypoint.sh"]'
       memory:
-        requests: 300Mi
+        requests: 350Mi
         limits: 400Mi
       cpu:
-        requests: 50m
+        requests: 10m
       volumeMounts:
         - mountPath: /ygag/logs/
           name: ygag-youpay-[JIRA_ID]-qa-worker-logs

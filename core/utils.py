@@ -20,12 +20,17 @@ from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import AppConfig, Currency
 from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
+from core.models import (AppConfig, Currency, PaymentMethodConfig,
+                         PaymentConfiguration)
+from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
+                                    PAYMENT_METHOD_CONFIG_CACHE_KEY,
+                                    PAYMENT_CONFIG_CACHE_KEY)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_STATUS_FAILED,
-    PAYMENT_STATUS_PENDING)
+    PAYMENT_STATUS_PENDING, PAYMENT_SCHEME_MADA)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -161,6 +166,62 @@ def get_payment_gateway_config(gateway_cache_key, gateway_hub_code):
     return gateway_config
 
 
+def get_cached_payment_method_config():
+    try:
+        cache_key = PAYMENT_METHOD_CONFIG_CACHE_KEY
+        payment_method_configs = cache.get(cache_key, None)
+        if payment_method_configs is None:
+            payment_method_configs = PaymentMethodConfig.objects.all()
+            cache.set(cache_key, payment_method_configs)
+
+        return payment_method_configs
+
+    except Exception as e:
+        logger.error(
+            "Error on getting cached PaymentMethodConfig : {}".format(e))
+        return PaymentMethodConfig.objects.none()
+
+
+def invalidate_cached_payment_method_config():
+    try:
+        cache_key = PAYMENT_METHOD_CONFIG_CACHE_KEY
+        cache.delete(cache_key)
+    except Exception as e:
+        logger.error(
+            "Error on invalidating cached PaymentMethodConfig : {}".format(e))
+
+
+def get_cached_payment_config():
+    try:
+        cache_key = PAYMENT_CONFIG_CACHE_KEY
+        payment_configs = cache.get(cache_key, None)
+        if payment_configs is None:
+            payment_configs = PaymentConfiguration.objects.all()
+            cache.set(cache_key, payment_configs)
+
+        return payment_configs
+
+    except Exception as e:
+        logger.error(
+            "Error on getting cached PaymentConfiguration : {}".format(e))
+        return PaymentConfiguration.objects.none()
+
+
+def auto_enable_or_disable_point_collection(query):
+    """
+    Input Payment Config Query
+    Output : True or False
+    Objective: to check whether we need to enable earn on partial redemption
+    """
+    payment_config = get_cached_payment_config()
+    if payment_config:
+        payment_config_data = payment_config.filter(query)
+        if payment_config_data.count():
+            payment_config_datum = payment_config_data.first()
+            return payment_config_datum.earn_on_partial_redemption
+    return False
+
+
 def decimal_rounded(amount, decimal_notation):
     if not isinstance(amount, Decimal):
         amount = Decimal(amount)
@@ -293,6 +354,8 @@ def process_checkoutpg_response_verification(**kwargs):
     payment_method = kwargs.get('payment_method')
     payment_gateway = kwargs.get('payment_gateway')
     channel_code = kwargs.get('channel_code')
+    response_code = kwargs.get('response_data', {}).get('response_code')
+    payment_scheme = get_payment_scheme(response_data)
 
     reference_from_checkout = response_data.get("reference")
 
@@ -312,24 +375,31 @@ def process_checkoutpg_response_verification(**kwargs):
             " reference id from checkout {}, youpay referance {}"
             "".format(transaction_id, reference_from_checkout,
                       youpay_payment_referance))
+        if response_code.startswith(
+                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
+            logger.info(
+                "transaction failed for transaction id {}, pre-auth soft "
+                "decline response code {}".format(
+                    transaction_id, response_code))
+        else:
+            redirect_url = get_redirect_url(youpay_transaction.failure_url,
+                                            transaction_id)
+            response_data = {
+                IS_REDIRECT: True,
+                REDIRECT_URL: redirect_url,
+                TRANSACTION_MSG: {"response_summary": "Payment Failed"},
+                IS_SUCCESS: False
+            }
 
-        redirect_url = get_redirect_url(youpay_transaction.failure_url,
-                                        transaction_id)
-        response_data = {
-            IS_REDIRECT: True,
-            REDIRECT_URL: redirect_url,
-            TRANSACTION_MSG: {"response_summary": "Payment Failed"},
-            IS_SUCCESS: False
-        }
-
-        return False, response_data
+            return False, response_data
 
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
             response_data)
 
     logger.info(
-        "Verify payment response data {}".format(response_data))
+        "Verify payment response data for transaction {} --> {}".format(
+            transaction_id, response_data))
     response_code = response_data.get('response_code', None)
 
     is_flagged = response_data.get("is_flagged")
@@ -368,7 +438,7 @@ def process_checkoutpg_response_verification(**kwargs):
             "response_summary": response_data.get("response_summary"),
             "card_bin": response_data.get("card_bin"),
             "card_last4": response_data.get("card_last4"),
-            'payment_scheme': response_data.get("payment_scheme"),
+            'payment_scheme': payment_scheme,
             'is_gcc_card': response_data.get("is_gcc_card"),
             'is_flagged': is_flagged,
             'is_fraud': response_data.get("is_fraud"),
@@ -423,7 +493,7 @@ def format_pre_auth_payment_response_for_verify(response_data):
         "is_flagged": response_data.get("risk", {}).get("flagged"),
         "card_bin": response_data.get("source", {}).get("bin"),
         "card_last4": response_data.get("source", {}).get("last4"),
-        "payment_scheme": response_data.get("source", {}).get("scheme"),
+        "payment_scheme": get_payment_scheme(response_data.get("source", {})),
         "is_gcc_card": response_data.get("is_gcc_card"),
         "card_issuer_country": response_data.get("source", {}).get(
             "issuer_country")}
@@ -499,6 +569,65 @@ def decrypt_browser_value(encrypted_value):
     decrypted_value = fer_instance.decrypt(encrypted_value).decode()
     logger.info("decrypted cookie key is {}".format(decrypted_value))
     return decrypted_value
+
+
+def get_display_platform(platform):
+    """
+    Converts platform to display it in required formats for clevertap.
+
+    Args:
+        platform (str): The platform stored ('Web', 'Mweb', 'Android', 'IOS').
+    Returns:
+        str: The display platform name ('WEB', 'MWEB', 'Android', 'iOS').
+    """
+    platform_map = {
+        'Web': 'WEB',
+        'Mweb': 'MWEB',
+        'Android': 'Android',
+        'IOS': 'iOS'
+    }
+    return platform_map.get(platform, platform)
+
+
+def get_payment_scheme(response_data):
+    """
+    Determines the payment scheme based on the local scheme as
+    PAYMENT_SCHEME_MADA is only available in local scheme.
+    """
+    if response_data.get("local_scheme") == PAYMENT_SCHEME_MADA:
+        return PAYMENT_SCHEME_MADA
+    else:
+        response_data.get("payment_scheme")
+
+
+def get_display_program(api_client):
+    """
+    Converts api_client name to display it in required formats for clevertap.
+    Args:
+        api_client (obj)
+    Returns:
+        str: The display api_client name if code present else client name
+    """
+    client_code = api_client.client_code
+
+    api_client_map = {
+        'ECOMORDS': 'Ecom',
+        'EMAPIGRPGFT': 'Group Gift',
+        'MYREWDB': 'Dukhan Bank',
+        'MYREWPMI': 'PMI',
+        'MYREWNBKM': '	NBK Miles',
+        'MYREWVF': 'Vodafone',
+        'MYREWNBUPP': 'NBK UEFA PWR PROGRAM',
+        'MYREWSP': 'Spectrum',
+        'MYREWNBK': 'NBK',
+        'MYREWABKEM': 'ABK E-Mall',
+    }
+    program_name = api_client_map.get(client_code, None)
+
+    if program_name:
+        return program_name
+    else:
+        return api_client.name
 
 
 def process_amazonpg_response_verification(**kwargs):
