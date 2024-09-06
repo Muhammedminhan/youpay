@@ -167,6 +167,8 @@ class ADCBTransactionData(ADCBAbstractDateTime):
         max_length=20, null=True, blank=True,
         help_text='Card type info from checkout.com'
     )
+    brand_calculations = models.JSONField(
+        null=True, blank=True, help_text="Calculated brand details")
 
 
 @receiver(post_save, sender=ADCBTransactionData)

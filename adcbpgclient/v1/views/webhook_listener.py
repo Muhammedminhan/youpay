@@ -30,9 +30,8 @@ def get_purchase_request_object(reference):
 
 def get_youpay_transaction_object(transaction_id):
     try:
-        transaction_id = transaction_id.split('|')
         transaction_obj = YouPayTransactionData.objects.get(
-            transaction_id=transaction_id[-1])
+            transaction_id=transaction_id)
     except YouPayTransactionData.DoesNotExist:
         transaction_obj = None
     return transaction_obj
@@ -123,6 +122,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                 transaction_obj.financial_action_response_data = (
                     request_data.get(
                         'financial_action_response_data'))
+                transaction_obj.brand_calculations = (
+                    request_data.get('brand_calculations'))
                 if request_data.get('checkoutpg_response_data'):
                     transaction_obj.issuer_bank = self.get_issuer_bank(
                         request_data.get('checkoutpg_response_data'))
@@ -193,7 +194,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     financial_action_response_data=(
                         request_data.get(
                             'financial_action_response_data')),
-                )
+                    brand_calculations=(request_data.get(
+                        'brand_calculations')))
             response_data = {'message': "B2cpayback webhook listener "
                                         "successfully processed data",
                              'status': True}

@@ -27,7 +27,9 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_ADCB,
                                 PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
-                                PAYMENT_METHOD_TOUCHPOINTS)
+                                PAYMENT_METHOD_TOUCHPOINTS,
+                                PAYMENT_METHOD_MOKAFAA,
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -187,7 +189,10 @@ class YouPayTransactionCRUD(object):
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD,
                                            PAYMENT_METHOD_NEQATY_AND_CARD,
-                                           PAYMENT_METHOD_NEQATY]:
+                                           PAYMENT_METHOD_NEQATY,
+                                           PAYMENT_METHOD_MOKAFAA,
+                                           PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                           ]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
             service_fee = data.get('service_fee', None)
