@@ -25,8 +25,7 @@ from payments.constants import (
     PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_CARD,
     PAYMENT_METHOD_APPLEPAY,
-    PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_AUTHORIZED,
-    PAYMENT_STATUS_PENDING, PAYMENT_STATUS_FAILED
+    PAYMENT_METHOD_SAVED_CARD, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_FAILED
 )
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
@@ -38,6 +37,7 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
     """
     Class to manage amazonpg related operations
     """
+
     def __init__(self):
         self.amazonpg_config = get_payment_gateway_config(AMAZONPG_CACHE_KEY,
                                                           AMAZONPG_HUB_CODE)
@@ -197,7 +197,8 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         self.transaction_id)
                     response = requests.post(url, data=payload,
                                              headers=headers)
-                    logger.info("Response from AmazonPG {}".format(response))
+                    logger.info(
+                        "Response from AmazonPG {}".format(response.text))
 
                     # storing Youpay to payment gateway
                     # request and response data
@@ -210,45 +211,14 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         request_type=PAYMENT_REQUEST_AUTHENTICATE
                     )
 
-                    if response:
-                        response_data = response.json()
-                        logger.info("amazonpg payment response: {}"
-                                    .format(response_data))
-                        if response_data.get('status') == 200:
-                            self.payment_reference = response_data.get(
-                                "payment_reference")
-                            self.payment_status = PAYMENT_STATUS_PENDING
-                            self.payment_scheme = response_data.get(
-                                "payment_scheme")
-                            self.name_on_card = response_data.get(
-                                "name_on_card")
-
-                            self.update_youpay_transaction_data(
-                                self.prepare_data_to_update())
-                            return response.json(), self.SUCCESS
-
-                        logger.error("Error in amazonpg payment, {}".format(
-                            response.text))
-                        self.payment_reference = response_data.get(
-                            "payment_reference")
-                    self.payment_status = PAYMENT_STATUS_FAILED
-
-                    self.update_youpay_transaction_data(
-                        self.prepare_data_to_update())
-
-                    redirect_url = transaction_obj.failure_url
-                    return_response_data = {
-                        'is_redirect': True,
-                        'redirect_url': redirect_url,
-                        'transaction_message': 'Payment Failed',
-                        'is_success': False
-                    }
-
-                    return (return_response_data,
-                            self.PAYMENT_FAILED)
-                else:
-                    logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
-                    return {None}, self.AMAZONPG_CONNECTION_ERROR
+                    response_data, response_code = (
+                        self.handle_authenticate_response(response,
+                                                          transaction_obj))
+                    logger.info("amazonpg payment response: {}"
+                                .format(response_data))
+                    return response_data, response_code
+                logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
+                return {None}, self.AMAZONPG_CONNECTION_ERROR
             else:
                 msg = (
                     "Youpay transaction verification failed "
@@ -387,31 +357,30 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                          "".format(str(e)))
             return {"error": e}, self.AMAZONPG_CONNECTION_ERROR
 
-
     def get_saved_cards(self, email):
-            """
+        """
             Method for getting saved cards
             """
-            if self.amazonpg_config:
-                saved_cards = []
-                try:
-                    PARAMS = {'email': email}
-                    URL = self.amazonpg_config.domain + AMAZONPG_SAVED_CARD_API
-                    saved_cards = requests.get(url=URL, params=PARAMS)
-                    if saved_cards:
-                        saved_cards = saved_cards.json().get(
-                            'message').get("cards")
-                        for card in saved_cards:
-                            card['key'] = AMAZONPG_HUB_CODE
-                    return saved_cards
-                except Exception as e:
-                    logger.error(
-                        "Unable to fetch saved card details for user {0} "
-                        "because, {1}".format(email, str(e)))
-                    return None
-            else:
-                logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
-                return None, None
+        if self.amazonpg_config:
+            saved_cards = []
+            try:
+                PARAMS = {'email': email}
+                URL = self.amazonpg_config.domain + AMAZONPG_SAVED_CARD_API
+                saved_cards = requests.get(url=URL, params=PARAMS)
+                if saved_cards:
+                    saved_cards = saved_cards.json().get(
+                        'message').get("cards")
+                    for card in saved_cards:
+                        card['key'] = AMAZONPG_HUB_CODE
+                return saved_cards
+            except Exception as e:
+                logger.error(
+                    "Unable to fetch saved card details for user {0} "
+                    "because, {1}".format(email, str(e)))
+                return None
+        else:
+            logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
+            return None, None
 
     def saved_card_payment(self, data):
 
@@ -440,15 +409,15 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                     payment_data = self.get_amazon_payment_data(
                         self.payment_method, data)
                     logger.info(
-                            "Youpay sending payment data to amazonpg "
-                            "is {}".format(payment_data))
+                        "Youpay sending payment data to amazonpg "
+                        "is {}".format(payment_data))
                     payload = json.dumps(payment_data)
                     url = (self.amazonpg_config.domain +
                            AMAZONPG_SAVED_CARD_API)
                     headers = self.get_payment_header()
 
                     transaction_obj = self.get_youpay_transaction_data(
-                            self.transaction_id)
+                        self.transaction_id)
                     response = requests.post(url, data=payload,
                                              headers=headers)
                     logger.info("Response from AmazonPG {}".format(response))
@@ -463,36 +432,13 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
                         request_type=PAYMENT_REQUEST_AUTHENTICATE
                     )
 
-                    if response:
-                        response_data = response.json()
-                        logger.info("amazonpg payment response: {}"
-                                    .format(response_data))
-                        if (response_data.get('status') == 200 and
-                                response_data.get('redirect_url')):
-                            self.payment_reference = response_data.get(
-                                "payment_reference")
-                            self.payment_status = PAYMENT_STATUS_AUTHORIZED
-                            self.payment_scheme = response_data.get(
-                                "payment_scheme")
-                            self.name_on_card = response_data.get(
-                                "name_on_card")
+                    response_data, response_code = (
+                        self.handle_authenticate_response(response,
+                                                          transaction_obj))
+                    logger.info("amazonpg payment response: {}"
+                                .format(response_data))
+                    return response_data, response_code
 
-                            self.update_youpay_transaction_data(
-                                self.prepare_data_to_update())
-                            return response.json(), self.SUCCESS
-
-                        logger.error("Error in amazonpg payment, {}".format(
-                            response.text))
-                        self.payment_reference = response_data.get(
-                            "payment_reference")
-
-                        self.update_youpay_transaction_data(
-                            self.prepare_data_to_update())
-                        return ({"error": response.json()},
-                                self.AMAZONPG_CONNECTION_ERROR)
-
-                    return ({"error": response.text},
-                            self.AMAZONPG_CONNECTION_ERROR)
                 else:
                     logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
                     return {None}, self.AMAZONPG_CONNECTION_ERROR
@@ -533,3 +479,44 @@ class AmazonPGManager(PaymentRequestView, PaymentHandlers):
         else:
             logger.error(AMAZONPG_CONNECTION_ERROR_MESSAGE)
             return None, None
+
+    def handle_authenticate_response(self, response, transaction_obj):
+        """
+        Handle the authentication response, update transaction data,
+        and return appropriate response based on payment status.
+        """
+        try:
+            response_data = response.json()
+            status_code = response_data.get('status')
+        except ValueError:
+            status_code = status.HTTP_400_BAD_REQUEST
+            response_data = {}
+        if status_code == 200:
+            self.payment_reference = response_data.get("payment_reference")
+            self.payment_status = PAYMENT_STATUS_PENDING
+            self.payment_scheme = response_data.get("payment_scheme")
+            self.name_on_card = response_data.get("name_on_card")
+
+            self.update_youpay_transaction_data(self.prepare_data_to_update())
+
+            return_response_data = {
+                'is_redirect': True,
+                'redirect_url': response_data.get("redirect_url"),
+                'is_success': True
+            }
+            return return_response_data, self.SUCCESS
+
+        logger.error(
+            "Error in amazonpg payment, {}".format(response.text))
+        self.payment_reference = response_data.get("payment_reference")
+        self.payment_status = PAYMENT_STATUS_FAILED
+
+        self.update_youpay_transaction_data(self.prepare_data_to_update())
+
+        redirect_url = transaction_obj.failure_url
+        return_response_data = {
+            'is_redirect': True,
+            'redirect_url': redirect_url,
+            'is_success': False
+        }
+        return return_response_data, self.PAYMENT_FAILED

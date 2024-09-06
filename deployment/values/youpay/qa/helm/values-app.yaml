@@ -10,11 +10,22 @@ service:
     protocol: 'TCP'
     targetPort: 8000
 
+enableHPA: false
 hpa:
   name: 'youpay-[JIRA_ID]-app-hpa'
   minReplicas: 2
   maxReplicas: 2
   targetCPUUtilizationPercentage: 80
+
+enableKedaCron: true
+keda:
+  name: 'youpay-[JIRA_ID]-app-keda'
+  minReplicas: 0
+  desiredReplicas: 2
+  maxReplicas: 2
+  start: "0 7 * * 1-5"
+  end: "0 22 * * 1-5"
+  cpu: 80
 
 pdb:
   name: 'youpay-[JIRA_ID]-app-pdb'
@@ -38,10 +49,10 @@ deployment:
           value: 'DJANGO_SETTINGS_MODULE'
       port: 8000
       memory:
-        requests: 400Mi
+        requests: 350Mi
         limits: 500Mi
       cpu:
-        requests: 100m
+        requests: 80m
       health:
         path: '/health/'
         port: 8000

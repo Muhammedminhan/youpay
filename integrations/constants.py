@@ -109,6 +109,9 @@ HAPPYCREDITS_CACHE_KEY = 'happycredits_config'
 APPLE_PAY_CACHE_KEY = "apple_pay_config"
 QITAF_CACHE_KEY = 'qitaf_config'
 
+PAYMENT_METHOD_CONFIG_CACHE_KEY = 'youpay_payment_method_config'
+PAYMENT_CONFIG_CACHE_KEY = 'youpay_payment_config'
+
 ADCB_POINT_BALANCE_API = "/payback/api/v2/touchpoint/point-balance/"
 ADCB_AUTHENTICATE_API = "/payback/api/v1/touchpoint/authenticate/"
 ADCB_REDEMPTION_API = "/payback/api/v1/touchpoint/point-redemption/"
@@ -196,3 +199,13 @@ NEQATY_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"
 NEQATY_VERIFY_API = "/payback/api/v1/verify"
 NEQATY_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
 REDEMPTION_PARTNER_NEQATY = "NEQATY"
+
+# Mokafaa related constants
+MOKAFAA_CLIENT_CODE = 'PAYMTMKF'
+REDEMPTION_PARTNER_MOKAFAA = "MOKAFAA"
+
+# B2c_payback related common constants
+B2CP_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
+B2CP_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
+B2CP_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"
+B2CP_VERIFY_API = "/payback/api/v1/verify"

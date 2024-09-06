@@ -10,6 +10,7 @@ from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
                         decrypt_string
                         )
+from integrations.common import update_brand_details
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
@@ -168,6 +169,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             transaction_data = YouPayTransactionDataSerializer(
                 transaction_obj)
 
+            is_updated, brand_details = update_brand_details(
+                transaction_obj)
+
             request_dict = {
                 'data': request_data,
                 'transaction_data': transaction_data.data
@@ -179,11 +183,14 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             if gateway and gateway.lower() == PAYMENT_GATEWAY_AMAZONPG:
                 authenticate_request_data = AuthenticateAmazonRequestSerializer(
                     request_dict)
+                update_data = {"item_details_list": brand_details}
             else:
                 authenticate_request_data = AuthenticateCheckoutRequestSerializer(
                     request_dict)
                 update_data = {
-                    'cko-card-token': request_data.get('cko-card-token')}
+                    'cko-card-token': request_data.get('cko-card-token'),
+                    "item_details_list": brand_details
+                }
             update_data.update(authenticate_request_data.data)
             request_data_json = json.dumps(update_data)
             b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
@@ -192,9 +199,9 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             url = b2c_payback_domain + ADCB_AUTHENTICATE_API
 
             logger.info(
-                "Youpay requesting adcb redemption authentication for %s with data %s",
-                decrypt_string(request_transaction_id), request_data_json)
-
+                "Youpay requesting adcb redemption authentication for {} "
+                "with data {}".format(decrypt_string(
+                    request_transaction_id), request_data_json))
             response = requests.post(url, data=request_data_json,
                                      headers=CONTENT_TYPE_HEADERS)
             self.create_youpay_to_payment_gateways_data(
@@ -356,19 +363,24 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                          "verify api")
             return None, None
 
-    def get_collect_enabled_program(self, transaction_obj):
+    def get_point_program(self, transaction_obj):
         try:
-            data = {}
-            points_collection_enabled_program = (
-                transaction_obj.points_collection_enabled_program)
+            point_program = (
+                transaction_obj.point_program)
             points_collected_mobile_number = (
                 transaction_obj.points_collected_mobile_number)
+            points_collected_cic_number = (
+                transaction_obj.points_collected_cic_number)
             data = {
-                "points_collection_enabled_program": (
-                    points_collection_enabled_program),
-                "points_collected_mobile_number": (
-                    points_collected_mobile_number),
+                "point_program": (
+                    point_program)
             }
+            if points_collected_mobile_number:
+                data['points_collected_mobile_number'] = (
+                    points_collected_mobile_number)
+            if points_collected_cic_number:
+                data['points_collected_cic_number'] = (
+                    points_collected_cic_number)
 
             return data
         except Exception as e:
@@ -380,7 +392,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
     def remove_collect_program_enabled(self, transaction_obj):
         try:
             transaction_obj.point_collection_enabled = False
-            transaction_obj.points_collection_enabled_program = None
+            transaction_obj.point_program = None
             transaction_obj.is_qitaf_enabled = False
             transaction_obj.qitaf_phone_number = None
             transaction_obj.points_collected_mobile_number = None

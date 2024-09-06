@@ -6,7 +6,8 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackAuthenticate,
                                                  B2CPaybackRedemption,
                                                  B2CPaybackVerify,
-                                                 CollectProgramManagement)
+                                                 CollectProgramManagement,
+                                                 CalculateBalance)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
                                                 PaypalPayment,
@@ -21,6 +22,11 @@ from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiGenerateOTPAPIView)
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
+from .api_clients.mokafa_service import (UpdateMokafaPhoneNumber,
+                                         MokafaaGenerateOTPAPIView,
+                                         MokafaaRedeemPointsAPIView,
+                                         MokafaaVerify)
+
 from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyGenerateOTPAPIView,
                                          NeqatyRedeemPointsAPIView,
@@ -28,8 +34,7 @@ from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          UpdateNeqatyPhoneNumber)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
-    QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify,
-    CalculateQitafBalance)
+    QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
@@ -73,6 +78,7 @@ urlpatterns = [
     path('b2cpayback/collect-program/<str:pk>',
          CollectProgramManagement.as_view(),
          name='collect_program_management'),
+    path('point-program/calculate-balance/', CalculateBalance.as_view()),
 
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view(),
@@ -87,7 +93,8 @@ urlpatterns = [
          name='AmazonPGAuthentication'),
     path('amazonpg/verify/', AmazonPGVerification.as_view(),
          name='AmazonPGVerification'),
-    path('amazonpg/saved-card/', AmazonPGSavedCard.as_view()),
+    path('amazonpg/saved-card/', AmazonPGSavedCard.as_view(),
+         name='AmazonPGSavedCard'),
 
     # Happy Credits endpoints
     path('happycredits/credit-balance/', HappyCreditsCreditBalance.as_view()),
@@ -112,13 +119,21 @@ urlpatterns = [
     path('qitaf/collect/', QitafCollectPointsAPIView.as_view()),
     path('qitaf/redeem-points/', QitafRedeemPointsAPIView.as_view(),
          name='QitafRedeemPointsAPIView'),
-    path('qitaf/verify/', QitafVerify.as_view()),
-    path('qitaf/calculate-balance/', CalculateQitafBalance.as_view()),
+    path('qitaf/verify/', QitafVerify.as_view(), name='QitafVerify'),
 
     # Neqaty Endpoints
     path('neqaty/point-balance/', NeqatyPointBalanceAPIView.as_view()),
-    path('neqaty/generate-otp/', NeqatyGenerateOTPAPIView.as_view()),
+    path('neqaty/generate-otp/', NeqatyGenerateOTPAPIView.as_view(),
+         name='NeqatyGenerateOTPAPIView'),
     path('neqaty/redeem-points/', NeqatyRedeemPointsAPIView.as_view()),
-    path('neqaty/verify/', NeqatyVerify.as_view()),
+    path('neqaty/verify/', NeqatyVerify.as_view(), name='NeqatyVerify'),
     path('neqaty/update-phone-number/', UpdateNeqatyPhoneNumber.as_view()),
+
+    # Mokafaa Endpoints
+    path('mokafa/update-phone-number/', UpdateMokafaPhoneNumber.as_view()),
+    path('mokafaa/generate-otp/', MokafaaGenerateOTPAPIView.as_view(),
+         name='MokafaaGenerateOTPAPIView'),
+    path('mokafaa/redeem-points/', MokafaaRedeemPointsAPIView.as_view(),
+         name='MokafaaRedeemPointsAPIView'),
+    path('mokafaa/verify/', MokafaaVerify.as_view(), name='MokafaaVerify'),
 ]

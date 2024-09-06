@@ -10,11 +10,22 @@ service:
     protocol: 'TCP'
     targetPort: 6379
 
+enableHPA: false
 hpa:
   name: 'youpay-[JIRA_ID]-redis-hpa'
   minReplicas: 1
   maxReplicas: 1
   targetCPUUtilizationPercentage: 80
+
+enableKedaCron: true
+keda:
+  name: 'youpay-[JIRA_ID]-redis-keda'
+  minReplicas: 0
+  desiredReplicas: 1
+  maxReplicas: 1
+  start: "0 7 * * 1-5"
+  end: "0 22 * * 1-5"
+  cpu: 80
 
 pdb:
   name: 'youpay-[JIRA_ID]-redis-pdb'
@@ -34,10 +45,10 @@ deployment:
       command: '[]'
       port: 6379
       memory:
-        requests: 150Mi
+        requests: 20Mi
         limits: 500Mi
       cpu:
-        requests: 250m
+        requests: 10m
         limits: 300m
 
   nodeSelector:

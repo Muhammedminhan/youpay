@@ -27,7 +27,7 @@ class PaymentVerifyDataSerializer(serializers.Serializer):
     currency = serializers.CharField()
 
 
-class QitafOTPSerializer(serializers.Serializer):
+class OTPSerializer(serializers.Serializer):
     transaction_id = serializers.CharField(required=True)
     mobile_number = serializers.CharField(required=True)
 
@@ -42,5 +42,5 @@ class QitafOTPSerializer(serializers.Serializer):
             return transaction_obj
         else:
             raise serializers.ValidationError((
-                "QitafOTPSerializer : Transaction not found with ID"
+                "OTPSerializer : Transaction not found with ID"
                 " {}".format(transaction_id)))

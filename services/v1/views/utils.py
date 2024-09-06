@@ -3,9 +3,13 @@ import logging
 
 from django.db.models import Q
 
-from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS)
+from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
+                            PAYBACK_ACTION_EARN, FORMAT_PARTIAL_PAYMENTS)
+from core.core_serializers import PaymentConfigurationSerializer
+from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, PaymentMethodConfig
+from core.utils import get_cached_payment_method_config
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     QITAF_HUB_CODE, AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
@@ -29,7 +33,7 @@ from payments.constants import (PAYMENT_STATUS_INITIATED,
                                 PAYMENT_METHOD_HAPPY_CREDITS,
                                 PAYMENT_OPTION_HAPPY_CREDITS,
                                 PAYMENT_METHOD_PAYPAL, PAYMENT_OPTION_PAYPAL,
-                                PAYMENT_METHOD_NEQATY)
+                                PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_MOKAFAA)
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
@@ -72,6 +76,7 @@ def reformat_payment_request_data(data):
             'additional_vat_percentage')
         data['additional_currency_decimal_notation'] = (
             order.get('additional_currency_decimal_notation'))
+        data['order_id'] = order.get('order_id')
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')
@@ -345,11 +350,13 @@ def get_payment_methods(transaction, client, country):
                                      client=client,
                                      country=country, active=True,
                                      guest_user_enabled=True)
-        payment_method_configs = PaymentMethodConfig.objects.filter(
+
+        payment_method_config_qs = get_cached_payment_method_config()
+        payment_method_configs = payment_method_config_qs.filter(
             payment_method_query)
 
         payment_options = {}
-        partial_redemption_allowed_options = {}
+        payment_config_data = {}
 
         for config in payment_method_configs:
             payment_option_key = get_payment_option_constant(
@@ -358,8 +365,10 @@ def get_payment_methods(transaction, client, country):
             )
             payment_options[payment_option_key] = True
 
-            partial_redemption_allowed_options[payment_option_key] = (
-                config.payment_method.partial_redemption_allowed)
+            payment_config_data[
+                payment_option_key] = PaymentConfigurationSerializer(
+                config.payment_method).data
+
         if payment_options.get('happy_credits') is not None:
             if platform not in [PURCHASE_PLATFORM_ANDROID,
                                 PURCHASE_PLATFORM_IOS]:
@@ -367,12 +376,12 @@ def get_payment_methods(transaction, client, country):
 
     except Exception as e:
         payment_options = None
-        partial_redemption_allowed_options = None
+        payment_config_data = None
         logger.error(
             "Error occurred while getting payment options for "
-            "transaction, {}".format(transaction.transaction_id))
-
-    return payment_options, partial_redemption_allowed_options
+            "transaction, {}, {}".format(transaction.transaction_id, str(e)),
+            exc_info=True)
+    return payment_options, payment_config_data
 
 
 def get_payment_option_constant(payment_gateway, payment_method):
@@ -404,6 +413,8 @@ def get_payment_option_constant(payment_gateway, payment_method):
          PAYMENT_METHOD_QITAF): PAYMENT_OPTION_QITAF,
         (B2CPAYBACK_HUB_CODE,
          PAYMENT_METHOD_NEQATY): PAYMENT_METHOD_NEQATY,
+        (B2CPAYBACK_HUB_CODE,
+         PAYMENT_METHOD_MOKAFAA): PAYMENT_METHOD_MOKAFAA,
 
         (TABBYPG_HUB_CODE,
          PAYMENT_METHOD_TABBYPG): PAYMENT_OPTION_TABBYPG,
@@ -416,3 +427,44 @@ def get_payment_option_constant(payment_gateway, payment_method):
         (payment_gateway_value, payment_method_lower), None)
 
     return constant
+
+
+def payment_configuration_check(**kwargs):
+    payment_options = None,
+    payment_config_data = None
+    transaction_id = None
+    payment_method = None
+
+    transaction_obj = kwargs.get('transaction_obj', None)
+    payment_method = kwargs.get('payment_method', None)
+    payback_action = kwargs.get('payback_action', None)
+
+    client = transaction_obj.api_client.id
+    country = get_country_for_configuration(transaction_obj)
+    transaction_id = transaction_obj.transaction_id
+
+    payment_options, payment_config_data = get_payment_methods(
+        transaction_obj, client, country)
+
+    if payback_action == PAYBACK_ACTION_EARN:
+        if payment_method not in payment_config_data:
+            raise PaymentConfigurationFailed(
+                "PaymentConfiguration for {} is not active or unavailable for "
+                "transaction {}".format(payment_method, transaction_id))
+
+        payment_config_datum = payment_config_data[payment_method]
+
+        if payment_config_datum.get('earn_enabled') is False:
+            raise PaymentConfigurationFailed(
+                "Earn not enabled for PaymentConfiguration {} for "
+                "transaction {}".format(payment_method, transaction_id))
+
+        if transaction_obj.payment_method == FORMAT_PARTIAL_PAYMENTS.format(
+                payment_method) and payment_config_datum.get(
+            'earn_on_partial_redemption') is False:
+
+            raise PaymentConfigurationFailed(
+                "Earn on partial redemption for PaymentConfiguration {} for "
+                "transaction {}".format(payment_method, transaction_id))
+
+    return payment_options, payment_config_data

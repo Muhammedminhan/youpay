@@ -14,11 +14,22 @@ service:
     protocol: 'TCP'
     targetPort: 80
 
+enableHPA: false
 hpa:
   name: 'youpay-[JIRA_ID]-nginx-hpa'
   minReplicas: 2
   maxReplicas: 2
   targetCPUUtilizationPercentage: 80
+
+enableKedaCron: true
+keda:
+  name: 'youpay-[JIRA_ID]-nginx-keda'
+  minReplicas: 0
+  desiredReplicas: 2
+  maxReplicas: 2
+  start: "0 7 * * 1-5"
+  end: "0 22 * * 1-5"
+  cpu: 80
 
 pdb:
   name: 'youpay-[JIRA_ID]-nginx-pdb'
@@ -38,10 +49,10 @@ deployment:
       command: '["sh", "-c", "sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /ygag/nginx/conf/nginx.conf ; sh /ygag/nginx/entrypoint.sh"]'
       port: 80
       memory:
-        requests: 32Mi
+        requests: 20Mi
         limits: 64Mi
       cpu:
-        requests: 10m
+        requests: 5m
         limits: 100m
       health:
         path: '/nginx-health'
