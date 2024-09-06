@@ -2,13 +2,13 @@ import decimal
 import json
 import logging
 
+from django.db import transaction as db_transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from amazonpgclient.models import AmazonPGTransactionData
 from amazonpgclient.libs.authentication import SignatureAuthentication
-from django.db import transaction as db_transaction
+from amazonpgclient.models import AmazonPGTransactionData
 from amazonpgclient.utils import wait_redis_lock
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,12 @@ class WebhookListener(APIView):
                         'response_message', None)
                     transaction_obj.acquirer_response_code = request_data.get(
                         'acquirer_response_code', None)
-                    transaction_obj.fort_id = request_data.get('fort_id', None)
+                    transaction_obj.fort_id = request_data.get('fort_id',
+                                                               None)
+                    transaction_obj.is_fraud = request_data.get(
+                        'is_fraud')
+                    transaction_obj.is_flagged = request_data.get(
+                        'is_flagged')
 
                     transaction_obj.save()
                 else:
