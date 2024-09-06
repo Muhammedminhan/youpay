@@ -12,6 +12,8 @@ from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.messages import B2CPAYBACK_CHECKOUTPG_PAYMENT_FAILED_MESSAGE
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
+from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
+from integrations.v1.gateway_clients.utils import calculate_balance
 from payments.constants import (
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_TOUCHPOINTS,
     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD, PAYMENT_METHOD_ADCB_CARD_ONLY,
@@ -84,7 +86,8 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 'payable_amount': checkout_amount,
                 'available_amount': transaction_obj.available_amount,
                 'available_points': transaction_obj.available_points,
-                'is_full_redemption': response.get('is_full_redemption')
+                'is_full_redemption': response.get('is_full_redemption'),
+                'brand_calculations': response.get('brand_calculations')
             }
 
             if invoice_amount == selected_amount:  # full redemption
@@ -309,6 +312,51 @@ class CollectProgramManagement(APIView, YouPayTransactionCRUD):
             logger.error(
                 "Exception in removing Collect point enabled program for "
                 "transaction ID: {}".format(pk))
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class CalculateBalance(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        try:
+            transaction_id = request.data.get('transaction_id')
+            selected_amount = request.data.get('selected_amount')
+            client_code = request.data.get('client_code')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id))
+            if transaction_obj:
+                payload = {
+                    'transaction_obj': transaction_obj,
+                    "selected_amount": selected_amount,
+                    "client_code": client_code
+                }
+
+                response_data, code = calculate_balance(payload)
+
+                logger.info("Reward Point(Calculate Balance) API response {}, "
+                            "code : {}".format(response_data, code, ))
+                if response_data:
+
+                    data = self.response_obj.get_success_dict(
+                        code=code,
+                        success_dict=response_data
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_error_dict(error_code=code)
+                    return Response(data,
+                                    status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND)
+                logger.error(
+                    "CalculateBalance : Transaction not found for {}"
+                    "".format(transaction_id))
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

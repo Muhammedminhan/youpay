@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.core.serializers.json import DjangoJSONEncoder
 
 from rest_framework import status
+
 from core.response_messages import YouPayResponse
 from integrations.constants import B2CPAYBACK_HUB_CODE
 from integrations.models import PaymentGateway
@@ -81,7 +82,7 @@ def prepare_archive_transaction_objects(youpaytransactiondata_queryset):
     return archive_transaction_objects, filtered_queryset
 
 
-def collect_neqaty_points_for_transaction(modeladmin, request, queryset):
+def collect_b2c_program_points_for_transaction(modeladmin, request, queryset):
     try:
         if queryset.count() != 1:
             modeladmin.message_user(request,
@@ -91,13 +92,23 @@ def collect_neqaty_points_for_transaction(modeladmin, request, queryset):
 
         if transaction.payment_status == PAYMENT_STATUS_PAID and (
                 transaction.point_collection_enabled):
-            neqaty_obj = NeqatyServiceManager()
-            response, code = neqaty_obj.collect_points(transaction)
-            response_obj = YouPayResponse()
 
-            if code == response_obj.SUCCESS:
+            if transaction.point_program:
+                from services.v1.views.payment import (
+                    EarnRedemptionPartnerPoints)
+                earn_obj = EarnRedemptionPartnerPoints()
+                earn_response = earn_obj.get_earn_points(
+                    transaction_obj=transaction,
+                    transaction_id=transaction.transaction_id
+                )
+            else:
+                raise Exception("Program Name not available in the "
+                                "transaction record")
+
+            if earn_response.get('status', False):
                 response_message = (
-                    "Neqaty collection successful for the transaction {}".format(
+                    "{} collection successful for the transaction {}".format(
+                        transaction.point_program,
                         transaction.transaction_id
                     ))
                 logger.info(response_message)
@@ -105,7 +116,8 @@ def collect_neqaty_points_for_transaction(modeladmin, request, queryset):
                                         level=messages.SUCCESS)
             else:
                 response_message = (
-                    "Neqaty collection failed for the transaction {}".format(
+                    "{} collection failed for the transaction {}".format(
+                        transaction.point_program,
                         transaction.transaction_id
                     ))
                 logger.info(response_message)
@@ -113,16 +125,14 @@ def collect_neqaty_points_for_transaction(modeladmin, request, queryset):
                                         level=messages.ERROR)
         else:
             response_message = (
-                "Neqaty collection not available for this transaction {}".format(
-                    transaction.transaction_id
-                ))
+                "Point Program collection not available for this transaction "
+                "{}".format(transaction.transaction_id))
             modeladmin.message_user(request, response_message,
                                     level=messages.ERROR)
 
     except Exception as e:
-        response_message = ("Collecting points of neqaty failed with error : "
-                            "{}".format(str(e)))
-        logger.error(response_message)
+        response_message = ("Admin Action Earn Failed : {}".format(str(e)))
+        logger.error(response_message, exc_info=True)
         modeladmin.message_user(request, response_message,
                                 level=messages.ERROR)
 

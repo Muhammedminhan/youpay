@@ -7,14 +7,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
-from core.models import PaymentConfiguration
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
-                        decrypt_browser_value)
+                        decrypt_browser_value, get_display_platform,
+                        get_display_program)
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
-                                    NEQATY_CLIENT_CODE, MOKAFA_CLIENT_CODE)
+                                    NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -169,7 +169,10 @@ class ConfigViewSet(ViewSet):
                 "announcements": get_announcements(transaction.platform),
                 "is_guest": transaction.is_guest,
                 "allow_aed_converted_amount":
-                    transaction.api_client.allow_aed_converted_amount
+                    transaction.api_client.allow_aed_converted_amount,
+                "program": get_display_program(transaction.api_client),
+                "platform": get_display_platform(transaction.platform),
+                "retry_count": transaction.retry_count
             },
         }
 
@@ -385,7 +388,7 @@ class ConfigViewSet(ViewSet):
                     payment_config_data.get(
                         PAYMENT_OPTION_MOKAFA, {}))
                 mokafa_config = self.get_each_b2c_config(config_list,
-                                                         MOKAFA_CLIENT_CODE)
+                                                         MOKAFAA_CLIENT_CODE)
                 mokafa_config.update(**this__config_data)
                 config_dict['mokafa_config'] = mokafa_config
         return config_dict
