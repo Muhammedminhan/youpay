@@ -121,6 +121,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             data = {
                 'transaction_id': str(self.transaction_id),
                 'mokafaa_phone_number': mokafaa_phone_number,
+                'source_payment_method': PAYMENT_METHOD_MOKAFAA
             }
 
             payload.update(data)
