@@ -378,31 +378,36 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             transaction_id = decrypt_string(data.get('transaction_id'))
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
-            if transaction_object.payment_status in ALLOW_CANCEL_STATUS_LIST:
-                self.update_youpay_transaction_data({
-                    'transaction_id': transaction_id,
-                    'payment_status': PAYMENT_STATUS_CANCELLED
+            if transaction_object:
+                if transaction_object.payment_status in ALLOW_CANCEL_STATUS_LIST:
+                    self.update_youpay_transaction_data({
+                        'transaction_id': transaction_id,
+                        'payment_status': PAYMENT_STATUS_CANCELLED
+                    })
+
+                    redirect_url = get_redirect_url(transaction_object.cancel_url,
+                                                    transaction_id)
+                    logger.info(
+                        "Payment cancelled for transaction_id : {}, "
+                        "order reference : {}".format(
+                            transaction_id, transaction_object.order_reference))
+
+                elif transaction_object.payment_status == PAYMENT_STATUS_PAID:
+                    redirect_url = get_redirect_url(
+                        transaction_object.success_url,
+                        transaction_id)
+                else:
+                    redirect_url = get_redirect_url(
+                        transaction_object.failure_url,
+                        transaction_id)
+                return Response({
+                    'is_redirect': True,
+                    REDIRECT_URL: redirect_url,
                 })
-
-                redirect_url = get_redirect_url(transaction_object.cancel_url,
-                                                transaction_id)
-                logger.info(
-                    "Payment cancelled for transaction_id : {}, "
-                    "order reference : {}".format(
-                        transaction_id, transaction_object.order_reference))
-
-            elif transaction_object.payment_status == PAYMENT_STATUS_PAID:
-                redirect_url = get_redirect_url(
-                    transaction_object.success_url,
-                    transaction_id)
             else:
-                redirect_url = get_redirect_url(
-                    transaction_object.failure_url,
-                    transaction_id)
-            return Response({
-                'is_redirect': True,
-                REDIRECT_URL: redirect_url,
-            })
+                return Response({
+                    "error": "Transaction not found",
+                })
         except Exception as e:
             logger.error("Error in payment cancel api  : {}".format(e))
             return Response({
