@@ -411,7 +411,7 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
                         transaction_id)
                 return Response({
                     'is_redirect': True,
-                    REDIRECT_URL: redirect_url,
+                    REDIRECT_URL: redirect_url
                 })
             else:
                 data = self.response_obj.get_error_dict(
