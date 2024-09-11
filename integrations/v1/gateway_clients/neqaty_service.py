@@ -100,13 +100,15 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     logger.error("Brand details not found for transaction {}"
                                  "".format(self.transaction_id))
                     return None, self.BRAND_DETAILS_MISSING
-
+            request_data['source_transaction_id'] = self.transaction_id
+            request_data['source_api_client_name'] = (
+                self.transaction_obj.api_client.name)
             request_data.pop('transaction_obj')
 
             logger.info(
-                "Youpay sending request data to Neqaty point balance api "
-                "is {} for transaction {}".format(request_data,
-                                                  self.transaction_id))
+                "Youpay sending request data to Neqaty point balance api for"
+                " transaction {} is {}".format(
+                    self.transaction_id, request_data))
 
             self.request_data = request_data
 
@@ -204,6 +206,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             brand_calculations = self.transaction_obj.brand_calculations
             updated_brand_calculations = self.update_brand_calculations(
                 brand_calculations, redeem_code)
+            data['source_payment_method'] = (
+                self.transaction_obj.payment_method)
             self.request_data = data
 
             redemption_details = {
@@ -217,8 +221,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             data.update(redemption_details)
 
             logger.info(
-                "Youpay sending request data to neqaty generate otp api "
-                "is {}".format(data))
+                "Youpay sending request data to neqaty generate otp api for"
+                " transaction {} is {}".format(self.transaction_id, data))
             url = self.neqaty_config.domain + NEQATY_OTP_GENERATION_API
             headers = self.get_payment_header()
 
