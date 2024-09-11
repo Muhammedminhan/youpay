@@ -375,7 +375,13 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             logger.info("Triggered PaymentCancelledView")
             redirect_url = None
             data = self.request.data
-            transaction_id = decrypt_string(data.get('transaction_id'))
+            encrypted_transaction_id = data.get('transaction_id')
+            if not encrypted_transaction_id:
+                return Response({
+                    "error": "Transaction not found",
+                })
+
+            transaction_id = decrypt_string(encrypted_transaction_id)
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
             if transaction_object:
