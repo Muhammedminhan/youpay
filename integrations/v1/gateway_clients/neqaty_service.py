@@ -206,8 +206,6 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             brand_calculations = self.transaction_obj.brand_calculations
             updated_brand_calculations = self.update_brand_calculations(
                 brand_calculations, redeem_code)
-            data['source_payment_method'] = (
-                self.transaction_obj.payment_method)
             self.request_data = data
 
             redemption_details = {
@@ -367,6 +365,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "customer_ip_address": self.transaction_obj.ip,
             "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
                 transaction_data.get("currency").upper()),
+            "source_payment_method": self.transaction_obj.payment_method,
         }
         return redeem_payload
 
