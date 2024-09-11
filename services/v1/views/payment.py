@@ -305,7 +305,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             logger.error(
                 "Excepction occured during client verification {}".format(
                     str(e)))
-            return None, status.HTTP_400_BAD_REQUEST
+            return {}, status.HTTP_400_BAD_REQUEST
 
     def prepare_client_verify_data(self, payment_method, transaction_obj):
         """
