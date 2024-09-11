@@ -370,6 +370,8 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 
 
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
+    response_obj = YouPayResponse()
+
     def post(self, request):
         try:
             logger.info("Triggered PaymentCancelledView")
@@ -377,9 +379,10 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             data = self.request.data
             encrypted_transaction_id = data.get('transaction_id')
             if not encrypted_transaction_id:
-                return Response({
-                    "error": "Transaction not found",
-                })
+                data = self.response_obj.get_error_dict(
+                    error_code= self.response_obj.VALIDATION_FAILED)
+                return Response(data,
+                                status=status.HTTP_400_BAD_REQUEST)
 
             transaction_id = decrypt_string(encrypted_transaction_id)
             transaction_object = self.get_youpay_transaction_data(
@@ -411,9 +414,10 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
                     REDIRECT_URL: redirect_url,
                 })
             else:
-                return Response({
-                    "error": "Transaction not found",
-                })
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.VALIDATION_FAILED)
+                return Response(data,
+                                status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error("Error in payment cancel api  : {}".format(e))
             return Response({
