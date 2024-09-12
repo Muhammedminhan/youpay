@@ -682,7 +682,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "redeemed_amount": (
                     str(transaction_obj.redeemed_amount) if
                     transaction_obj.redeemed_amount else 0),
-                "source_transaction_id": transaction_obj.transaction_id,
+                "source_transaction_id": str(transaction_obj.transaction_id),
                 "source_payment_method": transaction_obj.payment_method,
                 "source_api_client_name": transaction_obj.api_client.name,
 
