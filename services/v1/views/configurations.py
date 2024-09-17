@@ -194,7 +194,7 @@ class ConfigViewSet(ViewSet):
         data = {
             "data": response_data
         }
-        return Response(data, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data, status=status.HTTP_200_OK)
 
 
     def _transaction_already_paid_response(self, transaction):
