@@ -25,7 +25,8 @@ from payments.constants import (
     PAYMENT_OPTION_PAYPAL, PAYMENT_OPTION_CITI_REWARDS, PAYMENT_OPTION_QITAF,
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
-    PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA
+    PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA,
+    EXPIRED_STATUS_LIST
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
@@ -55,6 +56,7 @@ class ConfigViewSet(ViewSet):
         super().__init__(**kwargs)
 
         self.list_end_statuses = PAYMENT_END_STATUS_LIST
+        self.list_expired_statuses = EXPIRED_STATUS_LIST
 
     def list(self, request):
         queryset = PaymentGateway.objects.all()
@@ -75,6 +77,9 @@ class ConfigViewSet(ViewSet):
             # session_key = self.get_session_key(request)
             if not transaction:
                 return self._transaction_not_found_response()
+
+            if transaction.payment_status in self.list_expired_statuses:
+                return self._transaction_already_expired_response(transaction)
 
             if transaction.payment_status in self.list_end_statuses:
                 return self._transaction_already_paid_response(transaction)
@@ -116,7 +121,6 @@ class ConfigViewSet(ViewSet):
         payment_config_data = kwargs.get(
             'payment_config_data')
         client = kwargs.get('client')
-
         api_client = {
             'color': client.color_code,
             'mobile_logo': get_mobile_logo_url(client),
@@ -183,13 +187,24 @@ class ConfigViewSet(ViewSet):
             error_code=self.response_obj.UNKNOWN_ERR)
         return Response(data.get('errors'), status=status.HTTP_404_NOT_FOUND)
 
+    def _transaction_already_expired_response(self, transaction):
+        response_data = self.response_obj.get_success_dict(
+            code=self.response_obj.TRANSACTION_ALREADY_CLOSED)
+        response_data["redirect_url"] = self._get_redirect_url(transaction)
+        data = {
+            "data": response_data
+        }
+        return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+
     def _transaction_already_paid_response(self, transaction):
         return_response = self.retrieve_response(
             payment_options=None,
             checkoutpg_config=None,
             transaction=transaction,
             announcements_dict=None,
-            status_code=None
+            status_code=None,
+            client=transaction.api_client
         )
         data = self.response_obj.get_success_dict(
             code=self.response_obj.SUCCESS, success_dict=return_response)
@@ -211,6 +226,9 @@ class ConfigViewSet(ViewSet):
         return Response(data, status=status.HTTP_404_NOT_FOUND)
 
     def _exception_response(self, e):
+        logger.error(
+            "Error occurred during configuration api call, {}".format(e),
+            exc_info=e)
         data = self.response_obj.get_404_message(message=str(e))
         return Response(data, status=status.HTTP_404_NOT_FOUND)
 

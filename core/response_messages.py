@@ -273,7 +273,8 @@ class YouPayResponse(object):
             self.CITI_REWARDS_INVALID_OTP: "Invalid/Expired OTP",
             self.CITI_REWARDS_USER_BLOCKED: (
                 "Exceeded the limit. Please try again later"
-            )
+            ),
+            self.TRANSACTION_ALREADY_CLOSED: "Transaction already processed!"
         })
 
     def get_400_message(self, message):
