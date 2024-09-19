@@ -121,6 +121,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             data = {
                 'transaction_id': str(self.transaction_id),
                 'mokafaa_phone_number': mokafaa_phone_number,
+                'source_payment_method': PAYMENT_METHOD_MOKAFAA
             }
 
             payload.update(data)
@@ -409,11 +410,11 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             transaction_data = serializer.data
             payload.update(self.prepare_redeem_payload(transaction_data))
             payload.pop('transaction_obj')
-            source_payment_method = (PAYMENT_METHOD_MOKAFAA_AND_CARD
-                                     if float(self.request_data.get(
+            self.payment_method = (PAYMENT_METHOD_MOKAFAA_AND_CARD
+                                   if float(self.request_data.get(
                                         'checkout_amount')) > 0 else
-                                     PAYMENT_METHOD_MOKAFAA)
-            payload.update({"source_payment_method": source_payment_method})
+                                   PAYMENT_METHOD_MOKAFAA)
+            payload.update({"source_payment_method": self.payment_method})
 
             verify_response, verify_status = self.verify_transaction(
                 transaction_data, payment_method=PAYMENT_METHOD_MOKAFAA)
@@ -446,6 +447,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
+
             if response.status_code == status.HTTP_200_OK:
                 response_data = response.json()
                 self.response_data = response_data
@@ -563,10 +565,6 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = False
                 message = self.mokafaa_error_response_message(response_data,
                                                               language)
-
-        self.payment_method = (
-            PAYMENT_METHOD_MOKAFAA if is_full_redemption
-            else PAYMENT_METHOD_MOKAFAA_AND_CARD)
 
         youpay_update_data = {
             **update_data,
