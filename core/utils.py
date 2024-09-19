@@ -18,8 +18,6 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
-from core.models import AppConfig, Currency
-from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
                          PaymentConfiguration)
 from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
@@ -714,7 +712,7 @@ def process_amazonpg_response_verification(**kwargs):
             IS_SUCCESS: False
         }
 
-    a = {
+    youpay_update_data = {
         'transaction_id': transaction_id,
         "payment_status": payment_status,
         "payment_reference": reference_from_amazon,
@@ -728,7 +726,7 @@ def process_amazonpg_response_verification(**kwargs):
         'is_payment_verified': True,
     }
 
-    logger.info("Youpay updating data is {}".format(a))
+    logger.info("Youpay updating data is {}".format(youpay_update_data))
 
     youpay_obj = YouPayTransactionCRUD()
     youpay_obj.update_youpay_transaction_data(

@@ -100,13 +100,15 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     logger.error("Brand details not found for transaction {}"
                                  "".format(self.transaction_id))
                     return None, self.BRAND_DETAILS_MISSING
-
+            request_data['source_transaction_id'] = self.transaction_id
+            request_data['source_api_client_name'] = (
+                self.transaction_obj.api_client.name)
             request_data.pop('transaction_obj')
 
             logger.info(
-                "Youpay sending request data to Neqaty point balance api "
-                "is {} for transaction {}".format(request_data,
-                                                  self.transaction_id))
+                "Youpay sending request data to Neqaty point balance api for"
+                " transaction {} is {}".format(
+                    self.transaction_id, request_data))
 
             self.request_data = request_data
 
@@ -217,8 +219,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             data.update(redemption_details)
 
             logger.info(
-                "Youpay sending request data to neqaty generate otp api "
-                "is {}".format(data))
+                "Youpay sending request data to neqaty generate otp api for"
+                " transaction {} is {}".format(self.transaction_id, data))
             url = self.neqaty_config.domain + NEQATY_OTP_GENERATION_API
             headers = self.get_payment_header()
 
@@ -363,6 +365,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "customer_ip_address": self.transaction_obj.ip,
             "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
                 transaction_data.get("currency").upper()),
+            "source_payment_method": self.transaction_obj.payment_method,
         }
         return redeem_payload
 
@@ -648,8 +651,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             if transaction_obj.earned_point:
                 '''if already rewarded'''
                 logger.info(
-                    "Failed for Reward point, reward already collected "
-                    "for ({}), rewarded point {}".format(
+                    "Reward point collection failed, reward already "
+                    "collected for ({}), rewarded point {}".format(
                         transaction_obj.transaction_id,
                         transaction_obj.earned_point))
                 return None, response_obj.NEQATY_ALREADY_COLLECTED
@@ -679,6 +682,10 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 "redeemed_amount": (
                     str(transaction_obj.redeemed_amount) if
                     transaction_obj.redeemed_amount else 0),
+                "source_transaction_id": str(transaction_obj.transaction_id),
+                "source_payment_method": transaction_obj.payment_method,
+                "source_api_client_name": transaction_obj.api_client.name,
+
             }
 
             self.transaction_obj = transaction_obj
@@ -686,7 +693,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             logger.info(
                 "Youpay sending request data to neqaty point collection api "
-                "is {}".format(request_data))
+                "for transaction {} is {}".format(
+                    self.transaction_id, request_data))
 
             request_data['transaction_id'] = "youpay|" + self.transaction_id
             self.request_data = request_data
@@ -696,8 +704,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             url = self.neqaty_config.domain + NEQATY_EARN_POINTS_API
             headers = self.get_payment_header()
             response = requests.post(url, data=payload, headers=headers)
-            logger.info("Response from neqaty point collection api {}"
-                        "".format(response))
+            logger.info(
+                "Response from neqaty point collection api for transaction {}"
+                " is {}".format(self.transaction_id, response))
             if response:
                 response_data = response.json()
                 self.response_data = response_data
