@@ -70,6 +70,7 @@ class YouPayResponse(object):
 
     """Amazonpay related begins"""
     AMAZONPG_CONNECTION_ERROR = 4002
+    AMAZONPG_CONNECTION_RETRY = 4003
     """Amazonpay related ends"""
 
     """happy credits related begins"""
@@ -196,6 +197,7 @@ class YouPayResponse(object):
             self.TABBYPG_PAYMENT_REJECTED: (
                 "Your Tabby payment has been rejected"),
             self.AMAZONPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.AMAZONPG_CONNECTION_RETRY: "Amazonpg retry to check webhook",
             self.HAPPY_CREDITS_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HAPPY_CREDITS_INSUFFICIENT_FUND: "Insufficient balance",
             self.HAPPY_VERIFICATION_EXCEPTION: "Exception on Verification",
