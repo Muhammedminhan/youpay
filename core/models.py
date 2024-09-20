@@ -196,6 +196,3 @@ class BetaUser(AbstractDateTime, AbstractUserBase):
     beta_user_email = models.EmailField(
         max_length=255, unique=True,
         help_text="To store beta user email from")
-    active = models.BooleanField(
-        default=True,
-        help_text='Denotes whether the beta user is active or not')

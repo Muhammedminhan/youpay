@@ -165,7 +165,9 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
         if (payment_gateway.code != B2CPAYBACK_HUB_CODE and
             self.cleaned_data.get('beta_version')) in [BETA_USER_ONLY_EARN,
                                                        BETA_USER_ONLY_BURN]:
-            raise forms.ValidationError("Invalid beta version rule")
+            raise forms.ValidationError(
+                "Invalid beta version: 'Only Earn' or 'Only Burn' options "
+                "are available for B2C payment methods only.")
 
         earn_enabled = cleaned_data.get('earn_enabled', False)
         earn_on_partial_redemption = cleaned_data.get(
@@ -184,8 +186,9 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
             raise forms.ValidationError(
                 "Earn on partial redemption cannot be enabled unless earn "
                 "enabled")
-        if not earn_enabled and not burn_full_redemption_enabled:
-            raise forms.ValidationError("Invalid Configuration")
+        if payment_gateway.code == B2CPAYBACK_HUB_CODE:
+            if not earn_enabled and not burn_full_redemption_enabled:
+                raise forms.ValidationError("Invalid Configuration")
         return cleaned_data
 
 
@@ -225,9 +228,8 @@ class PaymentConfigurationAdmin(AdminAbstract):
 
 
 class BetaUserAdmin(admin.ModelAdmin):
-    list_display = ('beta_user_email', 'name', 'active')
+    list_display = ('beta_user_email', 'name',)
     search_fields = ('beta_user_email', 'name')
-    list_filter = ('active',)
     readonly_fields = ('created_at', 'updated_at')
 
 
