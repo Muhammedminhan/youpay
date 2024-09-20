@@ -227,7 +227,7 @@ class PaymentConfigurationAdmin(AdminAbstract):
             'created_by', 'modified_by')
 
 
-class BetaUserAdmin(admin.ModelAdmin):
+class BetaUserAdmin(AdminAbstract):
     list_display = ('beta_user_email', 'name',)
     search_fields = ('beta_user_email', 'name')
     readonly_fields = ('created_at', 'updated_at')
