@@ -31,7 +31,8 @@ from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyGenerateOTPAPIView,
                                          NeqatyRedeemPointsAPIView,
                                          NeqatyVerify,
-                                         UpdateNeqatyPhoneNumber)
+                                         UpdateNeqatyPhoneNumber,
+                                         NeqatyTransactionSync)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
@@ -128,6 +129,7 @@ urlpatterns = [
     path('neqaty/redeem-points/', NeqatyRedeemPointsAPIView.as_view()),
     path('neqaty/verify/', NeqatyVerify.as_view(), name='NeqatyVerify'),
     path('neqaty/update-phone-number/', UpdateNeqatyPhoneNumber.as_view()),
+    path('neqaty/sync-data/', NeqatyTransactionSync.as_view()),
 
     # Mokafaa Endpoints
     path('mokafa/update-phone-number/', UpdateMokafaPhoneNumber.as_view()),

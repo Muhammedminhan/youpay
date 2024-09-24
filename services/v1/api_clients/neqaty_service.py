@@ -311,3 +311,37 @@ class UpdateNeqatyPhoneNumber(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class NeqatyTransactionSync(APIView):
+    def get(self, request):
+        """
+        Endpoint for returning the transaction related data from youpay to
+        b2cpayback for neqaty transactions
+        :param request: payment reference/gateway reference
+        :return: transaction id, payment method, client name
+        """
+        try:
+            logger.info(
+                "Neqaty transaction sync api called with request data, "
+                "{}".format(dict(request.GET)))
+            reference = request.GET.get('reference')
+
+            transaction_manager = YouPayTransactionCRUD()
+            transaction_obj = (
+                transaction_manager.get_youpay_transaction_data_with_payment_reference(reference)
+            )
+            data = {
+                "source_transaction_id": transaction_obj.transaction_id,
+                "source_payment_method": transaction_obj.payment_method,
+                "source_api_client_name": transaction_obj.api_client.name
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(
+                "Exception occurred during neqaty transaction syncing, "
+                "{}".format(e), exc_info=e)
+            data = {}
+            return Response(
+                {'message': 'Error in syncing, {}'.format(e)},
+                status=status.HTTP_400_BAD_REQUEST)
