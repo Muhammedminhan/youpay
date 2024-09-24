@@ -27,8 +27,8 @@ class YouPayResponse(object):
     DUPLICATE_PAYMENT_VERIFICATION = 1006
     BRAND_DETAILS_MISSING = 1007
     MISSING_CLIENT_INFO = 1008
+    VALIDATION_FAILED = 1009
     MIDDLEWARE_REDIRECTED = 1307
-
     TRANSACTION_NOT_FOUND = 1404
     MAX_PAYMENT_ATTEMPT_REACHED = 1416
 
@@ -163,6 +163,7 @@ class YouPayResponse(object):
         super(YouPayResponse, self).__init__()
 
         self.MESSAGE.update({
+            self.VALIDATION_FAILED: "Data validation failed",
             self.UNKNOWN_ERR: "Something went wrong",
             self.DATA_CORRUPTED: "Data corrupted",
             self.SUCCESS: "API request completed successfully",
