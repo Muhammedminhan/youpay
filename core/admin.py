@@ -157,17 +157,26 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['guest_user_enabled'].required = True
 
+    class Meta:
+        model = PaymentConfiguration
+        fields = '__all__'
+
     def clean(self):
         cleaned_data = self.cleaned_data
+        if self.instance and self.instance.pk:
+            payment_gateway = self.instance.payment_gateway
+        else:
+            payment_gateway = self.cleaned_data.get('payment_gateway')
 
-        payment_gateway = self.instance.payment_gateway
-
-        if (payment_gateway.code != B2CPAYBACK_HUB_CODE and
-            self.cleaned_data.get('beta_version')) in [BETA_USER_ONLY_EARN,
-                                                       BETA_USER_ONLY_BURN]:
+        if payment_gateway is None:
+            raise forms.ValidationError("Payment gateway cannot be empty")
+        
+        if ((payment_gateway.code != B2CPAYBACK_HUB_CODE and
+             self.cleaned_data.get('beta_version'))
+                in [BETA_USER_ONLY_EARN, BETA_USER_ONLY_BURN]):
             raise forms.ValidationError(
-                "Invalid beta version: 'Only Earn' or 'Only Burn' options "
-                "are available for B2C payment methods only.")
+                "Invalid beta version: 'Only Earn' or 'Only Burn' "
+                "options are available for B2C payment methods only.")
 
         earn_enabled = cleaned_data.get('earn_enabled', False)
         earn_on_partial_redemption = cleaned_data.get(
