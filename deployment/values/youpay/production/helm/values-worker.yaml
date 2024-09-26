@@ -76,7 +76,7 @@ deployment:
           app: 'youpay'
           tier: worker
     - maxSkew: 1
-      topologyKey: 'karpenter.sh/capacity-type'
+      topologyKey: "kubernetes.io/hostname"
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
