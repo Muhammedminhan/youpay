@@ -516,8 +516,7 @@ def check_is_user_beta_enabled(transaction):
     """
     try:
         customer_email = transaction.customer_email
-        beta_user = BetaUser.objects.get(beta_user_email=customer_email,
-                                         active=True)
+        beta_user = BetaUser.objects.get(beta_user_email=customer_email)
         return True if beta_user else False
     except BetaUser.DoesNotExist:
         return False
