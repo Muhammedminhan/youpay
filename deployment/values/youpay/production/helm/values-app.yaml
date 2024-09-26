@@ -102,7 +102,7 @@ deployment:
           app: 'youpay'
           tier: app
     - maxSkew: 1
-      topologyKey: "kubernetes.io/hostname"
+      topologyKey: 'kubernetes.io/hostname'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:
