@@ -325,7 +325,7 @@ class NeqatyTransactionSync(APIView):
             logger.info(
                 "Neqaty transaction sync api called with request data, "
                 "{}".format(dict(request.GET)))
-            references = request.query_params.getlist()
+            references = request.query_params.getlist("references")
             transaction_manager = YouPayTransactionCRUD()
             response_dict = {}
             for reference in references:
