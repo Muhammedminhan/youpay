@@ -325,23 +325,23 @@ class NeqatyTransactionSync(APIView):
             logger.info(
                 "Neqaty transaction sync api called with request data, "
                 "{}".format(dict(request.GET)))
-            reference = request.GET.get('reference')
-
+            references = request.query_params.getlist()
             transaction_manager = YouPayTransactionCRUD()
-            transaction_obj = (
-                transaction_manager.get_youpay_transaction_data_with_payment_reference(reference)
-            )
-            data = {
-                "source_transaction_id": transaction_obj.transaction_id,
-                "source_payment_method": transaction_obj.payment_method,
-                "source_api_client_name": transaction_obj.api_client.name
-            }
-            return Response(data, status=status.HTTP_200_OK)
+            response_dict = {}
+            for reference in references:
+                transaction_obj = (
+                    transaction_manager.get_youpay_transaction_data_with_payment_reference(reference)
+                )
+                response_dict[reference] = {
+                    "source_transaction_id": transaction_obj.transaction_id,
+                    "source_payment_method": transaction_obj.payment_method,
+                    "source_api_client_name": transaction_obj.api_client.name
+                }
+            return Response(response_dict, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error(
                 "Exception occurred during neqaty transaction syncing, "
                 "{}".format(e), exc_info=e)
-            data = {}
             return Response(
                 {'message': 'Error in syncing, {}'.format(e)},
                 status=status.HTTP_400_BAD_REQUEST)
