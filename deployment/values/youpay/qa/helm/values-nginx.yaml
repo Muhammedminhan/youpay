@@ -50,10 +50,10 @@ deployment:
       port: 80
       memory:
         requests: 20Mi
-        limits: 64Mi
+        limits: 26Mi
       cpu:
         requests: 5m
-        limits: 100m
+        limits: 6m
       health:
         path: '/nginx-health'
         port: 80

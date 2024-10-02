@@ -50,7 +50,7 @@ deployment:
       port: 8000
       memory:
         requests: 350Mi
-        limits: 500Mi
+        limits: 455Mi
       cpu:
         requests: 80m
       health:
