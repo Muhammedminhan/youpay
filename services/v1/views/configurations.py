@@ -78,11 +78,9 @@ class ConfigViewSet(ViewSet):
             if not transaction:
                 return self._transaction_not_found_response()
 
-            if transaction.payment_status in self.list_expired_statuses:
-                return self._transaction_already_expired_response(transaction)
-
             if transaction.payment_status in self.list_end_statuses:
-                return self._transaction_already_paid_response(transaction)
+                return self._transaction_already_processed_response(
+                    transaction)
 
             if not transaction.api_client.validate_session:
                 session_id = transaction.session_id
@@ -187,27 +185,13 @@ class ConfigViewSet(ViewSet):
             error_code=self.response_obj.UNKNOWN_ERR)
         return Response(data.get('errors'), status=status.HTTP_404_NOT_FOUND)
 
-    def _transaction_already_expired_response(self, transaction):
+    def _transaction_already_processed_response(self, transaction):
         response_data = self.response_obj.get_success_dict(
             code=self.response_obj.TRANSACTION_ALREADY_CLOSED)
         response_data["redirect_url"] = self._get_redirect_url(transaction)
         data = {
             "data": response_data
         }
-        return Response(data, status=status.HTTP_200_OK)
-
-
-    def _transaction_already_paid_response(self, transaction):
-        return_response = self.retrieve_response(
-            payment_options=None,
-            checkoutpg_config=None,
-            transaction=transaction,
-            announcements_dict=None,
-            status_code=None,
-            client=transaction.api_client
-        )
-        data = self.response_obj.get_success_dict(
-            code=self.response_obj.SUCCESS, success_dict=return_response)
         return Response(data, status=status.HTTP_200_OK)
 
     def _country_not_available_response(self):
@@ -235,10 +219,10 @@ class ConfigViewSet(ViewSet):
     def _get_redirect_url(self, transaction):
         if transaction.payment_status == PAYMENT_STATUS_PAID:
             return transaction.success_url
-        elif transaction.payment_status in self.list_end_statuses:
-            return transaction.failure_url
         elif transaction.payment_status == PAYMENT_STATUS_CANCELLED:
             return transaction.cancel_url
+        elif transaction.payment_status in self.list_end_statuses:
+            return transaction.failure_url
         else:
             return None
 
