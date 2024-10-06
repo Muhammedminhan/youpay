@@ -188,7 +188,12 @@ class ConfigViewSet(ViewSet):
     def _transaction_already_processed_response(self, transaction):
         response_data = self.response_obj.get_success_dict(
             code=self.response_obj.TRANSACTION_ALREADY_CLOSED)
-        response_data["redirect_url"] = self._get_redirect_url(transaction)
+        redirect_url = self._get_redirect_url(transaction)
+        complete_url = None
+        if redirect_url:
+            complete_url = (redirect_url + '?transaction_id=' +
+                            str(transaction.transaction_id))
+        response_data["redirect_url"] = complete_url
         data = {
             "data": response_data
         }
