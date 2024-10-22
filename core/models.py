@@ -167,7 +167,7 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
         help_text='Indicates whether earn on partial redemption enabled')
 
     def __str__(self):
-        return self.payment_method
+        return f"{self.payment_method}-{self.payment_gateway}"
 
 
 class PaymentMethodConfig(models.Model):
