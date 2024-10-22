@@ -69,7 +69,7 @@ class CountryAdmin(AdminAbstract):
 class PaymentMethodConfigAdmin(admin.ModelAdmin):
     list_display = ('payment_method', 'client', 'country', 'active',
                     'guest_user_enabled')
-    search_fields = ('payment_method',)
+    search_fields = ('payment_method__payment_method',)
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
                    'client', 'country')
     list_editable = ('client', 'country', 'active', 'guest_user_enabled')
