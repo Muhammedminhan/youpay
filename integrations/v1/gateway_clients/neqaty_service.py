@@ -648,7 +648,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         """
         try:
             response_obj = YouPayResponse()
-            if transaction_obj.earn_reference:
+            if transaction_obj.earned_point:
                 '''if already rewarded'''
                 logger.info(
                     "Reward point collection failed, reward already "
