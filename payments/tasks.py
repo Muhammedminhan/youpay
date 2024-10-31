@@ -1,10 +1,12 @@
 import logging
 from datetime import timedelta
 from decimal import Decimal
+import requests
 
 from celery import shared_task
 from django.db import transaction
 from django.db.models.functions import Now
+from django.conf import settings
 
 from adcbpgclient.models import ADCBTransactionData
 from core.utils import wait_redis_lock
@@ -17,7 +19,8 @@ from payments.constants import (
     MODEL_NAME_TRANSACTIONDATA, MODEL_NAME_ADCBTRANSACTIONDATA,
     AUTHORIZATION_FIXED_FEE, VOID_FIXED_FEE, REFUND_FIXED_FEE,
     BLENDED_VARIABLE_FEE, AUTHORIZATION_FIXED_FEE_TAX, VOID_FIXED_FEE_TAX,
-    REFUND_FIXED_FEE_TAX, BLENDED_VARIABLE_FEE_TAX
+    REFUND_FIXED_FEE_TAX, BLENDED_VARIABLE_FEE_TAX,
+    GROUPGIFT_ORDER_ID_ENDPOINT
 )
 from payments.models import YouPayTransactionData, ClientNotification
 from services.v1.views.common import YouPayTransactionCRUD
@@ -352,3 +355,75 @@ def common_update_breakdown_fee(model_name, transaction_data_id, break_downs):
             id=transaction_data_id).update(
             blended_variable_fee_vat=break_downs.get(
                 'holding_currency_amount'))
+
+
+@shared_task(name='fetch_groupgift_order_id')
+def fetch_groupgift_order_id():
+    """
+    task to collect order id from groupgift for payment references in youpay
+    and update order id at youpaytransactiondata
+    """
+    environment = settings.ENVIRONMENT
+    logger.info("environment is {}".format(environment))
+    client_name = get_groupgift_client_name(environment)
+    transaction_objects = YouPayTransactionData.objects.filter(
+        api_client__name=client_name, order_id__isnull=True)[:10]
+    references_list = []
+    groupgift_order_id_endpoint = GROUPGIFT_ORDER_ID_ENDPOINT
+    try:
+        groupgift_domain = ''
+        first_iteration = True
+        for transaction_obj in transaction_objects:
+            if first_iteration:
+                groupgift_domain = transaction_obj.api_client.client_domain
+                first_iteration = False
+            if not transaction_obj.payment_reference:
+                continue
+            references_list.append(str(transaction_obj.payment_reference))
+        if len(references_list) > 0:
+            references_dict = {"references": references_list}
+            logger.info(
+                "references passed for fetching order id "
+                "-------->>>>{}".format(references_dict))
+            response = requests.post(
+                url=groupgift_domain + groupgift_order_id_endpoint,
+                json=references_dict)
+            if response:
+                response_data = response.json()
+                logger.info("response received from groupgift endpoint {}".format(
+                        response_data))
+                reference_numbers = [item['reference_number'] for item in
+                                     response_data]
+                objects_to_update = YouPayTransactionData.objects.filter(
+                    payment_reference__in=reference_numbers)
+                data_dict = {item['reference_number']: item['order_id'] for
+                             item in response_data}
+                for obj in objects_to_update:
+                    obj.order_id = data_dict.get(obj.payment_reference)
+                YouPayTransactionData.objects.bulk_update(
+                    objects_to_update, ['order_id'])
+                return True
+            logger.error(
+                "Invalid response received from groupgift {}".format(
+                    response.text))
+            return False
+        else:
+            logger.info(
+                "No groupgift transactions found having empty order_id")
+            return False
+    except Exception as e:
+        logger.error(
+            "Error occurred while fetching order id from groupgift {}, with"
+            " request data {}, error - {}".format(
+                groupgift_order_id_endpoint, references_list, e), exc_info=e)
+        return False
+
+
+def get_groupgift_client_name(environment):
+    if environment == 'sandbox':
+        client_name = 'Group Gift Sandbox'
+    elif environment == 'production':
+        client_name = 'eCom Group Gift Production'
+    else:
+        client_name = 'Group Gift QA'
+    return client_name
