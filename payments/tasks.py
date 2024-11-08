@@ -364,7 +364,9 @@ def fetch_groupgift_order_id():
     and update order id at youpaytransactiondata
     """
     environment = settings.ENVIRONMENT
-    logger.info("environment is {}".format(environment))
+    logger.info(
+        "running task for fetching order id, environment is {}".format(
+            environment))
     client_name = get_groupgift_client_name(environment)
     transaction_objects = YouPayTransactionData.objects.filter(
         api_client__name=client_name, order_id__isnull=True)[:10]
@@ -383,7 +385,7 @@ def fetch_groupgift_order_id():
         if len(references_list) > 0:
             references_dict = {"references": references_list}
             logger.info(
-                "references passed for fetching order id "
+                "references passed for fetching order id from groupgift"
                 "-------->>>>{}".format(references_dict))
             response = requests.post(
                 url=groupgift_domain + groupgift_order_id_endpoint,
@@ -392,17 +394,8 @@ def fetch_groupgift_order_id():
                 response_data = response.json()
                 logger.info("response received from groupgift endpoint {}".format(
                         response_data))
-                reference_numbers = [item['reference_number'] for item in
-                                     response_data]
-                objects_to_update = YouPayTransactionData.objects.filter(
-                    payment_reference__in=reference_numbers)
-                data_dict = {item['reference_number']: item['order_id'] for
-                             item in response_data}
-                for obj in objects_to_update:
-                    obj.order_id = data_dict.get(obj.payment_reference)
-                YouPayTransactionData.objects.bulk_update(
-                    objects_to_update, ['order_id'])
-                return True
+                updated = update_youpaytransactiondata_order_id(response_data)
+                return updated
             logger.error(
                 "Invalid response received from groupgift {}".format(
                     response.text))
@@ -420,6 +413,10 @@ def fetch_groupgift_order_id():
 
 
 def get_groupgift_client_name(environment):
+    """
+    takes environment value from settings and returns corresponding
+    group gift client name
+    """
     if environment == 'sandbox':
         client_name = 'Group Gift Sandbox'
     elif environment == 'production':
@@ -427,3 +424,31 @@ def get_groupgift_client_name(environment):
     else:
         client_name = 'Group Gift QA'
     return client_name
+
+
+def update_youpaytransactiondata_order_id(response_data):
+    """
+    method to update youpaytransactiondata with order ids.
+    Takes response data list of dict as input and parses the data for
+    order id corresponding to each payment reference and updates the value in
+    order_id field
+    """
+    try:
+        reference_numbers = [item['reference_number'] for item in
+                             response_data]
+        objects_to_update = YouPayTransactionData.objects.filter(
+            payment_reference__in=reference_numbers)
+        data_dict = {item['reference_number']: item['order_id'] for
+                     item in response_data}
+        for obj in objects_to_update:
+            obj.order_id = data_dict.get(obj.payment_reference)
+        YouPayTransactionData.objects.bulk_update(
+            objects_to_update, ['order_id'])
+        logger.info(
+            "Successfully updated order ids for {}".format(reference_numbers))
+        return True
+    except Exception as e:
+        logger.error(
+            "Exception occurred during updating order ids, {}".format(e),
+            exc_info=e)
+        return False
