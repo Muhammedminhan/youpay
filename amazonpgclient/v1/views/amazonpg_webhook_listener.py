@@ -65,6 +65,8 @@ class WebhookListener(APIView):
                         order_reference=request_data.get('order_reference'),
                         payment_reference=request_data.get(
                             'payment_reference'),
+                        is_fraud=request_data.get('is_fraud'),
+                        is_flagged=request_data.get('is_flagged'),
                         fort_id=request_data.get('fort_id'),
                         payment_status=request_data.get('payment_status'),
                         apg_payment_status=request_data.get(
