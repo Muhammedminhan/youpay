@@ -394,10 +394,13 @@ def fetch_groupgift_order_id():
                 url=groupgift_formatted_url, json=references_dict)
             if response:
                 response_data = response.json()
-                logger.info("response received from groupgift endpoint {}".format(
-                        response_data))
-                updated = update_youpaytransactiondata_order_id(response_data)
-                return updated
+                if len(response_data):
+                    logger.info(
+                        "response received from groupgift endpoint {}".format(
+                            response_data))
+                    updated = update_youpaytransactiondata_order_id(
+                        response_data)
+                    return updated
             logger.error(
                 "Invalid response received from groupgift {}".format(
                     response.text))
@@ -437,18 +440,24 @@ def update_youpaytransactiondata_order_id(response_data):
     """
     try:
         reference_numbers = [item['reference_number'] for item in
-                             response_data]
-        objects_to_update = YouPayTransactionData.objects.filter(
-            payment_reference__in=reference_numbers)
-        data_dict = {item['reference_number']: item['order_id'] for
-                     item in response_data}
-        for obj in objects_to_update:
-            obj.order_id = data_dict.get(obj.payment_reference)
-        YouPayTransactionData.objects.bulk_update(
-            objects_to_update, ['order_id'])
+                             response_data if len(item['order_id']) > 0]
+        if len(reference_numbers):
+            objects_to_update = YouPayTransactionData.objects.filter(
+                payment_reference__in=reference_numbers)
+            data_dict = {item['reference_number']: item['order_id'] for
+                         item in response_data}
+            for obj in objects_to_update:
+                obj.order_id = data_dict.get(obj.payment_reference)
+            updated = YouPayTransactionData.objects.bulk_update(
+                objects_to_update, ['order_id'])
+            logger.info(
+                "Successfully updated order ids for {} bulk update updated {}"
+                " entries".format(reference_numbers, updated))
+            return True
         logger.info(
-            "Successfully updated order ids for {}".format(reference_numbers))
-        return True
+            "Skipping updating groupgift order id as references to update "
+            "is 0")
+        return False
     except Exception as e:
         logger.error(
             "Exception occurred during updating order ids, {}".format(e),
