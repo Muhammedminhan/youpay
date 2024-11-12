@@ -364,10 +364,10 @@ def fetch_groupgift_order_id():
     and update order id at youpaytransactiondata
     """
     environment = settings.ENVIRONMENT
+    client_name = str(get_groupgift_client_name(environment))
     logger.info(
-        "running task for fetching order id, environment is {}".format(
-            environment))
-    client_name = get_groupgift_client_name(environment)
+        "running task for fetching groupgift order id, environment is "
+        "{}, youpay client name {}".format(environment, client_name))
     transaction_objects = YouPayTransactionData.objects.filter(
         api_client__name=client_name, order_id__isnull=True)[:10]
     references_list = []
@@ -384,12 +384,14 @@ def fetch_groupgift_order_id():
             references_list.append(str(transaction_obj.payment_reference))
         if len(references_list) > 0:
             references_dict = {"references": references_list}
+            groupgift_formatted_url = (
+                    groupgift_domain + groupgift_order_id_endpoint)
             logger.info(
-                "references passed for fetching order id from groupgift"
-                "-------->>>>{}".format(references_dict))
+                "references passed for fetching order id from groupgift {}"
+                "-->>{}".format(
+                    groupgift_formatted_url, references_dict))
             response = requests.post(
-                url=groupgift_domain + groupgift_order_id_endpoint,
-                json=references_dict)
+                url=groupgift_formatted_url, json=references_dict)
             if response:
                 response_data = response.json()
                 logger.info("response received from groupgift endpoint {}".format(
