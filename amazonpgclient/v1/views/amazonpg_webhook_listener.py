@@ -65,6 +65,8 @@ class WebhookListener(APIView):
                         order_reference=request_data.get('order_reference'),
                         payment_reference=request_data.get(
                             'payment_reference'),
+                        is_fraud=request_data.get('is_fraud'),
+                        is_flagged=request_data.get('is_flagged'),
                         fort_id=request_data.get('fort_id'),
                         payment_status=request_data.get('payment_status'),
                         apg_payment_status=request_data.get(
@@ -86,7 +88,7 @@ class WebhookListener(APIView):
                 return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
             response_data = {'message': "Data not  updated", 'status': False}
-            logger.error("Amazontpg webhook failed with error {}".format(e))
+            logger.error("Amazonpg webhook failed with error {}".format(e))
             return self.pg_response('HTTP_500_INTERNAL_SERVER_ERROR',
                                     data=response_data)
 
