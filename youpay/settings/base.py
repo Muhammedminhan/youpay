@@ -239,3 +239,5 @@ CACHES = {
         },
     },
 }
+
+ENVIRONMENT = config('ENVIRONMENT')
