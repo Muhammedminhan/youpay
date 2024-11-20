@@ -7,6 +7,7 @@ from celery import shared_task
 from django.db import transaction
 from django.db.models.functions import Now
 from django.conf import settings
+from django.db.models import Q
 
 from adcbpgclient.models import ADCBTransactionData
 from core.utils import wait_redis_lock
@@ -369,7 +370,8 @@ def fetch_groupgift_order_id():
         "running task for fetching groupgift order id, environment is "
         "{}, youpay client name {}".format(environment, client_name))
     transaction_objects = YouPayTransactionData.objects.filter(
-        api_client__name=client_name, order_id__isnull=True)[:10]
+        Q(api_client__name=client_name) & (
+                Q(order_id__isnull=True) | Q(order_id="")))[:10]
     references_list = []
     groupgift_order_id_endpoint = GROUPGIFT_ORDER_ID_ENDPOINT
     try:
