@@ -4,12 +4,13 @@ from django import forms
 from django.contrib import admin
 from django.core.cache import cache
 
-from services.models import APIClient
+from integrations.constants import B2CPAYBACK_HUB_CODE
 from services.v1.constants import B2C_PAYBACK_GATEWAY_CODE
 from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
-                        GUEST_USER_CUSTOM)
-from .models import (AppConfig, Currency, Country, PaymentMethod,
-                     PaymentConfiguration, PaymentMethodConfig)
+                        GUEST_USER_CUSTOM, BETA_USER_ONLY_EARN,
+                        BETA_USER_ONLY_BURN)
+from .models import (AppConfig, Currency, Country, PaymentConfiguration,
+                     PaymentMethodConfig, BetaUser)
 from .utils import invalidate_cached_payment_method_config
 
 admin.site.site_header = 'YouPay Administration'
@@ -68,7 +69,7 @@ class CountryAdmin(AdminAbstract):
 class PaymentMethodConfigAdmin(admin.ModelAdmin):
     list_display = ('payment_method', 'client', 'country', 'active',
                     'guest_user_enabled')
-    search_fields = ('payment_method',)
+    search_fields = ('payment_method__payment_method',)
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
                    'client', 'country')
     list_editable = ('client', 'country', 'active', 'guest_user_enabled')
@@ -76,6 +77,7 @@ class PaymentMethodConfigAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         invalidate_cached_payment_method_config()
         super().save_model(request, obj, form, change)
+
 
 class SliderCheckboxInput(forms.CheckboxInput):
     template_name = 'core/admin/widgets/slider_checkbox.html'
@@ -155,8 +157,26 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['guest_user_enabled'].required = True
 
+    class Meta:
+        model = PaymentConfiguration
+        fields = '__all__'
+
     def clean(self):
         cleaned_data = self.cleaned_data
+        if self.instance and self.instance.pk:
+            payment_gateway = self.instance.payment_gateway
+        else:
+            payment_gateway = self.cleaned_data.get('payment_gateway')
+
+        if payment_gateway is None:
+            raise forms.ValidationError("Payment gateway cannot be empty")
+        
+        if ((payment_gateway.code != B2CPAYBACK_HUB_CODE and
+             self.cleaned_data.get('beta_version'))
+                in [BETA_USER_ONLY_EARN, BETA_USER_ONLY_BURN]):
+            raise forms.ValidationError(
+                "Invalid beta version: 'Only Earn' or 'Only Burn' "
+                "options are available for B2C payment methods only.")
 
         earn_enabled = cleaned_data.get('earn_enabled', False)
         earn_on_partial_redemption = cleaned_data.get(
@@ -175,6 +195,9 @@ class PaymentConfigurationAdminForm(forms.ModelForm):
             raise forms.ValidationError(
                 "Earn on partial redemption cannot be enabled unless earn "
                 "enabled")
+        if payment_gateway.code == B2CPAYBACK_HUB_CODE:
+            if not earn_enabled and not burn_full_redemption_enabled:
+                raise forms.ValidationError("Invalid Configuration")
         return cleaned_data
 
 
@@ -190,7 +213,8 @@ class PaymentConfigurationAdmin(AdminAbstract):
 
     def get_fields(self, request, obj=None):
         fields = ('payment_method', 'active',
-                  'guest_user_enabled', 'partial_redemption_allowed',
+                  'guest_user_enabled', 'beta_version',
+                  'partial_redemption_allowed',
                   'burn_full_redemption_enabled', 'earn_enabled',
                   'earn_on_partial_redemption',
                   'payment_gateway', 'created_at', 'updated_at',
@@ -198,10 +222,11 @@ class PaymentConfigurationAdmin(AdminAbstract):
 
         if obj and obj.payment_gateway.code != B2C_PAYBACK_GATEWAY_CODE:
             fields = ('payment_method', 'active',
-                      'guest_user_enabled',
+                      'guest_user_enabled', 'beta_version',
                       'payment_gateway', 'created_at', 'updated_at',
                       'created_by', 'modified_by')
         return fields
+
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
             return (
@@ -211,8 +236,15 @@ class PaymentConfigurationAdmin(AdminAbstract):
             'created_by', 'modified_by')
 
 
+class BetaUserAdmin(AdminAbstract):
+    list_display = ('beta_user_email', 'name',)
+    search_fields = ('beta_user_email', 'name')
+    readonly_fields = ('created_at', 'updated_at')
+
+
 admin.site.register(AppConfig, AppConfigAdmin)
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(Country, CountryAdmin)
 admin.site.register(PaymentMethodConfig, PaymentMethodConfigAdmin)
 admin.site.register(PaymentConfiguration, PaymentConfigurationAdmin)
+admin.site.register(BetaUser, BetaUserAdmin)

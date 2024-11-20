@@ -4,11 +4,13 @@ import logging
 from django.db.models import Q
 
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
-                            PAYBACK_ACTION_EARN, FORMAT_PARTIAL_PAYMENTS)
+                            PAYBACK_ACTION_EARN, FORMAT_PARTIAL_PAYMENTS,
+                            BETA_USER_ENABLED, BETA_USER_ONLY_EARN,
+                            BETA_USER_ONLY_BURN)
 from core.core_serializers import PaymentConfigurationSerializer
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
-from core.models import Country, PaymentMethodConfig
+from core.models import Country, BetaUser
 from core.utils import get_cached_payment_method_config
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
@@ -363,11 +365,16 @@ def get_payment_methods(transaction, client, country):
                 config.payment_method.payment_gateway,
                 config.payment_method.payment_method
             )
-            payment_options[payment_option_key] = True
 
             payment_config_data[
                 payment_option_key] = PaymentConfigurationSerializer(
                 config.payment_method).data
+
+            is_enabled = update_payment_method_config(transaction, config,
+                                                      payment_config_data,
+                                                      payment_option_key)
+
+            payment_options[payment_option_key] = is_enabled
 
         if payment_options.get('happy_credits') is not None:
             if platform not in [PURCHASE_PLATFORM_ANDROID,
@@ -462,9 +469,54 @@ def payment_configuration_check(**kwargs):
         if transaction_obj.payment_method == FORMAT_PARTIAL_PAYMENTS.format(
                 payment_method) and payment_config_datum.get(
             'earn_on_partial_redemption') is False:
-
             raise PaymentConfigurationFailed(
                 "Earn on partial redemption for PaymentConfiguration {} for "
                 "transaction {}".format(payment_method, transaction_id))
 
     return payment_options, payment_config_data
+
+
+def update_payment_method_config(transaction, config, payment_config_data,
+                                 payment_option_key):
+    """
+    Adjust the payment configuration based on beta version and payment gateway code.
+    """
+    is_enabled = True
+    if config.payment_method.beta_version == BETA_USER_ENABLED:
+        is_enabled = check_is_user_beta_enabled(transaction)
+
+    if config.payment_method.payment_gateway.code == B2CPAYBACK_HUB_CODE:
+
+        if config.payment_method.beta_version == BETA_USER_ONLY_EARN:
+            is_beta_user = check_is_user_beta_enabled(transaction)
+            if not is_beta_user:
+                payment_config_data[payment_option_key][
+                    'earn_enabled'] = False
+                payment_config_data[payment_option_key][
+                    'earn_on_partial_redemption'] = False
+
+        if config.payment_method.beta_version == BETA_USER_ONLY_BURN:
+            is_beta_user = check_is_user_beta_enabled(transaction)
+            if not is_beta_user:
+                payment_config_data[payment_option_key][
+                    'burn_full_redemption_enabled'] = False
+                payment_config_data[payment_option_key][
+                    'partial_redemption_allowed'] = False
+
+    return is_enabled
+
+
+def check_is_user_beta_enabled(transaction):
+    """
+    Checks if the customer associated with the given transaction is a beta user.
+    Args:
+        transaction: The transaction object containing customer email.
+    Returns:
+        bool: True if the customer is an active beta user, False otherwise.
+    """
+    try:
+        customer_email = transaction.customer_email
+        beta_user = BetaUser.objects.get(beta_user_email=customer_email)
+        return True if beta_user else False
+    except BetaUser.DoesNotExist:
+        return False

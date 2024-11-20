@@ -305,7 +305,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             logger.error(
                 "Excepction occured during client verification {}".format(
                     str(e)))
-            return None, status.HTTP_400_BAD_REQUEST
+            return {}, status.HTTP_400_BAD_REQUEST
 
     def prepare_client_verify_data(self, payment_method, transaction_obj):
         """
@@ -370,39 +370,54 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
 
 
 class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
+    response_obj = YouPayResponse()
+
     def post(self, request):
         try:
             logger.info("Triggered PaymentCancelledView")
             redirect_url = None
             data = self.request.data
-            transaction_id = decrypt_string(data.get('transaction_id'))
+            encrypted_transaction_id = data.get('transaction_id')
+            if not encrypted_transaction_id:
+                data = self.response_obj.get_error_dict(
+                    error_code= self.response_obj.VALIDATION_FAILED)
+                return Response(data,
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            transaction_id = decrypt_string(encrypted_transaction_id)
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
-            if transaction_object.payment_status in ALLOW_CANCEL_STATUS_LIST:
-                self.update_youpay_transaction_data({
-                    'transaction_id': transaction_id,
-                    'payment_status': PAYMENT_STATUS_CANCELLED
+            if transaction_object:
+                if transaction_object.payment_status in ALLOW_CANCEL_STATUS_LIST:
+                    self.update_youpay_transaction_data({
+                        'transaction_id': transaction_id,
+                        'payment_status': PAYMENT_STATUS_CANCELLED
+                    })
+
+                    redirect_url = get_redirect_url(transaction_object.cancel_url,
+                                                    transaction_id)
+                    logger.info(
+                        "Payment cancelled for transaction_id : {}, "
+                        "order reference : {}".format(
+                            transaction_id, transaction_object.order_reference))
+
+                elif transaction_object.payment_status == PAYMENT_STATUS_PAID:
+                    redirect_url = get_redirect_url(
+                        transaction_object.success_url,
+                        transaction_id)
+                else:
+                    redirect_url = get_redirect_url(
+                        transaction_object.failure_url,
+                        transaction_id)
+                return Response({
+                    'is_redirect': True,
+                    REDIRECT_URL: redirect_url
                 })
-
-                redirect_url = get_redirect_url(transaction_object.cancel_url,
-                                                transaction_id)
-                logger.info(
-                    "Payment cancelled for transaction_id : {}, "
-                    "order reference : {}".format(
-                        transaction_id, transaction_object.order_reference))
-
-            elif transaction_object.payment_status == PAYMENT_STATUS_PAID:
-                redirect_url = get_redirect_url(
-                    transaction_object.success_url,
-                    transaction_id)
             else:
-                redirect_url = get_redirect_url(
-                    transaction_object.failure_url,
-                    transaction_id)
-            return Response({
-                'is_redirect': True,
-                REDIRECT_URL: redirect_url,
-            })
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.VALIDATION_FAILED)
+                return Response(data,
+                                status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error("Error in payment cancel api  : {}".format(e))
             return Response({

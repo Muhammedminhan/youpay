@@ -18,7 +18,7 @@ hpa:
 
 pdb:
   name: 'youpay-app-pdb'
-  minAvailable: 80%
+  minAvailable: 50%
 
 deployment:
   name: 'youpay-app-deployment'
@@ -102,7 +102,7 @@ deployment:
           app: 'youpay'
           tier: app
     - maxSkew: 1
-      topologyKey: 'karpenter.sh/capacity-type'
+      topologyKey: 'kubernetes.io/hostname'
       whenUnsatisfiable: DoNotSchedule
       labelSelector:
         matchLabels:

@@ -63,10 +63,10 @@ deployment:
       port: 5432
       memory:
         requests: 210Mi
-        limits: 300Mi
+        limits: 273Mi
       cpu:
         requests: 50m
-        limits: 1000m
+        limits: 65m
       livenessProbe:
         command: '["pg_isready"]'
         initialDelaySeconds: 30

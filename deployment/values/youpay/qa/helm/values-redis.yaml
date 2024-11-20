@@ -46,10 +46,10 @@ deployment:
       port: 6379
       memory:
         requests: 20Mi
-        limits: 500Mi
+        limits: 26Mi
       cpu:
         requests: 10m
-        limits: 300m
+        limits: 13m
 
   nodeSelector:
     key: 'karpenter.sh/nodepool'

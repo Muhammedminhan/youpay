@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from core.constants import GUEST_USER_OPTIONS
+from core.constants import GUEST_USER_OPTIONS, BETA_USER_OPTIONS, \
+    BETA_USER_DISABLED
 from payments.constants import (PAYMENT_OPTION_CHOICES,
                                 PAYMENT_METHOD_MODEL_CHOICES)
 
@@ -139,10 +140,13 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
         help_text='Chosen payment method')
     active = models.BooleanField(
         default=False, db_index=True, help_text='Denotes whether the payment '
-                                 'method is active or not')
+                                                'method is active or not')
     guest_user_enabled = models.CharField(
         choices=GUEST_USER_OPTIONS, max_length=200, null=True, db_index=True,
         blank=True)
+    beta_version = models.CharField(
+        choices=BETA_USER_OPTIONS, default=BETA_USER_DISABLED, max_length=200,
+        null=True, blank=True)
     payment_gateway = models.ForeignKey(
         'integrations.PaymentGateway', on_delete=models.CASCADE,
         blank=True, null=True, db_index=True,
@@ -185,3 +189,10 @@ class PaymentMethodConfig(models.Model):
 
     class Meta:
         unique_together = ('payment_method', 'country', 'client')
+
+
+class BetaUser(AbstractDateTime, AbstractUserBase):
+    name = models.CharField(max_length=120, null=True, blank=True)
+    beta_user_email = models.EmailField(
+        max_length=255, unique=True,
+        help_text="To store beta user email from")
