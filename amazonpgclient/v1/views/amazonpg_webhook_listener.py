@@ -22,12 +22,10 @@ class WebhookListener(APIView):
 
         request_data = json.loads(request.data)
         try:
-            print("Received webhook request ===================",
-                  request_data)
-
             payment_reference = request_data.get('payment_reference', None)
-            logger.info("Amazonpg webhook received for payment {}".format(
-                payment_reference))
+            logger.info(
+                "Amazonpg webhook received for payment {} with data {}".format(
+                    payment_reference, request_data))
 
             lock_name = ('lock:AmazonPGWebhookListener:'
                          'payment_reference_%s' % (payment_reference,))
