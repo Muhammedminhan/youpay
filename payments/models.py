@@ -166,7 +166,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         decimal_places=4, max_digits=12, null=True, blank=True,
         help_text='Available amount for the card')
     available_points = models.DecimalField(
-        decimal_places=4, max_digits=12, null=True, blank=True,
+        decimal_places=4, max_digits=20, null=True, blank=True,
         help_text='Available points for the card')
     is_full_redemption = models.BooleanField(
         db_index=True, null=True, blank=True,

@@ -22,10 +22,10 @@ class WebhookListener(APIView):
 
         request_data = json.loads(request.data)
         try:
-
             payment_reference = request_data.get('payment_reference', None)
-            logger.info("Amazonpg webhook received for payment {}".format(
-                payment_reference))
+            logger.info(
+                "Amazonpg webhook received for payment {} with data {}".format(
+                    payment_reference, request_data))
 
             lock_name = ('lock:AmazonPGWebhookListener:'
                          'payment_reference_%s' % (payment_reference,))
@@ -51,6 +51,10 @@ class WebhookListener(APIView):
                         'is_fraud')
                     transaction_obj.is_flagged = request_data.get(
                         'is_flagged')
+                    transaction_obj.card_bin = request_data.get('card_bin',
+                                                                None)
+                    transaction_obj.card_last4 = request_data.get(
+                        'card_last4', None)
 
                     transaction_obj.save()
                 else:
