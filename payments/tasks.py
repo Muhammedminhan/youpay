@@ -369,29 +369,30 @@ def fetch_groupgift_order_id():
     logger.info(
         "running task for fetching groupgift order id, environment is "
         "{}, youpay client name {}".format(environment, client_name))
-    transaction_objects = YouPayTransactionData.objects.filter(
-        api_client__name=client_name).exclude(
-        order_id__startswith="ECMGRPGFT_")[:10]
-    references_list = []
     groupgift_order_id_endpoint = GROUPGIFT_ORDER_ID_ENDPOINT
     try:
+        transaction_objects = get_client_transaction_objects(client_name)
+        logger.info(
+            "count of transaction objects taken from youpaytransactiondata"
+            " {}".format(transaction_objects.count()))
         groupgift_domain = ''
+        references_list = []
         first_iteration = True
         for transaction_obj in transaction_objects:
             if first_iteration:
                 groupgift_domain = transaction_obj.api_client.client_domain
                 first_iteration = False
-            if not transaction_obj.payment_reference:
-                continue
             references_list.append(str(transaction_obj.payment_reference))
+            logger.info(
+                "references list for fetching order id {}".format(
+                    references_list))
         if len(references_list) > 0:
             references_dict = {"references": references_list}
             groupgift_formatted_url = (
                     groupgift_domain + groupgift_order_id_endpoint)
             logger.info(
                 "references passed for fetching order id from groupgift {}"
-                "-->>{}".format(
-                    groupgift_formatted_url, references_dict))
+                "-->>{}".format(groupgift_formatted_url, references_dict))
             response = requests.post(
                 url=groupgift_formatted_url, json=references_dict)
             if response:
@@ -401,11 +402,11 @@ def fetch_groupgift_order_id():
                         "response received from groupgift endpoint {}".format(
                             response_data))
                     updated = update_youpaytransactiondata_order_id(
-                        response_data)
+                            response_data)
                     return updated
             logger.error(
                 "Invalid response received from groupgift {}".format(
-                    response.text))
+                        response.text))
             return False
         else:
             logger.info(
@@ -417,6 +418,20 @@ def fetch_groupgift_order_id():
             " request data {}, error - {}".format(
                 groupgift_order_id_endpoint, references_list, e), exc_info=e)
         return False
+
+
+def get_client_transaction_objects(client_name):
+    try:
+        transaction_objects = YouPayTransactionData.objects.filter(
+            api_client__name=client_name,
+            payment_reference__isnull=False).exclude(
+            order_id__startswith="ECMGRPGFT_").order_by('-id')[:10]
+        return transaction_objects
+    except Exception as e:
+        logger.error(
+            "Exception occurred during getting client transaction objects for"
+            " order id fetching {}".format(e), exc_info=e)
+        return YouPayTransactionData.objects.none()
 
 
 def get_groupgift_client_name(environment):
