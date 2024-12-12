@@ -66,7 +66,7 @@ deployment:
         limits: 273Mi
       cpu:
         requests: 50m
-        limits: 65m
+        limits: 100m
       livenessProbe:
         command: '["pg_isready"]'
         initialDelaySeconds: 30
