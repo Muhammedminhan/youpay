@@ -11,6 +11,7 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
+from integrations.constants import QITAF_CLIENT_CODE
 from integrations.v1.gateway_clients.qitaf_service import QitafServiceManager
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafRedemptionSerializer)
@@ -237,7 +238,7 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             points_redemption_data.update(
                 {
                     "transaction_obj": qitaf_redemption_serializer.transaction_obj,
-                    "reference_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
+                    "referance_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
                     "pin_number": validated_data.get('pin_number'),
                     "selected_amount": selected_amount_in_req,
                     "checkout_amount": validated_data.get('checkout_amount'),
