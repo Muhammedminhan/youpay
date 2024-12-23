@@ -41,7 +41,7 @@ keda:
 
 pdb:
   name: 'youpay-[JIRA_ID]-database-pdb'
-  minAvailable: 100%
+  minAvailable: 0%
 
 deployment:
   name: 'youpay-[JIRA_ID]-database-deployment'
