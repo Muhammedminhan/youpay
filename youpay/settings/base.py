@@ -37,6 +37,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = ['*']
+SITE_DOMAIN = config('SITE_DOMAIN')
 
 # Site Default id
 SITE_ID = 1
@@ -67,6 +68,7 @@ INSTALLED_APPS = [
     'happycreditsclient',
     'citirewardsclient',
     'qitafclient',
+    'notifications',
 
     # 3rd party apps
     'rest_framework',

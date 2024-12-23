@@ -1,17 +1,17 @@
 import logging
 from datetime import timedelta
 from decimal import Decimal
-import requests
 
+import requests
 from celery import shared_task
+from django.conf import settings
 from django.db import transaction
 from django.db.models.functions import Now
-from django.conf import settings
-from django.db.models import Q
 
 from adcbpgclient.models import ADCBTransactionData
 from core.utils import wait_redis_lock
 from integrations.models import GatewayChargeConfiguration
+from notifications.notification import FlaggedMailAlertView
 from payments.constants import (
     PAYMENT_STATUS_EXPIRED,
     TRANSACTION_EXPIRE_TIME, PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
@@ -418,6 +418,22 @@ def fetch_groupgift_order_id():
             " request data {}, error - {}".format(
                 groupgift_order_id_endpoint, references_list, e), exc_info=e)
         return False
+
+
+# @shared_task()
+def send_flagged_mail_alert(**kwargs):
+    """
+    sending manual capture mail to support team
+    :param data: data for email,
+    :return:
+    """
+    reference_id = kwargs.get('template_data', {}).get('payment_reference')
+    logger.info("flagged mail alert for {0}".format(reference_id))
+    response = FlaggedMailAlertView(**kwargs).send_mail()
+
+    logger.info("Successfully sent flagged alert email for {0}"
+                "".format(reference_id))
+    return response
 
 
 def get_client_transaction_objects(client_name):
