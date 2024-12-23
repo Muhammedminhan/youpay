@@ -763,7 +763,7 @@ def process_amazonpg_response_verification(**kwargs):
 
 def get_admin_url(transaction_id):
     change_url = reverse_lazy(
-        'admin:checkoutpgclient_transactiondata_change',
+        'admin:payments_youpaytransactiondata_change',
         args=(transaction_id,))
     return get_full_url(change_url)
 
@@ -778,7 +778,7 @@ def get_flagged_email_data(payment):
         dashboard_link = 'https://csi-stage.aciondemand.com/ControlCenter-Desktop/platform/index.html'
         dashboard = "ACI Dashboard"
     template_data = {
-        'payment_reference': payment.order_reference,
+        'payment_reference': payment.payment_reference,
         'amount': float(payment.amount),
         'customer_email': payment.customer_email,
         'customer_name': payment.customer_name,
