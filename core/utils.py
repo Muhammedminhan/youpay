@@ -12,10 +12,12 @@ from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
+from django.urls import reverse_lazy
 from rest_framework import status
 
 from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
-                            BROWSER_VALUE_ENCRYPTION_KEY)
+                            BROWSER_VALUE_ENCRYPTION_KEY,
+                            PAYMENT_GATEWAY_CHECKOUTPG)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
@@ -24,6 +26,9 @@ from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                                     PAYMENT_METHOD_CONFIG_CACHE_KEY,
                                     PAYMENT_CONFIG_CACHE_KEY)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
+from notifications.constants import FLAGGED_PAYMENT_MAIL
+from notifications.models import EmailTemplateConfiguration
+from notifications.notification import FlaggedMailAlertView
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
@@ -447,6 +452,11 @@ def process_checkoutpg_response_verification(**kwargs):
             'is_payment_verified': is_payment_verified
         }
     )
+
+    if is_flagged:
+        email_data = get_flagged_email_data(youpay_transaction)
+        send_flagged_mail_alert(**email_data)
+
     redirect, response_data = is_redirect(transaction_id, response_data)
 
     # redirect - boolean, response_data - response data(dict) for frontend
@@ -744,4 +754,96 @@ def process_amazonpg_response_verification(**kwargs):
             'is_payment_verified': is_payment_verified,
         }
     )
+
+    if is_flagged:
+        email_data = get_flagged_email_data(youpay_transaction)
+        send_flagged_mail_alert(**email_data)
     return return_response_data, return_status
+
+
+def get_admin_url(transaction_id):
+    change_url = reverse_lazy(
+        'admin:checkoutpgclient_transactiondata_change',
+        args=(transaction_id,))
+    return get_full_url(change_url)
+
+
+def get_flagged_email_data(payment):
+    template_obj = get_template_obj(FLAGGED_PAYMENT_MAIL)
+    transaction_url = get_admin_url(payment.transaction_id)
+    if payment.payment_gateway == PAYMENT_GATEWAY_CHECKOUTPG:
+        dashboard_link = 'https://sandbox.checkout.com/'
+        dashboard = "Checkout Dashboard"
+    else:
+        dashboard_link = 'https://csi-stage.aciondemand.com/ControlCenter-Desktop/platform/index.html'
+        dashboard = "ACI Dashboard"
+    template_data = {
+        'payment_reference': payment.order_reference,
+        'amount': float(payment.amount),
+        'customer_email': payment.customer_email,
+        'customer_name': payment.customer_name,
+        'currency': payment.currency,
+        'transaction_url': transaction_url,
+        'response_summary': payment.response_summary,
+        'order_items': payment.order_items,
+        'order_id': payment.order_id,
+        'invoice_id': payment.invoice_id,
+        'dashboard_link': dashboard_link,
+        'dashboard': dashboard,
+    }
+    mail_from = {
+        "email": settings.SERVER_EMAIL,
+        "name": "",
+        "alias": ""
+    }
+    mail_to = [{
+        "email": settings.EMAIL_HELP[0][1],
+        "name": "",
+        "alias": ""}]
+
+    send_mail_payload = {
+        "subject": "A transaction has been flagged.",
+        "mail_from": mail_from,
+        "mail_to": mail_to,
+        "template_data": template_data,
+        "template_code": template_obj.template_code,
+        "mail_engine_api": template_obj.endpoint_url
+    }
+
+    return send_mail_payload
+
+
+def get_template_obj(email_type):
+    try:
+        email_conf = EmailTemplateConfiguration.objects.get(
+            email_type=email_type)
+    except Exception as e:
+        logger.error("Email template configuration not found")
+        email_conf = None
+    return email_conf
+
+
+def get_full_url(path):
+    """
+    return site full url
+    :param path:
+    :return:
+    """
+    site_domain = settings.SITE_DOMAIN
+    return 'http%s://%s%s' % (
+        settings.SITE_SECURE and 's' or '', site_domain, path)
+
+
+def send_flagged_mail_alert(**kwargs):
+    """
+    sending manual capture mail to support team
+    :param data: data for email,
+    :return:
+    """
+    reference_id = kwargs.get('template_data', {}).get('payment_reference')
+    logger.info("flagged mail alert for {0}".format(reference_id))
+    response = FlaggedMailAlertView(**kwargs).send_mail()
+
+    logger.info("Successfully sent flagged alert email for {0}"
+                "".format(reference_id))
+    return response
