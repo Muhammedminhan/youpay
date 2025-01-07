@@ -28,12 +28,12 @@ from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from notifications.constants import FLAGGED_PAYMENT_MAIL
 from notifications.models import EmailTemplateConfiguration
-from notifications.notification import FlaggedMailAlertView
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_STATUS_FAILED,
     PAYMENT_STATUS_PENDING, PAYMENT_SCHEME_MADA)
+from payments.tasks import send_flagged_mail_alert
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -455,7 +455,7 @@ def process_checkoutpg_response_verification(**kwargs):
 
     if is_flagged:
         email_data = get_flagged_email_data(youpay_transaction)
-        send_flagged_mail_alert(**email_data)
+        send_flagged_mail_alert.delay(**email_data)
 
     redirect, response_data = is_redirect(transaction_id, response_data)
 
@@ -757,7 +757,7 @@ def process_amazonpg_response_verification(**kwargs):
 
     if is_flagged:
         email_data = get_flagged_email_data(youpay_transaction)
-        send_flagged_mail_alert(**email_data)
+        send_flagged_mail_alert.delay(**email_data)
     return return_response_data, return_status
 
 
@@ -832,18 +832,3 @@ def get_full_url(path):
     site_domain = settings.SITE_DOMAIN
     return 'http%s://%s%s' % (
         settings.SITE_SECURE and 's' or '', site_domain, path)
-
-
-def send_flagged_mail_alert(**kwargs):
-    """
-    sending manual capture mail to support team
-    :param data: data for email,
-    :return:
-    """
-    reference_id = kwargs.get('template_data', {}).get('payment_reference')
-    logger.info("flagged mail alert for {0}".format(reference_id))
-    response = FlaggedMailAlertView(**kwargs).send_mail()
-
-    logger.info("Successfully sent flagged alert email for {0}"
-                "".format(reference_id))
-    return response

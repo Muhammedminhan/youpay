@@ -420,7 +420,7 @@ def fetch_groupgift_order_id():
         return False
 
 
-# @shared_task()
+@shared_task()
 def send_flagged_mail_alert(**kwargs):
     """
     sending manual capture mail to support team
