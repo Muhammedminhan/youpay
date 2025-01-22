@@ -15,6 +15,7 @@ from django.core.cache import cache
 from django.urls import reverse_lazy
 from rest_framework import status
 
+from amazonpgclient.models import AmazonPGTransactionData
 from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY,
                             PAYMENT_GATEWAY_CHECKOUTPG)
@@ -33,7 +34,6 @@ from payments.constants import (
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
     PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_STATUS_FAILED,
     PAYMENT_STATUS_PENDING, PAYMENT_SCHEME_MADA)
-from payments.tasks import send_flagged_mail_alert
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
@@ -454,6 +454,7 @@ def process_checkoutpg_response_verification(**kwargs):
     )
 
     if is_flagged:
+        from payments.tasks import send_flagged_mail_alert
         email_data = get_flagged_email_data(youpay_transaction)
         send_flagged_mail_alert.delay(**email_data)
 
@@ -756,6 +757,7 @@ def process_amazonpg_response_verification(**kwargs):
     )
 
     if is_flagged:
+        from payments.tasks import send_flagged_mail_alert
         email_data = get_flagged_email_data(youpay_transaction)
         send_flagged_mail_alert.delay(**email_data)
     return return_response_data, return_status
@@ -770,15 +772,22 @@ def get_admin_url(transaction_id):
 
 def get_flagged_email_data(payment):
     template_obj = get_template_obj(FLAGGED_PAYMENT_MAIL)
-    transaction_url = get_admin_url(payment.transaction_id)
+    transaction_url = get_admin_url(payment.id)
     if payment.payment_gateway == PAYMENT_GATEWAY_CHECKOUTPG:
-        dashboard_link = 'https://sandbox.checkout.com/'
+        dashboard_link = 'https://dashboard.sandbox.checkout.com/'
         dashboard = "Checkout Dashboard"
+        search_key = "reference"
+        search_param = payment.payment_reference
     else:
         dashboard_link = 'https://csi-stage.aciondemand.com/ControlCenter-Desktop/platform/index.html'
         dashboard = "ACI Dashboard"
+        search_key = "fort id"
+        amazon_obj = get_amazon_transaction_obj(payment.payment_reference)
+        search_param = payment.payment_reference
+        if amazon_obj:
+            search_param = amazon_obj.fort_id
     template_data = {
-        'payment_reference': payment.payment_reference,
+        'search_param': search_param,
         'amount': float(payment.amount),
         'customer_email': payment.customer_email,
         'customer_name': payment.customer_name,
@@ -790,6 +799,7 @@ def get_flagged_email_data(payment):
         'invoice_id': payment.invoice_id,
         'dashboard_link': dashboard_link,
         'dashboard': dashboard,
+        'search_key': search_key,
     }
     mail_from = {
         "email": settings.SERVER_EMAIL,
@@ -832,3 +842,14 @@ def get_full_url(path):
     site_domain = settings.SITE_DOMAIN
     return 'http%s://%s%s' % (
         settings.SITE_SECURE and 's' or '', site_domain, path)
+
+
+def get_amazon_transaction_obj(reference):
+    try:
+        amazon_transaction_obj = AmazonPGTransactionData.objects.get(
+            payment_reference=reference)
+        return amazon_transaction_obj
+    except Exception as e:
+        logger.error("Amazon transaction data not found for payment "
+                     "reference: {}".format(reference))
+        return None
