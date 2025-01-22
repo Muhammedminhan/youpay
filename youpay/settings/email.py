@@ -55,7 +55,7 @@ if IS_PRODUCTION:
     )
 
     EMAIL_HELP = (
-        ('Help', 'help@yougotagift.com'),
+        ('Help', 'customercare@yougotagift.com'),
     )
 
 elif IS_SANDBOX:  # Sandbox
