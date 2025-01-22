@@ -33,7 +33,7 @@ keda:
 
 pdb:
   name: 'youpay-[JIRA_ID]-nginx-pdb'
-  minAvailable: 1
+  minAvailable: 0%
 
 deployment:
   name: 'youpay-[JIRA_ID]-nginx-deployment'
