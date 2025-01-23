@@ -169,7 +169,8 @@ def get_cached_payment_method_config():
         cache_key = PAYMENT_METHOD_CONFIG_CACHE_KEY
         payment_method_configs = cache.get(cache_key, None)
         if payment_method_configs is None:
-            payment_method_configs = PaymentMethodConfig.objects.all()
+            payment_method_configs = PaymentMethodConfig.objects.prefetch_related(
+                'payment_method')
             cache.set(cache_key, payment_method_configs)
 
         return payment_method_configs
