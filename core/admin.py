@@ -150,6 +150,10 @@ class PaymentMethodConfigInline(admin.TabularInline):
     form = PaymentMethodConfigAdminForm
     formset = PaymentMethodConfigInlineFormset
 
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('payment_method', 'country', 'client')
+
 
 class PaymentConfigurationAdminForm(forms.ModelForm):
 
@@ -210,6 +214,10 @@ class PaymentConfigurationAdmin(AdminAbstract):
 
     form = PaymentConfigurationAdminForm
     inlines = [PaymentMethodConfigInline]
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.select_related('payment_gateway')
 
     def get_fields(self, request, obj=None):
         fields = ('payment_method', 'active',
