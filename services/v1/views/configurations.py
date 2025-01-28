@@ -178,8 +178,8 @@ class ConfigViewSet(ViewSet):
                 "program": get_display_program(transaction.api_client),
                 "platform": get_display_platform(transaction.platform),
                 "retry_count": transaction.retry_count,
-                "GG Store": country_name,
-                "Contributor Email": transaction.customer_email,
+                "store": country_name,
+                "customer_email": transaction.customer_email,
             },
         }
 
