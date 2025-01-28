@@ -3,6 +3,7 @@ from decouple import config
 IS_PRODUCTION = config('IS_PRODUCTION', '')
 IS_SANDBOX = config('IS_SANDBOX', '')
 IS_QA = config('IS_QA', '')
+environment = config('ENVIRONMENT', '')
 
 ############################
 # Email Env
@@ -27,7 +28,7 @@ MAIL_ENGINE_API_SECRET = config('MAIL_ENGINE_API_SECRET', '')
 
 # Email alert settings
 
-if IS_PRODUCTION:
+if environment == 'production':
     # The email address that error messages come from
     SERVER_EMAIL = 'alerts@yougotagift.com'
 
@@ -58,7 +59,7 @@ if IS_PRODUCTION:
         ('Help', 'customercare@yougotagift.com'),
     )
 
-elif IS_SANDBOX:  # Sandbox
+elif environment == 'sandbox':  # Sandbox
     # The email address that error messages come from
     SERVER_EMAIL = 'alerts+sandbox@yougotagift.com'
 
@@ -92,7 +93,7 @@ elif IS_SANDBOX:  # Sandbox
         ('Help - Test', 'youpay-alerts+sandbox@yougotagift.com'),
     )
 
-else:  # Test or QA
+elif environment == 'qa':  # Test or QA
     # The email address that error messages come from
     SERVER_EMAIL = 'alerts+test@yougotagift.com'
 
