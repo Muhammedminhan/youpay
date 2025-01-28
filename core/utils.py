@@ -18,7 +18,8 @@ from rest_framework import status
 from amazonpgclient.models import AmazonPGTransactionData
 from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY,
-                            PAYMENT_GATEWAY_CHECKOUTPG)
+                            PAYMENT_GATEWAY_CHECKOUTPG,
+                            PAYMENT_GATEWAY_AMAZONPG)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
@@ -27,7 +28,8 @@ from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                                     PAYMENT_METHOD_CONFIG_CACHE_KEY,
                                     PAYMENT_CONFIG_CACHE_KEY)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
-from notifications.constants import FLAGGED_PAYMENT_MAIL
+from notifications.constants import (FLAGGED_PAYMENT_MAIL, HUB_LINK,
+                                     AMAZON_HUB_LINK)
 from notifications.models import EmailTemplateConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
@@ -774,12 +776,12 @@ def get_flagged_email_data(payment):
     template_obj = get_template_obj(FLAGGED_PAYMENT_MAIL)
     transaction_url = get_admin_url(payment.id)
     if payment.payment_gateway == PAYMENT_GATEWAY_CHECKOUTPG:
-        dashboard_link = 'https://dashboard.sandbox.checkout.com/'
+        dashboard_link = HUB_LINK
         dashboard = "Checkout Dashboard"
         search_key = "reference"
         search_param = payment.payment_reference
-    else:
-        dashboard_link = 'https://csi-stage.aciondemand.com/ControlCenter-Desktop/platform/index.html'
+    elif payment.payment_gateway == PAYMENT_GATEWAY_AMAZONPG:
+        dashboard_link = AMAZON_HUB_LINK
         dashboard = "ACI Dashboard"
         search_key = "fort id"
         amazon_obj = get_amazon_transaction_obj(payment.payment_reference)
