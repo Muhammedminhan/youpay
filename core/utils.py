@@ -12,10 +12,14 @@ from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
+from django.urls import reverse_lazy
 from rest_framework import status
 
+from amazonpgclient.models import AmazonPGTransactionData
 from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
-                            BROWSER_VALUE_ENCRYPTION_KEY)
+                            BROWSER_VALUE_ENCRYPTION_KEY,
+                            PAYMENT_GATEWAY_CHECKOUTPG,
+                            PAYMENT_GATEWAY_AMAZONPG)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
@@ -24,6 +28,9 @@ from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                                     PAYMENT_METHOD_CONFIG_CACHE_KEY,
                                     PAYMENT_CONFIG_CACHE_KEY)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
+from notifications.constants import (FLAGGED_PAYMENT_MAIL, HUB_LINK,
+                                     AMAZON_HUB_LINK)
+from notifications.models import EmailTemplateConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
     PAYMENT_STATUS_PAID, PAYMENT_METHOD_APPLEPAY, PAYMENT_STATUS_REJECTED,
@@ -447,6 +454,12 @@ def process_checkoutpg_response_verification(**kwargs):
             'is_payment_verified': is_payment_verified
         }
     )
+
+    if is_flagged:
+        from payments.tasks import send_flagged_mail_alert
+        email_data = get_flagged_email_data(youpay_transaction)
+        send_flagged_mail_alert.delay(**email_data)
+
     redirect, response_data = is_redirect(transaction_id, response_data)
 
     # redirect - boolean, response_data - response data(dict) for frontend
@@ -744,4 +757,101 @@ def process_amazonpg_response_verification(**kwargs):
             'is_payment_verified': is_payment_verified,
         }
     )
+
+    if is_flagged:
+        from payments.tasks import send_flagged_mail_alert
+        email_data = get_flagged_email_data(youpay_transaction)
+        send_flagged_mail_alert.delay(**email_data)
     return return_response_data, return_status
+
+
+def get_admin_url(transaction_id):
+    change_url = reverse_lazy(
+        'admin:payments_youpaytransactiondata_change',
+        args=(transaction_id,))
+    return get_full_url(change_url)
+
+
+def get_flagged_email_data(payment):
+    template_obj = get_template_obj(FLAGGED_PAYMENT_MAIL)
+    transaction_url = get_admin_url(payment.id)
+    if payment.payment_gateway == PAYMENT_GATEWAY_CHECKOUTPG:
+        dashboard_link = HUB_LINK
+        dashboard = "Checkout Dashboard"
+        search_key = "reference"
+        search_param = payment.payment_reference
+    elif payment.payment_gateway == PAYMENT_GATEWAY_AMAZONPG:
+        dashboard_link = AMAZON_HUB_LINK
+        dashboard = "ACI Dashboard"
+        search_key = "fort id"
+        amazon_obj = get_amazon_transaction_obj(payment.payment_reference)
+        search_param = payment.payment_reference
+        if amazon_obj:
+            search_param = amazon_obj.fort_id
+    template_data = {
+        'search_param': search_param,
+        'amount': float(payment.amount),
+        'customer_email': payment.customer_email,
+        'customer_name': payment.customer_name,
+        'currency': payment.currency,
+        'transaction_url': transaction_url,
+        'response_summary': payment.response_summary,
+        'order_items': payment.order_items,
+        'order_id': payment.order_id,
+        'invoice_id': payment.invoice_id,
+        'dashboard_link': dashboard_link,
+        'dashboard': dashboard,
+        'search_key': search_key,
+    }
+    mail_from = {
+        "email": settings.SERVER_EMAIL,
+        "name": "",
+        "alias": ""
+    }
+    mail_to = [{
+        "email": settings.EMAIL_HELP[0][1],
+        "name": "",
+        "alias": ""}]
+
+    send_mail_payload = {
+        "subject": "A transaction has been flagged.",
+        "mail_from": mail_from,
+        "mail_to": mail_to,
+        "template_data": template_data,
+        "template_code": template_obj.template_code,
+        "mail_engine_api": template_obj.endpoint_url
+    }
+
+    return send_mail_payload
+
+
+def get_template_obj(email_type):
+    try:
+        email_conf = EmailTemplateConfiguration.objects.get(
+            email_type=email_type)
+    except Exception as e:
+        logger.error("Email template configuration not found")
+        email_conf = None
+    return email_conf
+
+
+def get_full_url(path):
+    """
+    return site full url
+    :param path:
+    :return:
+    """
+    site_domain = settings.SITE_DOMAIN
+    return 'http%s://%s%s' % (
+        settings.SITE_SECURE and 's' or '', site_domain, path)
+
+
+def get_amazon_transaction_obj(reference):
+    try:
+        amazon_transaction_obj = AmazonPGTransactionData.objects.get(
+            payment_reference=reference)
+        return amazon_transaction_obj
+    except Exception as e:
+        logger.error("Amazon transaction data not found for payment "
+                     "reference: {}".format(reference))
+        return None
