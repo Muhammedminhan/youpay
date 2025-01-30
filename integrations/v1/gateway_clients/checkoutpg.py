@@ -139,10 +139,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         if self.checkoutpg_config:
             channel_codes = []
-            logger.error("TEST LOGGER ")
             channel_code = get_channel_code(self.transaction_obj)
             channel_codes.append(channel_code)
-            logger.error("TEST LOGGER, {}".format(channel_codes))
 
             params = {'channel_code': channel_codes}
             headers = {'Api-key': self.checkoutpg_config.api_key}
