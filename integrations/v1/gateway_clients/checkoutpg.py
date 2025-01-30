@@ -8,9 +8,9 @@ from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, IS_SUCCESS
 from core.utils import (get_checkoutpg_config,
-                        process_checkoutpg_response_verification)
-from integrations.constants import (CHECKOUTPG_PAYMENT_CONFIGURATIONS,
-                                    CHECKOUTPG_CONFIG_ENDPOINT_V2,
+                        process_checkoutpg_response_verification,
+                        get_channel_code)
+from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
                                     CHECKOUTPG_PAYMENT_ENDPOINT,
@@ -139,9 +139,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         if self.checkoutpg_config:
             channel_codes = []
-            channel_code = CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
-                currency.upper())
+            logger.error("TEST LOGGER ")
+            channel_code = get_channel_code(self.transaction_obj)
             channel_codes.append(channel_code)
+            logger.error("TEST LOGGER, {}".format(channel_codes))
 
             params = {'channel_code': channel_codes}
             headers = {'Api-key': self.checkoutpg_config.api_key}
