@@ -2,7 +2,6 @@ import json
 import logging
 
 import requests
-from django.conf import settings
 from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
@@ -91,17 +90,14 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         }
         return headers
 
-    def get_configurations(self, currency):
+    def get_configurations(self, channel_code):
         """
         Method for getting configurations
         params: currency
         response: json response from the checkoutpg
         """
         if self.checkoutpg_config:
-            channel_codes = []
-            channel_code = CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
-                currency.upper())
-            channel_codes.append(channel_code)
+            channel_codes = [channel_code]
 
             params = {'channel_code': channel_codes}
             headers = {'Api-key': self.checkoutpg_config.api_key}
