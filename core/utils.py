@@ -26,7 +26,8 @@ from core.models import (AppConfig, Currency, PaymentMethodConfig,
                          PaymentConfiguration)
 from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                                     PAYMENT_METHOD_CONFIG_CACHE_KEY,
-                                    PAYMENT_CONFIG_CACHE_KEY)
+                                    PAYMENT_CONFIG_CACHE_KEY,
+                                    CHECKOUTPG_CHANNEL_CONFIGURATIONS)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from notifications.constants import (FLAGGED_PAYMENT_MAIL, HUB_LINK,
                                      AMAZON_HUB_LINK)
@@ -531,13 +532,17 @@ def get_currency_by_iso_code(code):
     return currency
 
 
-def create_configuration_data(code, currency):
+def create_configuration_data(code, transaction):
     """create configuration data"""
     from services.tasks import get_checkout_conf, get_b2c_conf
     config_data = None
     response = None
+    currency = transaction.currency
+    channel_code = None
+
     if code == CHECKOUTPG_HUB_CODE:
-        response = get_checkout_conf(currency)
+        channel_code = get_channel_code(transaction)
+        response = get_checkout_conf(channel_code)
 
     elif code == B2CPAYBACK_HUB_CODE:
         response = get_b2c_conf(currency)
@@ -548,22 +553,42 @@ def create_configuration_data(code, currency):
             config_data = ConfigurationData(
                 payment_gateway=payment_gateway,
                 currency=currency_obj,
-                response_data=response
+                response_data=response,
+                channel_code=channel_code if code == CHECKOUTPG_HUB_CODE else None
+                # Add channel code for Checkout
             )
             config_data.save()
     return config_data
 
 
-def get_configuration_data(code, currency):
-    """get configuration data"""
+def get_configuration_data(code, transaction):
+    """Get configuration data based on the transaction."""
     try:
-        config_data = ConfigurationData.objects.get(
-            payment_gateway__code=code, currency__iso_code=currency)
-    except(ConfigurationData.DoesNotExist, Exception):
+        if code == CHECKOUTPG_HUB_CODE:
+            channel_code = get_channel_code(transaction)
+            config_data = ConfigurationData.objects.get(
+                channel_code=channel_code)
+        else:
+            currency = transaction.currency
+            config_data = ConfigurationData.objects.get(
+                payment_gateway__code=code, currency__iso_code=currency)
+    except (ConfigurationData.DoesNotExist, Exception):
         logging.error(f'No configuration data instance found for code {code} '
-                      f'and currency {currency}.')
-        config_data = create_configuration_data(code, currency)
+                      f'and currency {transaction.currency}.')
+        config_data = create_configuration_data(code, transaction)
     return config_data
+
+
+def get_channel_code(transaction):
+    currency = transaction.currency
+    platform = transaction.platform
+    checkout_channel_code = transaction.api_client.checkout_channel_code
+    if checkout_channel_code:
+        channelcode = checkout_channel_code
+    else:
+        channelcode = CHECKOUTPG_CHANNEL_CONFIGURATIONS
+    channel_code = channelcode.get(currency, {}).get(platform.upper())
+    return channel_code
 
 
 def encrypt_browser_value(string_value):
