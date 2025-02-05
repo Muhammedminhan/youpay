@@ -121,3 +121,6 @@ class ConfigurationData(AbstractDateTime):
     payment_gateway = models.ForeignKey('integrations.PaymentGateway',
                                         null=False, blank=False,
                                         on_delete=models.PROTECT)
+    channel_code = models.CharField(max_length=50, blank=True,
+                                    help_text="For storing channel code - "
+                                              "only for checkout")

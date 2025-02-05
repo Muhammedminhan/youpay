@@ -341,7 +341,7 @@ class ConfigViewSet(ViewSet):
 
         if True in [card_enabled, saved_card_enabled]:
             checkout_config = get_configuration_data(CHECKOUTPG_HUB_CODE,
-                                                     transaction.currency)
+                                                     transaction)
 
         return checkout_config
 
@@ -355,7 +355,7 @@ class ConfigViewSet(ViewSet):
         if True in [adcb_enabled, qitaf_enabled, neqaty_enabled,
                     mokafa_enabled]:
             b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
-                                                transaction.currency)
+                                                transaction)
             config_list = (b2c_config.response_data.get("results") if
                            b2c_config else {})
             if adcb_enabled:

@@ -37,7 +37,7 @@ def sync_configuration_data(payment_gateway=None, currency=None):
     for item in configuration_data:
         response = None
         if item.payment_gateway.code == CHECKOUTPG_HUB_CODE:
-            response = get_checkout_conf(item.currency.iso_code)
+            response = get_checkout_conf(item.channel_code)
         elif item.payment_gateway.code == B2CPAYBACK_HUB_CODE:
             response = get_b2c_conf(item.currency.iso_code)
 
@@ -52,7 +52,7 @@ def sync_configuration_data(payment_gateway=None, currency=None):
                     payment_gateway, item))
 
 
-def get_checkout_conf(currency):
+def get_checkout_conf(channel_code):
     """
     Get Checkoutpg configurations.
 
@@ -63,7 +63,8 @@ def get_checkout_conf(currency):
         dict: Configuration data for Checkoutpg.
     """
     checkout_obj = CheckoutpgManager()
-    checkout_config, status_code = checkout_obj.get_configurations(currency)
+    checkout_config, status_code = checkout_obj.get_configurations(
+        channel_code)
 
     logger.info(
         "Checkoutpg response: {}, {}".format(checkout_config, status_code))
