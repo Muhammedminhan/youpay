@@ -554,7 +554,7 @@ def create_configuration_data(code, transaction):
                 payment_gateway=payment_gateway,
                 currency=currency_obj,
                 response_data=response,
-                channel_code=channel_code if code == CHECKOUTPG_HUB_CODE else "None"
+                channel_code=channel_code if code == CHECKOUTPG_HUB_CODE else None
             )
             config_data.save()
     return config_data
