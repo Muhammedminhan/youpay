@@ -50,7 +50,7 @@ deployment:
   containers:
     default:
       name: 'database'
-      imagePullPolicy: 'Always'
+      imagePullPolicy: 'IfNotPresent'
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-database:latest'
       command: '[]'
       env:
