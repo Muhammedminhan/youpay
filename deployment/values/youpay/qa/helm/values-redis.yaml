@@ -29,7 +29,7 @@ keda:
 
 pdb:
   name: 'youpay-[JIRA_ID]-redis-pdb'
-  minAvailable: 100%
+  minAvailable: 0%
 
 deployment:
   name: 'youpay-[JIRA_ID]-redis-deployment'
@@ -40,7 +40,7 @@ deployment:
   containers:
     default:
       name: 'redis'
-      imagePullPolicy: 'Always'
+      imagePullPolicy: 'IfNotPresent'
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/redis:6.2.4'
       command: '[]'
       port: 6379

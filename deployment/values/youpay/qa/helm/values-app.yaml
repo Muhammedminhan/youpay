@@ -29,7 +29,7 @@ keda:
 
 pdb:
   name: 'youpay-[JIRA_ID]-app-pdb'
-  minAvailable: 1
+  minAvailable: 0%
 
 deployment:
   name: 'youpay-[JIRA_ID]-app-deployment'
@@ -41,7 +41,7 @@ deployment:
   containers:
     default:
       name: 'app'
-      imagePullPolicy: 'Always'
+      imagePullPolicy: 'IfNotPresent'
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; source /etc/profile.d/application-env.sh ; sh /ygag/deployment/app/app-entrypoint.sh"]'
       env:

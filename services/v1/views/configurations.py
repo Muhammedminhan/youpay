@@ -88,6 +88,7 @@ class ConfigViewSet(ViewSet):
             country = get_country_for_configuration(transaction)
             if not country:
                 return self._country_not_available_response()
+            country_name = country.name
 
             client = get_client_for_configuration(transaction)
             if not client:
@@ -103,7 +104,8 @@ class ConfigViewSet(ViewSet):
                 transaction=transaction,
                 payment_options=payment_options,
                 payment_config_data=payment_config_data,
-                client=client
+                client=client,
+                country_name=country_name
             )
 
             return Response(self.response_obj.get_success_dict(
@@ -118,6 +120,7 @@ class ConfigViewSet(ViewSet):
         payment_options = kwargs.get('payment_options')
         payment_config_data = kwargs.get(
             'payment_config_data')
+        country_name = kwargs.get('country_name')
         client = kwargs.get('client')
         api_client = {
             'color': client.color_code,
@@ -174,7 +177,9 @@ class ConfigViewSet(ViewSet):
                     transaction.api_client.allow_aed_converted_amount,
                 "program": get_display_program(transaction.api_client),
                 "platform": get_display_platform(transaction.platform),
-                "retry_count": transaction.retry_count
+                "retry_count": transaction.retry_count,
+                "store": country_name,
+                "customer_email": transaction.customer_email,
             },
         }
 
@@ -341,7 +346,7 @@ class ConfigViewSet(ViewSet):
 
         if True in [card_enabled, saved_card_enabled]:
             checkout_config = get_configuration_data(CHECKOUTPG_HUB_CODE,
-                                                     transaction.currency)
+                                                     transaction)
 
         return checkout_config
 
@@ -355,7 +360,7 @@ class ConfigViewSet(ViewSet):
         if True in [adcb_enabled, qitaf_enabled, neqaty_enabled,
                     mokafa_enabled]:
             b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
-                                                transaction.currency)
+                                                transaction)
             config_list = (b2c_config.response_data.get("results") if
                            b2c_config else {})
             if adcb_enabled:
