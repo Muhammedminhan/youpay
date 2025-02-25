@@ -33,7 +33,7 @@ keda:
 
 pdb:
   name: 'youpay-[JIRA_ID]-nginx-pdb'
-  minAvailable: 1
+  minAvailable: 0%
 
 deployment:
   name: 'youpay-[JIRA_ID]-nginx-deployment'
@@ -44,7 +44,7 @@ deployment:
   containers:
     default:
       name: 'nginx'
-      imagePullPolicy: 'Always'
+      imagePullPolicy: 'IfNotPresent'
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-nginx:[BUILD_TAG]'
       command: '["sh", "-c", "sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /ygag/nginx/conf/nginx.conf ; sh /ygag/nginx/entrypoint.sh"]'
       port: 80

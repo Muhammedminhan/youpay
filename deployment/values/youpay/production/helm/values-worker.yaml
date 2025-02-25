@@ -65,7 +65,7 @@ deployment:
 
   nodeSelector:
     key: 'karpenter.sh/provisioner-name'
-    value: 'default'
+    value: 'worker'
 
   topologySpreadConstraints:
     - maxSkew: 1

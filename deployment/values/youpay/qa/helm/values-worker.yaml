@@ -41,7 +41,7 @@ deployment:
   containers:
     default:
       name: 'worker'
-      imagePullPolicy: 'Always'
+      imagePullPolicy: 'IfNotPresent'
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; source /etc/profile.d/application-env.sh ; sh /ygag/deployment/app/worker-entrypoint.sh"]'
       memory:

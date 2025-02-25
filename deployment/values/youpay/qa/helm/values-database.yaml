@@ -41,7 +41,7 @@ keda:
 
 pdb:
   name: 'youpay-[JIRA_ID]-database-pdb'
-  minAvailable: 100%
+  minAvailable: 0%
 
 deployment:
   name: 'youpay-[JIRA_ID]-database-deployment'
@@ -50,7 +50,7 @@ deployment:
   containers:
     default:
       name: 'database'
-      imagePullPolicy: 'Always'
+      imagePullPolicy: 'IfNotPresent'
       image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-database:latest'
       command: '[]'
       env:
@@ -65,8 +65,8 @@ deployment:
         requests: 210Mi
         limits: 273Mi
       cpu:
-        requests: 50m
-        limits: 65m
+        requests: 100m
+        limits: 500m
       livenessProbe:
         command: '["pg_isready"]'
         initialDelaySeconds: 30

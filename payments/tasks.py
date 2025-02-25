@@ -2,13 +2,16 @@ import logging
 from datetime import timedelta
 from decimal import Decimal
 
+import requests
 from celery import shared_task
+from django.conf import settings
 from django.db import transaction
 from django.db.models.functions import Now
 
 from adcbpgclient.models import ADCBTransactionData
 from core.utils import wait_redis_lock
 from integrations.models import GatewayChargeConfiguration
+from notifications.notification import FlaggedMailAlertView
 from payments.constants import (
     PAYMENT_STATUS_EXPIRED,
     TRANSACTION_EXPIRE_TIME, PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
@@ -17,7 +20,8 @@ from payments.constants import (
     MODEL_NAME_TRANSACTIONDATA, MODEL_NAME_ADCBTRANSACTIONDATA,
     AUTHORIZATION_FIXED_FEE, VOID_FIXED_FEE, REFUND_FIXED_FEE,
     BLENDED_VARIABLE_FEE, AUTHORIZATION_FIXED_FEE_TAX, VOID_FIXED_FEE_TAX,
-    REFUND_FIXED_FEE_TAX, BLENDED_VARIABLE_FEE_TAX
+    REFUND_FIXED_FEE_TAX, BLENDED_VARIABLE_FEE_TAX,
+    GROUPGIFT_ORDER_ID_ENDPOINT
 )
 from payments.models import YouPayTransactionData, ClientNotification
 from services.v1.views.common import YouPayTransactionCRUD
@@ -352,3 +356,143 @@ def common_update_breakdown_fee(model_name, transaction_data_id, break_downs):
             id=transaction_data_id).update(
             blended_variable_fee_vat=break_downs.get(
                 'holding_currency_amount'))
+
+
+@shared_task(name='fetch_groupgift_order_id')
+def fetch_groupgift_order_id():
+    """
+    task to collect order id from groupgift for payment references in youpay
+    and update order id at youpaytransactiondata
+    """
+    environment = settings.ENVIRONMENT
+    client_name = str(get_groupgift_client_name(environment))
+    logger.info(
+        "running task for fetching groupgift order id, environment is "
+        "{}, youpay client name {}".format(environment, client_name))
+    groupgift_order_id_endpoint = GROUPGIFT_ORDER_ID_ENDPOINT
+    try:
+        transaction_objects = get_client_transaction_objects(client_name)
+        logger.info(
+            "count of transaction objects taken from youpaytransactiondata"
+            " {}".format(transaction_objects.count()))
+        groupgift_domain = ''
+        references_list = []
+        first_iteration = True
+        for transaction_obj in transaction_objects:
+            if first_iteration:
+                groupgift_domain = transaction_obj.api_client.client_domain
+                first_iteration = False
+            references_list.append(str(transaction_obj.payment_reference))
+            logger.info(
+                "references list for fetching order id {}".format(
+                    references_list))
+        if len(references_list) > 0:
+            references_dict = {"references": references_list}
+            groupgift_formatted_url = (
+                    groupgift_domain + groupgift_order_id_endpoint)
+            logger.info(
+                "references passed for fetching order id from groupgift {}"
+                "-->>{}".format(groupgift_formatted_url, references_dict))
+            response = requests.post(
+                url=groupgift_formatted_url, json=references_dict)
+            if response:
+                response_data = response.json()
+                if len(response_data):
+                    logger.info(
+                        "response received from groupgift endpoint {}".format(
+                            response_data))
+                    updated = update_youpaytransactiondata_order_id(
+                            response_data)
+                    return updated
+            logger.error(
+                "Invalid response received from groupgift {}".format(
+                        response.text))
+            return False
+        else:
+            logger.info(
+                "No groupgift transactions found having empty order_id")
+            return False
+    except Exception as e:
+        logger.error(
+            "Error occurred while fetching order id from groupgift {}, with"
+            " request data {}, error - {}".format(
+                groupgift_order_id_endpoint, references_list, e), exc_info=e)
+        return False
+
+
+@shared_task()
+def send_flagged_mail_alert(**kwargs):
+    """
+    sending manual capture mail to support team
+    :param data: data for email,
+    :return:
+    """
+    reference_id = kwargs.get('template_data', {}).get('payment_reference')
+    logger.info("flagged mail alert for {0}".format(reference_id))
+    response = FlaggedMailAlertView(**kwargs).send_mail()
+
+    logger.info("Successfully sent flagged alert email for {0}"
+                "".format(reference_id))
+    return response
+
+
+def get_client_transaction_objects(client_name):
+    try:
+        transaction_objects = YouPayTransactionData.objects.filter(
+            api_client__name=client_name,
+            payment_reference__isnull=False).exclude(
+            order_id__startswith="ECMGRPGFT_").order_by('-id')[:10]
+        return transaction_objects
+    except Exception as e:
+        logger.error(
+            "Exception occurred during getting client transaction objects for"
+            " order id fetching {}".format(e), exc_info=e)
+        return YouPayTransactionData.objects.none()
+
+
+def get_groupgift_client_name(environment):
+    """
+    takes environment value from settings and returns corresponding
+    group gift client name
+    """
+    if environment == 'sandbox':
+        client_name = 'Group Gift Sandbox'
+    elif environment == 'production':
+        client_name = 'eCom Group Gift Production'
+    else:
+        client_name = 'Group Gift QA'
+    return client_name
+
+
+def update_youpaytransactiondata_order_id(response_data):
+    """
+    method to update youpaytransactiondata with order ids.
+    Takes response data list of dict as input and parses the data for
+    order id corresponding to each payment reference and updates the value in
+    order_id field
+    """
+    try:
+        reference_numbers = [item['reference_number'] for item in
+                             response_data if len(item['order_id']) > 0]
+        if len(reference_numbers):
+            objects_to_update = YouPayTransactionData.objects.filter(
+                payment_reference__in=reference_numbers)
+            data_dict = {item['reference_number']: item['order_id'] for
+                         item in response_data}
+            for obj in objects_to_update:
+                obj.order_id = data_dict.get(obj.payment_reference)
+            updated = YouPayTransactionData.objects.bulk_update(
+                objects_to_update, ['order_id'])
+            logger.info(
+                "Successfully updated order ids for {} bulk update updated {}"
+                " entries".format(reference_numbers, updated))
+            return True
+        logger.info(
+            "Skipping updating groupgift order id as references to update "
+            "is 0")
+        return False
+    except Exception as e:
+        logger.error(
+            "Exception occurred during updating order ids, {}".format(e),
+            exc_info=e)
+        return False
