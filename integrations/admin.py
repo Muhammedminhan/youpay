@@ -6,7 +6,8 @@ from django.core.cache import cache
 from core.admin import AdminAbstract
 from integrations.models import (
     PaymentGateway, PaymentGatewayAPI, PaymentOptions,
-    AdditionalChargeConfiguration, GatewayChargeConfiguration)
+    AdditionalChargeConfiguration, GatewayChargeConfiguration,
+    YoupayToPaymentGatewaysData)
 from integrations.forms import (AdditionalChargeConfigurationAdminForm,
                                 GatewayChargeConfigurationAdminForm)
 from .constants import (B2CP_CACHE_KEY, CHECKOUTPG_CACHE_KEY,
@@ -75,6 +76,22 @@ class GatewayChargeConfigurationAdmin(AdminAbstract):
     list_filter = ('payment_mode', 'created_by',)
 
 
+class YoupayToPaymentGatewaysDataAdmin(admin.ModelAdmin):
+    list_display = ('transaction_id', 'request_type', 'request_method',
+                    'created_at', 'updated_at')
+    search_fields = ('youpay_payment__transaction_id',)
+    list_filter = ('request_type', 'created_at')
+
+    def transaction_id(self, obj):
+        return obj.youpay_payment.transaction_id
+
+    def created_at(self, obj):
+        return obj.youpay_payment.created_at
+
+    def updated_at(self, obj):
+        return obj.youpay_payment.updated_at
+
+
 admin.site.register(PaymentGateway, PaymentGatewayAdmin)
 admin.site.register(PaymentGatewayAPI, PaymentGatewayAPIAdmin)
 admin.site.register(PaymentOptions, PaymentOptionsAdmin)
@@ -82,3 +99,5 @@ admin.site.register(AdditionalChargeConfiguration,
                     AdditionalChargeConfigurationAdmin)
 admin.site.register(GatewayChargeConfiguration,
                     GatewayChargeConfigurationAdmin)
+admin.site.register(YoupayToPaymentGatewaysData,
+                    YoupayToPaymentGatewaysDataAdmin)
