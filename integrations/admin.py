@@ -85,12 +85,6 @@ class YoupayToPaymentGatewaysDataAdmin(admin.ModelAdmin):
     def transaction_id(self, obj):
         return obj.youpay_payment.transaction_id
 
-    def created_at(self, obj):
-        return obj.created_at
-
-    def updated_at(self, obj):
-        return obj.updated_at
-
 
 admin.site.register(PaymentGateway, PaymentGatewayAdmin)
 admin.site.register(PaymentGatewayAPI, PaymentGatewayAPIAdmin)
