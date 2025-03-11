@@ -79,7 +79,6 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'HappyCreditsDebitBalance',
     'CitiGenerateOTPAPIView',
     'QitafRedeemPointsAPIView',
-    'NeqatyPointBalanceAPIView',
     'NeqatyGenerateOTPAPIView',
     'AmazonPGSavedCard',
     'MokafaaRedeemPointsAPIView'
