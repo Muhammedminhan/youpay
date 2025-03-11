@@ -358,7 +358,6 @@ def common_update_breakdown_fee(model_name, transaction_data_id, break_downs):
                 'holding_currency_amount'))
 
 
-@shared_task(name='fetch_groupgift_order_id')
 def fetch_groupgift_order_id():
     """
     task to collect order id from groupgift for payment references in youpay
