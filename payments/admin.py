@@ -43,7 +43,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                    'payment_gateway', 'payment_method', 'currency',
                    "platform", "is_gcc_card", "is_flagged", "is_fraud",
                    'created_at', 'is_guest', "point_collection_enabled",
-                   "point_program")
+                   "point_program", "is_offer_applicable")
     raw_id_fields = ('api_client',)
 
     inlines = [
@@ -70,7 +70,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('Cart details', {
             'fields': ('cart_amount', 'cart_currency', 'cart_service_fee',
                        'cart_base_amount', 'cart_VAT_amount', 'brand_details',
-                       'brand_calculations'
+                       'brand_calculations', 'is_offer_applicable'
                        )
         }),
         ('Payment details', {

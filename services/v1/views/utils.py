@@ -80,6 +80,7 @@ def reformat_payment_request_data(data):
         data['additional_currency_decimal_notation'] = (
             order.get('additional_currency_decimal_notation'))
         data['order_id'] = order.get('order_id')
+        data['is_offer_applicable'] = order.get('is_offer_applicable', False)
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')

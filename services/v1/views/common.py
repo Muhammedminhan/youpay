@@ -36,7 +36,7 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
                                 SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
-from services.models import APIClient
+from services.models import APIClient, OfferDetails
 
 logger = logging.getLogger(__name__)
 
@@ -308,6 +308,55 @@ class YouPayTransactionCRUD(object):
             logger.error("Settlement entity not found for currency {}"
                          "".format(currency))
         return settlement_entity
+
+    def create_offer_details(self, data):
+        """
+        Creates an OfferDetails record with the given data.
+
+        Parameters:
+            data (dict): Contains 'invoice_id', 'offer_details', and 'client'.
+        """
+        try:
+            OfferDetails.objects.create(
+                invoice_id=data.get('invoice_id'),
+                offer_details=data.get('offer_details'),
+                client=data.get('client')
+            )
+        except Exception as e:
+            logger.error("Error in creating offer details object  "
+                         "{}".format(str(e)))
+
+    def get_offer_details(self, transaction_obj):
+        """
+        Retrieves offer details for a given transaction.
+
+        Parameters:
+            transaction_obj: The transaction instance.
+
+        Returns:
+            dict or None: Offer details if found, else None.
+        """
+        invoice_id = transaction_obj.invoice_id
+        client = transaction_obj.api_client
+
+        try:
+            if not transaction_obj.is_offer_applicable:
+                return None
+            offer_detail_obj = OfferDetails.objects.filter(
+                invoice_id=invoice_id, client=client).last()
+
+            offer_details = offer_detail_obj.offer_details
+            if offer_details:
+                return offer_details
+            else:
+                logger.error(
+                    "Offer details not found for transaction {}".format(
+                        transaction_obj.transaction_id))
+                return None
+        except Exception as e:
+            logger.error("Error in getting offer details for {} ".format(
+                transaction_obj.transaction_id))
+            return None
 
 
 class ClientValidator(object):

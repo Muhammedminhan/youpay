@@ -16,10 +16,10 @@ from core.utils import (decrypt_payment_data,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded, encrypt_payment_data,
                         get_cached_payment_method_config)
+from integrations.common import update_offer_details
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
                                     MOKAFAA_CLIENT_CODE)
 from integrations.v1.gateway_clients.utils import calculate_balance
-
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
@@ -110,6 +110,20 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                                 status=status.HTTP_400_BAD_REQUEST)
 
             order_reference = data_formatted.get('order_reference')
+
+            is_offer_applicable = data_formatted.get(
+                "order").get("is_offer_applicable")
+            logger.info(
+                "is_offer_applicable is {} for {}".format(
+                    is_offer_applicable,
+                    data_formatted.get(
+                        "invoice_id")))
+            if is_offer_applicable:
+                invoice_id = data_formatted.get("invoice_id")
+                offer_details = data_formatted.get("order").get(
+                    "offer_details")
+                update_offer_details(client_pk, invoice_id, offer_details)
+
             lock_name = ('lock:PaymentRequestView:order_reference_%s'
                          % (order_reference,))
             with wait_redis_lock(lock_name=lock_name):

@@ -124,3 +124,12 @@ class ConfigurationData(AbstractDateTime):
     channel_code = models.CharField(max_length=50, blank=True, null=True,
                                     help_text="For storing channel code - "
                                               "only for checkout")
+
+
+class OfferDetails(AbstractDateTime):
+    invoice_id = models.CharField(max_length=120, null=True, blank=True,
+                                  help_text="used to store invoice_id")
+    offer_details = models.JSONField(null=True, blank=True,
+                                     help_text="used to store offer details")
+    client = models.ForeignKey('services.APIClient', null=True, blank=True,
+                               on_delete=models.PROTECT)

@@ -1,8 +1,9 @@
 from django.contrib import admin
 
 from core.admin import AdminAbstract
-from services.models import APIClient, PaymentRequestData, ConfigurationData
 from services.forms import APIClientForm
+from services.models import (APIClient, PaymentRequestData, ConfigurationData,
+                             OfferDetails)
 from services.tasks import sync_configuration_data
 
 
@@ -45,6 +46,14 @@ class ConfigurationDataAdmin(admin.ModelAdmin):
     sync_conf_data.short_description = "Sync Configuration Data"
 
 
+class OfferDetailsAdmin(admin.ModelAdmin):
+    list_display = ("invoice_id", "client", "created_at", "updated_at")
+    search_fields = ("invoice_id",)
+    list_filter = ("client", "created_at")
+    readonly_fields = ("created_at", "updated_at")
+
+
 admin.site.register(APIClient, APIClientAdmin)
 admin.site.register(PaymentRequestData, PaymentRequestDataAdmin)
 admin.site.register(ConfigurationData, ConfigurationDataAdmin)
+admin.site.register(OfferDetails, OfferDetailsAdmin)

@@ -7,7 +7,8 @@ from services.v1.api_clients.b2c_payback import (B2CPaybackPointBalance,
                                                  B2CPaybackRedemption,
                                                  B2CPaybackVerify,
                                                  CollectProgramManagement,
-                                                 CalculateBalance)
+                                                 CalculateBalance,
+                                                 OfferDetails)
 from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 CheckoutVerification,
                                                 PaypalPayment,
@@ -26,7 +27,6 @@ from .api_clients.mokafa_service import (UpdateMokafaPhoneNumber,
                                          MokafaaGenerateOTPAPIView,
                                          MokafaaRedeemPointsAPIView,
                                          MokafaaVerify)
-
 from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyGenerateOTPAPIView,
                                          NeqatyRedeemPointsAPIView,
@@ -80,6 +80,7 @@ urlpatterns = [
          CollectProgramManagement.as_view(),
          name='collect_program_management'),
     path('point-program/calculate-balance/', CalculateBalance.as_view()),
+    path('b2cpayback/offer-details/<str:pk>', OfferDetails.as_view()),
 
     # Tabbypg endpoints
     path('tabbypg/createsession/', CreateSession.as_view(),

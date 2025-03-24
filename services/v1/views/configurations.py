@@ -180,6 +180,7 @@ class ConfigViewSet(ViewSet):
                 "retry_count": transaction.retry_count,
                 "store": country_name,
                 "customer_email": transaction.customer_email,
+                "is_offer_enabled": transaction.is_offer_applicable,
             },
         }
 

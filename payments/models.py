@@ -235,6 +235,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     brand_details = models.JSONField(null=True, blank=True,
                                      help_text="used to store brand details "
                                                "from the ecom side")
+    is_offer_applicable = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Denotes whether the payment is offer applicable.')
     brand_calculations = models.JSONField(null=True, blank=True,
                                           help_text="Calculated brand details")
     happy_credit_reference = models.CharField(max_length=120, null=True,

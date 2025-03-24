@@ -1,4 +1,3 @@
-import copy
 import json
 import logging
 
@@ -25,13 +24,16 @@ from integrations.constants import (
     CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API, CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
     NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS, )
+from integrations.v1.gateway_clients.utils import (
+    process_offer_eligibility, process_calculated_item_details)
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
-from services.v1.views.common import add_payment_gateway_info_in_url
+from services.v1.views.common import (add_payment_gateway_info_in_url,
+                                      YouPayTransactionCRUD)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -326,21 +328,33 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             )
 
     def format_point_balance_response(self, data):
-        redeem_options = copy.deepcopy(
-            data.get("partner_response").get("redeem_options"))
-        options = redeem_options
+        redeem_options = data.get("partner_response").get("redeem_options")
         code = data.get("code")
         message = data.get("message")
         available_points = data.get("partner_response").get("point_balance")
         reference_id = data.get("partner_response").get("reference_id")
+        total_amount = self.transaction_obj.amount
+        youpay_crud_object = YouPayTransactionCRUD()
+        program_offer = None
+        offer_details = youpay_crud_object.get_offer_details(
+            self.transaction_obj)
+        if offer_details:
+            program_offer = offer_details.get(NEQATY_CLIENT_CODE)
 
-        for option in options:
-            option.pop('calculated_item_details')
+        for option in redeem_options[:]:
+            redeem_amount = option.get("redeemAmount")
+            if redeem_amount > total_amount:
+                redeem_options.remove(option)
+                continue
+            if program_offer:
+                process_offer_eligibility(option, program_offer,
+                                        NEQATY_CLIENT_CODE)
+                option = process_calculated_item_details(option)
 
         formatted_data = {
             "code": code,
             "message": message,
-            "redeem_options": options,
+            "redeem_options": redeem_options,
             "available_points": available_points,
             "reference_id": reference_id
         }
