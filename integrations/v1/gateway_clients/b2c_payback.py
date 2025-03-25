@@ -8,7 +8,7 @@ from core.constants import (REQUEST_METHOD_POST, REQUEST_METHOD_GET,
                             PAYMENT_GATEWAY_AMAZONPG)
 from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
-                        decrypt_string
+                        decrypt_string, get_channel_code
                         )
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
@@ -187,7 +187,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     request_dict)
                 update_data = {
                     'cko-card-token': request_data.get('cko-card-token'),
-                    "item_details_list": brand_details
+                    "item_details_list": brand_details,
+                    "channel_code": get_channel_code(transaction_obj)
                 }
             update_data.update(authenticate_request_data.data)
             request_data_json = json.dumps(update_data)
