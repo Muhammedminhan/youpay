@@ -371,8 +371,7 @@ class ClientValidator(object):
             try:
                 client = APIClient.objects.get(api_key=api_key)
                 if client:
-                    client_id = client.pk
-                    return True, client_id
+                    return True, client
                 return False, client_id
             except Exception as e:
                 logger.info("Exception occurred when validating the client {}"

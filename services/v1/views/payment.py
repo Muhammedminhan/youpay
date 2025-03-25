@@ -75,7 +75,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
         try:
             # Validate client at first
-            validate, client_pk = self.validate_client(request)
+            validate, client = self.validate_client(request)
             if not validate:
                 logger.info(
                     "payment request client validation failed for {0}"
@@ -84,6 +84,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     message="Client Does Not Exist")
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
+            client_pk = client.pk
 
             decrypted_data = decrypt_payment_data(request.data)
             data_formatted = reformat_payment_request_data(decrypted_data)
@@ -919,7 +920,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         try:
             transaction_id = None
 
-            validate, client_pk = self.validate_client(request)
+            validate, client = self.validate_client(request)
             if not validate:
                 logger.info(
                     "{} payment request client validation failed"
