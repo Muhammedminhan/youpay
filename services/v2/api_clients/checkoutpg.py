@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
-from services.utils import get_channel_code
+from services.utils import get_client_channel_code
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 
 logger = logging.getLogger(__name__)
@@ -32,7 +32,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
             raw_email = request.query_params.get('customer_email')
             email = urllib.parse.unquote(raw_email)
             currency = None
-            channel_code = get_channel_code(client)
+            channel_code = get_client_channel_code(client)
 
             checkout = CheckoutpgManager()
             response_data = checkout.get_saved_cards(email, currency,

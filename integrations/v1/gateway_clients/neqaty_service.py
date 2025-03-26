@@ -21,7 +21,7 @@ from integrations.constants import (
     NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
     PAYMENT_REQUEST_GENERATE_OTP, NEQATY_OTP_GENERATION_API,
     NEQATY_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
-    NEQATY_CLIENT_CODE, CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API,
+    NEQATY_CLIENT_CODE, NEQATY_VERIFY_API,
     CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
     NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS, )
@@ -549,7 +549,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     transaction_id)
 
                 request_data['invoice_id'] = transaction_obj.invoice_id
-                request_data['channel_code'] = CHECKOUT_SAUDI_CHANNEL_CODE
+                request_data['channel_code'] = get_channel_code(
+                    transaction_obj)
 
                 gateway_obj = get_payment_gateway_config(
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)

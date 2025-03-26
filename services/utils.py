@@ -14,7 +14,7 @@ def get_payment_redirect_url():
     return app_config.front_end_domain if app_config else None
 
 
-def get_channel_code(client, transaction=None):
+def get_client_channel_code(client, transaction=None):
     channel_code = None
     if transaction:
         currency = transaction.currency
