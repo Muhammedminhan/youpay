@@ -5,7 +5,7 @@ import requests
 
 from core.constants import PAYBACK_ACTION_EARN
 from core.response_messages import YouPayResponse
-from core.utils import get_payment_gateway_config
+from core.utils import get_payment_gateway_config, get_channel_code
 from integrations.common import update_brand_details
 from integrations.constants import (ADCB_CLIENT_CODE,
                                     ADCB_CHECKOUTPG_PAYMENT_NOT_PAID,
@@ -16,8 +16,6 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CITI_REWARDS_INVALID_CUSTOMER_CODE,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE,
-                                    CHECKOUT_UAE_CHANNEL_CODE,
-                                    CHECKOUT_SAUDI_CHANNEL_CODE,
                                     QITAF_CALCULATE_BALANCE_API,
                                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
                                     SPONSOR_PAYMENT_NETWORK_PERCENTAGE,
@@ -96,13 +94,13 @@ def format_adcb_redemption_data(request_data, transaction_obj):
 
 def format_adcb_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
-    request_data['channel_code'] = CHECKOUT_UAE_CHANNEL_CODE
+    request_data['channel_code'] = get_channel_code(transaction_obj)
     return request_data
 
 
 def format_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
-    request_data['channel_code'] = CHECKOUT_SAUDI_CHANNEL_CODE
+    request_data['channel_code'] = get_channel_code(transaction_obj)
     return request_data
 
 
