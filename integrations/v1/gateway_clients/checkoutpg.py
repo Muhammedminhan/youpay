@@ -168,7 +168,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, self.CHECKOUTPG_CONNECTION_ERROR
 
-    def get_saved_cards(self, email, currency):
+    def get_saved_cards(self, email, currency, channel_code=None):
         """
         Method for getting saved cards
         """
@@ -177,7 +177,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             try:
                 PARAMS = {'key': self.checkoutpg_config.api_key,
                           'email': email,
-                          'currency': currency}
+                          'currency': currency,
+                          'channel_code': channel_code}
                 URL = self.checkoutpg_config.domain + CHECKOUTPG_SAVED_CARD_ENDPOINT_V2
                 saved_cards = requests.get(url=URL, params=PARAMS)
                 if saved_cards:
@@ -553,7 +554,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         params = {
             'cko-session-id': data.get('cko_session_id'),
             'channel_code': youpay_transaction.channel_code,
-            'invoice_id': youpay_transaction.invoice_id}
+            'invoice_id': youpay_transaction.invoice_id,
+        }
         response = requests.get(url, params=params)
         logger.info(
             "Checkout Verify API response for transaction {} is {}"

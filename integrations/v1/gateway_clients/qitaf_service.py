@@ -11,14 +11,15 @@ from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string,
-                        auto_enable_or_disable_point_collection)
+                        auto_enable_or_disable_point_collection,
+                        get_channel_code)
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
+    PAYMENT_REQUEST_COLLECT_POINTS,
     CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
@@ -295,8 +296,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             ),
             "invoice_id": self.transaction_obj.invoice_id,
             "customer_ip_address": self.transaction_obj.ip,
-            "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
-                transaction_data.get("currency").upper()),
+            "channel_code": get_channel_code(self.transaction_obj),
         }
         return redeem_payload
 

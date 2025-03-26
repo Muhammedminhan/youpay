@@ -12,14 +12,14 @@ from core.messages import REDIRECT_URL, IS_REDIRECT, IS_SUCCESS
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
                         auto_enable_or_disable_point_collection,
-                        decrypt_string)
+                        decrypt_string, get_channel_code)
 from integrations.constants import (
     B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_COLLECT_POINTS,
     B2CP_EARN_POINTS_API, MOKAFAA_CLIENT_CODE,
     PAYMENT_REQUEST_GENERATE_OTP, B2CP_OTP_GENERATION_API,
     B2CP_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS, B2CP_VERIFY_API,
+    B2CP_VERIFY_API,
     PAYMENT_REQUEST_VERIFY)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.mokafaa_serializers import (
@@ -33,7 +33,6 @@ from payments.constants import (PAYMENT_METHOD_MOKAFAA, LANGUAGE_CODE_AR,
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
-
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -644,8 +643,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             ),
             "invoice_id": self.transaction_obj.invoice_id,
             "customer_ip_address": self.transaction_obj.ip,
-            "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
-                transaction_data.get("currency").upper()),
+            "channel_code": get_channel_code(self.transaction_obj),
             "client_code": MOKAFAA_CLIENT_CODE,
         }
         return redeem_payload

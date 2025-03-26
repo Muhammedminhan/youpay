@@ -180,6 +180,7 @@ class ConfigViewSet(ViewSet):
                 "retry_count": transaction.retry_count,
                 "store": country_name,
                 "customer_email": transaction.customer_email,
+                "client_code": client.client_code,
                 "is_offer_enabled": transaction.is_offer_applicable,
             },
         }
@@ -467,7 +468,9 @@ class ClientStaticFilesAPI(APIView):
                 api_client_data = {
                     'color': client.color_code,
                     'mobile_logo': get_mobile_logo_url(client),
-                    'logo': get_logo_url(client)
+                    'logo': get_logo_url(client),
+                    "program": get_display_program(client),
+                    "client_code": client.client_code,
                 }
 
                 data = response_obj.get_success_dict(

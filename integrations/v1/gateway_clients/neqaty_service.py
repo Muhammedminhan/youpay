@@ -12,7 +12,8 @@ from core.messages import (REDIRECT_URL, IS_REDIRECT, IS_SUCCESS,
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string,
-                        auto_enable_or_disable_point_collection)
+                        auto_enable_or_disable_point_collection,
+                        get_channel_code)
 from integrations.common import update_brand_details, get_redemption_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
@@ -20,8 +21,8 @@ from integrations.constants import (
     NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
     PAYMENT_REQUEST_GENERATE_OTP, NEQATY_OTP_GENERATION_API,
     NEQATY_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
-    NEQATY_CLIENT_CODE, CHECKOUTPG_PAYMENT_CONFIGURATIONS,
-    CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API, CONTENT_TYPE_HEADERS,
+    NEQATY_CLIENT_CODE, CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API,
+    CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
     NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS, )
 from integrations.v1.gateway_clients.utils import (
@@ -377,8 +378,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "invoice_id": self.transaction_obj.invoice_id,
             "brand_calculations": self.transaction_obj.brand_calculations,
             "customer_ip_address": self.transaction_obj.ip,
-            "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
-                transaction_data.get("currency").upper()),
+            "channel_code": get_channel_code(self.transaction_obj),
             "source_payment_method": self.transaction_obj.payment_method,
         }
         return redeem_payload
