@@ -62,23 +62,24 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
                 if offer_details:
                     program_offer = offer_details.get(ADCB_CLIENT_CODE)
                     offers = []
-                    for offer in program_offer:
-                        threshold_amount = find_threshold_amount(
-                            offer, transaction_obj)
-                        client_program_name = CLIENT_CODE_MAPPING.get(
-                            ADCB_CLIENT_CODE,
-                            "Redemption")
-                        offer_data = {
-                            "threshold_amount": threshold_amount,
-                            "brand_code": offer["brand_code"],
-                            "brand_name": offer["brand_name"],
-                            "brand_logo": offer["brand_logo"],
-                            "offer_text": offer["offer_text"],
-                            "offer_error_message": (
-                                f"Redeem at least SAR {threshold_amount} in "
-                                f"{client_program_name} points to claim the offer")
-                        }
-                        offers.append(offer_data)
+                    if program_offer:
+                        for offer in program_offer:
+                            threshold_amount = find_threshold_amount(
+                                offer, transaction_obj)
+                            client_program_name = CLIENT_CODE_MAPPING.get(
+                                ADCB_CLIENT_CODE,
+                                "Redemption")
+                            offer_data = {
+                                "threshold_amount": threshold_amount,
+                                "brand_code": offer["brand_code"],
+                                "brand_name": offer["brand_name"],
+                                "brand_logo": offer["brand_logo"],
+                                "offer_text": offer["offer_text"],
+                                "offer_error_message": (
+                                    f"Redeem at least SAR {threshold_amount} in "
+                                    f"{client_program_name} points to claim the offer")
+                            }
+                            offers.append(offer_data)
                     response_data.update({"offers": offers})
                 return Response(response_data, status=status.HTTP_200_OK)
             else:
