@@ -343,19 +343,25 @@ def process_offer_eligibility(calculated_balance, program_offer, client_code):
                     offer, calculated_item_details))
 
             for calculated_item in grouped_calculated_item_details:
-                is_offer_applicable, message, message_ar = check_offer_eligibility(
-                    calculated_threshold, paid_by_points, client_code
-                )
+                minimum_offer_value = float(offer.get("minimum_amount", 0))
+                maximum_offer_value = float(offer.get("maximum_amount", 0))
+                gift_base_value = calculated_item.get('gift_base_value')
 
-                calculated_item.update({
-                    'is_offer_applicable': is_offer_applicable,
-                    'offer_text': offer.get("offer_text"),
-                    'brand_logo': offer.get("brand_logo"),
-                    'brand_name': offer.get("brand_name"),
-                    'offer_error_message': message,
-                    'offer_error_message_ar': message_ar,
-                    'offer_code': offer.get("offer_code"),
-                })
+                if minimum_offer_value <= gift_base_value <= maximum_offer_value:
+                    is_offer_applicable, message, message_ar = check_offer_eligibility(
+                        calculated_threshold, paid_by_points, client_code
+                    )
+
+                    calculated_item.update({
+                        'is_offer_applicable': is_offer_applicable,
+                        'offer_text': offer.get("offer_text"),
+                        'brand_logo': offer.get("brand_logo"),
+                        'brand_name': offer.get("brand_name"),
+                        'offer_error_message': message,
+                        'offer_error_message_ar': message_ar,
+                        'offer_code': offer.get("offer_code"),
+                    })
+
 
     except Exception as e:
         logger.exception(
@@ -387,6 +393,8 @@ def check_offer_eligibility(calculated_threshold, paid_by_points,
 def find_threshold_amount(offer_details, transaction_obj):
     threshold_type = offer_details.get("sponsor_payment_threshold_type")
     threshold = float(offer_details.get("sponsor_payment_threshold", 0))
+    minimum_offer_value = float(offer_details.get("minimum_amount", 0))
+    maximum_offer_value = float(offer_details.get("maximum_amount", 0))
     offer_brand = offer_details.get("brand_code")
     item_set = transaction_obj.brand_details.get("item_set")
     total_quantity = 0
@@ -394,8 +402,11 @@ def find_threshold_amount(offer_details, transaction_obj):
 
     for item in item_set:
         if item["brand_code"] == offer_brand:
-            total_quantity += item["quantity"]
-            total_brand_value += item["quantity"] * item["gift_base_value"]
+            if minimum_offer_value <= item[
+                "gift_base_value"] <= maximum_offer_value:
+                total_quantity += item["quantity"]
+                total_brand_value += item["quantity"] * item[
+                    "gift_base_value"]
 
     if threshold_type == SPONSOR_PAYMENT_NETWORK_PERCENTAGE:
         calculated_threshold = round(threshold * total_brand_value / 100)
@@ -412,6 +423,8 @@ def find_threshold_amount_from_calc_balance(offer_details,
                                             calculated_item_details):
     threshold_type = offer_details.get("sponsor_payment_threshold_type")
     threshold = float(offer_details.get("sponsor_payment_threshold", 0))
+    minimum_offer_value = float(offer_details.get("minimum_amount", 0))
+    maximum_offer_value = float(offer_details.get("maximum_amount", 0))
     offer_brand = offer_details.get("brand_code")
     total_quantity = 0
     total_brand_value = 0
@@ -419,8 +432,11 @@ def find_threshold_amount_from_calc_balance(offer_details,
 
     for item in calculated_item_details:
         if item["brand_code"] == offer_brand:
-            total_quantity += item["quantity"]
-            total_brand_value += item["quantity"] * item["gift_base_value"]
+            if minimum_offer_value <= item[
+                "gift_base_value"] <= maximum_offer_value:
+                total_quantity += item["quantity"]
+                total_brand_value += item["quantity"] * item[
+                    "gift_base_value"]
             grouped_calculated_item_details.append(item)
 
     if threshold_type == SPONSOR_PAYMENT_NETWORK_PERCENTAGE:
@@ -446,11 +462,17 @@ def process_calculated_item_details(data):
         "offer_code",
     }
     unique_brands = {}
-    for item in data.get("calculated_item_details", {}):
+
+    for item in data.get("calculated_item_details", []):
         brand_code = item.get("brand_code")
+
         if brand_code not in unique_brands:
-            unique_brands[brand_code] = {key: item[key] for key in
-                                         required_keys if key in item}
+            unique_brands[brand_code] = {key: None for key in required_keys}
+            unique_brands[brand_code]["brand_code"] = brand_code
+
+        for key in required_keys:
+            if key in item and item[key] is not None:
+                unique_brands[brand_code][key] = item[key]
 
     data["calculated_item_details"] = list(unique_brands.values())
     return data
