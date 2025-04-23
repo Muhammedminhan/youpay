@@ -103,6 +103,11 @@ def reformat_payment_request_data(data):
 
         data['order_items'] = order_items
         data['order_history'] = order_history
+        purchase_origin = order.get('purchase_origin', None)
+        if purchase_origin:
+            data['clevertap_items'] = {
+                'purchase_origin': purchase_origin
+            }
 
         return data
     else:

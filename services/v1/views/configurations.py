@@ -182,6 +182,8 @@ class ConfigViewSet(ViewSet):
                 "customer_email": transaction.customer_email,
                 "client_code": client.client_code,
                 "is_offer_enabled": transaction.is_offer_applicable,
+                "purchase_origin": (transaction.clevertap_items or {}).get(
+                    "purchase_origin"),
             },
         }
 

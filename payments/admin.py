@@ -64,7 +64,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('Order details', {
             'fields': ('invoice_id', 'order_id', 'order_reference',
                        'api_client', 'order_history', 'payment_status',
-                       'approved', 'order_items',
+                       'approved', 'order_items', 'clevertap_items',
                        )
         }),
         ('Cart details', {
