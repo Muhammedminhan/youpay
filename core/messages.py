@@ -14,7 +14,8 @@ MIDDLEWARE_ALREADY_PAID_MESSAGE = (
     "for a successful transaction. ")
 GATEWAY_ERROR_OCCURRED = (
     "Service is temporarily unavailable please choose another payment option,"
-    " sorry for the inconvenience caused")
+    " sorry for the inconvenience caused"
+    "  -( طريقة الدفع هذه غير متاحة حاليا، جرب تدفع بطريقة ثانية )")
 
 REDIRECT_URL = 'redirect_url'
 TRANSACTION_MSG = 'transaction_message'
