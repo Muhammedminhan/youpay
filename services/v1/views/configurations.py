@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
+from core.exceptions import PaymentConfigurationFailed
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
@@ -72,6 +73,12 @@ class ConfigViewSet(ViewSet):
         session_id = get_session_id_from_header(request)
         decrypted_transaction_id = decrypt_string(pk)
         try:
+            if not decrypted_transaction_id:
+                error_message = (
+                    "Invalid payment, configuration not found for "
+                    "{}").format(pk)
+                logger.info(error_message)
+                raise PaymentConfigurationFailed(error_message)
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
             # session_key = self.get_session_key(request)
