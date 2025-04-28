@@ -5,7 +5,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from payments.constants import (MODEL_NAME_ADCBTRANSACTIONDATA,
-                                PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE)
+                                PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
+                                PAYMENT_STATUS_REFUNDED,
+                                PAYMENT_METHOD_ADCB_CARD_ONLY)
 from payments.models import YouPayTransactionData
 from services.v1.views.common import YouPayTransactionCRUD
 from .constants import (PURCHASE_PLATFORM_CHOICES, REDEMPTION_METHOD_CHOICES,
@@ -169,6 +171,12 @@ class ADCBTransactionData(ADCBAbstractDateTime):
     )
     brand_calculations = models.JSONField(
         null=True, blank=True, help_text="Calculated brand details")
+    is_refunded = models.BooleanField(default=False,
+                                      help_text="Indicates whether the "
+                                                "transaction has been "
+                                                "refunded")
+    is_reversed = models.BooleanField(default=False, null=True, blank=True,
+                                      help_text="Is transaction reversed")
 
 
 @receiver(post_save, sender=ADCBTransactionData)
@@ -248,6 +256,17 @@ def update_youpaytransactiondata_on_webhook(instance):
 
 def prepare_youpay_transaction_update_data(instance, payment_reference,
                                            transaction_obj):
+    status = None
+    if transaction_obj.is_full_redemption:
+        if instance.is_full_redemption and instance.is_reversed:
+            status = PAYMENT_STATUS_REFUNDED
+    elif (not transaction_obj.is_full_redemption and not
+            instance.is_full_redemption and instance.is_refunded and
+            instance.is_reversed):
+        status = PAYMENT_STATUS_REFUNDED
+    elif (transaction_obj.payment_method == PAYMENT_METHOD_ADCB_CARD_ONLY and
+          instance.is_refunded):
+        status = PAYMENT_STATUS_REFUNDED
     try:
         if transaction_obj:
             data_to_update = {
@@ -257,6 +276,8 @@ def prepare_youpay_transaction_update_data(instance, payment_reference,
                 'is_fraud': instance.is_fraud,
                 'is_flagged': instance.is_flagged,
             }
+            if status:
+                data_to_update.update({'payment_status': status})
             return data_to_update
         else:
             logger.info(
