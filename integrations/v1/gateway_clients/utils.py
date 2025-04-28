@@ -21,7 +21,9 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     SPONSOR_PAYMENT_NETWORK_PERCENTAGE,
                                     SPONSOR_PAYMENT_NETWORK_VALUE,
                                     CLIENT_CODE_MAPPING,
-                                    CLIENT_CODE_MAPPING_ARABIC
+                                    CLIENT_CODE_MAPPING_ARABIC,
+                                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
+                                    PAYMENT_METHOD
                                     )
 from payments.models import YouPayTransactionData
 from services.v1.views.common import YouPayTransactionCRUD
@@ -302,7 +304,16 @@ def calculate_balance(data):
                 update_data = {
                     'transaction_id': transaction_obj.transaction_id,
                     "brand_details": brand_details,
-                    "brand_calculations": calculated_balance
+                    "brand_calculations": calculated_balance,
+                    "amount": calculated_balance.get('sum_net_amount'),
+                    "service_fee": calculated_balance.get(
+                        'sum_applied_service_charge'),
+                    "VAT_amount": calculated_balance.get(
+                        'calculated_item_details')[0].get('applied_vat'),
+                    "redeemed_amount": selected_amount,
+                    "payable_amount": calculated_balance.get(
+                        'sum_card_payment_amount'),
+                    "payment_method": PAYMENT_METHOD.get(client_code)
                 }
                 crud_obj.update_youpay_transaction_data(update_data)
                 response_code = response_obj.SUCCESS

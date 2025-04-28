@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
-from core.messages import COMMON_ERROR_MESSAGE_EN
+from core.messages import (COMMON_ERROR_MESSAGE_EN, PARTIAL_FAILURE_ERROR,
+                           ADCB_CARD_PAYMENT_ERROR)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
@@ -128,11 +129,26 @@ class B2CPaybackAuthenticate(APIView, YouPayTransactionCRUD):
                 update_data['payment_method'] = PAYMENT_METHOD_TOUCHPOINTS
 
             elif selected_amount > 0 and checkout_amount > 0:  # partial redemption
+
+                # Validate the amounts against the total amount
+                if selected_amount + checkout_amount != invoice_amount:
+                    logger.error(f"{PARTIAL_FAILURE_ERROR} Transaction id: "
+                                 f"{transaction_obj.transaction_id}")
+                    return Response(self.response_obj.get_400_message(
+                        message=PARTIAL_FAILURE_ERROR),
+                        status=status.HTTP_400_BAD_REQUEST)
+
                 update_data['payment_method'] = (
                     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD)
                 update_data['payment_scheme'] = request.data.get('card_type')
 
             else:  # full amount from card
+                if checkout_amount != invoice_amount:
+                    logger.error(f"{ADCB_CARD_PAYMENT_ERROR} Transaction id: "
+                                 f"{transaction_obj.transaction_id}")
+                    return Response(self.response_obj.get_400_message(
+                        message=ADCB_CARD_PAYMENT_ERROR),
+                        status=status.HTTP_400_BAD_REQUEST)
                 update_data['payment_method'] = PAYMENT_METHOD_ADCB_CARD_ONLY
                 update_data['payment_scheme'] = request.data.get('card_type')
 

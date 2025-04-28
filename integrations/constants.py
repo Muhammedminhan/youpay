@@ -225,3 +225,6 @@ CLIENT_CODE_MAPPING_ARABIC = {
     MOKAFAA_CLIENT_CODE: "مكافأة",
     QITAF_CLIENT_CODE: "قطاف",
 }
+
+PAYMENT_METHOD = {'PAYMTMKF':'mokafaa', 'PAYMTNQTI':'neqaty',
+                  'PMTQTF':'qitaf', 'ADCBTP':'adcb'}

@@ -238,7 +238,15 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
                 updated_dict = {
                     'transaction_id': self.transaction_obj.transaction_id,
-                    'brand_calculations': updated_brand_calculations
+                    'brand_calculations': updated_brand_calculations,
+                    'amount': updated_brand_calculations.get('sum_net_amount'),
+                    'service_fee': updated_brand_calculations.get(
+                        'sum_applied_service_charge'),
+                    'VAT_amount': updated_brand_calculations.get(
+                        'calculated_item_details')[0].get('applied_vat'),
+                    'redeemed_amount': updated_brand_calculations,
+                    'payable_amount': updated_brand_calculations.get(
+                        'sum_card_payment_amount')
                 }
                 redemption_details = get_redemption_details(
                     self.transaction_obj, updated_brand_calculations)

@@ -231,7 +231,10 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
 
             points_redemption_data = validated_data
 
-            selected_amount_in_req = request.data.get("selected_amount")
+            selected_amount = str(int(
+                qitaf_redemption_serializer.transaction_obj.redeemed_amount))
+            checkout_amount = str(float(
+                qitaf_redemption_serializer.transaction_obj.payable_amount))
             transaction_order_reference = (
                 qitaf_redemption_serializer.transaction_obj.order_reference)
             points_redemption_data.update(
@@ -239,8 +242,8 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "transaction_obj": qitaf_redemption_serializer.transaction_obj,
                     "reference_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
                     "pin_number": validated_data.get('pin_number'),
-                    "selected_amount": selected_amount_in_req,
-                    "checkout_amount": validated_data.get('checkout_amount'),
+                    "selected_amount": selected_amount,
+                    "checkout_amount": checkout_amount,
                     "is_save_user_token": validated_data.get(
                         'is_save_user_token'),
                     "customer_name": validated_data.get('customer_name'),
