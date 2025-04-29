@@ -8,7 +8,9 @@ from core.constants import (
     PAYMENT_REQUEST_LANGUAGE_CHOICES)
 from core.models import (AbstractDateTime, AbstractUserBase, CustomerProfile,
                          Currency)
-from core.validators import DecimalValidator, MinLengthValidator, URLValidator
+from core.validators import (DecimalValidator, MinLengthValidator,
+                             URLValidator, validate_svg_or_image
+                             )
 
 
 # Create your models here.
@@ -36,13 +38,15 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     brand_details_path = models.CharField(
         null=True, blank=True, max_length=100,
         help_text='path to fetch Brand details, example :  brand-details/')
-    logo_file = models.ImageField(
+    logo_file = models.FileField(
         upload_to='logo_files', blank=True, null=True,
+        validators=[validate_svg_or_image],
         help_text='Logo for the client. Note that the max height, width of '
-                  'the logo should be 60px and the file size has to be '
-                  'below 4MB.')
-    mobile_logo_file = models.ImageField(
+                  'the logo should be 60px and the file size has to be below 4MB.'
+    )
+    mobile_logo_file = models.FileField(
         upload_to='mobile_logo_file', blank=True, null=True,
+        validators=[validate_svg_or_image],
         help_text='Mobile logo for the client. Note that the max height, '
                   'width of the logo should be 60px and the file size has to '
                   'be below 4MB.')
