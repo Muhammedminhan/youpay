@@ -201,6 +201,10 @@ def calculate_adcb_card_charges(instance):
                 "model_name": MODEL_NAME_ADCBTRANSACTIONDATA
             }
             common_update_financial_action_charges.delay(**fin_args)
+        except YouPayTransactionData.DoesNotExist:
+            logger.info(f"No matching transaction found for reference ID "
+                        f"{instance.reference_id}. Likely due to retry with "
+                        f"different payment method.")
         except Exception as e:
             logger.error("Error calling gateway charge calculation for "
                          "adcb transaction {}".format(instance.reference_id),
