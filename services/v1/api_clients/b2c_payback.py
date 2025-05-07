@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 
 from core.constants import PAYMENT_GATEWAY_B2CPAYBACK
 from core.messages import (COMMON_ERROR_MESSAGE_EN, PARTIAL_FAILURE_ERROR,
-                           ADCB_CARD_PAYMENT_ERROR)
+                           ADCB_CARD_PAYMENT_ERROR,
+                           BALANCE_CALCULATION_FAILED_ARABIC_MESSAGE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
@@ -26,6 +27,7 @@ from payments.constants import (
 )
 from services.v1.constants import B2C_PAYBACK_NO_RESPONSE_MESSAGE
 from services.v1.views.common import YouPayTransactionCRUD
+from services.constants import BALANCE_CALCULATION_FAILED_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -399,6 +401,14 @@ class CalculateBalance(APIView, YouPayTransactionCRUD):
                     return Response(data, status=status.HTTP_200_OK)
                 else:
                     data = self.response_obj.get_error_dict(error_code=code)
+                    response_code = data.get("errors", {}).get("code",
+                                                               "Not found")
+                    if response_code == BALANCE_CALCULATION_FAILED_CODE:
+                        response_message = data.get("errors", {}).get(
+                            "message", "Not found")
+                        message = (f"{response_message} -("
+                                   f"{BALANCE_CALCULATION_FAILED_ARABIC_MESSAGE})")
+                        data["errors"]["message"] = message
                     return Response(data,
                                     status=status.HTTP_400_BAD_REQUEST)
             else:

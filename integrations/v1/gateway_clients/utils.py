@@ -292,7 +292,7 @@ def calculate_balance(data):
             " {}".format(payload, response.json(), transaction_id))
 
         response_data = None
-        response_code = response_obj.QITAF_BALANCE_CALCULATION_FAILED
+        response_code = response_obj.BALANCE_CALCULATION_FAILED
         if response:
             response_data = response.json()
             if response_data.get('status', False):
@@ -322,7 +322,7 @@ def calculate_balance(data):
     except Exception as e:
         logger.error("Exception in calculate_balance: "
                      "{}".format(e), exc_info=True)
-        return None, response_obj.QITAF_BALANCE_CALCULATION_FAILED
+        return None, response_obj.BALANCE_CALCULATION_FAILED
 
 
 def apply_offer_if_needed(data, transaction_obj, calculated_balance,
