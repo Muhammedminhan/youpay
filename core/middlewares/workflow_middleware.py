@@ -299,7 +299,7 @@ class PaymentVerificationCheckMiddleware(object):
         if request.resolver_match:
             view_name = request.resolver_match.view_name
         try:
-            if view_name in VERIFY_PAYMENT_CLASSES:
+            if view_name in VERIFY_PAYMENT_CLASSES and self.transaction_obj:
                 logger.info("Middleware : {} Started for clevertap {}".format(
                     view_name, self.transaction_obj.transaction_id))
 
