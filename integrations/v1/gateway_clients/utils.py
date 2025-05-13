@@ -305,11 +305,6 @@ def calculate_balance(data):
                     'transaction_id': transaction_obj.transaction_id,
                     "brand_details": brand_details,
                     "brand_calculations": calculated_balance,
-                    "amount": calculated_balance.get('sum_net_amount'),
-                    "service_fee": calculated_balance.get(
-                        'sum_applied_service_charge'),
-                    "VAT_amount": calculated_balance.get(
-                        'calculated_item_details')[0].get('applied_vat'),
                     "redeemed_amount": selected_amount,
                     "payable_amount": calculated_balance.get(
                         'sum_card_payment_amount'),
