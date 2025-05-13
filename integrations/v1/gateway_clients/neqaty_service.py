@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -127,6 +128,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 self.response_data = response_data
                 logger.info("Neqaty point balance api response: {}".format(
                     response_data))
+
                 formatted_response = (
                     self.format_point_balance_response(response_data))
 
@@ -342,20 +344,23 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         if offer_details:
             program_offer = offer_details.get(NEQATY_CLIENT_CODE)
 
-        for option in redeem_options[:]:
+        response_redeem_options = []
+
+        for option in redeem_options:
             redeem_amount = option.get("redeemAmount")
             if redeem_amount > total_amount:
-                redeem_options.remove(option)
                 continue
             if program_offer:
                 process_offer_eligibility(option, program_offer,
                                         NEQATY_CLIENT_CODE)
+                option = copy.deepcopy(option)
                 option = process_calculated_item_details(option)
+            response_redeem_options.append(option)
 
         formatted_data = {
             "code": code,
             "message": message,
-            "redeem_options": redeem_options,
+            "redeem_options": response_redeem_options,
             "available_points": available_points,
             "reference_id": reference_id
         }
