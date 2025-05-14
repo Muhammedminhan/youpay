@@ -226,5 +226,15 @@ CLIENT_CODE_MAPPING_ARABIC = {
     QITAF_CLIENT_CODE: "قطاف",
 }
 
+EXPECTED_QITAF_ERRORS = [
+    'Invalid Msisdn',
+    'Insufficient Balance',
+    'QitafNot Found Or Available'
+]
+
+EXPECTED_NEQATY_ERRORS = ["MSISDN_NOT_IN_NAQATI", "NOT_HAVE_ENOUGH_POINTS"]
+
+EXPECTED_MOKAFAA_ERRORS = ["1019", "205", "209"]
+
 PAYMENT_METHOD = {'PAYMTMKF':'mokafaa', 'PAYMTNQTI':'neqaty',
                   'PMTQTF':'qitaf', 'ADCBTP':'adcb'}

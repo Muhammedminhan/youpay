@@ -25,7 +25,8 @@ from integrations.constants import (
     NEQATY_CLIENT_CODE, NEQATY_VERIFY_API,
     CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
-    NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS, )
+    NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS,
+    EXPECTED_NEQATY_ERRORS)
 from integrations.v1.gateway_clients.utils import (
     process_offer_eligibility, process_calculated_item_details)
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
@@ -152,10 +153,16 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             elif hasattr(response, 'text'):
                 self.response_data = json.loads(response.text)
-                logger.error("Error in Neqaty point balance api, {}"
-                             "".format(response.text))
-                partner_response = self.response_data.get(
-                    "partner_response")
+                partner_response = self.response_data.get("partner_response")
+
+                if partner_response and partner_response.get(
+                        "result_description") in EXPECTED_NEQATY_ERRORS:
+                    logger.info("Error in Neqaty point balance api: "
+                                "{}".format(response.text))
+                else:
+                    logger.error("Unexpected error in Neqaty point balance "
+                                 "api, {}".format(response.text))
+
                 self.update_youpay_transaction_data({
                     'transaction_id': self.transaction_obj.transaction_id,
                     'payment_reference': self.response_data.get(
