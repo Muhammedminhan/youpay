@@ -13,7 +13,8 @@ from core.messages import (REDIRECT_URL, IS_REDIRECT, IS_SUCCESS,
 from core.response_messages import YouPayResponse
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string,
-                        auto_enable_or_disable_point_collection)
+                        auto_enable_or_disable_point_collection,
+                        get_channel_code)
 from integrations.common import update_brand_details, get_redemption_details
 from integrations.constants import (
     B2CP_CACHE_KEY,
@@ -21,17 +22,21 @@ from integrations.constants import (
     NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
     PAYMENT_REQUEST_GENERATE_OTP, NEQATY_OTP_GENERATION_API,
     NEQATY_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
-    NEQATY_CLIENT_CODE, CHECKOUTPG_PAYMENT_CONFIGURATIONS,
-    CHECKOUT_SAUDI_CHANNEL_CODE, NEQATY_VERIFY_API, CONTENT_TYPE_HEADERS,
+    NEQATY_CLIENT_CODE, NEQATY_VERIFY_API,
+    CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
-    NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS, )
+    NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS,
+    EXPECTED_NEQATY_ERRORS)
+from integrations.v1.gateway_clients.utils import (
+    process_offer_eligibility, process_calculated_item_details)
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
-from services.v1.views.common import add_payment_gateway_info_in_url
+from services.v1.views.common import (add_payment_gateway_info_in_url,
+                                      YouPayTransactionCRUD)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -124,6 +129,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 self.response_data = response_data
                 logger.info("Neqaty point balance api response: {}".format(
                     response_data))
+
                 formatted_response = (
                     self.format_point_balance_response(response_data))
 
@@ -147,10 +153,16 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             elif hasattr(response, 'text'):
                 self.response_data = json.loads(response.text)
-                logger.error("Error in Neqaty point balance api, {}"
-                             "".format(response.text))
-                partner_response = self.response_data.get(
-                    "partner_response")
+                partner_response = self.response_data.get("partner_response")
+
+                if partner_response and partner_response.get(
+                        "result_description") in EXPECTED_NEQATY_ERRORS:
+                    logger.info("Error in Neqaty point balance api: "
+                                "{}".format(response.text))
+                else:
+                    logger.error("Unexpected error in Neqaty point balance "
+                                 "api, {}".format(response.text))
+
                 self.update_youpay_transaction_data({
                     'transaction_id': self.transaction_obj.transaction_id,
                     'payment_reference': self.response_data.get(
@@ -326,21 +338,36 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             )
 
     def format_point_balance_response(self, data):
-        redeem_options = copy.deepcopy(
-            data.get("partner_response").get("redeem_options"))
-        options = redeem_options
+        redeem_options = data.get("partner_response").get("redeem_options")
         code = data.get("code")
         message = data.get("message")
         available_points = data.get("partner_response").get("point_balance")
         reference_id = data.get("partner_response").get("reference_id")
+        total_amount = self.transaction_obj.amount
+        youpay_crud_object = YouPayTransactionCRUD()
+        program_offer = None
+        offer_details = youpay_crud_object.get_offer_details(
+            self.transaction_obj)
+        if offer_details:
+            program_offer = offer_details.get(NEQATY_CLIENT_CODE)
 
-        for option in options:
-            option.pop('calculated_item_details')
+        response_redeem_options = []
+
+        for option in redeem_options:
+            redeem_amount = option.get("redeemAmount")
+            if redeem_amount > total_amount:
+                continue
+            if program_offer:
+                process_offer_eligibility(option, program_offer,
+                                        NEQATY_CLIENT_CODE)
+                option = copy.deepcopy(option)
+                option = process_calculated_item_details(option)
+            response_redeem_options.append(option)
 
         formatted_data = {
             "code": code,
             "message": message,
-            "redeem_options": options,
+            "redeem_options": response_redeem_options,
             "available_points": available_points,
             "reference_id": reference_id
         }
@@ -363,8 +390,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "invoice_id": self.transaction_obj.invoice_id,
             "brand_calculations": self.transaction_obj.brand_calculations,
             "customer_ip_address": self.transaction_obj.ip,
-            "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
-                transaction_data.get("currency").upper()),
+            "channel_code": get_channel_code(self.transaction_obj),
             "source_payment_method": self.transaction_obj.payment_method,
         }
         return redeem_payload
@@ -535,7 +561,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     transaction_id)
 
                 request_data['invoice_id'] = transaction_obj.invoice_id
-                request_data['channel_code'] = CHECKOUT_SAUDI_CHANNEL_CODE
+                request_data['channel_code'] = get_channel_code(
+                    transaction_obj)
 
                 gateway_obj = get_payment_gateway_config(
                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)

@@ -3,12 +3,12 @@ import logging
 
 import requests
 
+from core.constants import PAYBACK_ACTION_EARN
 from core.response_messages import YouPayResponse
-from core.utils import get_payment_gateway_config
+from core.utils import get_payment_gateway_config, get_channel_code
 from integrations.common import update_brand_details
 from integrations.constants import (ADCB_CLIENT_CODE,
                                     ADCB_CHECKOUTPG_PAYMENT_NOT_PAID,
-                                    CHECKOUT_UAE_CHANNEL_CODE,
                                     CITI_REWARDS_OTP_EXPIRED_CODE,
                                     CITI_REWARDS_VALIDATION_ERROR_CODE,
                                     CITI_REWARDS_ALREADY_REDEEMED_CODE,
@@ -16,10 +16,14 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CITI_REWARDS_INVALID_CUSTOMER_CODE,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE,
-                                    CHECKOUT_UAE_CHANNEL_CODE,
-                                    CHECKOUT_SAUDI_CHANNEL_CODE,
                                     QITAF_CALCULATE_BALANCE_API,
-                                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE
+                                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
+                                    SPONSOR_PAYMENT_NETWORK_PERCENTAGE,
+                                    SPONSOR_PAYMENT_NETWORK_VALUE,
+                                    CLIENT_CODE_MAPPING,
+                                    CLIENT_CODE_MAPPING_ARABIC,
+                                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
+                                    PAYMENT_METHOD
                                     )
 from payments.models import YouPayTransactionData
 from services.v1.views.common import YouPayTransactionCRUD
@@ -92,13 +96,13 @@ def format_adcb_redemption_data(request_data, transaction_obj):
 
 def format_adcb_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
-    request_data['channel_code'] = CHECKOUT_UAE_CHANNEL_CODE
+    request_data['channel_code'] = get_channel_code(transaction_obj)
     return request_data
 
 
 def format_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
-    request_data['channel_code'] = CHECKOUT_SAUDI_CHANNEL_CODE
+    request_data['channel_code'] = get_channel_code(transaction_obj)
     return request_data
 
 
@@ -288,16 +292,23 @@ def calculate_balance(data):
             " {}".format(payload, response.json(), transaction_id))
 
         response_data = None
-        response_code = response_obj.QITAF_BALANCE_CALCULATION_FAILED
+        response_code = response_obj.BALANCE_CALCULATION_FAILED
         if response:
             response_data = response.json()
             if response_data.get('status', False):
                 calculated_balance = response_data.get(
                     'calculated_item_details')
+                apply_offer_if_needed(data, transaction_obj,
+                                      calculated_balance, client_code)
+
                 update_data = {
                     'transaction_id': transaction_obj.transaction_id,
                     "brand_details": brand_details,
-                    "brand_calculations": calculated_balance
+                    "brand_calculations": calculated_balance,
+                    "redeemed_amount": selected_amount,
+                    "payable_amount": calculated_balance.get(
+                        'sum_card_payment_amount'),
+                    "payment_method": PAYMENT_METHOD.get(client_code)
                 }
                 crud_obj.update_youpay_transaction_data(update_data)
                 response_code = response_obj.SUCCESS
@@ -306,4 +317,168 @@ def calculate_balance(data):
     except Exception as e:
         logger.error("Exception in calculate_balance: "
                      "{}".format(e), exc_info=True)
-        return None, response_obj.QITAF_BALANCE_CALCULATION_FAILED
+        return None, response_obj.BALANCE_CALCULATION_FAILED
+
+
+def apply_offer_if_needed(data, transaction_obj, calculated_balance,
+                          client_code):
+    """Apply offer details if the payback action is not earn"""
+    if data.get("payback_action") == PAYBACK_ACTION_EARN:
+        return
+
+    transaction_object = YouPayTransactionCRUD()
+    offer_details = transaction_object.get_offer_details(transaction_obj)
+    if offer_details:
+        program_offer = offer_details.get(client_code)
+        if program_offer:
+            process_offer_eligibility(calculated_balance, program_offer,
+                                    client_code)
+
+
+def process_offer_eligibility(calculated_balance, program_offer, client_code):
+    """
+    Evaluates whether an offer is applicable for each brand in the calculated item details.
+    """
+    try:
+        calculated_item_details = calculated_balance.get(
+            'calculated_item_details', [])
+        paid_by_points = calculated_balance.get('sum_redemption_points', 0)
+        for offer in program_offer:
+            calculated_threshold, grouped_calculated_item_details = (
+                find_threshold_amount_from_calc_balance(
+                    offer, calculated_item_details))
+
+            for calculated_item in grouped_calculated_item_details:
+                minimum_offer_value = float(offer.get("minimum_amount", 0))
+                maximum_offer_value = float(offer.get("maximum_amount", 0))
+                gift_base_value = calculated_item.get('gift_base_value')
+
+                if minimum_offer_value <= gift_base_value <= maximum_offer_value:
+                    is_offer_applicable, message, message_ar = check_offer_eligibility(
+                        calculated_threshold, paid_by_points, client_code
+                    )
+
+                    calculated_item.update({
+                        'is_offer_applicable': is_offer_applicable,
+                        'offer_text': offer.get("offer_text"),
+                        'brand_logo': offer.get("brand_logo"),
+                        'brand_name': offer.get("brand_name"),
+                        'offer_error_message': message,
+                        'offer_error_message_ar': message_ar,
+                        'offer_code': offer.get("offer_code"),
+                    })
+
+
+    except Exception as e:
+        logger.exception(
+            f"An error occurred in process_offer_eligibility: {e}")
+
+
+def check_offer_eligibility(calculated_threshold, paid_by_points,
+                            client_code):
+    """
+    Determines whether an offer is applicable based on sponsor payment threshold type.
+    """
+    is_offer_applicable = False
+    if calculated_threshold <= paid_by_points:
+        is_offer_applicable = True
+
+    message = None
+    message_ar = None
+    if not is_offer_applicable:
+        client_program_name = CLIENT_CODE_MAPPING.get(client_code,
+                                                      "Redemption")
+        client_program_name_ar = CLIENT_CODE_MAPPING_ARABIC.get(client_code,
+                                                                "Redemption")
+        message = f"Redeem at least SAR {calculated_threshold} in {client_program_name} points to claim the offer"
+        message_ar = f"استردّ ما لا يقل عن {calculated_threshold} ريال سعودي من نقاط {client_program_name_ar} للاستفادة من العرض."
+
+    return is_offer_applicable, message, message_ar
+
+
+def find_threshold_amount(offer_details, transaction_obj):
+    threshold_type = offer_details.get("sponsor_payment_threshold_type")
+    threshold = float(offer_details.get("sponsor_payment_threshold", 0))
+    minimum_offer_value = float(offer_details.get("minimum_amount", 0))
+    maximum_offer_value = float(offer_details.get("maximum_amount", 0))
+    offer_brand = offer_details.get("brand_code")
+    item_set = transaction_obj.brand_details.get("item_set")
+    total_quantity = 0
+    total_brand_value = 0
+
+    for item in item_set:
+        if item["brand_code"] == offer_brand:
+            if minimum_offer_value <= item[
+                "gift_base_value"] <= maximum_offer_value:
+                total_quantity += item["quantity"]
+                total_brand_value += item["quantity"] * item[
+                    "gift_base_value"]
+
+    if threshold_type == SPONSOR_PAYMENT_NETWORK_PERCENTAGE:
+        calculated_threshold = round(threshold * total_brand_value / 100)
+
+    elif threshold_type == SPONSOR_PAYMENT_NETWORK_VALUE:
+        calculated_threshold = round(total_quantity * threshold)
+    else:
+        calculated_threshold = None
+        logger.error("Invalid sponsor payment threshold type")
+    return calculated_threshold
+
+
+def find_threshold_amount_from_calc_balance(offer_details,
+                                            calculated_item_details):
+    threshold_type = offer_details.get("sponsor_payment_threshold_type")
+    threshold = float(offer_details.get("sponsor_payment_threshold", 0))
+    minimum_offer_value = float(offer_details.get("minimum_amount", 0))
+    maximum_offer_value = float(offer_details.get("maximum_amount", 0))
+    offer_brand = offer_details.get("brand_code")
+    total_quantity = 0
+    total_brand_value = 0
+    grouped_calculated_item_details = []
+
+    for item in calculated_item_details:
+        if item["brand_code"] == offer_brand:
+            if minimum_offer_value <= item[
+                "gift_base_value"] <= maximum_offer_value:
+                total_quantity += item["quantity"]
+                total_brand_value += item["quantity"] * item[
+                    "gift_base_value"]
+            grouped_calculated_item_details.append(item)
+
+    if threshold_type == SPONSOR_PAYMENT_NETWORK_PERCENTAGE:
+        calculated_threshold = round(threshold * total_brand_value / 100)
+
+    elif threshold_type == SPONSOR_PAYMENT_NETWORK_VALUE:
+        calculated_threshold = round(total_quantity * threshold)
+    else:
+        calculated_threshold = None
+        logger.error("Invalid sponsor payment threshold type")
+    return calculated_threshold, grouped_calculated_item_details
+
+
+def process_calculated_item_details(data):
+    required_keys = {
+        "brand_code",
+        "is_offer_applicable",
+        "offer_text",
+        "brand_logo",
+        "brand_name",
+        "offer_error_message",
+        "offer_error_message_ar",
+        "offer_code",
+    }
+    unique_brands = {}
+
+    for item in data.get("calculated_item_details", []):
+        brand_code = item.get("brand_code")
+
+        if brand_code not in unique_brands:
+            unique_brands[brand_code] = {key: None for key in required_keys}
+            unique_brands[brand_code]["brand_code"] = brand_code
+
+        for key in required_keys:
+            if key in item and item[key] is not None:
+                unique_brands[brand_code][key] = item[key]
+
+    data["calculated_item_details"] = list(unique_brands.values())
+    return data

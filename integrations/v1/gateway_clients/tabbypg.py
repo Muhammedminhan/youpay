@@ -16,7 +16,6 @@ from integrations.constants import (
     PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE,
     TABBYPG_VERIFY_PAYMENT_ENDPOINT, PAYMENT_REQUEST_VERIFY
 )
-from integrations.messages import TABBYPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.tabbypg_payment_request import (
     TabbyPGPaymentRequestSerializer
 )
@@ -120,70 +119,62 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         """if transaction is verified then proceed with payment"""
         try:
             if verify_status == status.HTTP_200_OK and is_verified:
-                tabbypg_conf = self.tabbypg_config
-                if tabbypg_conf:
-                    payment_data = self.get_tabbypg_payment_data(data)
-                    logger.info(
-                        "Youpay sending payment data is {}".format(
-                            payment_data))
-                    payment_data_to_send = json.dumps(payment_data)
-                    url = (self.tabbypg_config.domain +
-                           TABBYPG_CREATE_PAYMENT_ENDPOINT)
-                    headers = self.get_payment_header()
+                payment_data = self.get_tabbypg_payment_data(data)
+                logger.info("Youpay sending payment data is {}".format(
+                    payment_data))
+                payment_data_to_send = json.dumps(payment_data)
+                url = (self.tabbypg_config.domain +
+                       TABBYPG_CREATE_PAYMENT_ENDPOINT)
+                headers = self.get_payment_header()
 
-                    response = requests.post(url, data=payment_data_to_send,
-                                             headers=headers)
-                    logger.info("TabbyPG response is {}".format(response))
+                response = requests.post(url, data=payment_data_to_send,
+                                            headers=headers)
+                logger.info("TabbyPG response is {}".format(response))
+                response_data = response.json()
+                logger.info("tabbypg payment response: {}".format(response_data))
+
+                # storing Youpay to payment gateway request and response data
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=self.transaction_id,
+                    request_data=payment_data_to_send,
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
+                )
+
+                if response:
                     response_data = response.json()
-                    logger.info("tabbypg payment response: {}"
-                                .format(response_data))
-
-                    # storing Youpay to payment gateway request and response data
-                    self.create_youpay_to_payment_gateways_data(
-                        transaction_obj=transaction_obj,
-                        transaction_id=self.transaction_id,
-                        request_data=payment_data_to_send,
-                        response_data=response.text,
-                        request_method=REQUEST_METHOD_POST,
-                        request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
-                    )
-
-                    if response:
-                        response_data = response.json()
-                        logger.info("tabbypg payment response: {}"
-                                    .format(response_data))
-                        if (response_data.get('status') == 200 and
-                                response_data.get(IS_REDIRECT) is True):
-                            self.payment_reference = response_data.get(
-                                "payment_ref_no")
-
-                            self.payment_status = PAYMENT_STATUS_PENDING
-
-                            self.update_youpay_transaction_data(
-                                self.prepare_data_to_update())
-                            response_data[IS_SUCCESS] = True
-                            return response_data, self.SUCCESS
-
-                        logger.error("Error in tabbypg payment, {}".format(
-                            response.text))
-
+                    logger.info("tabbypg payment response: {}".format(
+                        response_data))
+                    if (response_data.get('status') == 200 and
+                            response_data.get(IS_REDIRECT) is True):
                         self.payment_reference = response_data.get(
                             "payment_ref_no")
-                        self.payment_status = tabby_reject_check(
-                            response_data)
+
+                        self.payment_status = PAYMENT_STATUS_PENDING
 
                         self.update_youpay_transaction_data(
                             self.prepare_data_to_update())
+                        response_data[IS_SUCCESS] = True
+                        return response_data, self.SUCCESS
 
-                        response, code = self.process_tabby_failure_response()
+                    if (response_data.get("payment_status") !=
+                            PAYMENT_STATUS_REJECTED):
+                        logger.error("Error in tabbypg payment, "
+                                     "{}".format(response.text))
 
-                        return response, code
+                    self.payment_reference = response_data.get("payment_ref_no")
+                    self.payment_status = tabby_reject_check(response_data)
 
-                    return ({"error": response_data},
-                            self.TABBYPG_CONNECTION_ERROR)
-                else:
-                    logger.error(TABBYPG_CONNECTION_ERROR_MESSAGE)
-                    return {None}, self.TABBYPG_CONNECTION_ERROR
+                    self.update_youpay_transaction_data(
+                        self.prepare_data_to_update())
+
+                    response, code = self.process_tabby_failure_response()
+
+                    return response, code
+
+                return {"error": response_data}, self.TABBYPG_CONNECTION_ERROR
             else:
                 msg = (
                     "Youpay tabby transaction verification failed, "

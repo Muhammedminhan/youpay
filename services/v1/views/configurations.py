@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
+from core.exceptions import PaymentConfigurationFailed
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
@@ -72,6 +73,12 @@ class ConfigViewSet(ViewSet):
         session_id = get_session_id_from_header(request)
         decrypted_transaction_id = decrypt_string(pk)
         try:
+            if not decrypted_transaction_id:
+                error_message = (
+                    "Invalid payment, configuration not found for "
+                    "{}").format(pk)
+                logger.info(error_message)
+                raise PaymentConfigurationFailed(error_message)
             transaction = YouPayTransactionData.objects.get(
                 transaction_id=decrypted_transaction_id)
             # session_key = self.get_session_key(request)
@@ -180,6 +187,10 @@ class ConfigViewSet(ViewSet):
                 "retry_count": transaction.retry_count,
                 "store": country_name,
                 "customer_email": transaction.customer_email,
+                "client_code": client.client_code,
+                "is_offer_enabled": transaction.is_offer_applicable,
+                "purchase_origin": (transaction.clevertap_items or {}).get(
+                    "purchase_origin"),
             },
         }
 
@@ -466,7 +477,9 @@ class ClientStaticFilesAPI(APIView):
                 api_client_data = {
                     'color': client.color_code,
                     'mobile_logo': get_mobile_logo_url(client),
-                    'logo': get_logo_url(client)
+                    'logo': get_logo_url(client),
+                    "program": get_display_program(client),
+                    "client_code": client.client_code,
                 }
 
                 data = response_obj.get_success_dict(

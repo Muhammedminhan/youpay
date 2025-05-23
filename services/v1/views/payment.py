@@ -16,10 +16,10 @@ from core.utils import (decrypt_payment_data,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded, encrypt_payment_data,
                         get_cached_payment_method_config)
+from integrations.common import update_offer_details
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
                                     MOKAFAA_CLIENT_CODE)
 from integrations.v1.gateway_clients.utils import calculate_balance
-
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
                                 PAYMENT_STATUS_CANCELLED,
@@ -75,7 +75,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
         try:
             # Validate client at first
-            validate, client_pk = self.validate_client(request)
+            validate, client = self.validate_client(request)
             if not validate:
                 logger.info(
                     "payment request client validation failed for {0}"
@@ -84,6 +84,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                     message="Client Does Not Exist")
                 return Response(self.return_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
+            client_pk = client.pk
 
             decrypted_data = decrypt_payment_data(request.data)
             data_formatted = reformat_payment_request_data(decrypted_data)
@@ -110,6 +111,20 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                                 status=status.HTTP_400_BAD_REQUEST)
 
             order_reference = data_formatted.get('order_reference')
+
+            is_offer_applicable = data_formatted.get(
+                "order").get("is_offer_applicable")
+            logger.info(
+                "is_offer_applicable is {} for {}".format(
+                    is_offer_applicable,
+                    data_formatted.get(
+                        "invoice_id")))
+            if is_offer_applicable:
+                invoice_id = data_formatted.get("invoice_id")
+                offer_details = data_formatted.get("order").get(
+                    "offer_details")
+                update_offer_details(client_pk, invoice_id, offer_details)
+
             lock_name = ('lock:PaymentRequestView:order_reference_%s'
                          % (order_reference,))
             with wait_redis_lock(lock_name=lock_name):
@@ -742,8 +757,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
             transaction_obj.earned_point = earned_points
-            if calculated_item_details:
-                transaction_obj.brand_calculations = calculated_item_details
             transaction_obj.save()
 
             logger.info(
@@ -799,9 +812,24 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         response_data, code = calculate_balance(payload)
 
         if code == self.SUCCESS:
-            calculated_item_details = response_data.get(
-                'calculated_item_details')
-            transaction_obj.brand_calculations = calculated_item_details
+            calculated_items = response_data.get('calculated_item_details',
+                                                 {}).get(
+                'calculated_item_details', [])
+            existing_data = transaction_obj.brand_calculations or {}
+            existing_items = existing_data.get('calculated_item_details', [])
+
+            existing_items_map = {item.get('item_id'): item for item in
+                                  existing_items}
+
+            for item in calculated_items:
+                item_id = item.get('item_id')
+                if item_id in existing_items_map:
+                    existing_items_map[item_id]['earn_discount'] = item.get(
+                        'earn_discount')
+            existing_data['calculated_item_details'] = list(
+                existing_items_map.values())
+
+            transaction_obj.brand_calculations = existing_data
 
         logger.info("{} Brand Calculated for transaction {}".format(
             self.class_name, transaction_obj.transaction_id))
@@ -909,7 +937,7 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         try:
             transaction_id = None
 
-            validate, client_pk = self.validate_client(request)
+            validate, client = self.validate_client(request)
             if not validate:
                 logger.info(
                     "{} payment request client validation failed"

@@ -142,7 +142,10 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
 
             points_redemption_data = validated_data
 
-            selected_amount_in_req = request.data.get("selected_amount")
+            selected_amount = str(int(
+                mokafaa_redemption_serializer.transaction_obj.redeemed_amount))
+            checkout_amount = str(float(
+                mokafaa_redemption_serializer.transaction_obj.payable_amount))
             customer_name = request.data.get("customer_name")
             transaction_order_reference = (
                 mokafaa_redemption_serializer.transaction_obj.order_reference)
@@ -154,8 +157,8 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                         mokafaa_redemption_serializer.transaction_obj.
                         payment_reference),
                     "one_time_password": validated_data.get('pin_number'),
-                    "selected_amount": selected_amount_in_req,
-                    "checkout_amount": validated_data.get('checkout_amount'),
+                    "selected_amount": selected_amount,
+                    "checkout_amount": checkout_amount,
                     "is_save_user_token": validated_data.get(
                         'is_save_user_token'),
                     "customer_name": customer_name,

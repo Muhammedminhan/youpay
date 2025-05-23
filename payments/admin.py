@@ -43,7 +43,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                    'payment_gateway', 'payment_method', 'currency',
                    "platform", "is_gcc_card", "is_flagged", "is_fraud",
                    'created_at', 'is_guest', "point_collection_enabled",
-                   "point_program")
+                   "point_program", "is_offer_applicable")
     raw_id_fields = ('api_client',)
 
     inlines = [
@@ -64,17 +64,18 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('Order details', {
             'fields': ('invoice_id', 'order_id', 'order_reference',
                        'api_client', 'order_history', 'payment_status',
-                       'approved', 'order_items',
+                       'approved', 'order_items', 'clevertap_items',
                        )
         }),
         ('Cart details', {
-            'fields': ('cart_amount', 'cart_currency', 'cart_service_fee',
+            'fields': ('cart_amount', 'amount_in_aed', 'cart_currency',
+                       'cart_service_fee',
                        'cart_base_amount', 'cart_VAT_amount', 'brand_details',
-                       'brand_calculations'
+                       'brand_calculations', 'is_offer_applicable'
                        )
         }),
         ('Payment details', {
-            'fields': ('amount', 'amount_in_aed', 'currency', 'country_code',
+            'fields': ('amount', 'currency', 'country_code',
                        'transaction_id', 'payment_reference',
                        'settlement_entity', 'payment_gateway',
                        'channel_code', 'payment_method', 'payment_scheme',

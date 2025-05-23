@@ -4,6 +4,8 @@ import requests
 
 from payments.constants import (PAYMENT_METHOD_NEQATY,
                                 PAYMENT_METHOD_NEQATY_AND_CARD)
+from services.models import APIClient
+from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
 
@@ -134,3 +136,36 @@ def get_redemption_details(transaction_obj, updated_brand_calculations):
                 transaction_obj.transaction_id
             ))
     return youpay_update_data
+
+
+def update_offer_details(client_pk, invoice_id, offer_details):
+    """
+    Updates and stores offer details for a transaction.
+
+    Parameters:
+    - client_pk (int): Primary key of the `APIClient` model.
+    - invoice_id (str): Invoice ID associated with the transaction.
+    - offer_details (dict): Offer details to be stored.
+
+    Process:
+    - Retrieves the client instance using the provided primary key.
+    - Prepares offer data including the invoice ID, offer details, and client reference.
+    - Stores the offer details using the `YouPayTransactionCRUD` object.
+    - Logs an error if the process fails.
+    """
+    transaction_crud_obj = YouPayTransactionCRUD()
+    try:
+        client = APIClient.objects.get(id=client_pk)
+        invoice = invoice_id
+
+        offer_data = {
+            "invoice_id": invoice,
+            "offer_details": offer_details,
+            "client": client
+        }
+        transaction_crud_obj.create_offer_details(offer_data)
+
+
+    except Exception as e:
+        logger.error(
+            "Getting offer details failed with error {}".format(str(e)))

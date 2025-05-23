@@ -23,3 +23,12 @@ IS_SUCCESS = "is_success"
 
 COMMON_ERROR_MESSAGE_EN = "Oops! Something went wrong with the system."
 COMMON_ERROR_MESSAGE_EN_CODE = 11111
+
+PARTIAL_FAILURE_ERROR = ("Error in partial payment: the sum of the partial "
+                         "amounts does not match the total amount.")
+ADCB_CARD_PAYMENT_ERROR = ("Error in adcb card payment: the checkout amount "
+                           "does not match the invoice amount.")
+
+BALANCE_CALCULATION_FAILED_ARABIC_MESSAGE = "فشل في حساب رصيد برنامج النقاط. حاول تدفع بطريقة دفع مختلفة."
+
+MAX_RETRY_ARABIC_MESSAGE = "وصلت الحد الأعلى للمحاولات"

@@ -209,3 +209,32 @@ B2CP_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
 B2CP_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
 B2CP_REDEEM_POINTS_API = "/payback/api/v1/touchpoint/burn-points/"
 B2CP_VERIFY_API = "/payback/api/v1/verify"
+
+SPONSOR_PAYMENT_NETWORK_PERCENTAGE = 'percentage'
+SPONSOR_PAYMENT_NETWORK_VALUE = 'value'
+
+CLIENT_CODE_MAPPING = {
+    NEQATY_CLIENT_CODE: "Neqaty",
+    MOKAFAA_CLIENT_CODE: "Mokafaa",
+    QITAF_CLIENT_CODE: "Qitaf",
+    ADCB_CLIENT_CODE: "ADCB",
+}
+
+CLIENT_CODE_MAPPING_ARABIC = {
+    NEQATY_CLIENT_CODE: "نقاطي",
+    MOKAFAA_CLIENT_CODE: "مكافأة",
+    QITAF_CLIENT_CODE: "قطاف",
+}
+
+EXPECTED_QITAF_ERRORS = [
+    'Invalid Msisdn',
+    'Insufficient Balance',
+    'QitafNot Found Or Available'
+]
+
+EXPECTED_NEQATY_ERRORS = ["MSISDN_NOT_IN_NAQATI", "NOT_HAVE_ENOUGH_POINTS"]
+
+EXPECTED_MOKAFAA_ERRORS = ["1019", "205", "209"]
+
+PAYMENT_METHOD = {'PAYMTMKF':'mokafaa', 'PAYMTNQTI':'neqaty',
+                  'PMTQTF':'qitaf', 'ADCBTP':'adcb'}

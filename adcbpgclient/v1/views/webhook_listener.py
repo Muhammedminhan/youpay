@@ -119,6 +119,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     'payment_scheme', PAYMENT_SCHEME_NONE)
                 transaction_obj.payment_id = request_data.get(
                     'payment_id')
+                transaction_obj.is_refunded = request_data.get('is_refunded')
+                transaction_obj.is_reversed = request_data.get('is_reversed')
                 transaction_obj.financial_action_response_data = (
                     request_data.get(
                         'financial_action_response_data'))
@@ -195,7 +197,9 @@ class WebhookListener(APIView, WebhookDataFormat):
                         request_data.get(
                             'financial_action_response_data')),
                     brand_calculations=(request_data.get(
-                        'brand_calculations')))
+                        'brand_calculations')),
+                    is_refunded=request_data.get('is_refunded'),
+                    is_reversed=request_data.get('is_reversed'))
             response_data = {'message': "B2cpayback webhook listener "
                                         "successfully processed data",
                              'status': True}
