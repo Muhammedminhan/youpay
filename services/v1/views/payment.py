@@ -330,6 +330,10 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             "currency": transaction_obj.currency,
             "payment_method": payment_method,
         }
+        if (transaction_obj.order_reference.startswith('TOP') or
+                transaction_obj.order_reference.startswith('PMT')):
+            verify_body["order_reference"] = str(
+                transaction_obj.order_reference)
         return verify_body
 
     def get_api_client_keys(self, transaction_obj):
