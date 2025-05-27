@@ -345,8 +345,9 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             "currency": transaction_obj.currency,
             "payment_method": payment_method,
         }
-        if (transaction_obj.order_reference.startswith('TOP') or
-                transaction_obj.order_reference.startswith('PMT')):
+        if (any(transaction_obj.order_reference.startswith(prefix) for
+                prefix in ['TOP', 'PMT']) and '|REW|' in
+                transaction_obj.order_reference):
             verify_body["order_reference"] = str(
                 transaction_obj.order_reference)
         return verify_body
