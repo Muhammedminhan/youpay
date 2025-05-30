@@ -31,7 +31,9 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_NEQATY,
                                 PAYMENT_METHOD_MOKAFAA,
                                 REDEEM_AMOUNT_APPLICABLE_LIST,
-                                PAYMENT_METHOD_MOKAFAA_AND_CARD)
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_METHOD_ANB,
+                                PAYMENT_METHOD_ANB_AND_CARD)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -330,11 +332,13 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
         amount = transaction_obj.amount
         if payment_method in [PAYMENT_METHOD_CITI_REWARDS,
-                              PAYMENT_METHOD_QITAF, PAYMENT_METHOD_MOKAFAA]:
+                              PAYMENT_METHOD_QITAF, PAYMENT_METHOD_MOKAFAA,
+                              PAYMENT_METHOD_ANB]:
             amount = transaction_obj.base_amount
         elif payment_method in [PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY,
-                                PAYMENT_METHOD_MOKAFAA_AND_CARD]:
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_METHOD_ANB_AND_CARD]:
             amount = transaction_obj.brand_calculations.get(
                 'sum_net_amount', None)
 

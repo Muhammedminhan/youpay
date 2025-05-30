@@ -204,6 +204,9 @@ REDEMPTION_PARTNER_NEQATY = "NEQATY"
 MOKAFAA_CLIENT_CODE = 'PAYMTMKF'
 REDEMPTION_PARTNER_MOKAFAA = "MOKAFAA"
 
+# AnB related constants
+ANB_CLIENT_CODE = 'PMTANB'
+
 # B2c_payback related common constants
 B2CP_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
 B2CP_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
@@ -237,4 +240,4 @@ EXPECTED_NEQATY_ERRORS = ["MSISDN_NOT_IN_NAQATI", "NOT_HAVE_ENOUGH_POINTS"]
 EXPECTED_MOKAFAA_ERRORS = ["1019", "205", "209"]
 
 PAYMENT_METHOD = {'PAYMTMKF':'mokafaa', 'PAYMTNQTI':'neqaty',
-                  'PMTQTF':'qitaf', 'ADCBTP':'adcb'}
+                  'PMTQTF':'qitaf', 'ADCBTP':'adcb', 'PMTANB': 'anb'}
