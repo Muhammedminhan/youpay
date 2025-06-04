@@ -18,7 +18,9 @@ from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
     PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST,
-    POINT_PROGRAMS)
+    POINT_PROGRAMS, PAYMENT_METHOD_QITAF, PAYMENT_METHOD_QITAFAND_CARD)
+from integrations.constants import PAYMENT_REQUEST_REDEMPTION
+from integrations.models import YoupayToPaymentGatewaysData
 
 logger = logging.getLogger(__name__)
 
@@ -334,7 +336,8 @@ def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
 
     if (instance.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK and
             instance.previous_status not in ALLOW_ARCHIVE_STATUS_LIST):
-        if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
+        if (instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST and
+                is_successful_redemption(instance)):
             reverse_redemption(instance)
 
 
@@ -402,6 +405,56 @@ def reverse_redemption(instance):
         logger.error(
             "Exception occurred {} on signal while triggering mail "
             "for {}, ".format(str(e), instance.transaction_id))
+
+
+def is_successful_redemption(instance):
+    """
+    Check if a successful redemption happened for a given transaction.
+    """
+    try:
+        logger.info(f"Initiating successful redemption check for "
+                    f"transaction: {instance.transaction_id}")
+
+        # Get the latest redemption API call instance
+        payment_data = YoupayToPaymentGatewaysData.objects.filter(
+            youpay_payment=instance, request_type=PAYMENT_REQUEST_REDEMPTION
+        ).order_by('-created_at').first()
+
+        if not payment_data:
+            logger.info(f"No Redemption API call found for "
+                        f"transaction: {instance.transaction_id}")
+            return False
+
+        data = payment_data.payment_response_data
+
+        if not isinstance(data, dict):  # Ensure data is a valid dictionary
+            return False
+
+        partner_response = data.get("partner_response") or {}
+        results = data.get("results") or {}
+
+        # Define redemption conditions
+        qitaf_success = (
+            instance.payment_method in
+            [PAYMENT_METHOD_QITAF, PAYMENT_METHOD_QITAFAND_CARD] and
+            data.get("status") in ["Success", 200]
+        )
+        adcb_success = results.get("redemption_status")
+        other_partner_success = partner_response.get("redemption_status")
+
+        if qitaf_success or adcb_success or other_partner_success:
+            logger.info(f"Successful redemption detected for transaction: "
+                        f"{instance.transaction_id}")
+            return True
+
+        logger.info(f"No successful redemption found for transaction: "
+                    f"{instance.transaction_id}")
+        return False
+
+    except Exception:
+        logger.error(f"Exception occurred during redemption check for "
+                     f"transaction: {instance.transaction_id}", exc_info=True)
+        return False
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):

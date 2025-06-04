@@ -17,7 +17,6 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     PAYMENT_REQUEST_POINT_BALANCE,
                                     CITI_REWARDS_ACCOUNT_LOCKED_ERROR_CODE,
                                     QITAF_CALCULATE_BALANCE_API,
-                                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
                                     SPONSOR_PAYMENT_NETWORK_PERCENTAGE,
                                     SPONSOR_PAYMENT_NETWORK_VALUE,
                                     CLIENT_CODE_MAPPING,
@@ -292,7 +291,7 @@ def calculate_balance(data):
             " {}".format(payload, response.json(), transaction_id))
 
         response_data = None
-        response_code = response_obj.QITAF_BALANCE_CALCULATION_FAILED
+        response_code = response_obj.BALANCE_CALCULATION_FAILED
         if response:
             response_data = response.json()
             if response_data.get('status', False):
@@ -305,11 +304,6 @@ def calculate_balance(data):
                     'transaction_id': transaction_obj.transaction_id,
                     "brand_details": brand_details,
                     "brand_calculations": calculated_balance,
-                    "amount": calculated_balance.get('sum_net_amount'),
-                    "service_fee": calculated_balance.get(
-                        'sum_applied_service_charge'),
-                    "VAT_amount": calculated_balance.get(
-                        'calculated_item_details')[0].get('applied_vat'),
                     "redeemed_amount": selected_amount,
                     "payable_amount": calculated_balance.get(
                         'sum_card_payment_amount'),
@@ -322,7 +316,7 @@ def calculate_balance(data):
     except Exception as e:
         logger.error("Exception in calculate_balance: "
                      "{}".format(e), exc_info=True)
-        return None, response_obj.QITAF_BALANCE_CALCULATION_FAILED
+        return None, response_obj.BALANCE_CALCULATION_FAILED
 
 
 def apply_offer_if_needed(data, transaction_obj, calculated_balance,

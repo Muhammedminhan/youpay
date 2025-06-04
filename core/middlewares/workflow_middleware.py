@@ -16,7 +16,7 @@ from core.exceptions import (
     TransactionAlreadyVerified, TransactionMaxAttemptReached)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
-    MIDDLEWARE_ALREADY_PAID_MESSAGE)
+    MIDDLEWARE_ALREADY_PAID_MESSAGE, MAX_RETRY_ARABIC_MESSAGE)
 from core.response_messages import YouPayResponse
 from core.utils import get_display_platform, get_display_program
 from payments.constants import (
@@ -224,7 +224,8 @@ class PaymentStatusCheckMiddleware(object):
             cancel the transaction and redirect to cancel url
             """
 
-            message = "You have reached your maximum retry attempt"
+            message = (f"You have reached your maximum retry attempt -("
+                       f"{MAX_RETRY_ARABIC_MESSAGE})")
 
             youpay_obj.update_youpay_transaction_data(
                 {
@@ -298,7 +299,7 @@ class PaymentVerificationCheckMiddleware(object):
         if request.resolver_match:
             view_name = request.resolver_match.view_name
         try:
-            if view_name in VERIFY_PAYMENT_CLASSES:
+            if view_name in VERIFY_PAYMENT_CLASSES and self.transaction_obj:
                 logger.info("Middleware : {} Started for clevertap {}".format(
                     view_name, self.transaction_obj.transaction_id))
 

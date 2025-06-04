@@ -31,7 +31,9 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_NEQATY,
                                 PAYMENT_METHOD_MOKAFAA,
                                 REDEEM_AMOUNT_APPLICABLE_LIST,
-                                PAYMENT_METHOD_MOKAFAA_AND_CARD)
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_METHOD_ANB,
+                                PAYMENT_METHOD_ANB_AND_CARD)
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -330,11 +332,13 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
         amount = transaction_obj.amount
         if payment_method in [PAYMENT_METHOD_CITI_REWARDS,
-                              PAYMENT_METHOD_QITAF, PAYMENT_METHOD_MOKAFAA]:
+                              PAYMENT_METHOD_QITAF, PAYMENT_METHOD_MOKAFAA,
+                              PAYMENT_METHOD_ANB]:
             amount = transaction_obj.base_amount
         elif payment_method in [PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY,
-                                PAYMENT_METHOD_MOKAFAA_AND_CARD]:
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_METHOD_ANB_AND_CARD]:
             amount = transaction_obj.brand_calculations.get(
                 'sum_net_amount', None)
 
@@ -753,8 +757,6 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         if code == self.SUCCESS:
             transaction_obj.earn_reference = earn_reference
             transaction_obj.earned_point = earned_points
-            if calculated_item_details:
-                transaction_obj.brand_calculations = calculated_item_details
             transaction_obj.save()
 
             logger.info(
@@ -810,9 +812,24 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
         response_data, code = calculate_balance(payload)
 
         if code == self.SUCCESS:
-            calculated_item_details = response_data.get(
-                'calculated_item_details')
-            transaction_obj.brand_calculations = calculated_item_details
+            calculated_items = response_data.get('calculated_item_details',
+                                                 {}).get(
+                'calculated_item_details', [])
+            existing_data = transaction_obj.brand_calculations or {}
+            existing_items = existing_data.get('calculated_item_details', [])
+
+            existing_items_map = {item.get('item_id'): item for item in
+                                  existing_items}
+
+            for item in calculated_items:
+                item_id = item.get('item_id')
+                if item_id in existing_items_map:
+                    existing_items_map[item_id]['earn_discount'] = item.get(
+                        'earn_discount')
+            existing_data['calculated_item_details'] = list(
+                existing_items_map.values())
+
+            transaction_obj.brand_calculations = existing_data
 
         logger.info("{} Brand Calculated for transaction {}".format(
             self.class_name, transaction_obj.transaction_id))
