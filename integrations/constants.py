@@ -34,6 +34,7 @@ AMAZONPG_HUB_CODE = 'PAYMTAPG'
 HAPPYCREDITS_HUB_CODE = 'PAYMTHPCRED'
 APPLE_PAY_HUB_CODE = ''  # TODO: Add Apple Pay code
 QITAF_HUB_CODE = 'PAYMTQTF'
+PAYPAL_HUB_CODE = 'PAYPAL'
 
 CHECKOUT_VERIFY_URL = 'services/checkout/verify/'
 
@@ -112,6 +113,7 @@ AMAZONPG_CACHE_KEY = 'amazonpg_config'
 HAPPYCREDITS_CACHE_KEY = 'happycredits_config'
 APPLE_PAY_CACHE_KEY = "apple_pay_config"
 QITAF_CACHE_KEY = 'qitaf_config'
+PAYPAL_CACHE_KEY = 'paypal_pay_config'
 
 PAYMENT_METHOD_CONFIG_CACHE_KEY = 'youpay_payment_method_config'
 PAYMENT_CONFIG_CACHE_KEY = 'youpay_payment_config'

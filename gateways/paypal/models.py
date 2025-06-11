@@ -22,17 +22,17 @@ class PaymentAccessToken(AbstractDateTime):
         return timezone.now() > expiry_time
 
     @classmethod
-    def get_paypal_access_token(cls):
+    def get_paypal_access_token(cls, gateway_obj):
         try:
             token_obj = cls.objects.first()
             if token_obj and not token_obj.is_expired():
                 return token_obj.access_token
 
             logger.info("Access token expired, getting new token")
-            url = PAYPAL_AUTHENTICATION_ENDPOINT
+            url = gateway_obj.domain + PAYPAL_AUTHENTICATION_ENDPOINT
 
-            client_id = ""
-            client_secret = ""
+            client_id = gateway_obj.api_key
+            client_secret = gateway_obj.api_secret
             response = requests.post(
                 url,
                 auth=(client_id, client_secret),
@@ -75,3 +75,4 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
     capture_id = models.CharField(max_length=100, blank=True, null=True)
     payer_id = models.CharField(max_length=100, blank=True, null=True)
     raw_response = models.JSONField(blank=True, null=True)
+    refund_id = models.CharField(max_length=100, blank=True, null=True)
