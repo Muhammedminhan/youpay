@@ -177,6 +177,18 @@ class YouPayResponse(object):
     ANB_VERIFICATION_EXCEPTION = 10808
     """AnB related ends """
 
+    """PayPal related begins"""
+    PAYPAL_CONNECTION_ERROR = 18001
+    PAYPAL_VERIFICATION_FAILED = 18002
+    PAYPAL_VERIFICATION_SUCCESS = 18003
+    PAYPAL_VERIFICATION_EXCEPTION = 18004
+    PAYPAL_PAYMENT_FAILED = 18005
+    PAYPAL_INSUFFICIENT_FUNDS = 18006
+    PAYPAL_INVALID_REQUEST = 18007
+    PAYPAL_NOT_SUPPORTED = 18008
+    PAYAPL_PAYMENT_INCOMPLETE = 18009
+    """PayPal related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
@@ -319,7 +331,16 @@ class YouPayResponse(object):
             self.ANB_OTP_EXPIRED: "OTP has expired",
             self.ANB_PAYMENT_FAILED: "Payment failed",
             self.ANB_VERIFICATION_FAILED: "Verification failed",
-            self.ANB_VERIFICATION_EXCEPTION: "Verification failed"
+            self.ANB_VERIFICATION_EXCEPTION: "Verification failed",
+
+            self.PAYPAL_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.PAYPAL_VERIFICATION_FAILED: "PayPal verification failed",
+            self.PAYPAL_VERIFICATION_EXCEPTION: "PayPal verification exception",
+            self.PAYPAL_PAYMENT_FAILED: "PayPal payment failed",
+            self.PAYPAL_INSUFFICIENT_FUNDS: "PayPal insufficient funds",
+            self.PAYPAL_INVALID_REQUEST: "PayPal invalid request",
+            self.PAYPAL_NOT_SUPPORTED: "PayPal not supported",
+            self.PAYAPL_PAYMENT_INCOMPLETE: "PayPal payment incomplete",
         })
 
     def get_400_message(self, message):
