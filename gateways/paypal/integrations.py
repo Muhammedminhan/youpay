@@ -9,12 +9,14 @@ from core.utils import get_payment_gateway_config
 from gateways.common import _get_payment_reference_number
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ORDER_ENDPOINT,
-                                       PAYPAL_ORDER_STATUS_APPROVED)
+                                       PAYPAL_ORDER_STATUS_APPROVED,
+                                       PAYPAL_CAPTURE_STATUS_COMPLETED)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
                                     PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY)
-from payments.constants import PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING
+from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
+                                PAYMENT_STATUS_PAID)
 from services.utils import get_payment_redirect_url
 from services.v1.views.common import get_saved_fields
 from services.v1.views.payment import PaymentRequestView
@@ -227,7 +229,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             self.reference_id = self.transaction_obj.payment_reference
             order_id = request_data.get('order_id')
             headers = self.get_headers()
-            order_status = self.check_order_approval(order_id)
+            paypal_transaction = self.get_paypal_transaction()
+            order_status = self.check_order_approval(order_id,
+                                                     paypal_transaction)
 
             if order_status["status"] == PAYPAL_ORDER_STATUS_APPROVED:
                 url = self.paypal_config.domain + PAYPAL_ORDER_ENDPOINT + '/' + order_id + '/capture'
@@ -252,7 +256,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 if response:
                     response_data_json = response.json()
                     response_data, response_code = self.handle_paypal_capture_response(
-                        response_data_json)
+                        response_data_json, paypal_transaction)
                     return response_data, response_code
                 logger.error(
                     "Error occurred on paypal capture order for "
@@ -260,6 +264,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                                                    response.text))
                 return None, self.PAYPAL_CONNECTION_ERROR
             elif order_status["status"] == PAYPAL_ORDER_STATUS_CREATED:
+
                 return_data = {
                     "status": 200,
                     "is_redirect": True,
@@ -298,36 +303,45 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     self.transaction_id))
             return None
 
-    def handle_paypal_capture_response(self, response_data_json):
+    def handle_paypal_capture_response(self, response_data_json,
+                                       paypal_transaction):
         try:
-            order_id = response_data_json.get("id")
-            paypal_transaction = self.get_paypal_transaction()
-            if paypal_transaction:
-                self.update_paypal_transaction_data(
-                    paypal_transaction,
-                    response_data_json)
+            status = paypal_transaction.status
+            purchase_unit = response_data_json.get("purchase_units")
+            payments = purchase_unit.get("payments", {})
+            capture = payments.get("captures")
+            capture_status = capture.get("status", "").upper()
+            if capture_status == "COMPLETED":
                 return_data = {
                     "status": 200,
                     "is_redirect": True,
                     "redirect_url": self.transaction_obj.success_url,
-                    "is_success": True
+                    "is_success": True,
                 }
-            else:
-                logger.error(
-                    f"PaypalTransaction not found for order ID {order_id}")
-                return {
-                    "message": "Transaction not found.",
-                    "status": 404,
-                    "is_success": False
-                }, self.PAYPAL_INVALID_REQUEST
+                code = self.SUCCESS
+                status = PAYPAL_CAPTURE_STATUS_COMPLETED
+                response_data_json[
+                    'success'] = PAYPAL_CAPTURE_STATUS_COMPLETED
+                self.update_youpay_transaction_data({
+                    "transaction_id": self.transaction_id,
+                    "status": PAYMENT_STATUS_PAID
+                })
 
-            return return_data, self.SUCCESS
+            else:
+                return_data = None
+                code = self.PAYPAL_CONNECTION_ERROR
+
+            response_data_json['status'] = status
+            self.update_paypal_transaction_data(
+                paypal_transaction,
+                response_data_json)
+            return return_data, code
+
         except Exception as e:
-            logger.error(f"Error in handle_paypal_capture_response: {e}")
-            return {
-                "status": "error",
-                "message": f"Failed to process capture response: {str(e)}",
-            }, self.PAYPAL_CONNECTION_ERROR
+            logger.error(
+                f"Error in handle_paypal_capture_response for "
+                f"transaction {self.transaction_id}: {e}")
+            return None, self.PAYPAL_CONNECTION_ERROR
 
     def update_paypal_transaction_data(self, paypal_transaction,
                                                     response_data):
@@ -343,7 +357,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
 
             data_dict["capture_id"] = capture_info.get("id")
             data_dict["order_id"] = capture_info.get("id")
-            data_dict["status"] = capture_info.get("status")
+            data_dict["status"] = response_data.get("status")
             data_dict["customer_email"] = payer.get("email_address")
             data_dict["payer_id"] = payer.get("payer_id")
             data_dict[
@@ -390,7 +404,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                          "transaction {}".format(self.transaction_id))
             return None
 
-    def check_order_approval(self, order_id):
+    def check_order_approval(self, order_id, paypal_transaction):
         """
         Check if PayPal order is APPROVED.
         If CREATED, redirect back to PayPal approval link.
@@ -405,6 +419,11 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         status = order_data.get("status")
 
         if status == "APPROVED":
+            update_data = {
+                "status": PAYPAL_ORDER_STATUS_APPROVED
+            }
+            self.update_paypal_transaction_data(paypal_transaction,
+                                                update_data)
             logger.info("Order is APPROVED for transaction {}".format(
                 self.transaction_id))
             return {"status": PAYPAL_ORDER_STATUS_APPROVED}
