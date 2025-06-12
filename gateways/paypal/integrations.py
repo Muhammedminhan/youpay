@@ -8,12 +8,17 @@ from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL
 from core.utils import get_payment_gateway_config
 from gateways.common import _get_payment_reference_number
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
-                                       PAYPAL_ORDER_ENDPOINT)
+                                       PAYPAL_ORDER_ENDPOINT,
+                                       PAYPAL_ORDER_STATUS_APPROVED,
+                                       PAYPAL_CAPTURE_STATUS_COMPLETED)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
+                                    PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
                                     PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY)
-from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING)
+from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
+                                PAYMENT_STATUS_PAID)
 from services.utils import get_payment_redirect_url
+from services.v1.views.common import get_saved_fields
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -216,3 +221,243 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             logger.error(
                 "Exception while creating paypal transaction for {}: {}".format(
                     e, self.transaction_id))
+
+    def capture_paypal_order(self, request_data):
+        try:
+            self.transaction_id = request_data.get('transaction_id')
+            self.transaction_obj = request_data.get('transaction_obj')
+            self.reference_id = self.transaction_obj.payment_reference
+            order_id = request_data.get('order_id')
+            headers = self.get_headers()
+            paypal_transaction = self.get_paypal_transaction()
+            order_status = self.check_order_approval(order_id,
+                                                     paypal_transaction)
+
+            if order_status["status"] == PAYPAL_ORDER_STATUS_APPROVED:
+                url = self.paypal_config.domain + PAYPAL_ORDER_ENDPOINT + '/' + order_id + '/capture'
+
+                response = requests.post(
+                    url,
+                    headers=headers,
+                    data=json.dumps({})
+                )
+                logger.info("Paypal capture order response for {}: {}".format(
+                    self.transaction_id, response.text))
+
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=self.transaction_obj,
+                    transaction_id=self.transaction_id,
+                    request_data=json.dumps({}),
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
+                )
+
+                if response:
+                    response_data_json = response.json()
+                    response_data, response_code = self.handle_paypal_capture_response(
+                        response_data_json, paypal_transaction)
+                    return response_data, response_code
+                logger.error(
+                    "Error occurred on paypal capture order for "
+                    "transaction id {}, {}".format(self.transaction_id,
+                                                   response.text))
+                return None, self.PAYPAL_CONNECTION_ERROR
+            elif order_status["status"] == PAYPAL_ORDER_STATUS_CREATED:
+
+                return_data = {
+                    "status": 200,
+                    "is_redirect": True,
+                    "redirect_url": order_status["redirect_url"],
+                    "is_success": False,
+                    "message": "Paypal Payment Not Complete",
+                }
+                return return_data, self.PAYAPL_PAYMENT_INCOMPLETE
+            else:
+                return None, self.PAYPAL_CONNECTION_ERROR
+
+        except requests.ConnectTimeout as timeout_err:
+            logger.error(
+                "Paypal capture order request timeout for transaction "
+                "{} with error {}".format(
+                    self.transaction_id, timeout_err))
+            return None, self.PAYPAL_CONNECTION_ERROR
+        except requests.ConnectionError as connection_err:
+            logger.error(
+                "Paypal capturing order connection error for transaction id {} with error {}".format(
+                    self.transaction_id, connection_err))
+            return None, self.PAYPAL_CONNECTION_ERROR
+        except Exception as e:
+            logger.error(
+                "Exception while capturing order for {} with error: {}".format(
+                    self.transaction_id, e))
+            return None, self.PAYPAL_CONNECTION_ERROR
+
+    def get_paypal_transaction(self):
+        try:
+            return PaypalTransaction.objects.get(
+                payment_reference=self.reference_id)
+        except PaypalTransaction.DoesNotExist:
+            logger.error(
+                "Paypal transaction not found for order {}".format(
+                    self.transaction_id))
+            return None
+
+    def handle_paypal_capture_response(self, response_data_json,
+                                       paypal_transaction):
+        try:
+            status = paypal_transaction.status
+            purchase_unit = response_data_json.get("purchase_units")
+            payments = purchase_unit.get("payments", {})
+            capture = payments.get("captures")
+            capture_status = capture.get("status", "").upper()
+            if capture_status == "COMPLETED":
+                return_data = {
+                    "status": 200,
+                    "is_redirect": True,
+                    "redirect_url": self.transaction_obj.success_url,
+                    "is_success": True,
+                }
+                code = self.SUCCESS
+                status = PAYPAL_CAPTURE_STATUS_COMPLETED
+                response_data_json[
+                    'success'] = PAYPAL_CAPTURE_STATUS_COMPLETED
+                self.update_youpay_transaction_data({
+                    "transaction_id": self.transaction_id,
+                    "status": PAYMENT_STATUS_PAID
+                })
+
+            else:
+                return_data = None
+                code = self.PAYPAL_CONNECTION_ERROR
+
+            response_data_json['status'] = status
+            self.update_paypal_transaction_data(
+                paypal_transaction,
+                response_data_json)
+            return return_data, code
+
+        except Exception as e:
+            logger.error(
+                f"Error in handle_paypal_capture_response for "
+                f"transaction {self.transaction_id}: {e}")
+            return None, self.PAYPAL_CONNECTION_ERROR
+
+    def update_paypal_transaction_data(self, paypal_transaction,
+                                       response_data):
+        """Method to update paypal transaction data"""
+
+        data_dict = {}
+        try:
+            purchase_unit = response_data.get("purchase_units", [{}])[0]
+            capture_info = (
+                purchase_unit.get("payments", {}).get("captures", [{}])[0])
+            payer = response_data.get("payer", {})
+            name_data = payer.get("name", {})
+
+            data_dict["capture_id"] = capture_info.get("id")
+            data_dict["order_id"] = capture_info.get("id")
+            data_dict["status"] = response_data.get("status")
+            data_dict["customer_email"] = payer.get("email_address")
+            data_dict["payer_id"] = payer.get("payer_id")
+            data_dict[
+                "customer_name"] = f"{name_data.get('given_name', '')} {name_data.get('surname', '')}".strip()
+            data_dict["raw_response"] = response_data
+
+            self.saved_fields = ["updated_at"]
+            self.saved_fields = get_saved_fields(self.saved_fields, data_dict,
+                                                 paypal_transaction)
+
+            paypal_transaction.save(update_fields=self.saved_fields)
+
+            logger.info(
+                "PaypalTransaction updated for order_id {}, status: {}, fields updated: {}".format(
+                    paypal_transaction.order_id, paypal_transaction.status,
+                    self.saved_fields
+                )
+            )
+            return True
+        except Exception as e:
+            logger.error(
+                "Failed to update PaypalTransaction for order_id {}: {}".format(
+                    paypal_transaction.order_id, e))
+            return False
+
+    def get_order_details(self, order_id):
+        """Call PayPal Show Order Details API"""
+        try:
+            url = self.paypal_config.domain + PAYPAL_ORDER_ENDPOINT + '/' + order_id
+            headers = self.get_headers()
+            response = requests.get(url, headers=headers)
+            logger.info("Show order details for transaction {}, {}"
+                        "".format(response.text, self.transaction_id))
+            if response:
+                return response.json()
+            else:
+                logger.error(
+                    "Unable to retrieve order details for transaction "
+                    "{}, response: {}".format(
+                        self.transaction_id, response.text))
+                return None
+        except Exception as e:
+            logger.error("Exception while retrieving order details for "
+                         "transaction {}".format(self.transaction_id))
+            return None
+
+    def check_order_approval(self, order_id, paypal_transaction):
+        """
+        Check if PayPal order is APPROVED.
+        If CREATED, redirect back to PayPal approval link.
+        """
+        order_data = self.get_order_details(order_id)
+
+        if not order_data:
+            logger.error(
+                "No order data found for order_id {}".format(order_id))
+            return {"status": "error", "message": "Order details not found"}
+
+        status = order_data.get("status")
+
+        if status == "APPROVED":
+            update_data = {
+                "status": PAYPAL_ORDER_STATUS_APPROVED
+            }
+            self.update_paypal_transaction_data(paypal_transaction,
+                                                update_data)
+            logger.info("Order is APPROVED for transaction {}".format(
+                self.transaction_id))
+            return {"status": PAYPAL_ORDER_STATUS_APPROVED}
+
+        elif status == "CREATED":
+            links = order_data.get("links", [])
+            approval_url = None
+            for link in links:
+                if link.get("rel") == "approve":
+                    approval_url = link.get("href")
+                    break
+
+            if approval_url:
+                logger.error(
+                    "Order is in CREATED state, redirecting back to PayPal approval page for transaction {}".format(
+                        self.transaction_id))
+                return {
+                    "status": PAYPAL_ORDER_STATUS_CREATED,
+                    "redirect_url": approval_url
+                }
+            else:
+                logger.error(
+                    "Approval URL not found in PayPal order response for transaction {}".format(
+                        self.transaction_id))
+                return {
+                    "status": "error",
+                    "message": "Approval link not found"
+                }
+
+        else:
+            logger.error(
+                "Order is not approved. Status: {} for transaction {}".format(
+                    status, self.transaction_id))
+            return {
+                "status": "error",
+                "message": "Order is not approved or ready"
+            }
