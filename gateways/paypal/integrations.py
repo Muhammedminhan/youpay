@@ -5,7 +5,8 @@ import requests
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL
-from core.utils import get_payment_gateway_config
+from core.utils import get_payment_gateway_config, get_app_config, \
+    encrypt_string
 from gateways.common import _get_payment_reference_number
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ORDER_ENDPOINT,
@@ -18,7 +19,8 @@ from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
 from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_PAID)
 from services.utils import get_payment_redirect_url
-from services.v1.views.common import get_saved_fields
+from services.v1.views.common import (get_saved_fields,
+                                      add_payment_gateway_info_in_url)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 
@@ -39,6 +41,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         self.payment_method = None
         self.payment_gateway = PAYMENT_GATEWAY_PAYPAL
         self.paypal_transaction = None
+        self.order_id = None
 
     def create_order(self, request_data):
         try:
@@ -136,9 +139,16 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             }
         }]
 
-        redirect_url = get_payment_redirect_url()
-        return_url = redirect_url + "{}".format(
+        app_config = get_app_config()
+        params = '?id=' + encrypt_string(
             self.request_data.get('encrypted_transaction_id'))
+
+        return_url = add_payment_gateway_info_in_url(
+            transaction_data=self.request_data,
+            app_config=app_config, params=params,
+            code=PAYPAL_HUB_CODE)
+
+        redirect_url = get_payment_redirect_url()
         cancel_url = redirect_url + "{}/{}".format(
             self.transaction_obj.language,
             self.request_data.get('encrypted_transaction_id'))
@@ -228,6 +238,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             self.transaction_obj = request_data.get('transaction_obj')
             self.reference_id = self.transaction_obj.payment_reference
             order_id = request_data.get('order_id')
+            self.order_id = order_id
             headers = self.get_headers()
             paypal_transaction = self.get_paypal_transaction()
             order_status = self.check_order_approval(order_id,
@@ -296,7 +307,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
     def get_paypal_transaction(self):
         try:
             return PaypalTransaction.objects.get(
-                payment_reference=self.reference_id)
+                payment_reference=self.reference_id, order_id=self.order_id)
         except PaypalTransaction.DoesNotExist:
             logger.error(
                 "Paypal transaction not found for order {}".format(
@@ -307,9 +318,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                                        paypal_transaction):
         try:
             status = paypal_transaction.status
-            purchase_unit = response_data_json.get("purchase_units")
-            payments = purchase_unit.get("payments", {})
-            capture = payments.get("captures")
+            purchase_unit = response_data_json.get("purchase_units", [{}])[0]
+            captures = purchase_unit.get("payments", {}).get("captures", [])
+            capture = captures[0]
             capture_status = capture.get("status", "").upper()
             if capture_status == "COMPLETED":
                 return_data = {
@@ -356,7 +367,6 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             name_data = payer.get("name", {})
 
             data_dict["capture_id"] = capture_info.get("id")
-            data_dict["order_id"] = capture_info.get("id")
             data_dict["status"] = response_data.get("status")
             data_dict["customer_email"] = payer.get("email_address")
             data_dict["payer_id"] = payer.get("payer_id")
