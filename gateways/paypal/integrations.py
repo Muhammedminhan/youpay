@@ -318,9 +318,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                                        paypal_transaction):
         try:
             status = paypal_transaction.status
-            purchase_unit = response_data_json.get("purchase_units")
-            payments = purchase_unit.get("payments", {})
-            capture = payments.get("captures")
+            purchase_unit = response_data_json.get("purchase_units", [{}])[0]
+            captures = purchase_unit.get("payments", {}).get("captures", [])
+            capture = captures[0]
             capture_status = capture.get("status", "").upper()
             if capture_status == "COMPLETED":
                 return_data = {
@@ -367,7 +367,6 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             name_data = payer.get("name", {})
 
             data_dict["capture_id"] = capture_info.get("id")
-            data_dict["order_id"] = capture_info.get("id")
             data_dict["status"] = response_data.get("status")
             data_dict["customer_email"] = payer.get("email_address")
             data_dict["payer_id"] = payer.get("payer_id")
