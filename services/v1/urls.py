@@ -44,7 +44,8 @@ from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
                             AdditionalChargeCalculation,
                             EarnRedemptionPartnerPoints)
-from .api_clients.paypalpg import (PayPalChargeAPIView, PayPalPaymentAPIView)
+from .api_clients.paypalpg import (PayPalChargeAPIView,
+                                   PayPalPaymentAPIView, PayPalVerifyAPIView)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -151,8 +152,8 @@ urlpatterns = [
     path('anb/verify/', AnbVerify.as_view(), name='AnbVerify'),
 
     # PayPal Endpoints
-    path('paypal/charge/', PayPalChargeAPIView.as_view(),
-         name='PayPalCharge'),
+    path('paypal/charge/', PayPalChargeAPIView.as_view(), name='PayPalCharge'),
     path('paypal/payment/', PayPalPaymentAPIView.as_view(),
          name='PayPalPayment'),
+    path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
 ]

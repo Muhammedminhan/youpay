@@ -193,3 +193,61 @@ class PayPalPaymentAPIView(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class PayPalVerifyAPIView(APIView, YouPayTransactionCRUD):
+    """
+    API view for verifying a PayPal payment.
+    """
+    response_obj = YouPayResponse()
+
+    def get(self, request):
+        """
+        Handles PayPal payment verification.
+        """
+        try:
+            transaction_id = request.query_params.get("id")
+            order_id = request.query_params.get("order_id")
+
+            logger.info(f"Received PayPal payment verification request for "
+                        f"Transaction ID: {transaction_id}")
+
+            decrypted_id = decrypt_string(transaction_id)
+            transaction_obj = self.get_youpay_transaction_data(decrypted_id)
+
+            if not transaction_obj:
+                data = self.response_obj.get_404_message(
+                    message=TRANSACTION_DOESNT_EXIST)
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = YouPayTransactionDataSerializer(transaction_obj)
+            transaction_data = serializer.data
+
+            transaction_data.update({
+                "transaction_obj": transaction_obj,
+                "order_id": order_id
+            })
+
+            paypal = PaypalManager()
+            response_data, code = paypal.capture_paypal_order(transaction_data)
+
+            if response_data:
+                data = self.response_obj.get_success_dict(
+                    code=code,
+                    success_dict=response_data
+                )
+                return Response(data, status=status.HTTP_200_OK)
+            else:
+                data = self.response_obj.get_error_dict(error_code=code)
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+        except ObjectDoesNotExist as e:
+            logger.error(f"ObjectDoesNotExist: {str(e)}", exc_info=True)
+            data = self.response_obj.get_404_message(message=str(e))
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Exception occurred while verifying PayPal "
+                         f"payment: {str(e)}", exc_info=True)
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
