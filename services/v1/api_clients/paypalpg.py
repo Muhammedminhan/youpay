@@ -1,23 +1,23 @@
 import logging
 from decimal import Decimal
 
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
+from gateways.paypal.integrations import PaypalManager
+from integrations.constants import ADDITIONAL_PROCESSING_FEE, PAYPAL_HUB_CODE
+from payments.constants import PAYMENT_METHOD_PAYPAL
+from payments.serializers.youpay_payments import (
+    YouPayTransactionDataSerializer)
 from services.models import APIClient
 from services.v1.views.common import (YouPayTransactionCRUD,
                                       get_processing_charge,
                                       AdditionalChargesUpdation)
-from payments.serializers.youpay_payments import (
-    YouPayTransactionDataSerializer)
-from gateways.paypal.integrations import PaypalManager
-from core.messages import TRANSACTION_DOESNT_EXIST
-from integrations.constants import ADDITIONAL_PROCESSING_FEE, PAYPAL_HUB_CODE
-from payments.constants import PAYMENT_METHOD_PAYPAL
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +165,8 @@ class PayPalPaymentAPIView(APIView, YouPayTransactionCRUD):
 
                 transaction_data.update({
                     'transaction_obj': transaction_obj,
-                    'amount': float(transaction_data['amount'])
+                    'amount': float(transaction_data['amount']),
+                    'encrypted_transaction_id': transaction_id
                 })
 
                 paypal = PaypalManager()
