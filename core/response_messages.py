@@ -36,6 +36,7 @@ class YouPayResponse(object):
     TRANSACTION_NOT_FOUND = 1404
     MAX_PAYMENT_ATTEMPT_REACHED = 1416
     BALANCE_CALCULATION_FAILED = 1501
+    CHARGE_CALCULATION_FAILED = 1502
 
     TRANSACTION_ALREADY_CLOSED = 1600
     REQUIRED_DATA_MISSING = 1601
@@ -209,6 +210,7 @@ class YouPayResponse(object):
             self.BALANCE_CALCULATION_FAILED:
                 "Failed to calculate the point program balance. Please try "
                 "again with another payment option.",
+            self.CHARGE_CALCULATION_FAILED: "PayPal charge calculation failed",
 
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,

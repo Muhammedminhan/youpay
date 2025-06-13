@@ -344,7 +344,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             return None, self.PAYPAL_CONNECTION_ERROR
 
     def update_paypal_transaction_data(self, paypal_transaction,
-                                       response_data):
+                                                    response_data):
         """Method to update paypal transaction data"""
 
         data_dict = {}

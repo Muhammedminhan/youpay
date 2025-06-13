@@ -39,6 +39,8 @@ from payments.serializers.youpay_payments import (
 from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
                                 SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
 from services.models import APIClient, OfferDetails
+from core.models import PaymentConfiguration
+from integrations.models import AdditionalChargeConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -557,3 +559,34 @@ class AdditionalChargesUpdation(object):
             logger.error("Error in creating additional charge object for {} "
                          "{}".format(data.get('transaction').transaction_id,
                                      str(e)))
+
+def get_processing_charge(currency, charge_type, payment_gateway,
+                          payment_method):
+    """
+    Method to get additional charge configuration.
+    """
+    try:
+        gateway = PaymentGateway.objects.get(code=payment_gateway)
+    except PaymentGateway.DoesNotExist:
+        logger.error(f"PaymentGateway not found for code: {payment_method}")
+        return None, None
+
+    try:
+        payment_config = PaymentConfiguration.objects.get(
+            payment_method=payment_method, payment_gateway=gateway)
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            f"PaymentConfiguration not found for method: {payment_method}")
+        return None, None
+
+    try:
+        additional_charge_obj = AdditionalChargeConfiguration.objects.get(
+            currency=currency, charge_type=charge_type,
+            payment_option=payment_config, is_active=True)
+    except AdditionalChargeConfiguration.DoesNotExist:
+        logger.error(
+            f"AdditionalChargeConfiguration not found for charge_type: "
+            f"{charge_type}, currency: {currency}")
+        return None, None
+
+    return additional_charge_obj.percentage, additional_charge_obj.VAT_percentage
