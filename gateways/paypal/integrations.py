@@ -337,7 +337,6 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     "transaction_id": self.transaction_id,
                     "payment_status": PAYMENT_STATUS_PAID
                 })
-                print("Youpay Update data is: ", youpay_update_data)
                 self.update_youpay_transaction_data(youpay_update_data)
 
             else:
@@ -441,8 +440,8 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             update_data = {
                 "status": PAYPAL_ORDER_STATUS_APPROVED
             }
-            # self.update_paypal_transaction_data(paypal_transaction,
-            #                                     update_data)
+            self.update_paypal_transaction_data(paypal_transaction,
+                                                update_data)
             logger.info("Order is APPROVED for transaction {}".format(
                 self.transaction_id))
             return {"status": PAYPAL_ORDER_STATUS_APPROVED}
