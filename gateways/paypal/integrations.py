@@ -335,7 +335,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     'success'] = PAYPAL_CAPTURE_STATUS_COMPLETED
                 self.update_youpay_transaction_data({
                     "transaction_id": self.transaction_id,
-                    "status": PAYMENT_STATUS_PAID
+                    "payment_status": PAYMENT_STATUS_PAID
                 })
 
             else:
