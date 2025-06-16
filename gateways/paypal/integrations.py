@@ -5,8 +5,7 @@ import requests
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL
-from core.utils import get_payment_gateway_config, get_app_config, \
-    encrypt_string
+from core.utils import get_payment_gateway_config, get_app_config
 from gateways.common import _get_payment_reference_number
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ORDER_ENDPOINT,
@@ -140,8 +139,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         }]
 
         app_config = get_app_config()
-        params = '?id=' + encrypt_string(
-            self.request_data.get('encrypted_transaction_id'))
+        params = '?id=' + self.request_data.get('encrypted_transaction_id')
 
         return_url = add_payment_gateway_info_in_url(
             transaction_data=self.request_data,
@@ -335,7 +333,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     'success'] = PAYPAL_CAPTURE_STATUS_COMPLETED
                 self.update_youpay_transaction_data({
                     "transaction_id": self.transaction_id,
-                    "status": PAYMENT_STATUS_PAID
+                    "payment_status": PAYMENT_STATUS_PAID
                 })
 
             else:
