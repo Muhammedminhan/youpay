@@ -7,8 +7,7 @@ from core.models import (AbstractDateTime, AbstractUserBase, Currency,
 from core.validators import DecimalValidator
 from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
                                     PAYMENT_REQUEST_TYPE_CHOICES,
-                                    ADDITIONAL_CHARGE_TYPE_CHOICES,
-                                    CURRENCY_CHOICES)
+                                    ADDITIONAL_CHARGE_TYPE_CHOICES)
 from services.constants import (PAYMENT_OPTION_NAME_CHOICES,
                                 TOKEN_TYPE_ADCB_POINTS)
 
@@ -136,9 +135,10 @@ class AdditionalChargeConfiguration(AbstractDateTime, AbstractUserBase):
     percentage = models.DecimalField(
         default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
         help_text='Percentage value for the additional fee')
-    currency = models.CharField(max_length=15, null=True, blank=True,
-                                choices=CURRENCY_CHOICES,
-                                help_text='Currency applicable for charge')
+    currency = models.ForeignKey(
+        Currency, on_delete=models.CASCADE, null=True, blank=True,
+        related_name="additional_charge_currency",
+        help_text='Currency applicable for charge')
     VAT_percentage = models.DecimalField(
         default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
         help_text='Percentage value for the additional VAT charge')

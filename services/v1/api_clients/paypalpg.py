@@ -18,6 +18,7 @@ from services.models import APIClient
 from services.v1.views.common import (YouPayTransactionCRUD,
                                       get_processing_charge,
                                       AdditionalChargesUpdation)
+from payments.models import AdditionalCharge
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
         """
         Calculate PayPal processing fee and new additional VAT.
         """
-        currency = transaction.currency
+        cart_currency = transaction.cart_currency
         base_amount = Decimal(transaction.base_amount)
         cart_base_amount = Decimal(transaction.cart_base_amount)
         charge_type = ADDITIONAL_PROCESSING_FEE
@@ -42,11 +43,11 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
         payment_method = PAYMENT_METHOD_PAYPAL
 
         processing_fee_charge, vat_charge = get_processing_charge(
-            currency, charge_type, payment_gateway, payment_method)
+            cart_currency, charge_type, payment_gateway, payment_method)
 
         if processing_fee_charge is not None and vat_charge is not None:
-            processing_fee_decimal = processing_fee_charge/100
-            vat_decimal = vat_charge/100
+            processing_fee_decimal = processing_fee_charge / 100
+            vat_decimal = vat_charge / 100
             self.vat_charge_percentage = vat_decimal
 
             processing_fee = base_amount * processing_fee_decimal
@@ -61,18 +62,18 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
                                 + cart_processing_fee + new_cart_vat_amount)
 
             response_data = {
-                "amount": new_amount,
-                "currency": currency,
+                "amount": round(new_amount, 2),
+                "currency": transaction.currency,
                 "base_amount": base_amount,
                 "service_fee": transaction.service_fee,
-                "vat_amount": new_vat_amount,
-                "processing_fee": processing_fee,
-                "cart_amount": new_cart_amount,
-                "cart_currency": transaction.cart_currency,
+                "vat_amount": round(new_vat_amount, 2),
+                "processing_fee": round(processing_fee, 2),
+                "cart_amount": round(new_cart_amount, 2),
+                "cart_currency": cart_currency,
                 "cart_base_amount": transaction.cart_base_amount,
                 "cart_service_fee": transaction.cart_service_fee,
-                "cart_vat_amount": new_cart_vat_amount,
-                "cart_processing_fee": cart_processing_fee,
+                "cart_vat_amount": round(new_cart_vat_amount, 2),
+                "cart_processing_fee": round(cart_processing_fee, 2),
             }
             return response_data
         return None
@@ -158,15 +159,23 @@ class PayPalPaymentAPIView(APIView, YouPayTransactionCRUD):
 
             decrypted_id = decrypt_string(transaction_id)
             transaction_obj = self.get_youpay_transaction_data(decrypted_id)
+            additional_charge_obj = AdditionalCharge.objects.filter(
+                transaction=transaction_obj).first()
 
-            if transaction_obj:
+            if transaction_obj and additional_charge_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
+                amount = additional_charge_obj.additional_total_amount
 
                 transaction_data.update({
                     'transaction_obj': transaction_obj,
-                    'amount': float(transaction_data['amount']),
-                    'encrypted_transaction_id': transaction_id
+                    'amount': float(amount),
+                    'encrypted_transaction_id': transaction_id,
+                    'VAT_amount': additional_charge_obj.additional_vat,
+                    'processing_fee':
+                        additional_charge_obj.additional_processing_fee,
+                    'processing_fee_vat':
+                        additional_charge_obj.additional_processing_fee_vat
                 })
 
                 paypal = PaypalManager()
@@ -185,9 +194,6 @@ class PayPalPaymentAPIView(APIView, YouPayTransactionCRUD):
                 data = self.response_obj.get_404_message(
                     message=TRANSACTION_DOESNT_EXIST)
                 return Response(data, status=status.HTTP_400_BAD_REQUEST)
-        except ObjectDoesNotExist as e:
-            data = self.response_obj.get_404_message(message=str(e))
-            return Response(data, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             logger.error(f"Exception occurred while creating PayPal "
                          f"order: {str(e)}", exc_info=True)
