@@ -240,19 +240,28 @@ def decimal_rounded(amount, decimal_notation):
     return amount_rounded
 
 
-def get_gateway_additional_fee(payment_option_name):
+def get_gateway_additional_fee(currency, charge_type, payment_gateway,
+                               payment_method):
     """
-    :param payment_option_name
-    :return:
+    Method to get additional charge configuration.
     """
     additional_fee = None
-    if payment_option_name:
-        try:
-            additional_fee = AdditionalChargeConfiguration.objects.get(
-                payment_option__name=payment_option_name, is_active=True)
-        except (AdditionalChargeConfiguration.DoesNotExist, Exception):
-            logging.info('No additional fee instance found for '
-                         '{}.'.format(payment_option_name))
+    try:
+        payment_config = PaymentConfiguration.objects.get(
+            payment_method=payment_method,
+            payment_gateway__code=payment_gateway)
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            f"PaymentConfiguration not found for method: {payment_method}")
+
+    try:
+        additional_fee = AdditionalChargeConfiguration.objects.get(
+            currency=currency, charge_type=charge_type,
+            payment_option=payment_config, is_active=True)
+    except AdditionalChargeConfiguration.DoesNotExist:
+        logger.error(
+            f"AdditionalChargeConfiguration not found for charge_type: "
+            f"{charge_type}, currency: {currency}")
     return additional_fee
 
 

@@ -16,7 +16,9 @@ from core.utils import (decrypt_string, get_gateway_additional_fee,
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
-                                    ANB_CLIENT_CODE)
+                                    ANB_CLIENT_CODE,
+                                    ADDITIONAL_PROCESSING_FEE,
+                                    PAYPAL_HUB_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -28,7 +30,7 @@ from payments.constants import (
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA,
-    EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB
+    EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
@@ -152,8 +154,10 @@ class ConfigViewSet(ViewSet):
                 checkoutpg_config else None,
                 "adcb_config": b2c_configs.get('adcb_config', {}),
                 "tabbypg_config": tabbypg_config,
-                "applepay_config": self.get_applepay_config(payment_options),
-                "paypal_config": self.get_paypal_config(payment_options),
+                "applepay_config": self.get_applepay_config(payment_options,
+                                                            transaction),
+                "paypal_config": self.get_paypal_config(payment_options,
+                                                        transaction),
                 "neqaty_config": b2c_configs.get('neqaty_config', {}),
                 "mokafa_config": b2c_configs.get('mokafa_config', {}),
                 "anb_config": b2c_configs.get('anb_config', {}),
@@ -280,7 +284,7 @@ class ConfigViewSet(ViewSet):
                 "additional_fixed_amount": 0
             }
 
-    def get_applepay_config(self, payment_option):
+    def get_applepay_config(self, payment_option, transaction):
         """
         returns applepay additional fee config
         only if applepay is enabled
@@ -293,18 +297,30 @@ class ConfigViewSet(ViewSet):
                                               False)
 
         if applepay_enabled:
-            additional_fee = get_gateway_additional_fee(TOKEN_TYPE_APPLEPAY)
+            currency = transaction.currency
+            charge_type = ADDITIONAL_PROCESSING_FEE
+            payment_gateway = CHECKOUTPG_HUB_CODE
+            payment_method = TOKEN_TYPE_APPLEPAY
+            additional_fee = get_gateway_additional_fee(currency, charge_type,
+                                                        payment_gateway,
+                                                        payment_method)
             additional_config = self.get_additional_config(additional_fee,
                                                            TOKEN_TYPE_APPLEPAY)
             applepay_config.update(additional_config)
         return applepay_config
 
-    def get_paypal_config(self, payment_option):
+    def get_paypal_config(self, payment_option, transaction):
         paypal_config = {}
+        currency = transaction.currency
+        charge_type = ADDITIONAL_PROCESSING_FEE
+        payment_gateway = PAYPAL_HUB_CODE
+        payment_method = PAYMENT_METHOD_PAYPAL
         paypal_enabled = payment_option.get(PAYMENT_OPTION_PAYPAL, False)
 
         if paypal_enabled:
-            additional_fee = get_gateway_additional_fee(TOKEN_TYPE_PAYPAL)
+            additional_fee = get_gateway_additional_fee(currency, charge_type,
+                                                        payment_gateway,
+                                                        payment_method)
             paypal_config = self.get_additional_config(additional_fee,
                                                        TOKEN_TYPE_PAYPAL)
 
