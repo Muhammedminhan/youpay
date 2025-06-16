@@ -256,7 +256,7 @@ def get_gateway_additional_fee(currency, charge_type, payment_gateway,
 
     try:
         additional_fee = AdditionalChargeConfiguration.objects.get(
-            currency=currency, charge_type=charge_type,
+            currency__iso_code=currency, charge_type=charge_type,
             payment_option=payment_config, is_active=True)
     except AdditionalChargeConfiguration.DoesNotExist:
         logger.error(
