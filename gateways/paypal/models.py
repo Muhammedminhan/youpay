@@ -76,3 +76,7 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
     payer_id = models.CharField(max_length=100, blank=True, null=True)
     raw_response = models.JSONField(blank=True, null=True)
     refund_id = models.CharField(max_length=100, blank=True, null=True)
+    paypal_fee = models.DecimalField(max_digits=15, decimal_places=3,
+                                     blank=True, null=True)
+    net_amount = models.DecimalField(max_digits=15, decimal_places=3,
+                                     blank=True, null=True)
