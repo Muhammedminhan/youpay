@@ -70,6 +70,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                      null=True, blank=True,
                                      validators=[DecimalValidator(12, 4)],
                                      help_text="used to store VAT amount")
+    platform_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                     null=True, blank=True,
+                                     validators=[DecimalValidator(12, 4)],
+                                     help_text = "used to store platform fee")
     order_history = models.JSONField(null=True, blank=True,
                                      help_text="used to store order history")
     payment_gateway = models.CharField(max_length=20, null=True, blank=True,
@@ -237,6 +241,12 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    cart_platform_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                          null=True, blank=True,
+                                          validators=[
+                                                DecimalValidator(12, 4)],
+                                          help_text="used to store cart "
+                                                    "platform fee")
     brand_details = models.JSONField(null=True, blank=True,
                                      help_text="used to store brand details "
                                                "from the ecom side")
@@ -292,6 +302,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         max_length=100, null=True, blank=True,
         choices=SETTLEMENT_ENTITY_CHOICES,
         help_text="used to store settlement entity")
+    auth_code = models.CharField(
+        max_length=50, null=True, blank=True,
+        help_text="The acquirer authorization code, if the payment was "
+                  "authorized.")
     is_guest = models.BooleanField(
         default=False, db_index=True,
         help_text='Denotes whether the payment is done by guest user or not.')
