@@ -80,3 +80,29 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
                                      blank=True, null=True)
     net_amount = models.DecimalField(max_digits=15, decimal_places=3,
                                      blank=True, null=True)
+
+
+class PayPalWebhookLog(AbstractDateTime):
+    event_id = models.CharField(max_length=128, blank=True, null=True)
+    event_type = models.CharField(max_length=128)
+    resource_type = models.CharField(max_length=64, null=True, blank=True)
+    summary = models.CharField(max_length=500, null=True, blank=True)
+    order_id = models.CharField(max_length=64, null=True, blank=True)
+    status = models.CharField(max_length=64, null=True, blank=True)
+    intent = models.CharField(max_length=64, null=True, blank=True)
+    payer_id = models.CharField(max_length=64, null=True, blank=True)
+    payer_email = models.EmailField(null=True, blank=True)
+    payer_name = models.CharField(max_length=128, null=True, blank=True)
+    capture_id = models.CharField(max_length=64, null=True, blank=True)
+    capture_status = models.CharField(max_length=64, null=True, blank=True)
+    invoice_id = models.CharField(max_length=128, null=True, blank=True)
+    payment_reference = models.CharField(max_length=128, null=True,
+                                         blank=True)
+    amount_value = models.CharField(max_length=32, null=True, blank=True)
+    amount_currency = models.CharField(max_length=8, null=True, blank=True)
+    paypal_fee = models.CharField(max_length=32, null=True, blank=True)
+    net_amount = models.CharField(max_length=32, null=True, blank=True)
+    payload = models.JSONField(null=True, blank=True)
+
+    def __str__(self):
+        return self.order_id
