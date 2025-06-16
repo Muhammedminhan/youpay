@@ -17,6 +17,7 @@ from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY)
 from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_PAID)
+from payments.models import AdditionalCharge
 from services.utils import get_payment_redirect_url
 from services.v1.views.common import (get_saved_fields,
                                       add_payment_gateway_info_in_url)
@@ -331,10 +332,12 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 status = PAYPAL_CAPTURE_STATUS_COMPLETED
                 response_data_json[
                     'success'] = PAYPAL_CAPTURE_STATUS_COMPLETED
-                self.update_youpay_transaction_data({
+                youpay_update_data = self.get_additional_charge_values()
+                youpay_update_data.update({
                     "transaction_id": self.transaction_id,
                     "payment_status": PAYMENT_STATUS_PAID
                 })
+                self.update_youpay_transaction_data(youpay_update_data)
 
             else:
                 return_data = None
@@ -469,3 +472,19 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 "status": "error",
                 "message": "Order is not approved or ready"
             }
+
+    def get_additional_charge_values(self):
+        additional_charge_values = {}
+        try:
+            add_charge = AdditionalCharge.objects.filter(
+                transaction=self.transaction_obj).first()
+            additional_charge_values = {
+                "amount": add_charge.additional_total_amount,
+                "vat_amount": add_charge.additional_vat,
+            }
+
+        except Exception as e:
+            logger.error(
+                "Exception while retrieving additional charge values for {}, {}".format(
+                    self.transaction_id, e))
+        return additional_charge_values

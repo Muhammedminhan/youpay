@@ -16,7 +16,9 @@ from core.messages import (
     TRANSACTION_MSG,
     IS_REDIRECT
 )
+from core.models import PaymentConfiguration
 from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
+from integrations.models import AdditionalChargeConfiguration
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
@@ -39,8 +41,6 @@ from payments.serializers.youpay_payments import (
 from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
                                 SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
 from services.models import APIClient, OfferDetails
-from core.models import PaymentConfiguration
-from integrations.models import AdditionalChargeConfiguration
 
 logger = logging.getLogger(__name__)
 
@@ -566,14 +566,9 @@ def get_processing_charge(currency, charge_type, payment_gateway,
     Method to get additional charge configuration.
     """
     try:
-        gateway = PaymentGateway.objects.get(code=payment_gateway)
-    except PaymentGateway.DoesNotExist:
-        logger.error(f"PaymentGateway not found for code: {payment_method}")
-        return None, None
-
-    try:
         payment_config = PaymentConfiguration.objects.get(
-            payment_method=payment_method, payment_gateway=gateway)
+            payment_method=payment_method,
+            payment_gateway__code=payment_gateway)
     except PaymentConfiguration.DoesNotExist:
         logger.error(
             f"PaymentConfiguration not found for method: {payment_method}")
