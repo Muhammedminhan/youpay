@@ -337,6 +337,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     "transaction_id": self.transaction_id,
                     "payment_status": PAYMENT_STATUS_PAID
                 })
+                print("Youpay Update data is: ", youpay_update_data)
                 self.update_youpay_transaction_data(youpay_update_data)
 
             else:
@@ -374,6 +375,13 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             data_dict[
                 "customer_name"] = f"{name_data.get('given_name', '')} {name_data.get('surname', '')}".strip()
             data_dict["raw_response"] = response_data
+            seller_receivable = capture_info.get(
+                "seller_receivable_breakdown", {})
+            data_dict["net_amount"] = seller_receivable.get("net_amount").get(
+                "value")
+            data_dict["paypal_fee"] = seller_receivable.get("paypal_fee").get(
+                "value")
+            data_dict["payer_id"] = payer.get("payer_id")
 
             self.saved_fields = ["updated_at"]
             self.saved_fields = get_saved_fields(self.saved_fields, data_dict,
@@ -433,8 +441,8 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             update_data = {
                 "status": PAYPAL_ORDER_STATUS_APPROVED
             }
-            self.update_paypal_transaction_data(paypal_transaction,
-                                                update_data)
+            # self.update_paypal_transaction_data(paypal_transaction,
+            #                                     update_data)
             logger.info("Order is APPROVED for transaction {}".format(
                 self.transaction_id))
             return {"status": PAYPAL_ORDER_STATUS_APPROVED}
@@ -480,7 +488,8 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 transaction=self.transaction_obj).first()
             additional_charge_values = {
                 "amount": add_charge.additional_total_amount,
-                "vat_amount": add_charge.additional_vat,
+                "VAT_amount": add_charge.additional_vat,
+                "payment_method": PAYMENT_METHOD_PAYPAL
             }
 
         except Exception as e:

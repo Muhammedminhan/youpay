@@ -33,7 +33,8 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_MOKAFAA,
                                 PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                 PAYMENT_METHOD_ANB,
-                                PAYMENT_METHOD_ANB_AND_CARD)
+                                PAYMENT_METHOD_ANB_AND_CARD,
+                                PAYMENT_METHOD_PAYPAL)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -197,7 +198,8 @@ class YouPayTransactionCRUD(object):
                                            PAYMENT_METHOD_MOKAFAA,
                                            PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                            PAYMENT_METHOD_ANB,
-                                           PAYMENT_METHOD_ANB_AND_CARD
+                                           PAYMENT_METHOD_ANB_AND_CARD,
+                                           PAYMENT_METHOD_PAYPAL
                                            ]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
