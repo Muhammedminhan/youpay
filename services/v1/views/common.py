@@ -29,7 +29,9 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
                                 PAYMENT_METHOD_TOUCHPOINTS,
                                 PAYMENT_METHOD_MOKAFAA,
-                                PAYMENT_METHOD_MOKAFAA_AND_CARD)
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_METHOD_ANB,
+                                PAYMENT_METHOD_ANB_AND_CARD)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -185,6 +187,7 @@ class YouPayTransactionCRUD(object):
         data_dict['earned_point'] = data.get('earned_point', None)
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
+        data_dict['auth_code'] = data.get('auth_code', None)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD,
@@ -192,6 +195,8 @@ class YouPayTransactionCRUD(object):
                                            PAYMENT_METHOD_NEQATY,
                                            PAYMENT_METHOD_MOKAFAA,
                                            PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                           PAYMENT_METHOD_ANB,
+                                           PAYMENT_METHOD_ANB_AND_CARD
                                            ]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)

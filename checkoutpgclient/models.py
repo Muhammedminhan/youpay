@@ -261,6 +261,7 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                 'is_gcc_card': instance.is_gcc_card,
                 'is_fraud': instance.is_fraud,
                 'is_flagged': instance.is_flagged,
+                'auth_code': instance.auth_code,
             }
             return data_to_update
         else:

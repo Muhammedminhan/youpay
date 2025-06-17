@@ -44,3 +44,37 @@ class OTPSerializer(serializers.Serializer):
             raise serializers.ValidationError((
                 "OTPSerializer : Transaction not found with ID"
                 " {}".format(transaction_id)))
+
+
+class AnbOTPSerializer(serializers.Serializer):
+    transaction_id = serializers.CharField(required=True)
+    mobile_number = serializers.CharField(required=False, allow_blank=True)
+    cif_number = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs=None):
+        """
+        Ensure that at least one of mobile_number or cif_number is provided.
+        """
+        mobile_number = attrs.get('mobile_number')
+        cif_number = attrs.get('cif_number')
+
+        if not mobile_number and not cif_number:
+            raise serializers.ValidationError("At least one of "
+                                              "'mobile_number' or "
+                                              "'cif_number' must be "
+                                              "provided.")
+        return attrs
+
+    @property
+    def transaction_obj(self):
+        transaction_id = self.validated_data.get('transaction_id')
+        from services.v1.views.common import YouPayTransactionCRUD
+        obj = YouPayTransactionCRUD()
+        transaction_obj = obj.get_youpay_transaction_data(
+            decrypt_string(transaction_id))
+        if transaction_obj:
+            return transaction_obj
+        else:
+            raise serializers.ValidationError((
+                "OTPSerializer : Transaction not found with ID"
+                " {}".format(transaction_id)))
