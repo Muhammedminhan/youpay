@@ -4,11 +4,13 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from gateways.paypal.authentication import PayPalWebhookAuthentication
 from gateways.paypal.models import PayPalWebhookLog
 
 logger = logging.getLogger(__name__)
 
 class WebhookListner(APIView):
+    authentication_classes = (PayPalWebhookAuthentication,)
 
     def post(self, request):
         try:

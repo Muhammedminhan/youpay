@@ -1,12 +1,16 @@
 import logging
 
 import requests
-from django.db import models
+from django.db import models, transaction
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.utils import timezone
 
 from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
 from gateways.paypal.constants import (PAYPAL_STATUS_CHOICES,
-                                       PAYPAL_AUTHENTICATION_ENDPOINT)
+                                       PAYPAL_AUTHENTICATION_ENDPOINT,
+                                       PAYPAL_EVENT_STATUS_MAPPING)
+from services.v1.views.common import get_saved_fields
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +84,8 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
                                      blank=True, null=True)
     net_amount = models.DecimalField(max_digits=15, decimal_places=3,
                                      blank=True, null=True)
+    debug_id = models.CharField(max_length=100, blank=True, null=True)
+    error_message = models.CharField(max_length=255, blank=True, null=True)
 
 
 class PayPalWebhookLog(AbstractDateTime):
@@ -106,3 +112,82 @@ class PayPalWebhookLog(AbstractDateTime):
 
     def __str__(self):
         return self.order_id
+
+
+@receiver(post_save, sender=PayPalWebhookLog)
+def update_paypal_transaction(sender, instance, created, **kwargs):
+    try:
+        data_to_update = prepare_paypal_transaction_update_data(instance)
+        payment_reference = instance.payment_reference
+        order_id = instance.order_id
+        paypal_transaction = get_paypal_transaction(order_id)
+        if not paypal_transaction:
+            logger.error(
+                "PaypalTransaction not found for order_id {}, reference_id {}".format(
+                    instance.order_id, instance.payment_reference)
+            )
+            return
+
+        is_updated = update_paypal_transaction_data(paypal_transaction,
+                                                    data_to_update)
+        if is_updated:
+            logger.info(
+                "PaypalTransaction updated for webhook event_id {}, order_id {}".format(
+                    instance.event_id, instance.order_id)
+            )
+        else:
+            logger.error(
+                "PaypalTransaction not updated for webhook event_id {}, order_id= {}".format(
+                    instance.event_id, instance.order_id)
+            )
+    except Exception as e:
+        logger.error(
+            "Error syncing PaypalTransaction for webhook {}: {}".format(
+                instance.event_id, str(e)))
+
+
+def prepare_paypal_transaction_update_data(instance):
+    status = PAYPAL_EVENT_STATUS_MAPPING.get(instance.event_type)
+    update_data = {
+        'status': status,
+    }
+    return update_data
+
+
+def update_paypal_transaction_data(paypal_transaction,
+                                   response_data):
+    """Method to update paypal transaction data"""
+
+    data_dict = {}
+    try:
+        data_dict["status"] = response_data.get("status")
+
+        saved_fields = ["updated_at"]
+        saved_fields = get_saved_fields(saved_fields, data_dict,
+                                        paypal_transaction)
+
+        paypal_transaction.save(update_fields=saved_fields)
+
+        logger.info(
+            "PaypalTransaction updated for order_id {}, status: {}, fields updated: {}".format(
+                paypal_transaction.order_id, paypal_transaction.status,
+                saved_fields
+            )
+        )
+        return True
+    except Exception as e:
+        logger.error(
+            "Failed to update PaypalTransaction for order_id {}: {}".format(
+                paypal_transaction.order_id, e))
+        return False
+
+
+def get_paypal_transaction(order_id):
+    with transaction.atomic():
+        try:
+            return PaypalTransaction.objects.get(order_id=order_id)
+        except PaypalTransaction.DoesNotExist:
+            logger.error(
+                "Paypal transaction not found for order {}".format(
+                    order_id))
+            return None
