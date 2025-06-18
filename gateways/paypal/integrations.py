@@ -10,13 +10,14 @@ from gateways.common import _get_payment_reference_number
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ORDER_ENDPOINT,
                                        PAYPAL_ORDER_STATUS_APPROVED,
-                                       PAYPAL_CAPTURE_STATUS_COMPLETED)
+                                       PAYPAL_CAPTURE_STATUS_COMPLETED,
+                                       PAYPAL_CAPTURE_FAILURE_REASON_MAPPING)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
                                     PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY)
 from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
-                                PAYMENT_STATUS_PAID)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
 from payments.models import AdditionalCharge
 from services.utils import get_payment_redirect_url
 from services.v1.views.common import (get_saved_fields,
@@ -134,8 +135,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         purchase_units = [{
             "invoice_id": self.reference_id,
             "amount": {
-                "currency_code": 'USD',
-                "value": float(self.request_data.get('amount')),
+                "currency_code": "USD",
+                "value": float(
+                    self.request_data.get('additional_total_amount')),
             }
         }]
 
@@ -208,6 +210,13 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             "payment_reference": self.reference_id,
             "payment_method": self.payment_method,
             "payment_gateway": self.payment_gateway,
+            "additional_total_amount": self.request_data.get(
+                'additional_total_amount'),
+            "additional_vat": self.request_data.get('additional_vat'),
+            "additional_processing_fee": self.request_data.get(
+                'additional_processing_fee'),
+            "additional_processing_fee_vat": self.request_data.get(
+                'additional_processing_fee_vat'),
         }
 
         return data_to_update
@@ -218,7 +227,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 "order_id": response_data.get('id'),
                 "payment_reference": self.reference_id,
                 "status": PAYPAL_ORDER_STATUS_CREATED,
-                "amount": self.request_data.get('amount'),
+                "amount": self.request_data.get('additional_total_amount'),
                 "currency": self.request_data.get('currency'),
                 "customer_name": self.request_data.get('customer_name'),
                 "customer_email": self.request_data.get('customer_email'),
@@ -242,7 +251,6 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             paypal_transaction = self.get_paypal_transaction()
             order_status = self.check_order_approval(order_id,
                                                      paypal_transaction)
-
             if order_status["status"] == PAYPAL_ORDER_STATUS_APPROVED:
                 url = self.paypal_config.domain + PAYPAL_ORDER_ENDPOINT + '/' + order_id + '/capture'
 
@@ -268,11 +276,12 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     response_data, response_code = self.handle_paypal_capture_response(
                         response_data_json, paypal_transaction)
                     return response_data, response_code
-                logger.error(
-                    "Error occurred on paypal capture order for "
-                    "transaction id {}, {}".format(self.transaction_id,
-                                                   response.text))
-                return None, self.PAYPAL_CONNECTION_ERROR
+                else:
+                    response_data, response_code = self.handle_paypal_capture_failure(
+                        paypal_transaction, response
+                    )
+
+                return response_data, response_code
             elif order_status["status"] == PAYPAL_ORDER_STATUS_CREATED:
 
                 return_data = {
@@ -332,17 +341,27 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 status = PAYPAL_CAPTURE_STATUS_COMPLETED
                 response_data_json[
                     'success'] = PAYPAL_CAPTURE_STATUS_COMPLETED
-                youpay_update_data = self.get_additional_charge_values()
-                youpay_update_data.update({
+                youpay_update_data = {
                     "transaction_id": self.transaction_id,
                     "payment_status": PAYMENT_STATUS_PAID
-                })
-                self.update_youpay_transaction_data(youpay_update_data)
-
+                }
             else:
-                return_data = None
+                logger.error(
+                    "paypal capture response status is not COMPLETED for {}".format(
+                        self.transaction_id))
+                return_data = {
+                    "status": 400,
+                    "is_redirect": True,
+                    "redirect_url": self.transaction_obj.failure_url,
+                    "is_success": False,
+                }
+                youpay_update_data = {
+                    "transaction_id": self.transaction_id,
+                    "payment_status": PAYMENT_STATUS_FAILED
+                }
                 code = self.PAYPAL_CONNECTION_ERROR
 
+            self.update_youpay_transaction_data(youpay_update_data)
             response_data_json['status'] = status
             self.update_paypal_transaction_data(
                 paypal_transaction,
@@ -355,6 +374,60 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 f"transaction {self.transaction_id}: {e}")
             return None, self.PAYPAL_CONNECTION_ERROR
 
+    def handle_paypal_capture_failure(self, paypal_transaction,
+                                      response, ):
+        """
+        Handles a failed PayPal capture attempt:
+        - Updates transaction record with failure details.
+        - Logs and returns a clean message to frontend.
+        """
+        try:
+            response_json = response.json()
+        except ValueError:
+            response_json = {
+                "message": "Unexpected error format from PayPal",
+                "raw_text": response.text
+            }
+
+        issue = None
+        description = None
+        debug_id = response_json.get("debug_id")
+        message = response_json.get("message")
+
+        if message:
+            readable_reason = message
+        else:
+            issue = response_json["details"][0].get("issue")
+            readable_reason = PAYPAL_CAPTURE_FAILURE_REASON_MAPPING.get(
+                issue, )
+
+        logger.error(
+            f"PayPal capture failed [order_id={paypal_transaction.order_id}]: "
+            f"Issue={issue}, Description={description}, DebugID={debug_id}"
+        )
+
+        # paypal_transaction.status = PAYPAL_CAPTURE_STATUS_FAILED
+        # paypal_transaction.error_message = readable_reason
+        # paypal_transaction.debug_id = debug_id
+        # paypal_transaction.save(update_fields=[
+        #     "status", "error_message", 'debug_id'
+        # ])
+
+        response_data = {
+            'is_redirect': True,
+            'redirect_url': self.transaction_obj.failure_url,
+            'is_success': False,
+            'message': readable_reason,
+        }
+
+        self.update_youpay_transaction_data({
+            'transaction_id': self.transaction_id,
+            'payment_status': PAYMENT_STATUS_FAILED
+
+        })
+
+        return response_data, self.PAYPAL_CONNECTION_ERROR
+
     def update_paypal_transaction_data(self, paypal_transaction,
                                                     response_data):
         """Method to update paypal transaction data"""
@@ -365,23 +438,31 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             capture_info = (
                 purchase_unit.get("payments", {}).get("captures", [{}])[0])
             payer = response_data.get("payer", {})
-            name_data = payer.get("name", {})
+            seller_receivable = None
 
-            data_dict["capture_id"] = capture_info.get("id")
+            if capture_info:
+                data_dict["capture_id"] = capture_info.get("id")
+                seller_receivable = capture_info.get(
+                    "seller_receivable_breakdown", {})
+
+            if seller_receivable:
+                data_dict["net_amount"] = seller_receivable.get(
+                    "net_amount").get(
+                    "value")
+                data_dict["paypal_fee"] = seller_receivable.get(
+                    "paypal_fee").get(
+                    "value")
+
+            if payer:
+                data_dict["customer_email"] = payer.get("email_address")
+                data_dict["payer_id"] = payer.get("payer_id")
+                name_data = payer.get("name", {})
+                data_dict[
+                    "customer_name"] = (f"{name_data.get('given_name', '')} "
+                                        f"{name_data.get('surname', '')}").strip()
+
             data_dict["status"] = response_data.get("status")
-            data_dict["customer_email"] = payer.get("email_address")
-            data_dict["payer_id"] = payer.get("payer_id")
-            data_dict[
-                "customer_name"] = f"{name_data.get('given_name', '')} {name_data.get('surname', '')}".strip()
             data_dict["raw_response"] = response_data
-            seller_receivable = capture_info.get(
-                "seller_receivable_breakdown", {})
-            data_dict["net_amount"] = seller_receivable.get("net_amount").get(
-                "value")
-            data_dict["paypal_fee"] = seller_receivable.get("paypal_fee").get(
-                "value")
-            data_dict["payer_id"] = payer.get("payer_id")
-
             self.saved_fields = ["updated_at"]
             self.saved_fields = get_saved_fields(self.saved_fields, data_dict,
                                                  paypal_transaction)

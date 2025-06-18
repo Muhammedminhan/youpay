@@ -12,13 +12,13 @@ from core.utils import decrypt_string
 from gateways.paypal.integrations import PaypalManager
 from integrations.constants import ADDITIONAL_PROCESSING_FEE, PAYPAL_HUB_CODE
 from payments.constants import PAYMENT_METHOD_PAYPAL
+from payments.models import AdditionalCharge
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.models import APIClient
 from services.v1.views.common import (YouPayTransactionCRUD,
                                       get_processing_charge,
                                       AdditionalChargesUpdation)
-from payments.models import AdditionalCharge
 
 logger = logging.getLogger(__name__)
 
@@ -102,10 +102,10 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
         """
         try:
             transaction_id = request.query_params.get("id")
-            logger.info(f"Received PayPal charge calculation request for "
-                        f"Transaction ID: {transaction_id}")
-
             decrypted_id = decrypt_string(transaction_id)
+            logger.info(f"Received PayPal charge calculation request for "
+                        f"Transaction ID: {decrypted_id}")
+
             transaction_obj = self.get_youpay_transaction_data(decrypted_id)
 
             response_data = self.calculate_paypal_charge(transaction_obj)
@@ -154,10 +154,10 @@ class PayPalPaymentAPIView(APIView, YouPayTransactionCRUD):
         """
         try:
             transaction_id = request.data.get("transaction_id")
-            logger.info(f"Received PayPal order creation request for "
-                        f"Transaction ID: {transaction_id}")
-
             decrypted_id = decrypt_string(transaction_id)
+            logger.info(f"Received PayPal order creation request for "
+                        f"Transaction ID: {decrypted_id}")
+
             transaction_obj = self.get_youpay_transaction_data(decrypted_id)
             additional_charge_obj = AdditionalCharge.objects.filter(
                 transaction=transaction_obj).first()
@@ -165,16 +165,15 @@ class PayPalPaymentAPIView(APIView, YouPayTransactionCRUD):
             if transaction_obj and additional_charge_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
                 transaction_data = serializer.data
-                amount = additional_charge_obj.additional_total_amount
 
                 transaction_data.update({
                     'transaction_obj': transaction_obj,
-                    'amount': float(amount),
+                    'additional_total_amount': additional_charge_obj.additional_total_amount,
                     'encrypted_transaction_id': transaction_id,
-                    'VAT_amount': additional_charge_obj.additional_vat,
-                    'processing_fee':
+                    'additional_vat': additional_charge_obj.additional_vat,
+                    'additional_processing_fee':
                         additional_charge_obj.additional_processing_fee,
-                    'processing_fee_vat':
+                    'additional_processing_fee_vat':
                         additional_charge_obj.additional_processing_fee_vat
                 })
 
@@ -215,11 +214,11 @@ class PayPalVerifyAPIView(APIView, YouPayTransactionCRUD):
         try:
             transaction_id = request.query_params.get("id")
             order_id = request.query_params.get("order_id")
+            decrypted_id = decrypt_string(transaction_id)
 
             logger.info(f"Received PayPal payment verification request for "
-                        f"Transaction ID: {transaction_id}")
+                        f"Transaction ID: {decrypted_id}")
 
-            decrypted_id = decrypt_string(transaction_id)
             transaction_obj = self.get_youpay_transaction_data(decrypted_id)
 
             if not transaction_obj:

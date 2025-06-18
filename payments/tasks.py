@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 @shared_task(name='set_transaction_expired')
 def set_transaction_expired():
     """
-        Method to set payment_status of all YouPayTransactionData objects
+        Method to set payment_status of all YouwPayTransactionData objects
         older than 20 minutes to expired status.
     """
     logger.info("cronjob for setting youpay transactions older than 20 "
