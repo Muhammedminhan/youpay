@@ -5,13 +5,15 @@ import requests
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL
-from core.utils import get_payment_gateway_config, get_app_config
+from core.utils import (get_payment_gateway_config, get_app_config,
+                        get_redirect_url)
 from gateways.common import _get_payment_reference_number
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ORDER_ENDPOINT,
                                        PAYPAL_ORDER_STATUS_APPROVED,
                                        PAYPAL_CAPTURE_STATUS_COMPLETED,
-                                       PAYPAL_CAPTURE_FAILURE_REASON_MAPPING)
+                                       PAYPAL_CAPTURE_FAILURE_REASON_MAPPING,
+                                       PAYPAL_CAPTURE_STATUS_FAILED)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
@@ -331,10 +333,13 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             capture = captures[0]
             capture_status = capture.get("status", "").upper()
             if capture_status == "COMPLETED":
+                redirect_url = get_redirect_url(
+                    self.transaction_obj.success_url,
+                    self.transaction_id)
                 return_data = {
                     "status": 200,
                     "is_redirect": True,
-                    "redirect_url": self.transaction_obj.success_url,
+                    "redirect_url": redirect_url,
                     "is_success": True,
                 }
                 code = self.SUCCESS
@@ -349,10 +354,13 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 logger.error(
                     "paypal capture response status is not COMPLETED for {}".format(
                         self.transaction_id))
+                redirect_url = get_redirect_url(
+                    self.transaction_obj.failure_url,
+                    self.transaction_id)
                 return_data = {
                     "status": 400,
                     "is_redirect": True,
-                    "redirect_url": self.transaction_obj.failure_url,
+                    "redirect_url": redirect_url,
                     "is_success": False,
                 }
                 youpay_update_data = {
@@ -406,16 +414,18 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             f"Issue={issue}, Description={description}, DebugID={debug_id}"
         )
 
-        # paypal_transaction.status = PAYPAL_CAPTURE_STATUS_FAILED
-        # paypal_transaction.error_message = readable_reason
-        # paypal_transaction.debug_id = debug_id
-        # paypal_transaction.save(update_fields=[
-        #     "status", "error_message", 'debug_id'
-        # ])
+        paypal_transaction.status = PAYPAL_CAPTURE_STATUS_FAILED
+        paypal_transaction.error_message = readable_reason
+        paypal_transaction.debug_id = debug_id
+        paypal_transaction.save(update_fields=[
+            "status", "error_message", 'debug_id'
+        ])
+        redirect_url = get_redirect_url(self.transaction_obj.failure_url,
+                                        self.transaction_id)
 
         response_data = {
             'is_redirect': True,
-            'redirect_url': self.transaction_obj.failure_url,
+            'redirect_url': redirect_url,
             'is_success': False,
             'message': readable_reason,
         }
