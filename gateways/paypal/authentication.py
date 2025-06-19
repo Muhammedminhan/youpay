@@ -5,6 +5,7 @@ from rest_framework import authentication
 from rest_framework.exceptions import AuthenticationFailed
 
 from core.utils import get_payment_gateway_config
+from gateways.paypal.constants import PAYPAL_WEBHOOK_VERIFY_ENDPOINT
 from gateways.paypal.models import PaymentAccessToken
 from integrations.constants import PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY
 
@@ -45,14 +46,16 @@ class PayPalWebhookAuthentication(authentication.BaseAuthentication):
                 "webhook_id": webhook_id,
                 "webhook_event": request.data,
             }
+            url = paypal_config.domain + PAYPAL_WEBHOOK_VERIFY_ENDPOINT
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {access_token}"
+            }
 
             response = requests.post(
-                f"{paypal_config.domain}/v1/notifications/verify-webhook-signature",
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {access_token}"
-                },
-                data=json.dumps(payload),
+                url,
+                headers=headers,
+                data=json.dumps(payload)
             )
 
             if response.status_code != 200:
