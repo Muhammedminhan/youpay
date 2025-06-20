@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string
+from core.utils import decrypt_string, round_decimal
 from gateways.paypal.integrations import PaypalManager
 from integrations.constants import ADDITIONAL_PROCESSING_FEE, PAYPAL_HUB_CODE
 from payments.constants import PAYMENT_METHOD_PAYPAL
@@ -62,18 +62,18 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
                                 + cart_processing_fee + new_cart_vat_amount)
 
             response_data = {
-                "amount": round(new_amount, 2),
+                "amount": round_decimal(new_amount),
                 "currency": transaction.currency,
                 "base_amount": base_amount,
                 "service_fee": transaction.service_fee,
-                "vat_amount": round(new_vat_amount, 2),
-                "processing_fee": round(processing_fee, 2),
-                "cart_amount": round(new_cart_amount, 2),
+                "vat_amount": round_decimal(new_vat_amount),
+                "processing_fee": round_decimal(processing_fee),
+                "cart_amount": round_decimal(new_cart_amount),
                 "cart_currency": cart_currency,
                 "cart_base_amount": transaction.cart_base_amount,
                 "cart_service_fee": transaction.cart_service_fee,
-                "cart_vat_amount": round(new_cart_vat_amount, 2),
-                "cart_processing_fee": round(cart_processing_fee, 2),
+                "cart_vat_amount": round_decimal(new_cart_vat_amount),
+                "cart_processing_fee": round_decimal(cart_processing_fee),
             }
             return response_data
         return None

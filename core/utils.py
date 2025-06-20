@@ -2,7 +2,7 @@ import json
 import logging
 from base64 import b64decode, b64encode
 from contextlib import contextmanager
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from functools import wraps
 from os import urandom
 from time import sleep
@@ -893,3 +893,19 @@ def get_amazon_transaction_obj(reference):
         logger.error("Amazon transaction data not found for payment "
                      "reference: {}".format(reference))
         return None
+
+
+def round_decimal(amount, decimal_notation='0.01'):
+    """
+    Round the given amount to the specified decimal places (default: 2).
+
+    Args:
+        amount: The number to round (can be float, str, or Decimal).
+        decimal_notation: The rounding precision, e.g., '0.01' for 2 decimals.
+
+    Returns:
+        Rounded Decimal value.
+    """
+    if not isinstance(amount, Decimal):
+        amount = Decimal(str(amount))
+    return amount.quantize(Decimal(decimal_notation), rounding=ROUND_HALF_UP)
