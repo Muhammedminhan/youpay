@@ -9,7 +9,17 @@ from django.utils import timezone
 from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
 from gateways.paypal.constants import (PAYPAL_STATUS_CHOICES,
                                        PAYPAL_AUTHENTICATION_ENDPOINT,
-                                       PAYPAL_EVENT_STATUS_MAPPING)
+                                       PAYPAL_EVENT_STATUS_MAPPING,
+                                       PAYPAL_ORDER_STATUS_CREATED,
+                                       PAYPAL_ORDER_STATUS_APPROVED,
+                                       PAYPAL_CAPTURE_STATUS_PENDING,
+                                       PAYPAL_CAPTURE_STATUS_DECLINED,
+                                       PAYPAL_CAPTURE_STATUS_FAILED,
+                                       PAYPAL_CAPTURE_STATUS_COMPLETED,
+                                       PAYPAL_REFUND_STATUS_COMPLETED)
+from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_STATUS_FAILED,
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_REFUNDED)
+from payments.models import YouPayTransactionData
 from services.v1.views.common import get_saved_fields
 
 logger = logging.getLogger(__name__)
@@ -88,6 +98,44 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
     error_message = models.CharField(max_length=255, blank=True, null=True)
 
 
+@receiver(post_save, sender=PaypalTransaction)
+def update_youpay_transaction(sender, instance, created, **kwargs):
+    status_mapping = {
+        PAYPAL_ORDER_STATUS_CREATED: PAYMENT_STATUS_PENDING,
+        PAYPAL_ORDER_STATUS_APPROVED: PAYMENT_STATUS_PENDING,
+        PAYPAL_CAPTURE_STATUS_PENDING: PAYMENT_STATUS_PENDING,
+        PAYPAL_CAPTURE_STATUS_DECLINED: PAYMENT_STATUS_FAILED,
+        PAYPAL_CAPTURE_STATUS_FAILED: PAYMENT_STATUS_FAILED,
+        PAYPAL_CAPTURE_STATUS_COMPLETED: PAYMENT_STATUS_PAID,
+        PAYPAL_REFUND_STATUS_COMPLETED: PAYMENT_STATUS_REFUNDED,
+    }
+
+    youpay_status = status_mapping.get(instance.status)
+    print("Updating youpay transaction data from Paypal Transaction")
+
+    if youpay_status:
+        try:
+            transaction = YouPayTransactionData.objects.get(
+                payment_reference=instance.payment_reference, )
+
+            if transaction.payment_status != PAYMENT_STATUS_PAID:
+                transaction.payment_status = youpay_status
+            elif (transaction.payment_status == PAYMENT_STATUS_PAID) and (
+                    instance.status == PAYPAL_REFUND_STATUS_COMPLETED):
+                transaction.payment_status = PAYMENT_STATUS_REFUNDED
+
+            transaction.save()
+        except YouPayTransactionData.DoesNotExist:
+            logger.warning(
+                f"YouPay transaction not found for PayPal reference: {instance.payment_reference}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to update YouPay transaction for PayPal reference {instance.payment_reference}: {str(e)}",
+                exc_info=True
+            )
+
+
 class PayPalWebhookLog(AbstractDateTime):
     event_id = models.CharField(max_length=128, blank=True, null=True)
     event_type = models.CharField(max_length=128)
@@ -109,6 +157,10 @@ class PayPalWebhookLog(AbstractDateTime):
     paypal_fee = models.CharField(max_length=32, null=True, blank=True)
     net_amount = models.CharField(max_length=32, null=True, blank=True)
     payload = models.JSONField(null=True, blank=True)
+
+    merchant_id = models.CharField(max_length=64, null=True, blank=True,
+                                   help_text="Id of the merchant/payee")
+    payee_email = models.EmailField(null=True, blank=True)
 
     def __str__(self):
         return self.order_id
