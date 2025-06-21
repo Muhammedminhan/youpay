@@ -32,3 +32,9 @@ def _get_payment_reference_number(order_reference):
     reference_number = '%s|%s' % (order_reference,
                                        unique_token_generator())
     return reference_number
+
+
+def get_request_id():
+    request_id = ''.join(random.choices(string.ascii_uppercase +
+                                        string.digits, k=20))
+    return request_id

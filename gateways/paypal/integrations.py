@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 
 import requests
 from rest_framework import status
@@ -7,7 +8,8 @@ from rest_framework import status
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL
 from core.utils import (get_payment_gateway_config, get_app_config,
                         get_redirect_url)
-from gateways.common import _get_payment_reference_number
+from gateways.common import _get_payment_reference_number, get_request_id, \
+    unique_token_generator
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ORDER_ENDPOINT,
                                        PAYPAL_ORDER_STATUS_APPROVED,
@@ -45,6 +47,73 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         self.payment_gateway = PAYMENT_GATEWAY_PAYPAL
         self.paypal_transaction = None
         self.order_id = None
+        self.sender_youpay_account_id = None
+        self.tracking_id_stc = None
+
+    def set_paypal_stc_context(self, access_token, request_data):
+
+        try:
+            logger.info(
+                "Setting paypal stc context for transaction id: {}".format(
+                    self.transaction_id))
+
+            headers = {
+                'Authorization': access_token,
+                'Content-Type': 'application/json',
+                'PayPal-Request-Id': get_request_id()
+            }
+
+            self.sender_youpay_account_id = unique_token_generator(size=15)
+            self.tracking_id_stc = unique_token_generator(size=15)
+
+            payload = {
+                "additional_data": [
+                    {"key": "sender_account_id",
+                     "value": self.sender_youpay_account_id},
+                    {"key": "sender_first_name",
+                     "value": request_data.get("payment_source", {}).get(
+                         "paypal",
+                         {}).get(
+                         "name", {}).get("given_name", "")},
+                    {"key": "sender_last_name",
+                     "value": request_data.get("payment_source", {}).get(
+                         "paypal",
+                         {}).get(
+                         "name", {}).get("surname", "")},
+                    {"key": "sender_email",
+                     "value": request_data.get("payment_source", {}).get(
+                         "paypal",
+                         {}).get(
+                         "email_address", "")},
+                    {"key": "sender_phone",
+                     "value": self.request_data.get("customer_phone", "")},
+                    {"key": "sender_country_code",
+                     "value": self.request_data.get("country_code", "")},
+                    {"key": "sender_create_date",
+                     "value": datetime.utcnow().isoformat() + "Z"}
+                ]
+            }
+
+            url = f"https://api-m.sandbox.paypal.com/v1/risk/transaction-contexts/JYA57EPAZLA9E/{self.tracking_id}"
+
+            response = requests.put(
+                url,
+                headers=headers,
+                json=payload
+            )
+
+            if response.status_code == status.HTTP_200_OK:
+                return True
+            logger.error(
+                "Unable to create payment transaction context for transaction id: {}".format(
+                    self.transaction_id))
+            return False
+
+        except Exception as e:
+            logger.error(
+                "Exception occurred while setting paypal stc context",
+                exc_info=True)
+            return False
 
     def create_order(self, request_data):
         try:
@@ -65,6 +134,12 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
 
                 payload = self.create_paypal_order_payload()
                 headers = self.get_headers()
+                access_token = headers.get('Authorization')
+                paypal_client_metadata_id = self.set_paypal_stc_context(
+                    access_token, payload)
+                headers.update({
+                    "PayPal-Client-Metadata-Id": self.tracking_id_stc
+                })
                 url = self.paypal_config.domain + PAYPAL_ORDER_ENDPOINT
 
                 response = requests.post(
@@ -124,25 +199,6 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
     def create_paypal_order_payload(self):
         customer_name = self.request_data.get('customer_name', '')
         name_parts = customer_name.strip().split()
-        payer = {
-            'name': {
-                'given_name': name_parts[0] if len(name_parts) > 0 else '',
-                'surname': name_parts[1] if len(name_parts) > 1 else '',
-            },
-            'email_address': self.request_data.get('customer_email'),
-        }
-        self.reference_id = _get_payment_reference_number(
-            self.order_reference)
-
-        purchase_units = [{
-            "invoice_id": self.reference_id,
-            "amount": {
-                "currency_code": "USD",
-                "value": float(
-                    self.request_data.get('additional_total_amount')),
-            }
-        }]
-
         app_config = get_app_config()
         params = '?id=' + self.request_data.get('encrypted_transaction_id')
 
@@ -155,17 +211,45 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         cancel_url = redirect_url + "{}/{}".format(
             self.transaction_obj.language,
             self.request_data.get('encrypted_transaction_id'))
-
-        application_context = {
+        experience_context = {
             "return_url": return_url,
             "cancel_url": cancel_url
         }
 
+        payment_source = {
+            "paypal": {
+                'name': {
+                    'given_name': name_parts[0] if len(
+                        name_parts) > 0 else '',
+                    'surname': name_parts[1] if len(name_parts) > 1 else '',
+                },
+                'email_address': self.request_data.get('customer_email'),
+                'experience_context': experience_context,
+            }
+        }
+        self.reference_id = _get_payment_reference_number(
+            self.order_reference)
+
+        purchase_units = [{
+            "invoice_id": self.reference_id,
+            "amount": {
+                "breakdown": {
+                    "item_total": {
+                        "currency_code": self.request_data.get('currency'),
+                        "value": float(
+                            self.request_data.get('additional_total_amount')),
+                    }
+                },
+                "currency_code": self.request_data.get('currency'),
+                "value": float(
+                    self.request_data.get('additional_total_amount')),
+            }
+        }]
+
         request_data = {
+            'payment_source': payment_source,
             'intent': 'CAPTURE',
-            'payer': payer,
             'purchase_units': purchase_units,
-            'application_context': application_context,
         }
 
         return request_data
@@ -177,11 +261,11 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         redirect_url = None
 
         for link in links:
-            if link.get("rel") == "approve":
+            if link.get("rel") == "payer-action":
                 redirect_url = link.get("href")
                 break
 
-        if status == "CREATED" and redirect_url:
+        if status == "PAYER_ACTION_REQUIRED" and redirect_url:
             self.update_youpay_transaction_data(
                 self.prepare_data_to_update(response_data))
             return_data = {
@@ -234,6 +318,8 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 "customer_name": self.request_data.get('customer_name'),
                 "customer_email": self.request_data.get('customer_email'),
                 "customer_phone": self.request_data.get('customer_phone'),
+                "sender_youpay_account_id": self.sender_youpay_account_id,
+                "tracking_id_stc": self.tracking_id_stc,
             }
             PaypalTransaction.objects.create(**data)
 

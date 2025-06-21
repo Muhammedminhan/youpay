@@ -81,7 +81,8 @@ class PaymentAccessToken(AbstractDateTime):
 class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
     order_id = models.CharField(max_length=100, unique=True)
     payment_reference = models.CharField(max_length=100, blank=True,
-                                         null=True)
+                                         null=True,
+                                         help_text="Passed to paypal as invoice id")
     status = models.CharField(max_length=50, blank=True, null=True,
                               choices=PAYPAL_STATUS_CHOICES)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -96,7 +97,12 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
                                      blank=True, null=True)
     debug_id = models.CharField(max_length=100, blank=True, null=True)
     error_message = models.CharField(max_length=255, blank=True, null=True)
-
+    tracking_id_stc = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Tracking ID to be passed in every request, created at time of STC")
+    sender_youpay_account_id = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Unique ID created for each user")
 
 @receiver(post_save, sender=PaypalTransaction)
 def update_youpay_transaction(sender, instance, created, **kwargs):
