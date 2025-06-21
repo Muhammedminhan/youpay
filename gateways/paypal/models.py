@@ -142,44 +142,6 @@ def update_youpay_transaction(sender, instance, created, **kwargs):
             )
 
 
-@receiver(post_save, sender=PaypalTransaction)
-def update_youpay_transaction(sender, instance, created, **kwargs):
-    status_mapping = {
-        PAYPAL_ORDER_STATUS_CREATED: PAYMENT_STATUS_PENDING,
-        PAYPAL_ORDER_STATUS_APPROVED: PAYMENT_STATUS_PENDING,
-        PAYPAL_CAPTURE_STATUS_PENDING: PAYMENT_STATUS_PENDING,
-        PAYPAL_CAPTURE_STATUS_DECLINED: PAYMENT_STATUS_FAILED,
-        PAYPAL_CAPTURE_STATUS_FAILED: PAYMENT_STATUS_FAILED,
-        PAYPAL_CAPTURE_STATUS_COMPLETED: PAYMENT_STATUS_PAID,
-        PAYPAL_REFUND_STATUS_COMPLETED: PAYMENT_STATUS_REFUNDED,
-    }
-
-    youpay_status = status_mapping.get(instance.status)
-    print("Updating youpay transaction data from Paypal Transaction")
-
-    if youpay_status:
-        try:
-            transaction = YouPayTransactionData.objects.get(
-                payment_reference=instance.payment_reference, )
-
-            if transaction.payment_status != PAYMENT_STATUS_PAID:
-                transaction.payment_status = youpay_status
-            elif (transaction.payment_status == PAYMENT_STATUS_PAID) and (
-                    instance.status == PAYPAL_REFUND_STATUS_COMPLETED):
-                transaction.payment_status = PAYMENT_STATUS_REFUNDED
-
-            transaction.save()
-        except YouPayTransactionData.DoesNotExist:
-            logger.warning(
-                f"YouPay transaction not found for PayPal reference: {instance.payment_reference}"
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to update YouPay transaction for PayPal reference {instance.payment_reference}: {str(e)}",
-                exc_info=True
-            )
-
-
 class PayPalWebhookLog(AbstractDateTime):
     event_id = models.CharField(max_length=128, blank=True, null=True)
     event_type = models.CharField(max_length=128)

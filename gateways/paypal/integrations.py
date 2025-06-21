@@ -94,7 +94,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 ]
             }
 
-            url = f"https://api-m.sandbox.paypal.com/v1/risk/transaction-contexts/JYA57EPAZLA9E/{self.tracking_id}"
+            url = f"https://api-m.sandbox.paypal.com/v1/risk/transaction-contexts/JYA57EPAZLA9E/{self.tracking_id_stc}"
 
             response = requests.put(
                 url,
@@ -337,6 +337,10 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             self.order_id = order_id
             headers = self.get_headers()
             paypal_transaction = self.get_paypal_transaction()
+            self.tracking_id_stc = paypal_transaction.tracking_id_stc
+            headers.update({
+                "PayPal-Client-Metadata-Id": self.tracking_id_stc
+            })
             order_status = self.check_order_approval(order_id,
                                                      paypal_transaction)
             if order_status["status"] == PAYPAL_ORDER_STATUS_APPROVED:
