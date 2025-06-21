@@ -81,7 +81,8 @@ class PaymentAccessToken(AbstractDateTime):
 class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
     order_id = models.CharField(max_length=100, unique=True)
     payment_reference = models.CharField(max_length=100, blank=True,
-                                         null=True)
+                                         null=True,
+                                         help_text="Passed to paypal as invoice id")
     status = models.CharField(max_length=50, blank=True, null=True,
                               choices=PAYPAL_STATUS_CHOICES)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -96,6 +97,49 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
                                      blank=True, null=True)
     debug_id = models.CharField(max_length=100, blank=True, null=True)
     error_message = models.CharField(max_length=255, blank=True, null=True)
+    tracking_id_stc = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Tracking ID to be passed in every request, created at time of STC")
+    sender_youpay_account_id = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Unique ID created for each user")
+
+@receiver(post_save, sender=PaypalTransaction)
+def update_youpay_transaction(sender, instance, created, **kwargs):
+    status_mapping = {
+        PAYPAL_ORDER_STATUS_CREATED: PAYMENT_STATUS_PENDING,
+        PAYPAL_ORDER_STATUS_APPROVED: PAYMENT_STATUS_PENDING,
+        PAYPAL_CAPTURE_STATUS_PENDING: PAYMENT_STATUS_PENDING,
+        PAYPAL_CAPTURE_STATUS_DECLINED: PAYMENT_STATUS_FAILED,
+        PAYPAL_CAPTURE_STATUS_FAILED: PAYMENT_STATUS_FAILED,
+        PAYPAL_CAPTURE_STATUS_COMPLETED: PAYMENT_STATUS_PAID,
+        PAYPAL_REFUND_STATUS_COMPLETED: PAYMENT_STATUS_REFUNDED,
+    }
+
+    youpay_status = status_mapping.get(instance.status)
+    print("Updating youpay transaction data from Paypal Transaction")
+
+    if youpay_status:
+        try:
+            transaction = YouPayTransactionData.objects.get(
+                payment_reference=instance.payment_reference, )
+
+            if transaction.payment_status != PAYMENT_STATUS_PAID:
+                transaction.payment_status = youpay_status
+            elif (transaction.payment_status == PAYMENT_STATUS_PAID) and (
+                    instance.status == PAYPAL_REFUND_STATUS_COMPLETED):
+                transaction.payment_status = PAYMENT_STATUS_REFUNDED
+
+            transaction.save()
+        except YouPayTransactionData.DoesNotExist:
+            logger.warning(
+                f"YouPay transaction not found for PayPal reference: {instance.payment_reference}"
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to update YouPay transaction for PayPal reference {instance.payment_reference}: {str(e)}",
+                exc_info=True
+            )
 
 
 @receiver(post_save, sender=PaypalTransaction)
