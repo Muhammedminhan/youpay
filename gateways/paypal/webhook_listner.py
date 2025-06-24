@@ -79,9 +79,11 @@ def handle_payment_capture_refunded(webhook_data):
         target_currency=exchange_rate.get('target_currency'),
         converted_amount=net_amount_breakdown.get('converted_amount', {}).get(
             'value'),
-        payable_amount=net_amount_breakdown.get('payable_amount', {}).get(
+        payable_or_receivable_amount=net_amount_breakdown.get(
+            'payable_amount', {}).get(
             'value'),
-        payable_currency_code=net_amount_breakdown.get('payable_amount',
+        payable_or_receivable_currency_code=net_amount_breakdown.get(
+            'payable_amount',
                                                        {}).get(
             'currency_code'),
         payload=webhook_data,
@@ -127,6 +129,7 @@ def handle_checkout_order_approved(webhook_data):
 def handle_payment_capture_completed(webhook_data):
     resource = webhook_data.get('resource', {})
     seller_breakdown = resource.get('seller_receivable_breakdown', {})
+    exchange_rate = seller_breakdown.get('exchange_rate', {})
 
     log_entry = PayPalWebhookLog(
         event_id=webhook_data.get('id'),
@@ -144,6 +147,14 @@ def handle_payment_capture_completed(webhook_data):
         amount_currency=resource.get('amount', {}).get('currency_code'),
         paypal_fee=seller_breakdown.get('paypal_fee', {}).get('value'),
         net_amount=seller_breakdown.get('net_amount', {}).get('value'),
+        gross_amount=seller_breakdown.get('gross_amount', {}).get('value'),
+        payable_or_receivable_amount=seller_breakdown.get('receivable_amount',
+                                                          {}).get('value'),
+        payable_or_receivable_currency_code=seller_breakdown.get(
+            'receivable_amount', {}).get('currency_code'),
+        exchange_rate=exchange_rate.get('value'),
+        source_currency=exchange_rate.get('source_currency'),
+        target_currency=exchange_rate.get('target_currency'),
         payload=webhook_data,
     )
 
