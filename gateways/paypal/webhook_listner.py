@@ -49,24 +49,40 @@ class WebhookListner(APIView):
         )
 
 
-def handle_payment_refund_completed(webhook_data):
+def handle_payment_capture_refunded(webhook_data):
     resource = webhook_data.get('resource', {})
     seller_breakdown = resource.get('seller_payable_breakdown', {})
+    net_amount_breakdown = seller_breakdown.get('net_amount_breakdown', [{}])[
+        0] if seller_breakdown.get('net_amount_breakdown') else {}
+    exchange_rate = net_amount_breakdown.get('exchange_rate', {})
 
     log_entry = PayPalWebhookLog(
         event_id=webhook_data.get('id'),
         event_type=webhook_data.get('event_type'),
         resource_type=webhook_data.get('resource_type'),
         summary=webhook_data.get('summary'),
-        order_id=resource.get('supplementary_data', {}).get(
-            'related_ids', 'order_id'),
+        order_id=resource.get('id'),
         status=resource.get('status'),
-        capture_id=resource.get('capture_id'),
         invoice_id=resource.get('invoice_id'),
         amount_value=resource.get('amount', {}).get('value'),
         amount_currency=resource.get('amount', {}).get('currency_code'),
         paypal_fee=seller_breakdown.get('paypal_fee', {}).get('value'),
         net_amount=seller_breakdown.get('net_amount', {}).get('value'),
+        merchant_id=resource.get('payer', {}).get('merchant_id'),
+        payee_email=resource.get('payer', {}).get('email_address'),
+        total_refunded_amount=seller_breakdown.get('total_refunded_amount',
+                                                   {}).get('value'),
+        gross_amount=seller_breakdown.get('gross_amount', {}).get('value'),
+        exchange_rate=exchange_rate.get('value'),
+        source_currency=exchange_rate.get('source_currency'),
+        target_currency=exchange_rate.get('target_currency'),
+        converted_amount=net_amount_breakdown.get('converted_amount', {}).get(
+            'value'),
+        payable_amount=net_amount_breakdown.get('payable_amount', {}).get(
+            'value'),
+        payable_currency_code=net_amount_breakdown.get('payable_amount',
+                                                       {}).get(
+            'currency_code'),
         payload=webhook_data,
     )
 
@@ -137,5 +153,5 @@ def handle_payment_capture_completed(webhook_data):
 WEBHOOK_EVENT_HANDLERS = {
     "CHECKOUT.ORDER.APPROVED": handle_checkout_order_approved,
     "PAYMENT.CAPTURE.COMPLETED": handle_payment_capture_completed,
-    "PAYMENT.REFUND.COMPLETED": handle_payment_refund_completed,
+    "PAYMENT.CAPTURE.REFUNDED": handle_payment_capture_refunded,
 }

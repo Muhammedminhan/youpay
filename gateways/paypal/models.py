@@ -103,44 +103,14 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
     sender_youpay_account_id = models.CharField(
         max_length=100, blank=True, null=True,
         help_text="Unique ID created for each user")
-
-@receiver(post_save, sender=PaypalTransaction)
-def update_youpay_transaction(sender, instance, created, **kwargs):
-    status_mapping = {
-        PAYPAL_ORDER_STATUS_CREATED: PAYMENT_STATUS_PENDING,
-        PAYPAL_ORDER_STATUS_APPROVED: PAYMENT_STATUS_PENDING,
-        PAYPAL_CAPTURE_STATUS_PENDING: PAYMENT_STATUS_PENDING,
-        PAYPAL_CAPTURE_STATUS_DECLINED: PAYMENT_STATUS_FAILED,
-        PAYPAL_CAPTURE_STATUS_FAILED: PAYMENT_STATUS_FAILED,
-        PAYPAL_CAPTURE_STATUS_COMPLETED: PAYMENT_STATUS_PAID,
-        PAYPAL_REFUND_STATUS_COMPLETED: PAYMENT_STATUS_REFUNDED,
-    }
-
-    youpay_status = status_mapping.get(instance.status)
-    print("Updating youpay transaction data from Paypal Transaction")
-
-    if youpay_status:
-        try:
-            transaction = YouPayTransactionData.objects.get(
-                payment_reference=instance.payment_reference, )
-
-            if transaction.payment_status != PAYMENT_STATUS_PAID:
-                transaction.payment_status = youpay_status
-            elif (transaction.payment_status == PAYMENT_STATUS_PAID) and (
-                    instance.status == PAYPAL_REFUND_STATUS_COMPLETED):
-                transaction.payment_status = PAYMENT_STATUS_REFUNDED
-
-            transaction.save()
-        except YouPayTransactionData.DoesNotExist:
-            logger.warning(
-                f"YouPay transaction not found for PayPal reference: {instance.payment_reference}"
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to update YouPay transaction for PayPal reference {instance.payment_reference}: {str(e)}",
-                exc_info=True
-            )
-
+    exchange_rate = models.CharField(max_length=32, null=True, blank=True)
+    source_currency = models.CharField(max_length=32, null=True, blank=True)
+    target_currency = models.CharField(max_length=32, null=True, blank=True)
+    converted_amount = models.CharField(max_length=32, null=True, blank=True)
+    receivable_amount = models.CharField(max_length=32, null=True, blank=True)
+    receivable_amount_currency_code = models.CharField(max_length=32,
+                                                       null=True,
+                                                       blank=True)
 
 class PayPalWebhookLog(AbstractDateTime):
     event_id = models.CharField(max_length=128, blank=True, null=True)
@@ -167,6 +137,16 @@ class PayPalWebhookLog(AbstractDateTime):
     merchant_id = models.CharField(max_length=64, null=True, blank=True,
                                    help_text="Id of the merchant/payee")
     payee_email = models.EmailField(null=True, blank=True)
+    total_refunded_amount = models.CharField(max_length=32, null=True,
+                                             blank=True)
+    gross_amount = models.CharField(max_length=32, null=True, blank=True)
+    exchange_rate = models.CharField(max_length=32, null=True, blank=True)
+    source_currency = models.CharField(max_length=32, null=True, blank=True)
+    target_currency = models.CharField(max_length=32, null=True, blank=True)
+    converted_amount = models.CharField(max_length=32, null=True, blank=True)
+    payable_amount = models.CharField(max_length=32, null=True, blank=True)
+    payable_currency_code = models.CharField(max_length=32, null=True,
+                                             blank=True)
 
     def __str__(self):
         return self.order_id
