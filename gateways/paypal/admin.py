@@ -92,7 +92,8 @@ class PayPalWebhookLogAdmin(admin.ModelAdmin):
         ("Exchange Details", {
             "fields": (
                 "exchange_rate", "source_currency", "target_currency",
-                "converted_amount", "payable_amount", "payable_currency_code"
+                "converted_amount", "payable_or_receivable_amount",
+                "payable_or_receivable_currency_code"
             )
         }),
         ("Raw Payload", {
