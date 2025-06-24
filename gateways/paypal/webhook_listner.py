@@ -63,6 +63,8 @@ def handle_payment_capture_refunded(webhook_data):
         summary=webhook_data.get('summary'),
         status=resource.get('status'),
         invoice_id=resource.get('invoice_id'),
+        payment_reference=resource.get('invoice_id'),
+        refund_id=resource.get('id'),
         amount_value=resource.get('amount', {}).get('value'),
         amount_currency=resource.get('amount', {}).get('currency_code'),
         paypal_fee=seller_breakdown.get('paypal_fee', {}).get('value'),
