@@ -51,7 +51,14 @@ class PayPalWebhookLogAdmin(admin.ModelAdmin):
         }),
         ("Amount Details", {
             "fields": (
-                "amount_value", "amount_currency", "paypal_fee", "net_amount")
+                "amount_value", "amount_currency", "paypal_fee", "net_amount",
+                "total_refunded_amount", "gross_amount")
+        }),
+        ("Exchange Details", {
+            "fields": (
+                "exchange_rate", "source_currency", "target_currency",
+                "converted_amount", "payable_amount", "payable_currency_code"
+            )
         }),
         ("Raw Payload", {
             "fields": ("payload",)

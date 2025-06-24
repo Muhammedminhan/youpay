@@ -103,6 +103,14 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
     sender_youpay_account_id = models.CharField(
         max_length=100, blank=True, null=True,
         help_text="Unique ID created for each user")
+    exchange_rate = models.CharField(max_length=32, null=True, blank=True)
+    source_currency = models.CharField(max_length=32, null=True, blank=True)
+    target_currency = models.CharField(max_length=32, null=True, blank=True)
+    converted_amount = models.CharField(max_length=32, null=True, blank=True)
+    receivable_amount = models.CharField(max_length=32, null=True, blank=True)
+    receivable_amount_currency_code = models.CharField(max_length=32,
+                                                       null=True,
+                                                       blank=True)
 
 @receiver(post_save, sender=PaypalTransaction)
 def update_youpay_transaction(sender, instance, created, **kwargs):
@@ -167,6 +175,16 @@ class PayPalWebhookLog(AbstractDateTime):
     merchant_id = models.CharField(max_length=64, null=True, blank=True,
                                    help_text="Id of the merchant/payee")
     payee_email = models.EmailField(null=True, blank=True)
+    total_refunded_amount = models.CharField(max_length=32, null=True,
+                                             blank=True)
+    gross_amount = models.CharField(max_length=32, null=True, blank=True)
+    exchange_rate = models.CharField(max_length=32, null=True, blank=True)
+    source_currency = models.CharField(max_length=32, null=True, blank=True)
+    target_currency = models.CharField(max_length=32, null=True, blank=True)
+    converted_amount = models.CharField(max_length=32, null=True, blank=True)
+    payable_amount = models.CharField(max_length=32, null=True, blank=True)
+    payable_currency_code = models.CharField(max_length=32, null=True,
+                                             blank=True)
 
     def __str__(self):
         return self.order_id
