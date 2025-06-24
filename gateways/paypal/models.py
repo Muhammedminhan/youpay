@@ -313,13 +313,13 @@ class PayPalWebhookLog(AbstractDateTime):
         max_length=32, null=True, blank=True,
         help_text="Converted amount after applying exchange rate"
     )
-    payable_amount = models.CharField(
+    payable_or_receivable_amount = models.CharField(
         max_length=32, null=True, blank=True,
-        help_text="Amount payable to the merchant"
+        help_text="Amount payable or receivable to the merchant"
     )
-    payable_currency_code = models.CharField(
+    payable_or_receivable_currency_code = models.CharField(
         max_length=32, null=True, blank=True,
-        help_text="Currency code of the payable amount"
+        help_text="Currency code of the payable or receivable  amount"
     )
 
     def __str__(self):
