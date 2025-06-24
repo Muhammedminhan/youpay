@@ -9,17 +9,7 @@ from django.utils import timezone
 from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
 from gateways.paypal.constants import (PAYPAL_STATUS_CHOICES,
                                        PAYPAL_AUTHENTICATION_ENDPOINT,
-                                       PAYPAL_EVENT_STATUS_MAPPING,
-                                       PAYPAL_ORDER_STATUS_CREATED,
-                                       PAYPAL_ORDER_STATUS_APPROVED,
-                                       PAYPAL_CAPTURE_STATUS_PENDING,
-                                       PAYPAL_CAPTURE_STATUS_DECLINED,
-                                       PAYPAL_CAPTURE_STATUS_FAILED,
-                                       PAYPAL_CAPTURE_STATUS_COMPLETED,
-                                       PAYPAL_REFUND_STATUS_COMPLETED)
-from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_STATUS_FAILED,
-                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_REFUNDED)
-from payments.models import YouPayTransactionData
+                                       PAYPAL_EVENT_STATUS_MAPPING)
 from services.v1.views.common import get_saved_fields
 
 logger = logging.getLogger(__name__)
@@ -112,44 +102,6 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
                                                        null=True,
                                                        blank=True)
 
-@receiver(post_save, sender=PaypalTransaction)
-def update_youpay_transaction(sender, instance, created, **kwargs):
-    status_mapping = {
-        PAYPAL_ORDER_STATUS_CREATED: PAYMENT_STATUS_PENDING,
-        PAYPAL_ORDER_STATUS_APPROVED: PAYMENT_STATUS_PENDING,
-        PAYPAL_CAPTURE_STATUS_PENDING: PAYMENT_STATUS_PENDING,
-        PAYPAL_CAPTURE_STATUS_DECLINED: PAYMENT_STATUS_FAILED,
-        PAYPAL_CAPTURE_STATUS_FAILED: PAYMENT_STATUS_FAILED,
-        PAYPAL_CAPTURE_STATUS_COMPLETED: PAYMENT_STATUS_PAID,
-        PAYPAL_REFUND_STATUS_COMPLETED: PAYMENT_STATUS_REFUNDED,
-    }
-
-    youpay_status = status_mapping.get(instance.status)
-    print("Updating youpay transaction data from Paypal Transaction")
-
-    if youpay_status:
-        try:
-            transaction = YouPayTransactionData.objects.get(
-                payment_reference=instance.payment_reference, )
-
-            if transaction.payment_status != PAYMENT_STATUS_PAID:
-                transaction.payment_status = youpay_status
-            elif (transaction.payment_status == PAYMENT_STATUS_PAID) and (
-                    instance.status == PAYPAL_REFUND_STATUS_COMPLETED):
-                transaction.payment_status = PAYMENT_STATUS_REFUNDED
-
-            transaction.save()
-        except YouPayTransactionData.DoesNotExist:
-            logger.warning(
-                f"YouPay transaction not found for PayPal reference: {instance.payment_reference}"
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to update YouPay transaction for PayPal reference {instance.payment_reference}: {str(e)}",
-                exc_info=True
-            )
-
-
 class PayPalWebhookLog(AbstractDateTime):
     event_id = models.CharField(max_length=128, blank=True, null=True)
     event_type = models.CharField(max_length=128)
@@ -194,13 +146,12 @@ class PayPalWebhookLog(AbstractDateTime):
 def update_paypal_transaction(sender, instance, created, **kwargs):
     try:
         data_to_update = prepare_paypal_transaction_update_data(instance)
-        payment_reference = instance.payment_reference
-        order_id = instance.order_id
-        paypal_transaction = get_paypal_transaction(order_id)
+        payment_reference = instance.invoice_id
+        paypal_transaction = get_paypal_transaction(payment_reference)
         if not paypal_transaction:
             logger.error(
                 "PaypalTransaction not found for order_id {}, reference_id {}".format(
-                    instance.order_id, instance.payment_reference)
+                    instance.order_id, instance.invoice_id)
             )
             return
 
@@ -209,12 +160,12 @@ def update_paypal_transaction(sender, instance, created, **kwargs):
         if is_updated:
             logger.info(
                 "PaypalTransaction updated for webhook event_id {}, order_id {}".format(
-                    instance.event_id, instance.order_id)
+                    instance.event_id, instance.invoice_id)
             )
         else:
             logger.error(
                 "PaypalTransaction not updated for webhook event_id {}, order_id= {}".format(
-                    instance.event_id, instance.order_id)
+                    instance.event_id, instance.invoice_id)
             )
     except Exception as e:
         logger.error(
@@ -258,12 +209,13 @@ def update_paypal_transaction_data(paypal_transaction,
         return False
 
 
-def get_paypal_transaction(order_id):
+def get_paypal_transaction(payment_reference):
     with transaction.atomic():
         try:
-            return PaypalTransaction.objects.get(order_id=order_id)
+            return PaypalTransaction.objects.get(
+                payment_reference=payment_reference)
         except PaypalTransaction.DoesNotExist:
             logger.error(
                 "Paypal transaction not found for order {}".format(
-                    order_id))
+                    payment_reference))
             return None

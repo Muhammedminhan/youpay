@@ -61,7 +61,6 @@ def handle_payment_capture_refunded(webhook_data):
         event_type=webhook_data.get('event_type'),
         resource_type=webhook_data.get('resource_type'),
         summary=webhook_data.get('summary'),
-        order_id=resource.get('id'),
         status=resource.get('status'),
         invoice_id=resource.get('invoice_id'),
         amount_value=resource.get('amount', {}).get('value'),
