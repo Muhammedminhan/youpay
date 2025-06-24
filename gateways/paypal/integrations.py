@@ -552,6 +552,17 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 data_dict["paypal_fee"] = seller_receivable.get(
                     "paypal_fee").get(
                     "value")
+                data_dict["receivable_amount"] = seller_receivable.get(
+                    "receivable_amount").get("value")
+                data_dict[
+                    "receivable_amount_currency_code"] = seller_receivable.get(
+                    "receivable_amount").get("currency_code")
+                data_dict["source_currency"] = seller_receivable.get(
+                    "exchange_rate").get("source_currency")
+                data_dict["exchange_rate"] = seller_receivable.get(
+                    "exchange_rate").get("value")
+                data_dict["target_currency"] = seller_receivable.get(
+                    "exchange_rate").get("target_currency")
 
             if payer:
                 data_dict["customer_email"] = payer.get("email_address")
