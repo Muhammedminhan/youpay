@@ -24,7 +24,8 @@ from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
-                                    PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY)
+                                    PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY,
+                                    PAYMENT_REQUEST_TYPE_SET_TRANSACTION_CONTEXT)
 from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED,
                                 PAYMENT_STATUS_REFUNDED)
@@ -113,9 +114,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,
                 request_data=json.dumps(payload),
-                response_data=response.text,
+                response_data=response.text if response.text else "{}",
                 request_method=REQUEST_METHOD_PUT,
-                request_type=PAYMENT_REQUEST_TYPE_CREATE_ORDER,
+                request_type=PAYMENT_REQUEST_TYPE_SET_TRANSACTION_CONTEXT,
             )
 
             if response.status_code == status.HTTP_200_OK:

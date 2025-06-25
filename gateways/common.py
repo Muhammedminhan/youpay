@@ -23,13 +23,13 @@ def unique_token_generator(size=10, is_upper=True):
 
 def _get_payment_reference_number(order_reference):
     """
-    Create a payment reference number for all the future Checkout
+    Create a payment reference number for all the future Gateway
     communications. This will be created using uuid and the given order
     reference number.
     :param order_reference:
     :return:
     """
-    reference_number = '%s|%s' % (order_reference,
+    reference_number = 'Gift-%s|%s' % (order_reference,
                                        unique_token_generator())
     return reference_number
 
