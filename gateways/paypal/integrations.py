@@ -6,24 +6,28 @@ import requests
 from decouple import config
 from rest_framework import status
 
-from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL
+from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL,
+                            REQUEST_METHOD_PUT)
 from core.utils import (get_payment_gateway_config, get_app_config,
                         get_redirect_url)
-from gateways.common import _get_payment_reference_number, get_request_id, \
-    unique_token_generator
+from gateways.common import (_get_payment_reference_number, get_request_id,
+                             unique_token_generator)
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ORDER_ENDPOINT,
                                        PAYPAL_ORDER_STATUS_APPROVED,
                                        PAYPAL_CAPTURE_STATUS_COMPLETED,
                                        PAYPAL_CAPTURE_FAILURE_REASON_MAPPING,
                                        PAYPAL_CAPTURE_STATUS_FAILED,
-                                       PAYPAL_STC_ENDPOINT)
+                                       PAYPAL_STC_ENDPOINT,
+                                       PAYPAL_REFUND_STATUS_COMPLETED,
+                                       PAYPAL_REFUND_ENDPOINT)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
                                     PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY)
 from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
-                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED,
+                                PAYMENT_STATUS_REFUNDED)
 from payments.models import AdditionalCharge
 from services.utils import get_payment_redirect_url
 from services.v1.views.common import (get_saved_fields,
@@ -103,6 +107,15 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 url,
                 headers=headers,
                 json=payload
+            )
+
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(payload),
+                response_data=response.text,
+                request_method=REQUEST_METHOD_PUT,
+                request_type=PAYMENT_REQUEST_TYPE_CREATE_ORDER,
             )
 
             if response.status_code == status.HTTP_200_OK:
@@ -246,7 +259,20 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 "currency_code": self.request_data.get('currency'),
                 "value": float(
                     self.request_data.get('additional_total_amount')),
-            }
+            },
+            "items": [
+                {
+                    "description": "Gift cards",
+                    "name": "Digital gift cards",
+                    "quantity": "1",
+                    "unit_amount": {
+                        "currency_code": self.request_data.get('currency'),
+                        "value": float(
+                            self.request_data.get('additional_total_amount'))
+                    },
+                    "category": "DIGITAL_GOODS"
+                }
+            ]
         }]
 
         request_data = {
@@ -691,3 +717,84 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 "Exception while retrieving additional charge values for {}, {}".format(
                     self.transaction_id, e))
         return additional_charge_values
+
+    def refund_paypal_transaction(self, request_data):
+        self.reference_id = request_data.get("payment_reference")
+        self.transaction_id = request_data.get("transaction_id")
+        self.transaction_obj = request_data.get("transaction_obj")
+        paypal_transaction = self.get_paypal_transaction()
+        capture_id = paypal_transaction.capture_id
+        self.paypal_transaction = paypal_transaction
+
+        try:
+            headers = self.get_headers()
+            url = self.paypal_config.domain + PAYPAL_REFUND_ENDPOINT + capture_id + "/refund"
+            payload = {
+                "amount": {
+                    "value": str(
+                        self.transaction_obj.additional_total_amount),
+                    "currency_code": self.transaction_obj.currency
+                },
+                "invoice_id": str(self.transaction_obj.invoice_id),
+                "note": "Defective product"
+            }
+
+            response = requests.post(
+                url,
+                headers=headers,
+                data=json.dumps(payload)
+            )
+            logger.info("Paypal refund order response for {}: {}".format(
+                self.transaction_id, response.text))
+
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(payload),
+                response_data=response.text,
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
+            )
+
+            if response:
+                response_data_json = response.json()
+                response_data, response_code = self.handle_paypal_refund_response(
+                    response_data_json)
+                return response_data, response_code
+
+
+        except requests.ConnectTimeout as timeout_err:
+            logger.error(
+                "Paypal refund order request timeout for transaction "
+                "{} with error {}".format(
+                    self.transaction_id, timeout_err))
+            return None, timeout_err
+        except requests.ConnectionError as connection_err:
+            logger.error(
+                "Paypal refund order connection error for transaction id {} with error {}".format(
+                    self.transaction_id, connection_err))
+            return None, self.PAYPAL_CONNECTION_ERROR
+        except Exception as e:
+            logger.error(
+                "Exception while refunding order for {} with error: {}".format(
+                    self.transaction_id, e))
+            return None, self.PAYPAL_CONNECTION_ERROR
+
+    def handle_paypal_refund_response(self, response_data_json):
+        status = response_data_json.get("status")
+        if status == "COMPLETED":
+            refund_update_data = {
+                "refund_id": response_data_json.get("id"),
+                "status": PAYPAL_REFUND_STATUS_COMPLETED
+            }
+            self.update_youpay_transaction_data(
+                {'transaction_id': self.transaction_id,
+                 'payment_status': PAYMENT_STATUS_REFUNDED})
+            self.update_paypal_transaction_data(
+                self.paypal_transaction,
+                refund_update_data)
+            return response_data_json, self.SUCCESS
+        else:
+            logger.error(
+                f"Refund failed for capture {response_data_json}")
+            return {"error": "Refund failed"}, self.PAYPAL_CONNECTION_ERROR
