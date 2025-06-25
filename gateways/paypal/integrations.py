@@ -3,6 +3,7 @@ import logging
 from datetime import datetime
 
 import requests
+from decouple import config
 from rest_framework import status
 
 from core.constants import REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL
@@ -15,7 +16,8 @@ from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ORDER_STATUS_APPROVED,
                                        PAYPAL_CAPTURE_STATUS_COMPLETED,
                                        PAYPAL_CAPTURE_FAILURE_REASON_MAPPING,
-                                       PAYPAL_CAPTURE_STATUS_FAILED)
+                                       PAYPAL_CAPTURE_STATUS_FAILED,
+                                       PAYPAL_STC_ENDPOINT)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
@@ -93,8 +95,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                      "value": datetime.utcnow().isoformat() + "Z"}
                 ]
             }
+            merchant_id = config("PAYPAL_MERCHANT_ID")
 
-            url = f"https://api-m.sandbox.paypal.com/v1/risk/transaction-contexts/JYA57EPAZLA9E/{self.tracking_id_stc}"
+            url = PAYPAL_STC_ENDPOINT + f"{merchant_id}/{self.tracking_id_stc}"
 
             response = requests.put(
                 url,

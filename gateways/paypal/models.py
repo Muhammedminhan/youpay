@@ -361,6 +361,7 @@ def prepare_paypal_transaction_update_data(instance):
     status = PAYPAL_EVENT_STATUS_MAPPING.get(instance.event_type)
     update_data = {
         'status': status,
+        'refund_id': instance.refund_id,
     }
     return update_data
 
@@ -372,6 +373,7 @@ def update_paypal_transaction_data(paypal_transaction,
     data_dict = {}
     try:
         data_dict["status"] = response_data.get("status")
+        data_dict["refund_id"] = response_data.get("refund_id")
 
         saved_fields = ["updated_at"]
         saved_fields = get_saved_fields(saved_fields, data_dict,
