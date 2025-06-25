@@ -1,5 +1,6 @@
 import json
 import logging
+from urllib.parse import urlencode
 
 import requests
 from rest_framework import status
@@ -210,6 +211,26 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 logger.error(
                     "Unable to delete saved card {0} details because, {1}"
                     .format(card_id, str(e)))
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, None
+
+    def delete_saved_card_v2(self, email, channel_code):
+        checkoutpg_config = get_checkoutpg_config()
+        if checkoutpg_config:
+            try:
+                header = self.get_payment_header()
+                query_params = urlencode(
+                    {"email": email, "channel_code": channel_code})
+                URL = (
+                        self.checkoutpg_config.domain +
+                        CHECKOUTPG_SAVED_CARD_ENDPOINT_V2 + "deactivate/?" + query_params)
+                response = requests.delete(url=URL, headers=header)
+                return json.loads(response.text)
+            except Exception as e:
+                logger.error(
+                    "Unable to delete saved card {0} details because, {1}"
+                    .format(email, str(e)))
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
