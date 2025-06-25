@@ -7,7 +7,7 @@ from decouple import config
 from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL,
-                            REQUEST_METHOD_PUT)
+                            REQUEST_METHOD_PUT, REQUEST_METHOD_GET)
 from core.utils import (get_payment_gateway_config, get_app_config,
                         get_redirect_url)
 from gateways.common import (_get_payment_reference_number, get_request_id,
@@ -25,7 +25,8 @@ from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
                                     PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY,
-                                    PAYMENT_REQUEST_TYPE_SET_TRANSACTION_CONTEXT)
+                                    PAYMENT_REQUEST_TYPE_SET_TRANSACTION_CONTEXT,
+                                    PAYMENT_REQUEST_TYPE_ORDER_STATUS)
 from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED,
                                 PAYMENT_STATUS_REFUNDED)
@@ -631,6 +632,16 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             response = requests.get(url, headers=headers)
             logger.info("Show order details for transaction {}, {}"
                         "".format(response.text, self.transaction_id))
+
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps({}),
+                response_data=response.text,
+                request_method=REQUEST_METHOD_GET,
+                request_type=PAYMENT_REQUEST_TYPE_ORDER_STATUS,
+            )
+
             if response:
                 return response.json()
             else:
