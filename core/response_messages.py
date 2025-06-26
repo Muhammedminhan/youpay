@@ -187,7 +187,7 @@ class YouPayResponse(object):
     PAYPAL_INSUFFICIENT_FUNDS = 18006
     PAYPAL_INVALID_REQUEST = 18007
     PAYPAL_NOT_SUPPORTED = 18008
-    PAYPAL_PAYMENT_INCOMPLETE = 18009
+    PAYAPL_PAYMENT_INCOMPLETE = 18009
     """PayPal related ends"""
 
     MESSAGE = {}
@@ -342,7 +342,7 @@ class YouPayResponse(object):
             self.PAYPAL_INSUFFICIENT_FUNDS: "PayPal insufficient funds",
             self.PAYPAL_INVALID_REQUEST: "PayPal invalid request",
             self.PAYPAL_NOT_SUPPORTED: "PayPal not supported",
-            self.PAYPAL_PAYMENT_INCOMPLETE: "PayPal payment incomplete",
+            self.PAYAPL_PAYMENT_INCOMPLETE: "PayPal payment incomplete",
         })
 
     def get_400_message(self, message):

@@ -112,7 +112,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             }
             merchant_id = config("PAYPAL_MERCHANT_ID")
 
-            url = PAYPAL_STC_ENDPOINT + f"{merchant_id}/{self.tracking_id_stc}"
+            url = self.paypal_config.domain + PAYPAL_STC_ENDPOINT + f"{merchant_id}/{self.tracking_id_stc}"
 
             response = requests.put(
                 url,
