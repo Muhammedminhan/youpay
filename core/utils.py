@@ -2,7 +2,7 @@ import json
 import logging
 from base64 import b64decode, b64encode
 from contextlib import contextmanager
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from functools import wraps
 from os import urandom
 from time import sleep
@@ -240,19 +240,28 @@ def decimal_rounded(amount, decimal_notation):
     return amount_rounded
 
 
-def get_gateway_additional_fee(payment_option_name):
+def get_gateway_additional_fee(currency, charge_type, payment_gateway,
+                               payment_method):
     """
-    :param payment_option_name
-    :return:
+    Method to get additional charge configuration.
     """
     additional_fee = None
-    if payment_option_name:
-        try:
-            additional_fee = AdditionalChargeConfiguration.objects.get(
-                payment_option__name=payment_option_name, is_active=True)
-        except (AdditionalChargeConfiguration.DoesNotExist, Exception):
-            logging.info('No additional fee instance found for '
-                         '{}.'.format(payment_option_name))
+    try:
+        payment_config = PaymentConfiguration.objects.get(
+            payment_method=payment_method,
+            payment_gateway__code=payment_gateway)
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            f"PaymentConfiguration not found for method: {payment_method}")
+
+    try:
+        additional_fee = AdditionalChargeConfiguration.objects.get(
+            currency__iso_code=currency, charge_type=charge_type,
+            payment_option=payment_config, is_active=True)
+    except AdditionalChargeConfiguration.DoesNotExist:
+        logger.error(
+            f"AdditionalChargeConfiguration not found for charge_type: "
+            f"{charge_type}, currency: {currency}")
     return additional_fee
 
 
@@ -884,3 +893,19 @@ def get_amazon_transaction_obj(reference):
         logger.error("Amazon transaction data not found for payment "
                      "reference: {}".format(reference))
         return None
+
+
+def round_decimal(amount, decimal_notation='0.01'):
+    """
+    Round the given amount to the specified decimal places (default: 2).
+
+    Args:
+        amount: The number to round (can be float, str, or Decimal).
+        decimal_notation: The rounding precision, e.g., '0.01' for 2 decimals.
+
+    Returns:
+        Rounded Decimal value.
+    """
+    if not isinstance(amount, Decimal):
+        amount = Decimal(str(amount))
+    return amount.quantize(Decimal(decimal_notation), rounding=ROUND_HALF_UP)

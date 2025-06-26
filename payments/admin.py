@@ -109,7 +109,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
             'fields': ('credit_balance_amount', 'available_credit_balance',
                        )
         }),
-        ('Paypal Additional Fee details', {
+        ('Additional Fee details', {
             'fields': ('additional_currency_decimal_notation',
                        'additional_vat_percentage', 'additional_vat',
                        'additional_processing_fee',

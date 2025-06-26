@@ -69,6 +69,9 @@ INSTALLED_APPS = [
     'citirewardsclient',
     'qitafclient',
     'notifications',
+    'gateways',
+    'gateways.paypal',
+
 
     # 3rd party apps
     'rest_framework',
