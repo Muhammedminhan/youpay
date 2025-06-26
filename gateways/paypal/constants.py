@@ -50,3 +50,5 @@ PAYPAL_CAPTURE_FAILURE_REASON_MAPPING = {
     "ORDER_ALREADY_CAPTURED": "Order already captured",
     "PERMISSION_DENIED": "Invalid API credentials or access token",
 }
+
+PAYPAL_RESPONSE_COMPLETE_STATUS = "COMPLETED"

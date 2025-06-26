@@ -9,7 +9,7 @@ from rest_framework import status
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL,
                             REQUEST_METHOD_PUT, REQUEST_METHOD_GET)
 from core.utils import (get_payment_gateway_config, get_app_config,
-                        get_redirect_url)
+                        get_redirect_url, wait_redis_lock)
 from gateways.common import (_get_payment_reference_number, get_request_id,
                              unique_token_generator)
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
@@ -20,7 +20,8 @@ from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_CAPTURE_STATUS_FAILED,
                                        PAYPAL_STC_ENDPOINT,
                                        PAYPAL_REFUND_STATUS_COMPLETED,
-                                       PAYPAL_REFUND_ENDPOINT)
+                                       PAYPAL_REFUND_ENDPOINT,
+                                       PAYPAL_RESPONSE_COMPLETE_STATUS)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
@@ -30,7 +31,6 @@ from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
 from payments.constants import (PAYMENT_METHOD_PAYPAL, PAYMENT_STATUS_PENDING,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED,
                                 PAYMENT_STATUS_REFUNDED)
-from payments.models import AdditionalCharge
 from services.utils import get_payment_redirect_url
 from services.v1.views.common import (get_saved_fields,
                                       add_payment_gateway_info_in_url)
@@ -59,7 +59,16 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         self.tracking_id_stc = None
 
     def set_paypal_stc_context(self, access_token, request_data):
+        """
+       Sets the PayPal STC (Set Transaction Context) to provide buyer info for risk evaluation.
 
+       Sends sender details like name, email, phone, and country to PayPal to bind with
+       future order and capture requests using a tracking ID.
+
+       :param access_token: PayPal access token, PayPal-Request-Id
+       :param request_data: Data containing sender (payer) details
+       :return: True if STC was set successfully, else False
+       """
         try:
             logger.info(
                 "Setting paypal stc context for transaction id: {}".format(
@@ -134,6 +143,13 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             return False
 
     def create_order(self, request_data):
+        """
+        Initiates a PayPal order after verifying the YouPay transaction.
+        Handles STC (Set Transaction Context), creates the order, and logs all details.
+
+        :param request_data: Dictionary with transaction_id, order_reference, etc.
+        :return: Tuple (response_data, status_code)
+        """
         try:
             self.payment_method = PAYMENT_METHOD_PAYPAL
             self.payment_status = PAYMENT_STATUS_PENDING
@@ -215,6 +231,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             return None, self.PAYPAL_CONNECTION_ERROR
 
     def create_paypal_order_payload(self):
+        """
+        Prepares the payload with structure needed for the PayPal create order.
+        """
         customer_name = self.request_data.get('customer_name', '')
         name_parts = customer_name.strip().split()
         app_config = get_app_config()
@@ -286,6 +305,16 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         return request_data
 
     def handle_paypal_order_response(self, response_data, payment_data):
+        """
+        Handles the response from PayPal's Create Order API.
+
+        If the status is 'PAYER_ACTION_REQUIRED' and redirect URL is found,
+        it updates YouPay transaction data and creates a PaypalTransaction entry.
+
+        :param response_data: The JSON response from PayPal.
+        :param payment_data: The data used in the original order request.
+        :return: Tuple of (response_dict, HTTP status code)
+        """
         status = response_data.get("status")
         order_id = response_data.get("id")
         links = response_data.get("links", [])
@@ -312,6 +341,11 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         return None, self.UNKNOWN_ERR
 
     def get_headers(self):
+        """
+        Prepares the authorization and content headers for PayPal API requests.
+
+        :return: Dictionary of headers
+        """
         gateway_obj = self.paypal_config
         access_token = PaymentAccessToken.get_paypal_access_token(gateway_obj)
         headers = {
@@ -321,6 +355,12 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         return headers
 
     def prepare_data_to_update(self, response_data):
+        """
+        Prepares a dictionary of fields to update the YouPayTransaction table.
+
+        :param response_data: The PayPal Create Order API response.
+        :return: Dictionary of data to update
+        """
         data_to_update = {
             'transaction_id': self.transaction_id,
             "payment_status": self.payment_status,
@@ -339,20 +379,27 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         return data_to_update
 
     def create_paypal_transaction(self, response_data):
+        """
+        Creates paypal transaction entry
+        """
         try:
-            data = {
-                "order_id": response_data.get('id'),
-                "payment_reference": self.reference_id,
-                "status": PAYPAL_ORDER_STATUS_CREATED,
-                "amount": self.request_data.get('additional_total_amount'),
-                "currency": self.request_data.get('currency'),
-                "customer_name": self.request_data.get('customer_name'),
-                "customer_email": self.request_data.get('customer_email'),
-                "customer_phone": self.request_data.get('customer_phone'),
-                "sender_youpay_account_id": self.sender_youpay_account_id,
-                "tracking_id_stc": self.tracking_id_stc,
-            }
-            PaypalTransaction.objects.create(**data)
+            lock_name = ('lock:PaymentRequestView:reference_id%s'
+                         % (self.reference_id,))
+            with wait_redis_lock(lock_name=lock_name):
+                data = {
+                    "order_id": response_data.get('id'),
+                    "payment_reference": self.reference_id,
+                    "status": PAYPAL_ORDER_STATUS_CREATED,
+                    "amount": self.request_data.get(
+                        'additional_total_amount'),
+                    "currency": self.request_data.get('currency'),
+                    "customer_name": self.request_data.get('customer_name'),
+                    "customer_email": self.request_data.get('customer_email'),
+                    "customer_phone": self.request_data.get('customer_phone'),
+                    "sender_youpay_account_id": self.sender_youpay_account_id,
+                    "tracking_id_stc": self.tracking_id_stc,
+                }
+                PaypalTransaction.objects.create(**data)
 
         except Exception as e:
             logger.error(
@@ -360,6 +407,13 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     e, self.transaction_id))
 
     def capture_paypal_order(self, request_data):
+        """
+        Captures a PayPal order after checking if it's approved.
+        Handles order status checking and logs all details.
+
+        :param request_data: Dictionary with transaction_id, order_reference, etc.
+        :return: Tuple (response_data, status_code)
+        """
         try:
             self.transaction_id = request_data.get('transaction_id')
             self.transaction_obj = request_data.get('transaction_obj')
@@ -414,7 +468,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     "is_success": False,
                     "message": "Paypal Payment Not Complete",
                 }
-                return return_data, self.PAYAPL_PAYMENT_INCOMPLETE
+                return return_data, self.PAYPAL_PAYMENT_INCOMPLETE
             else:
                 return None, self.PAYPAL_CONNECTION_ERROR
 
@@ -426,8 +480,8 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             return None, self.PAYPAL_CONNECTION_ERROR
         except requests.ConnectionError as connection_err:
             logger.error(
-                "Paypal capturing order connection error for transaction id {} with error {}".format(
-                    self.transaction_id, connection_err))
+                "Paypal capturing order connection error for transaction id {}"
+                " with error {}".format(self.transaction_id, connection_err))
             return None, self.PAYPAL_CONNECTION_ERROR
         except Exception as e:
             logger.error(
@@ -436,6 +490,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             return None, self.PAYPAL_CONNECTION_ERROR
 
     def get_paypal_transaction(self):
+        """
+        Get paypal transaction object with reference id and order id
+        """
         try:
             return PaypalTransaction.objects.get(
                 payment_reference=self.reference_id, order_id=self.order_id)
@@ -447,13 +504,24 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
 
     def handle_paypal_capture_response(self, response_data_json,
                                        paypal_transaction):
+        """
+        Handles the response from PayPal's Capture Order API.
+
+        If the status is Completed and redirect URL is found,
+        it updates YouPay transaction data as paid and  PaypalTransaction as
+        capture completed, else mark as failed and redirect it to failure page
+
+        :param response_data: The JSON response from PayPal.
+        :param payment_data: The data used in the original order request.
+        :return: Tuple of (response_dict, HTTP status code)
+        """
         try:
             status = paypal_transaction.status
             purchase_unit = response_data_json.get("purchase_units", [{}])[0]
             captures = purchase_unit.get("payments", {}).get("captures", [])
             capture = captures[0]
             capture_status = capture.get("status", "").upper()
-            if capture_status == "COMPLETED":
+            if capture_status == PAYPAL_RESPONSE_COMPLETE_STATUS:
                 redirect_url = get_redirect_url(
                     self.transaction_obj.success_url,
                     self.transaction_id)
@@ -508,7 +576,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         """
         Handles a failed PayPal capture attempt:
         - Updates transaction record with failure details.
-        - Logs and returns a clean message to frontend.
+        - Logs and returns failure url.
         """
         try:
             response_json = response.json()
@@ -625,7 +693,9 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             return False
 
     def get_order_details(self, order_id):
-        """Call PayPal Show Order Details API"""
+        """
+        Call PayPal Show Order Details API to get current status of the order
+        """
         try:
             url = self.paypal_config.domain + PAYPAL_ORDER_ENDPOINT + '/' + order_id
             headers = self.get_headers()
@@ -689,7 +759,8 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
 
             if approval_url:
                 logger.error(
-                    "Order is in CREATED state, redirecting back to PayPal approval page for transaction {}".format(
+                    "Order is in CREATED state, redirecting back to PayPal "
+                    "approval page for transaction {}".format(
                         self.transaction_id))
                 return {
                     "status": PAYPAL_ORDER_STATUS_CREATED,
@@ -712,23 +783,6 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 "status": "error",
                 "message": "Order is not approved or ready"
             }
-
-    def get_additional_charge_values(self):
-        additional_charge_values = {}
-        try:
-            add_charge = AdditionalCharge.objects.filter(
-                transaction=self.transaction_obj).first()
-            additional_charge_values = {
-                "amount": add_charge.additional_total_amount,
-                "VAT_amount": add_charge.additional_vat,
-                "payment_method": PAYMENT_METHOD_PAYPAL
-            }
-
-        except Exception as e:
-            logger.error(
-                "Exception while retrieving additional charge values for {}, {}".format(
-                    self.transaction_id, e))
-        return additional_charge_values
 
     def refund_paypal_transaction(self, request_data):
         self.reference_id = request_data.get("payment_reference")
@@ -794,7 +848,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
 
     def handle_paypal_refund_response(self, response_data_json):
         status = response_data_json.get("status")
-        if status == "COMPLETED":
+        if status == PAYPAL_RESPONSE_COMPLETE_STATUS:
             refund_update_data = {
                 "refund_id": response_data_json.get("id"),
                 "status": PAYPAL_REFUND_STATUS_COMPLETED

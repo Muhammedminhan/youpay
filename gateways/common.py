@@ -15,8 +15,8 @@ def unique_token_generator(size=10, is_upper=True):
     unique_code = ''.join(
         random.SystemRandom().choice(
             # translate removes the characters from string
-            string_ascii.translate('IJO') +
-            string.digits.translate('01')
+            string_ascii.translate(str.maketrans('', '', 'IJO')) +
+            string.digits.translate(str.maketrans('', '', '01'))
         ) for _ in range(size))
     return unique_code
 

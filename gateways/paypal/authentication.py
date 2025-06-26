@@ -33,7 +33,6 @@ class PayPalWebhookAuthentication(authentication.BaseAuthentication):
                         auth_algo, transmission_sig, webhook_id]):
                 raise AuthenticationFailed("Missing PayPal webhook headers")
 
-            # Access token (you should cache this or use a token retriever)
             access_token = PaymentAccessToken.get_paypal_access_token(paypal_config)
 
             # Prepare verification payload
