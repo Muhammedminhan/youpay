@@ -149,6 +149,8 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
         max_length=32, null=True, blank=True,
         help_text="Currency code of the receivable amount (payout currency)"
     )
+    youpay_transaction_id = models.CharField(max_length=200, blank=True,
+                                             null=True, )
 
 
 @receiver(post_save, sender=PaypalTransaction)

@@ -26,7 +26,7 @@ class PaypalTransactionAdmin(admin.ModelAdmin):
         ('Identifiers', {
             'fields': (
                 'order_id', 'payment_reference', 'status', 'capture_id',
-                'refund_id', 'payer_id',
+                'refund_id', 'payer_id', 'youpay_transaction_id'
             )
         }),
         ('Amounts & Fees', {
