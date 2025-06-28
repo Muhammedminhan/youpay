@@ -13,6 +13,7 @@ from gateways.paypal.constants import (PAYPAL_STATUS_CHOICES,
                                        PAYPAL_CAPTURE_STATUS_COMPLETED,
                                        PAYPAL_REFUND_STATUS_COMPLETED)
 from payments.constants import PAYMENT_STATUS_PAID, PAYMENT_STATUS_REFUNDED
+from payments.models import YouPayTransactionData
 from services.v1.views.common import get_saved_fields, YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -149,8 +150,10 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
         max_length=32, null=True, blank=True,
         help_text="Currency code of the receivable amount (payout currency)"
     )
-    youpay_transaction_id = models.CharField(max_length=200, blank=True,
-                                             null=True, )
+    youpay_transaction = models.ForeignKey(
+        YouPayTransactionData, null=True,
+        blank=True, on_delete=models.CASCADE,
+        help_text='Related api Youpay transaction data')
 
 
 @receiver(post_save, sender=PaypalTransaction)
