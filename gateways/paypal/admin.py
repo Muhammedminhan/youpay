@@ -17,7 +17,7 @@ class PaypalTransactionAdmin(admin.ModelAdmin):
     )
     list_filter = ('status', 'currency', 'created_at')
     search_fields = ('order_id', 'payment_reference', 'payer_id',
-                     'tracking_id_stc',
+                     'tracking_id_stc', 'sender_youpay_account_id',
                      )
     readonly_fields = (
         'raw_response', 'created_at', 'updated_at',
