@@ -149,6 +149,10 @@ class PaypalTransaction(AbstractDateTime, AbstractUserBase, CustomerProfile):
         max_length=32, null=True, blank=True,
         help_text="Currency code of the receivable amount (payout currency)"
     )
+    youpay_transaction = models.ForeignKey(
+        'payments.YouPayTransactionData', null=True,
+        blank=True, on_delete=models.CASCADE,
+        help_text='Related api Youpay transaction data')
 
 
 @receiver(post_save, sender=PaypalTransaction)

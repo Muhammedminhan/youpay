@@ -19,14 +19,16 @@ class PaypalTransactionAdmin(admin.ModelAdmin):
     search_fields = ('order_id', 'payment_reference', 'payer_id',
                      'tracking_id_stc', 'sender_youpay_account_id',
                      )
-    readonly_fields = ('raw_response', 'created_at', 'updated_at')
+    readonly_fields = (
+        'raw_response', 'created_at', 'updated_at',
+        'youpay_transaction',)
     ordering = ('-created_at',)
 
     fieldsets = (
         ('Identifiers', {
             'fields': (
                 'order_id', 'payment_reference', 'status', 'capture_id',
-                'refund_id', 'payer_id',
+                'refund_id', 'payer_id', 'youpay_transaction'
             )
         }),
         ('Amounts & Fees', {

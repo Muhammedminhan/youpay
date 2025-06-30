@@ -398,6 +398,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     "customer_phone": self.request_data.get('customer_phone'),
                     "sender_youpay_account_id": self.sender_youpay_account_id,
                     "tracking_id_stc": self.tracking_id_stc,
+                    "youpay_transaction": self.transaction_obj,
                 }
                 PaypalTransaction.objects.create(**data)
 
