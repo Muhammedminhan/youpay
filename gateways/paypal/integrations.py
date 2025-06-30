@@ -789,7 +789,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         self.reference_id = request_data.get("payment_reference")
         self.transaction_id = request_data.get("transaction_id")
         self.transaction_obj = request_data.get("transaction_obj")
-        paypal_transaction = self.get_paypal_transaction()
+        paypal_transaction = request_data.get("paypal_transaction")
         capture_id = paypal_transaction.capture_id
         self.paypal_transaction = paypal_transaction
 
@@ -798,8 +798,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             url = self.paypal_config.domain + PAYPAL_REFUND_ENDPOINT + capture_id + "/refund"
             payload = {
                 "amount": {
-                    "value": str(
-                        self.transaction_obj.additional_total_amount),
+                    "value": float(paypal_transaction.amount),
                     "currency_code": self.transaction_obj.currency
                 },
                 "invoice_id": str(self.transaction_obj.invoice_id),
