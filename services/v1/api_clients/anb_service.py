@@ -1,17 +1,18 @@
+import copy
 import json
 import logging
 
 from rest_framework import status
-from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
-from services.v1.views.common import YouPayTransactionCRUD
 from integrations.v1.gateway_clients.anb_service import AnbServiceManager
 from integrations.v1.serializers.anb_serializer import AnbRedemptionSerializer
 from services.v1.serializers.payment_request import AnbOTPSerializer
+from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
 
@@ -91,8 +92,11 @@ class AnbRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                 redemption result.
         """
         try:
+            request_data = copy.deepcopy(request.data)
+            if request_data.get("cvv"):
+                request_data["cvv"] = "***"
             logger.info("AnbRedeemPointsAPIView triggered for request "
-                        "data: {}".format(request.data))
+                        "data: {}".format(request_data))
             anb_redemption_serializer = AnbRedemptionSerializer(
                 data=request.data, context={'request': request})
             anb_redemption_serializer.is_valid(raise_exception=True)

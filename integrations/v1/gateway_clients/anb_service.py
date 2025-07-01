@@ -10,9 +10,6 @@ from core.constants import (PAYMENT_GATEWAY_B2CPAYBACK, REQUEST_METHOD_POST,
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string)
-from services.v1.views.payment import PaymentRequestView
-from services.v1.views.payment_handlers import PaymentHandlers
-from services.v1.views.common import add_payment_gateway_info_in_url
 from integrations.constants import (B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
                                     PAYMENT_REQUEST_GENERATE_OTP,
@@ -27,10 +24,12 @@ from payments.constants import (PAYMENT_METHOD_ANB, PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_ANB_AND_CARD,
                                 PAYMENT_STATUS_DECLINED,
                                 PAYMENT_STATUS_PAID,
-                                PAYMENT_STATUS_DECLINED_RETRY,
                                 LANGUAGE_CODE_AR)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
+from services.v1.views.common import add_payment_gateway_info_in_url
+from services.v1.views.payment import PaymentRequestView
+from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
@@ -252,6 +251,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                          "{}".format(e), exc_info=True)
             return {"errors": error}, self.ANB_CONNECTION_ERROR
         finally:
+            if self.request_data.get("cvv"):
+                self.request_data["cvv"] = "***"
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,

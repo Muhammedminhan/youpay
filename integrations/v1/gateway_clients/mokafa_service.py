@@ -487,6 +487,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             return {"errors": error}, self.MOKAFA_CONNECTION_ERROR
 
         finally:
+            if self.request_data.get("cvv"):
+                self.request_data["cvv"] = "***"
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,
