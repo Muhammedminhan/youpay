@@ -20,7 +20,7 @@ from integrations.constants import (
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
     PAYMENT_REQUEST_COLLECT_POINTS,
-    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY)
+    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, EXPECTED_QITAF_ERRORS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -174,7 +174,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
-            logger.info("Response from Qitaf service {}".format(response))
+            logger.info("Response from Qitaf service {}".format(
+                response.json()))
             if response:
                 response_data = response.json()
                 logger.info("qitaf payment response: {}".format(
@@ -190,8 +191,14 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 return response_data, self.SUCCESS
 
-            logger.error("Error in qitaf otp, {}".format(response.json()))
-            self.response_data = response.json()
+            error_response = response.json()
+            error_message = error_response.get('response_data', {}).get(
+                'response_text', '')
+
+            if error_message not in EXPECTED_QITAF_ERRORS:
+                logger.error("Unexpected Qitaf error: {}".format(error_response))
+
+            self.response_data = error_response
 
             return ({"error": response.json()},
                     self.QITAF_CONNECTION_ERROR)
@@ -394,6 +401,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             return {"errors": error}, self.QITAF_CONNECTION_ERROR
 
         finally:
+            if self.request_data.get("cvv"):
+                self.request_data["cvv"] = "***"
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,

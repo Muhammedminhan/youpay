@@ -20,7 +20,7 @@ from integrations.constants import (
     PAYMENT_REQUEST_GENERATE_OTP, B2CP_OTP_GENERATION_API,
     B2CP_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     B2CP_VERIFY_API,
-    PAYMENT_REQUEST_VERIFY)
+    PAYMENT_REQUEST_VERIFY, EXPECTED_MOKAFAA_ERRORS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.mokafaa_serializers import (
     MokafaaPaymentRequestSerializer)
@@ -149,9 +149,16 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
                 return response_data, self.SUCCESS
 
-            logger.error("Error in mokafaa otp, {}".format(response.json()))
             self.response_data = response.json()
             error_code = self.response_data.get('code')
+
+            if error_code and str(error_code) in EXPECTED_MOKAFAA_ERRORS:
+                logger.info("Error in mokafaa otp, {}".format(
+                    self.response_data))
+            else:
+                logger.error("Unexpected error in mokafaa otp, {}".format(
+                    self.response_data))
+
             if error_code == self.OTP_STILL_VALID:
                 return ({"error": response.json()},
                         self.MOKAFAA_OTP_STILL_VALID)
@@ -480,6 +487,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             return {"errors": error}, self.MOKAFA_CONNECTION_ERROR
 
         finally:
+            if self.request_data.get("cvv"):
+                self.request_data["cvv"] = "***"
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,

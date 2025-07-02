@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -221,8 +222,12 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
         2.partial redemption
         """
         try:
+            request_data = copy.deepcopy(request.data)
+            if request_data.get("cvv"):
+                request_data["cvv"] = "***"
+
             logger.info("QitafRedeemPointsAPIView API triggered, request data"
-                        ": {}".format(request.data))
+                        ": {}".format(request_data))
             qitaf_redemption_serializer = QitafRedemptionSerializer(
                 data=request.data, context={'request': request})
 

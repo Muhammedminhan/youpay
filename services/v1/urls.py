@@ -37,11 +37,15 @@ from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
+from .api_clients.anb_service import (AnbGenerateOTPAPIView,
+                                      AnbRedeemPointsAPIView, AnbVerify)
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
                             AdditionalChargeCalculation,
                             EarnRedemptionPartnerPoints)
+from .api_clients.paypalpg import (PayPalChargeAPIView,
+                                   PayPalPaymentAPIView, PayPalVerifyAPIView)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -139,4 +143,17 @@ urlpatterns = [
     path('mokafaa/redeem-points/', MokafaaRedeemPointsAPIView.as_view(),
          name='MokafaaRedeemPointsAPIView'),
     path('mokafaa/verify/', MokafaaVerify.as_view(), name='MokafaaVerify'),
+
+    # AnB endpoints
+    path('anb/generate-otp/', AnbGenerateOTPAPIView.as_view(),
+         name='AnbGenerateOTPAPIView'),
+    path('anb/redeem-points/', AnbRedeemPointsAPIView.as_view(),
+         name='AnbRedeemPointsAPIView'),
+    path('anb/verify/', AnbVerify.as_view(), name='AnbVerify'),
+
+    # PayPal Endpoints
+    path('paypal/charge/', PayPalChargeAPIView.as_view(), name='PayPalCharge'),
+    path('paypal/payment/', PayPalPaymentAPIView.as_view(),
+         name='PayPalPayment'),
+    path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
 ]

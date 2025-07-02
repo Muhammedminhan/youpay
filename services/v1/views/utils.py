@@ -14,7 +14,7 @@ from core.models import Country, BetaUser
 from core.utils import get_cached_payment_method_config
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
-    AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE
+    AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE, PAYPAL_HUB_CODE
 )
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_INITIATED,
@@ -36,7 +36,9 @@ from payments.constants import (PAYMENT_STATUS_INITIATED,
                                 PAYMENT_METHOD_HAPPY_CREDITS,
                                 PAYMENT_OPTION_HAPPY_CREDITS,
                                 PAYMENT_METHOD_PAYPAL, PAYMENT_OPTION_PAYPAL,
-                                PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_MOKAFAA)
+                                PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_MOKAFAA,
+                                PAYMENT_METHOD_ANB, PAYMENT_OPTION_ANB,
+                                PAYMENT_OPTION_CHECKOUT_PAYPAL)
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
@@ -398,7 +400,7 @@ def get_payment_option_constant(payment_gateway, payment_method):
         (CHECKOUTPG_HUB_CODE,
          PAYMENT_METHOD_APPLEPAY): PAYMENT_OPTION_CHECKOUT_APPLEPAY,
         (CHECKOUTPG_HUB_CODE,
-         PAYMENT_METHOD_PAYPAL): PAYMENT_OPTION_PAYPAL,
+         PAYMENT_METHOD_PAYPAL): PAYMENT_OPTION_CHECKOUT_PAYPAL,
 
         (AMAZONPG_HUB_CODE, PAYMENT_METHOD_CARD): PAYMENT_OPTION_AMAZON_CARD,
         (AMAZONPG_HUB_CODE,
@@ -416,12 +418,16 @@ def get_payment_option_constant(payment_gateway, payment_method):
          PAYMENT_METHOD_NEQATY): PAYMENT_METHOD_NEQATY,
         (B2CPAYBACK_HUB_CODE,
          PAYMENT_METHOD_MOKAFAA): PAYMENT_METHOD_MOKAFAA,
+        (B2CPAYBACK_HUB_CODE, PAYMENT_METHOD_ANB): PAYMENT_OPTION_ANB,
 
         (TABBYPG_HUB_CODE,
          PAYMENT_METHOD_TABBYPG): PAYMENT_OPTION_TABBYPG,
 
         (HAPPYCREDITS_HUB_CODE,
          PAYMENT_METHOD_HAPPY_CREDITS): PAYMENT_OPTION_HAPPY_CREDITS,
+
+        (PAYPAL_HUB_CODE,
+         PAYMENT_METHOD_PAYPAL): PAYMENT_OPTION_PAYPAL,
     }
 
     constant = payment_option_mapping.get(

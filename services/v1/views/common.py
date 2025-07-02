@@ -16,7 +16,9 @@ from core.messages import (
     TRANSACTION_MSG,
     IS_REDIRECT
 )
+from core.models import PaymentConfiguration
 from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
+from integrations.models import AdditionalChargeConfiguration
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
@@ -29,7 +31,10 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
                                 PAYMENT_METHOD_TOUCHPOINTS,
                                 PAYMENT_METHOD_MOKAFAA,
-                                PAYMENT_METHOD_MOKAFAA_AND_CARD)
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_METHOD_ANB,
+                                PAYMENT_METHOD_ANB_AND_CARD,
+                                PAYMENT_METHOD_PAYPAL)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -192,6 +197,9 @@ class YouPayTransactionCRUD(object):
                                            PAYMENT_METHOD_NEQATY,
                                            PAYMENT_METHOD_MOKAFAA,
                                            PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                           PAYMENT_METHOD_ANB,
+                                           PAYMENT_METHOD_ANB_AND_CARD,
+                                           PAYMENT_METHOD_PAYPAL
                                            ]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
@@ -553,3 +561,29 @@ class AdditionalChargesUpdation(object):
             logger.error("Error in creating additional charge object for {} "
                          "{}".format(data.get('transaction').transaction_id,
                                      str(e)))
+
+def get_processing_charge(currency, charge_type, payment_gateway,
+                          payment_method):
+    """
+    Method to get additional charge configuration.
+    """
+    try:
+        payment_config = PaymentConfiguration.objects.get(
+            payment_method=payment_method,
+            payment_gateway__code=payment_gateway)
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            f"PaymentConfiguration not found for method: {payment_method}")
+        return None, None
+
+    try:
+        additional_charge_obj = AdditionalChargeConfiguration.objects.get(
+            currency__iso_code=currency, charge_type=charge_type,
+            payment_option=payment_config, is_active=True)
+    except AdditionalChargeConfiguration.DoesNotExist:
+        logger.error(
+            f"AdditionalChargeConfiguration not found for charge_type: "
+            f"{charge_type}, currency: {currency}")
+        return None, None
+
+    return additional_charge_obj.percentage, additional_charge_obj.VAT_percentage

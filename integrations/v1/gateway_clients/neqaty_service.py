@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -24,7 +25,8 @@ from integrations.constants import (
     NEQATY_CLIENT_CODE, NEQATY_VERIFY_API,
     CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
-    NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS, )
+    NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS,
+    EXPECTED_NEQATY_ERRORS)
 from integrations.v1.gateway_clients.utils import (
     process_offer_eligibility, process_calculated_item_details)
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
@@ -127,6 +129,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 self.response_data = response_data
                 logger.info("Neqaty point balance api response: {}".format(
                     response_data))
+
                 formatted_response = (
                     self.format_point_balance_response(response_data))
 
@@ -150,10 +153,16 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             elif hasattr(response, 'text'):
                 self.response_data = json.loads(response.text)
-                logger.error("Error in Neqaty point balance api, {}"
-                             "".format(response.text))
-                partner_response = self.response_data.get(
-                    "partner_response")
+                partner_response = self.response_data.get("partner_response")
+
+                if partner_response and partner_response.get(
+                        "result_description") in EXPECTED_NEQATY_ERRORS:
+                    logger.info("Error in Neqaty point balance api: "
+                                "{}".format(response.text))
+                else:
+                    logger.error("Unexpected error in Neqaty point balance "
+                                 "api, {}".format(response.text))
+
                 self.update_youpay_transaction_data({
                     'transaction_id': self.transaction_obj.transaction_id,
                     'payment_reference': self.response_data.get(
@@ -238,15 +247,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
                 updated_dict = {
                     'transaction_id': self.transaction_obj.transaction_id,
-                    'brand_calculations': updated_brand_calculations,
-                    'amount': updated_brand_calculations.get('sum_net_amount'),
-                    'service_fee': updated_brand_calculations.get(
-                        'sum_applied_service_charge'),
-                    'VAT_amount': updated_brand_calculations.get(
-                        'calculated_item_details')[0].get('applied_vat'),
-                    'redeemed_amount': updated_brand_calculations,
-                    'payable_amount': updated_brand_calculations.get(
-                        'sum_card_payment_amount')
+                    'brand_calculations': updated_brand_calculations
                 }
                 redemption_details = get_redemption_details(
                     self.transaction_obj, updated_brand_calculations)
@@ -327,6 +328,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             return {"errors": error}, self.NEQATY_CONNECTION_ERROR
 
         finally:
+            if self.request_data.get("cvv"):
+                self.request_data["cvv"] = "***"
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,
@@ -350,20 +353,23 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         if offer_details:
             program_offer = offer_details.get(NEQATY_CLIENT_CODE)
 
-        for option in redeem_options[:]:
+        response_redeem_options = []
+
+        for option in redeem_options:
             redeem_amount = option.get("redeemAmount")
             if redeem_amount > total_amount:
-                redeem_options.remove(option)
                 continue
             if program_offer:
                 process_offer_eligibility(option, program_offer,
                                         NEQATY_CLIENT_CODE)
+                option = copy.deepcopy(option)
                 option = process_calculated_item_details(option)
+            response_redeem_options.append(option)
 
         formatted_data = {
             "code": code,
             "message": message,
-            "redeem_options": redeem_options,
+            "redeem_options": response_redeem_options,
             "available_points": available_points,
             "reference_id": reference_id
         }

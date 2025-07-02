@@ -60,8 +60,8 @@ class PaymentOptionsAdmin(AdminAbstract):
 
 class AdditionalChargeConfigurationAdmin(AdminAbstract):
     form = AdditionalChargeConfigurationAdminForm
-    list_display = ('payment_option', 'percentage', 'fixed_amount',
-                    'is_active', 'created_at', 'updated_at')
+    list_display = ('payment_option', 'charge_type', 'currency', 'percentage',
+                    'VAT_percentage', 'is_active', 'created_at', 'updated_at')
     search_fields = ('payment_option__name',)
     list_filter = ('payment_option', 'created_by',)
 
