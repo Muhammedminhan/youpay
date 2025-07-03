@@ -100,6 +100,10 @@ class PayPalWebhookLogAdmin(admin.ModelAdmin):
                 "payable_or_receivable_currency_code"
             )
         }),
+        ("Dispute Details", {
+            "fields": (
+            "allowed_refund_amount", "buyer_requested_amount", "dispute_id")
+        }),
         ("Raw Payload", {
             "fields": ("payload",)
         }),

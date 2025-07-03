@@ -801,7 +801,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     "value": float(paypal_transaction.amount),
                     "currency_code": self.transaction_obj.currency
                 },
-                "invoice_id": str(self.transaction_obj.invoice_id),
+                "invoice_id": str(self.transaction_obj.payment_reference),
                 "note": "Defective product"
             }
 
