@@ -115,6 +115,7 @@ def handle_checkout_order_approved(webhook_data):
             'email_address'),
         payer_name=f"{payer_name.get('given_name', '')} {payer_name.get('surname', '')}".strip(),
         invoice_id=purchase_unit.get('invoice_id'),
+        payment_reference=purchase_unit.get('invoice_id'),
         merchant_id=purchase_unit.get('payee', {}).get('merchant_id'),
         payee_email=purchase_unit.get('payee', {}).get('email_address'),
         amount_value=purchase_unit.get('amount', {}).get('value'),
@@ -143,6 +144,7 @@ def handle_payment_capture_completed(webhook_data):
         capture_id=resource.get('id'),
         capture_status=resource.get('status'),
         invoice_id=resource.get('invoice_id'),
+        payment_reference=resource.get('invoice_id'),
         amount_value=resource.get('amount', {}).get('value'),
         amount_currency=resource.get('amount', {}).get('currency_code'),
         paypal_fee=seller_breakdown.get('paypal_fee', {}).get('value'),
@@ -178,6 +180,7 @@ def handle_payment_capture_declined(webhook_data):
         capture_id=resource.get('id'),
         capture_status=resource.get('status'),
         invoice_id=resource.get('invoice_id'),
+        payment_reference=resource.get('invoice_id'),
         amount_value=resource.get('amount', {}).get('value'),
         amount_currency=resource.get('amount', {}).get('currency_code'),
         paypal_fee=seller_breakdown.get('paypal_fee', {}).get('value'),
@@ -210,9 +213,6 @@ def handle_customer_dispute_created(webhook_data):
         amount_value=resource.get('dispute_amount', {}).get('value'),
         amount_currency=resource.get('dispute_amount', {}).get(
             'currency_code'),
-        buyer_transaction_id=disputed_transaction.get('buyer_transaction_id'),
-        seller_transaction_id=disputed_transaction.get(
-            'seller_transaction_id'),
         allowed_refund_amount=resource.get('refund_details', {}).get(
             'allowed_refund_amount', {}).get('value'),
         buyer_requested_amount=resource.get('offer', {}).get(
@@ -237,12 +237,9 @@ def handle_dispute_updated_webhook(webhook_payload: dict):
         status = resource.get("dispute_status")
         stage = resource.get("dispute_stage")
         invoice_id = resource.get("extensions", {}).get("invoice_id")
-        transaction_id = resource.get("extensions", {}).get("transaction_id")
-
         buyer_info = resource.get("buyer", {})
         buyer_email = buyer_info.get("email_address")
         buyer_name = buyer_info.get("name")
-
         buyer_requested_amount = resource.get("buyer_requested_amount", {})
         buyer_amount_value = buyer_requested_amount.get("value")
         buyer_currency = buyer_requested_amount.get("currency_code")
@@ -252,20 +249,15 @@ def handle_dispute_updated_webhook(webhook_payload: dict):
             event_type=webhook_payload.get("event_type"),
             resource_type=webhook_payload.get("resource_type"),
             summary=webhook_payload.get("summary"),
-
             dispute_id=dispute_id,
             status=status,
             intent=stage,
-
             invoice_id=invoice_id,
-            payment_reference=transaction_id,
-
+            payment_reference=invoice_id,
             payer_email=buyer_email,
             payer_name=buyer_name,
-
             buyer_requested_amount=buyer_amount_value,
             payable_or_receivable_currency_code=buyer_currency,
-
             payload=webhook_payload,
         )
 
