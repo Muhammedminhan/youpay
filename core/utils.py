@@ -30,7 +30,8 @@ from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_CHANNEL_CONFIGURATIONS)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from notifications.constants import (FLAGGED_PAYMENT_MAIL, HUB_LINK,
-                                     AMAZON_HUB_LINK)
+                                     AMAZON_HUB_LINK,
+                                     TRANSACTION_DISPUTED_ALERT)
 from notifications.models import EmailTemplateConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
@@ -853,6 +854,44 @@ def get_flagged_email_data(payment):
 
     send_mail_payload = {
         "subject": "A transaction has been flagged.",
+        "mail_from": mail_from,
+        "mail_to": mail_to,
+        "template_data": template_data,
+        "template_code": template_obj.template_code,
+        "mail_engine_api": template_obj.endpoint_url
+    }
+
+    return send_mail_payload
+
+
+def get_dispute_alert_email_data(paypal_transaction):
+    template_obj = get_template_obj(TRANSACTION_DISPUTED_ALERT)
+
+    template_data = {
+        "customer_name": paypal_transaction.customer_name,
+        "customer_email": paypal_transaction.customer_email,
+        "invoice_id": paypal_transaction.payment_reference,
+        "amount": float(paypal_transaction.amount),
+    }
+
+    mail_from = {
+        "email": settings.SERVER_EMAIL,
+        "name": "",
+        "alias": ""
+    }
+    mail_to = [{
+        "email": settings.EMAIL_HELP[0][1],
+        "name": "",
+        "alias": ""},
+        {
+            "email": settings.DISPUTE_EMAIL_HELP,
+            "name": "",
+            "alias": ""}
+    ]
+    subject = "Transaction Disputed"
+
+    send_mail_payload = {
+        "subject": subject,
         "mail_from": mail_from,
         "mail_to": mail_to,
         "template_data": template_data,

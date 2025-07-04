@@ -55,6 +55,8 @@ if environment == 'production':
         ('Payment Receipt', 'youpay-alerts@yougotagift.com'),
     )
 
+    DISPUTE_EMAIL_HELP = "fraudteam@yougotagift.com"
+
     EMAIL_HELP = (
         ('Help', 'customercare@yougotagift.com'),
     )
@@ -89,6 +91,8 @@ elif environment == 'sandbox':  # Sandbox
          'youpay-alerts+sandbox@yougotagift.com'),
     )
 
+    DISPUTE_EMAIL_HELP = "youpay-alerts+sandbox@yougotagift.com"
+
     EMAIL_HELP = (
         ('Help - Test', 'youpay-alerts+sandbox@yougotagift.com'),
     )
@@ -122,6 +126,8 @@ elif environment == 'qa':  # Test or QA
         ('Payment Receipt - Test',
          'youpay-alerts+test@yougotagift.com'),
     )
+
+    DISPUTE_EMAIL_HELP = "anand@yougotagift.com"
 
     EMAIL_HELP = (
         ('Help - Test', 'tabbypg-alerts+test@yougotagift.com'),

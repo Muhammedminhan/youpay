@@ -7,12 +7,16 @@ from django.dispatch import receiver
 from django.utils import timezone
 
 from core.models import AbstractDateTime, AbstractUserBase, CustomerProfile
+from core.utils import get_dispute_alert_email_data
 from gateways.paypal.constants import (PAYPAL_STATUS_CHOICES,
                                        PAYPAL_AUTHENTICATION_ENDPOINT,
                                        PAYPAL_EVENT_STATUS_MAPPING,
                                        PAYPAL_CAPTURE_STATUS_COMPLETED,
-                                       PAYPAL_REFUND_STATUS_COMPLETED)
-from payments.constants import PAYMENT_STATUS_PAID, PAYMENT_STATUS_REFUNDED
+                                       PAYPAL_REFUND_STATUS_COMPLETED,
+                                       PAYPAL_ORDER_DISPUTED)
+from payments.constants import (PAYMENT_STATUS_PAID, PAYMENT_STATUS_REFUNDED,
+                                PAYMENT_STATUS_CHARGEBACK)
+from payments.tasks import send_dispute_mail_alert
 from services.v1.views.common import get_saved_fields, YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -191,6 +195,8 @@ def prepare_youpay_transaction_update_data(instance, transaction_obj):
             payment_status = PAYMENT_STATUS_PAID
         elif instance.status == PAYPAL_REFUND_STATUS_COMPLETED:
             payment_status = PAYMENT_STATUS_REFUNDED
+        elif instance.status == PAYPAL_ORDER_DISPUTED:
+            payment_status = PAYMENT_STATUS_CHARGEBACK
         else:
             payment_status = transaction_obj.payment_status
 
@@ -347,6 +353,10 @@ def update_paypal_transaction(sender, instance, created, **kwargs):
                     instance.order_id, instance.invoice_id)
             )
             return
+
+        if instance.event_type == "CUSTOMER.DISPUTE.CREATED":
+            email_data = get_dispute_alert_email_data(paypal_transaction)
+            send_dispute_mail_alert(**email_data)
 
         is_updated = update_paypal_transaction_data(paypal_transaction,
                                                     data_to_update)

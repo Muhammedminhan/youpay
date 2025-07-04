@@ -269,6 +269,48 @@ def handle_dispute_updated_webhook(webhook_payload: dict):
         return None
 
 
+def handle_dispute_resolved_webhook(payload):
+    """
+    Handle PayPal CUSTOMER.DISPUTE.RESOLVED webhook and store details in PayPalWebhookLog.
+    """
+    try:
+        resource = payload.get("resource", {})
+        dispute_id = resource.get("dispute_id")
+        summary = payload.get("summary")
+        event_id = payload.get("id")
+        event_type = payload.get("event_type")
+        resource_type = payload.get("resource_type")
+        dispute_amount = resource.get("dispute_amount", {})
+        refund_details = resource.get("refund_details", {})
+        offer = resource.get("offer", {})
+        disputed_txns = resource.get("disputed_transactions", [])
+        transaction = disputed_txns[0] if disputed_txns else {}
+
+        PayPalWebhookLog.objects.create(
+            event_id=event_id,
+            event_type=event_type,
+            resource_type=resource_type,
+            summary=summary,
+            dispute_id=dispute_id,
+            status=transaction.get("transaction_status"),
+            payer_email=transaction.get("buyer_email"),
+            merchant_id=transaction.get("seller", {}).get("merchant_id"),
+            payment_reference=transaction.get("invoice_number"),
+            invoice_id=transaction.get("invoice_number"),
+            amount_value=dispute_amount.get("value"),
+            amount_currency=dispute_amount.get("currency_code"),
+            allowed_refund_amount=refund_details.get("allowed_refund_amount",
+                                                     {}).get("value"),
+            buyer_requested_amount=offer.get("buyer_requested_amount",
+                                             {}).get("value"),
+            payload=payload
+        )
+    except Exception as e:
+        logger.error(
+            "Error storing PayPal CUSTOMER.DISPUTE.RESOLVED webhook: %s",
+            str(e), exc_info=True)
+
+
 WEBHOOK_EVENT_HANDLERS = {
     "CHECKOUT.ORDER.APPROVED": handle_checkout_order_approved,
     "PAYMENT.CAPTURE.COMPLETED": handle_payment_capture_completed,
@@ -276,4 +318,5 @@ WEBHOOK_EVENT_HANDLERS = {
     "PAYMENT.CAPTURE.DECLINED": handle_payment_capture_declined,
     "CUSTOMER.DISPUTE.UPDATED": handle_dispute_updated_webhook,
     "CUSTOMER.DISPUTE.CREATED": handle_customer_dispute_created,
+    "CUSTOMER.DISPUTE.RESOLVED": handle_dispute_resolved_webhook
 }
