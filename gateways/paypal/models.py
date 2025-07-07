@@ -358,7 +358,7 @@ def update_paypal_transaction(sender, instance, created, **kwargs):
 
         if instance.event_type == "CUSTOMER.DISPUTE.CREATED":
             email_data = get_dispute_alert_email_data(paypal_transaction)
-            send_dispute_mail_alert(**email_data)
+            send_dispute_mail_alert.delay(**email_data)
 
         is_updated = update_paypal_transaction_data(paypal_transaction,
                                                     data_to_update)
