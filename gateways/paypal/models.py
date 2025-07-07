@@ -336,6 +336,8 @@ class PayPalWebhookLog(AbstractDateTime):
     buyer_requested_amount = models.CharField(max_length=32, null=True,
                                               blank=True)
     dispute_id = models.CharField(max_length=128, null=True, blank=True)
+    seller_offered_amount = models.CharField(max_length=32, null=True,
+                                             blank=True)
 
     def __str__(self):
         return self.invoice_id

@@ -102,7 +102,8 @@ class PayPalWebhookLogAdmin(admin.ModelAdmin):
         }),
         ("Dispute Details", {
             "fields": (
-            "allowed_refund_amount", "buyer_requested_amount", "dispute_id")
+                "allowed_refund_amount", "buyer_requested_amount",
+                "seller_offered_amount", "dispute_id")
         }),
         ("Raw Payload", {
             "fields": ("payload",)

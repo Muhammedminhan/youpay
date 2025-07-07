@@ -234,15 +234,22 @@ def handle_dispute_updated_webhook(webhook_payload: dict):
     try:
         resource = webhook_payload.get("resource", {})
         dispute_id = resource.get("dispute_id")
-        status = resource.get("dispute_status")
+        status = resource.get("status")
         stage = resource.get("dispute_stage")
-        invoice_id = resource.get("extensions", {}).get("invoice_id")
+        invoice_id = resource.get("disputed_transactions", {}).get(
+            "invoice_number")
         buyer_info = resource.get("buyer", {})
         buyer_email = buyer_info.get("email_address")
         buyer_name = buyer_info.get("name")
-        buyer_requested_amount = resource.get("buyer_requested_amount", {})
-        buyer_amount_value = buyer_requested_amount.get("value")
-        buyer_currency = buyer_requested_amount.get("currency_code")
+        offer = resource.get("offer", {})
+        buyer_requested_amount = offer.get("buyer_requested_amount", {}).get(
+            "value")
+        buyer_currency = offer.get("buyer_requested_amount", {}).get(
+            "currency_code")
+        allowed_refund_amount = resource.get("refund_details", {}).get(
+            "allowed_refund_amount", {}).get("value")
+        seller_offered_amount = offer.get("seller_offered_amount", {}).get(
+            "value")
 
         log_entry = PayPalWebhookLog.objects.create(
             event_id=webhook_payload.get("id"),
@@ -256,9 +263,11 @@ def handle_dispute_updated_webhook(webhook_payload: dict):
             payment_reference=invoice_id,
             payer_email=buyer_email,
             payer_name=buyer_name,
-            buyer_requested_amount=buyer_amount_value,
+            buyer_requested_amount=buyer_requested_amount,
             payable_or_receivable_currency_code=buyer_currency,
             payload=webhook_payload,
+            allowed_refund_amount=allowed_refund_amount,
+            seller_offered_amount=seller_offered_amount,
         )
 
         logger.info(f"Dispute updated log saved for dispute_id={dispute_id}")
@@ -303,6 +312,8 @@ def handle_dispute_resolved_webhook(payload):
                                                      {}).get("value"),
             buyer_requested_amount=offer.get("buyer_requested_amount",
                                              {}).get("value"),
+            seller_offered_amount=offer.get(
+                "seller_offered_amount", {}).get("value"),
             payload=payload
         )
     except Exception as e:
