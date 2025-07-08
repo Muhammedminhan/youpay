@@ -233,10 +233,12 @@ def handle_dispute_updated_webhook(webhook_payload: dict):
 
     try:
         resource = webhook_payload.get("resource", {})
+        disputed_transaction = resource.get('disputed_transactions', [{}])[
+            0] if resource.get('disputed_transactions') else {}
         dispute_id = resource.get("dispute_id")
         status = resource.get("status")
         stage = resource.get("dispute_stage")
-        invoice_id = resource.get("disputed_transactions", {}).get(
+        invoice_id = disputed_transaction.get(
             "invoice_number")
         buyer_info = resource.get("buyer", {})
         buyer_email = buyer_info.get("email_address")
