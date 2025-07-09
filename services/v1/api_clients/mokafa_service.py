@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -10,7 +11,8 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
-from integrations.v1.gateway_clients.mokafa_service import MokafaServiceManager
+from integrations.v1.gateway_clients.mokafa_service import (
+    MokafaServiceManager)
 from integrations.v1.serializers.mokafaa_serializers import (
     MokafaaRedemptionSerializer)
 from payments.constants import PAYMENT_METHOD_MOKAFAA
@@ -132,8 +134,11 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
         2.partial redemption
         """
         try:
+            request_data = copy.deepcopy(request.data)
+            if request_data.get("cvv"):
+                request_data["cvv"] = "***"
             logger.info("MokafaaRedeemPointsAPIView API triggered, request "
-                        "data: {}".format(request.data))
+                        "data: {}".format(request_data))
             mokafaa_redemption_serializer = MokafaaRedemptionSerializer(
                 data=request.data, context={'request': request})
 

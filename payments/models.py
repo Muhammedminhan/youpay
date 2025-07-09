@@ -14,13 +14,14 @@ from core.constants import (PAYMENT_GATEWAY_CHOICES,
 from core.exceptions import ClientWebhookFailed
 from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
+from integrations.constants import PAYMENT_REQUEST_REDEMPTION
+from integrations.models import YoupayToPaymentGatewaysData
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
     PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST,
-    POINT_PROGRAMS, PAYMENT_METHOD_QITAF, PAYMENT_METHOD_QITAFAND_CARD)
-from integrations.constants import PAYMENT_REQUEST_REDEMPTION
-from integrations.models import YoupayToPaymentGatewaysData
+    POINT_PROGRAMS, PAYMENT_METHOD_QITAF, PAYMENT_METHOD_QITAFAND_CARD,
+    CARD_BIN_MAX_LENGTH)
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         default=False, db_index=True,
         help_text='Denotes whether the payment is marked as flagged or not.')
     card_bin = models.CharField(
-        max_length=6, null=True, blank=True, db_index=True,
+        max_length=CARD_BIN_MAX_LENGTH, null=True, blank=True, db_index=True,
         help_text='Denotes the bin number of the card used for the payment')
     card_last4 = models.CharField(max_length=4, null=True, blank=True,
                                   help_text='Denotes the last 4 digits of the'
@@ -595,7 +596,8 @@ class ArchivedYouPayTransactionData(models.Model):
 
     is_fraud = models.BooleanField(default=False, db_index=True)
     is_flagged = models.BooleanField(default=False, db_index=True)
-    card_bin = models.CharField(max_length=6, null=True, blank=True,
+    card_bin = models.CharField(max_length=CARD_BIN_MAX_LENGTH, null=True,
+                                blank=True,
                                 db_index=True)
     card_last4 = models.CharField(max_length=4, null=True, blank=True)
     name_on_card = models.CharField(max_length=255, null=True, blank=True)

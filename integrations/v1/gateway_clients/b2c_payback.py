@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -114,6 +115,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 if verify_status == status.HTTP_200_OK and is_verified:
                     balance_request_data = PointBalanceRequestSerializer(
                         request_dict)
+                    log_data = copy.deepcopy(balance_request_data.data)
+                    log_data['card_no'] = "********"
                     request_data_json = json.dumps(balance_request_data.data)
                     b2c_gateway_obj = get_payment_gateway_config(
                         B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
@@ -126,7 +129,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
                         transaction_id=transaction_obj.transaction_id,
-                        request_data=request_data_json,
+                        request_data=json.dumps(log_data),
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
                         request_type=PAYMENT_REQUEST_POINT_BALANCE

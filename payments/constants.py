@@ -293,3 +293,5 @@ REDEEM_AMOUNT_APPLICABLE_LIST = [
 ]
 
 GROUPGIFT_ORDER_ID_ENDPOINT = '/payments/api/v2/order/references/'
+
+CARD_BIN_MAX_LENGTH = 10

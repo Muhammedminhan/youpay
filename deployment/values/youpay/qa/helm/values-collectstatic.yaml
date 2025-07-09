@@ -47,7 +47,7 @@ job:
 
   initContainers:
     database:
-      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/postgres:13.11'
+      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/postgres:16.6'
         cmd: 'pg_isready -p 5432'
         host: 'youpay-[JIRA_ID]-database'
         name: 'init-database'

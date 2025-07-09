@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 from urllib.parse import urlencode
@@ -263,9 +264,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 if checkoutpg_config:
                     payment_data = self.get_checkout_payment_data(data)
                     self.channel_code = payment_data.get('channel_code')
+                    log_request_data = copy.deepcopy(payment_data)
+                    log_request_data["cvv"] = "***"
                     logger.info(
                         "Youpay sending savedcard payment data is {}".format(
-                            payment_data))
+                            log_request_data))
                     payment_data_to_send = json.dumps(payment_data)
                     url = (self.checkoutpg_config.domain +
                            CHECKOUTPG_PAYMENT_ENDPOINT)
@@ -281,7 +284,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
                         transaction_id=self.transaction_id,
-                        request_data=payment_data_to_send,
+                        request_data=json.dumps(log_request_data),
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
                         request_type=PAYMENT_REQUEST_TYPE_SAVED_CARD,
