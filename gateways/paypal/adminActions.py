@@ -1,5 +1,6 @@
 from django.contrib import messages
 
+from core.response_messages import YouPayResponse
 from gateways.paypal.constants import PAYPAL_CAPTURE_STATUS_COMPLETED
 from gateways.paypal.integrations import PaypalManager
 
@@ -26,11 +27,11 @@ def refund_selected_paypal_transactions(modeladmin, request, queryset):
                 "transaction_obj": obj.youpay_transaction,
                 "paypal_transaction": obj
             }
-
+            response_object = YouPayResponse()
             handler = PaypalManager()
             response, code = handler.refund_paypal_transaction(request_data)
 
-            if code == 1000:
+            if code == response_object.SUCCESS:
                 messages.success(request, f"Refund successful for {obj.order_id}")
             else:
                 messages.error(request, f"Refund failed for {obj.order_id}: {response}")
