@@ -41,6 +41,7 @@ from payments.constants import (
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
+from youpay.settings.email import PAYPAL_DASHBOARD_LINK
 
 logger = logging.getLogger(__name__)
 
@@ -867,11 +868,21 @@ def get_flagged_email_data(payment):
 def get_dispute_alert_email_data(paypal_transaction):
     template_obj = get_template_obj(TRANSACTION_DISPUTED_ALERT)
 
+    payment_reference = paypal_transaction.payment_reference
+    youpay_obj = YouPayTransactionCRUD()
+    transaction_obj = (
+        youpay_obj.get_youpay_transaction_data_with_payment_reference(
+            payment_reference))
+
     template_data = {
-        "customer_name": paypal_transaction.customer_name,
-        "customer_email": paypal_transaction.customer_email,
+        "paypal_account_name": paypal_transaction.customer_name,
+        "paypal_account_email": paypal_transaction.customer_email,
         "invoice_id": paypal_transaction.payment_reference,
         "amount": float(paypal_transaction.amount),
+        "dashboard_link": PAYPAL_DASHBOARD_LINK,
+        "customer_name": transaction_obj.customer_name,
+        "customer_email": transaction_obj.customer_email,
+
     }
 
     mail_from = {

@@ -61,6 +61,8 @@ if environment == 'production':
         ('Help', 'customercare@yougotagift.com'),
     )
 
+    PAYPAL_DASHBOARD_LINK = "https://www.paypal.com/"
+
 elif environment == 'sandbox':  # Sandbox
     # The email address that error messages come from
     SERVER_EMAIL = 'alerts+sandbox@yougotagift.com'
@@ -97,6 +99,8 @@ elif environment == 'sandbox':  # Sandbox
         ('Help - Test', 'youpay-alerts+sandbox@yougotagift.com'),
     )
 
+    PAYPAL_DASHBOARD_LINK = "https://www.sandbox.paypal.com/"
+
 elif environment == 'qa':  # Test or QA
     # The email address that error messages come from
     SERVER_EMAIL = 'alerts+test@yougotagift.com'
@@ -132,3 +136,5 @@ elif environment == 'qa':  # Test or QA
     EMAIL_HELP = (
         ('Help - Test', 'tabbypg-alerts+test@yougotagift.com'),
     )
+
+    PAYPAL_DASHBOARD_LINK = "https://www.sandbox.paypal.com/"
