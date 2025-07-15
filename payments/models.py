@@ -319,6 +319,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     order_id = models.CharField(
         max_length=50, null=True, blank=True,
         help_text="id related to the order received from client")
+    udf1 = models.JSONField(null=True, blank=True,
+                            help_text="Store values required for the client")
 
 
 @receiver(post_init, sender=YouPayTransactionData)
