@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 
 import requests
-from decouple import config
 from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL,
@@ -110,7 +109,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                      "value": datetime.utcnow().isoformat() + "Z"}
                 ]
             }
-            merchant_id = config("PAYPAL_MERCHANT_ID")
+            merchant_id = self.paypal_config.merchant_id
 
             url = self.paypal_config.domain + PAYPAL_STC_ENDPOINT + f"{merchant_id}/{self.tracking_id_stc}"
 
