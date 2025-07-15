@@ -23,7 +23,7 @@ from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_METHOD_TABBY_UAE, PAYMENT_METHOD_TABBY_KSA,
     PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY)
+    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_STATUS_DECLINED)
 from services.constants import CURRENCY_UAE
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
@@ -219,11 +219,24 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     "Verify payment response data {}".format(response_data))
 
                 is_payment_verified = False
+                youpay_payment_reference = self.transaction_obj.payment_reference
+                reference_from_tabby = response_data.get('reference')
+                payment_reference = None
+
                 if response_data.get('is_capture'):
                     payment_status = PAYMENT_STATUS_PAID
                     approved = True
                     is_payment_verified = True
                     response_summary = "Payment successful"
+                    payment_reference = reference_from_tabby
+
+                    # Added reference check to log an alert in case of mismatch
+                    if youpay_payment_reference != reference_from_tabby:
+                        logger.error(f"Tabby payment reference mismatch for "
+                                     f"transaction ID {transaction_id}: "
+                                     f"Tabby - {reference_from_tabby}, "
+                                     f"YouPay - {youpay_payment_reference}")
+
                 else:
                     payment_status = PAYMENT_STATUS_REJECTED_RETRY
                     approved = False
@@ -235,7 +248,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         "payment_status": payment_status,
                         "approved": approved,
                         "response_summary": response_summary,
-                        'is_payment_verified': is_payment_verified
+                        'is_payment_verified': is_payment_verified,
+                        'payment_reference': payment_reference
                     }
                 )
                 redirect_flag, response_data = is_redirect(transaction_id,

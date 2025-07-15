@@ -8,8 +8,7 @@ from core.validators import DecimalValidator
 from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
                                     PAYMENT_REQUEST_TYPE_CHOICES,
                                     ADDITIONAL_CHARGE_TYPE_CHOICES)
-from services.constants import (PAYMENT_OPTION_NAME_CHOICES,
-                                TOKEN_TYPE_ADCB_POINTS)
+from services.constants import (PAYMENT_OPTION_NAME_CHOICES)
 
 YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
 
@@ -55,6 +54,8 @@ class PaymentGateway(AbstractDateTime, AbstractUserBase):
         help_text="used to store amount validation json data")
     webhook_api_key = models.CharField(max_length=255, blank=True, null=True,
                                        help_text='API Key String for webhook')
+    merchant_id = models.CharField(max_length=255, blank=True, null=True,
+                                   help_text='Merchant ID of the gateway')
 
     def __str__(self):
         return self.gateway_name
