@@ -93,7 +93,7 @@ elif environment == 'sandbox':  # Sandbox
          'youpay-alerts+sandbox@yougotagift.com'),
     )
 
-    DISPUTE_EMAIL_HELP = "youpay-alerts+sandbox@yougotagift.com"
+    DISPUTE_EMAIL_HELP = 'tabbypg-alerts+sandbox@yougotagift.com'
 
     EMAIL_HELP = (
         ('Help - Test', 'youpay-alerts+sandbox@yougotagift.com'),
