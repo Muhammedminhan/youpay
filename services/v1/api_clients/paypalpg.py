@@ -75,6 +75,8 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
                 "cart_vat_amount": round_decimal(new_cart_vat_amount),
                 "cart_processing_fee": round_decimal(cart_processing_fee),
             }
+            transaction.udf1 = response_data
+            transaction.save()
             return response_data
         return None
 
