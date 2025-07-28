@@ -25,9 +25,9 @@ from payments.constants import (
     PAYMENT_METHOD_TOUCHPOINTS_AND_CARD, PAYMENT_METHOD_ADCB_CARD_ONLY,
     PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING
 )
+from services.constants import BALANCE_CALCULATION_FAILED_CODE
 from services.v1.constants import B2C_PAYBACK_NO_RESPONSE_MESSAGE
 from services.v1.views.common import YouPayTransactionCRUD
-from services.constants import BALANCE_CALCULATION_FAILED_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +79,7 @@ class B2CPaybackPointBalance(APIView, YouPayTransactionCRUD):
                                 "brand_logo": offer["brand_logo"],
                                 "offer_text": offer["offer_text"],
                                 "offer_error_message": (
-                                    f"Redeem at least SAR {threshold_amount} in "
+                                    f"Redeem at least {transaction_obj.currency} {threshold_amount} in "
                                     f"{client_program_name} points to claim the offer")
                             }
                             offers.append(offer_data)

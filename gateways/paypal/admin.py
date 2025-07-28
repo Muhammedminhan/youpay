@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from core.admin import AdminAbstract
+from gateways.paypal.adminActions import refund_selected_paypal_transactions
 from gateways.paypal.models import (PaymentAccessToken, PaypalTransaction,
                                     PayPalWebhookLog)
 
@@ -11,6 +12,7 @@ class PaymentAccessTokenAdmin(AdminAbstract):
 
 
 class PaypalTransactionAdmin(admin.ModelAdmin):
+    actions = [refund_selected_paypal_transactions]
     list_display = (
         'order_id', 'payment_reference', 'status', 'amount', 'currency',
         'payer_id', 'created_at', 'updated_at',
@@ -97,6 +99,11 @@ class PayPalWebhookLogAdmin(admin.ModelAdmin):
                 "converted_amount", "payable_or_receivable_amount",
                 "payable_or_receivable_currency_code"
             )
+        }),
+        ("Dispute Details", {
+            "fields": (
+                "allowed_refund_amount", "buyer_requested_amount",
+                "seller_offered_amount", "dispute_id")
         }),
         ("Raw Payload", {
             "fields": ("payload",)

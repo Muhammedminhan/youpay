@@ -55,9 +55,13 @@ if environment == 'production':
         ('Payment Receipt', 'youpay-alerts@yougotagift.com'),
     )
 
+    DISPUTE_EMAIL_HELP = "fraudteam@yougotagift.com"
+
     EMAIL_HELP = (
         ('Help', 'customercare@yougotagift.com'),
     )
+
+    PAYPAL_DASHBOARD_LINK = "https://www.paypal.com/"
 
 elif environment == 'sandbox':  # Sandbox
     # The email address that error messages come from
@@ -89,9 +93,13 @@ elif environment == 'sandbox':  # Sandbox
          'youpay-alerts+sandbox@yougotagift.com'),
     )
 
+    DISPUTE_EMAIL_HELP = 'tabbypg-alerts+sandbox@yougotagift.com'
+
     EMAIL_HELP = (
         ('Help - Test', 'youpay-alerts+sandbox@yougotagift.com'),
     )
+
+    PAYPAL_DASHBOARD_LINK = "https://www.sandbox.paypal.com/"
 
 elif environment == 'qa':  # Test or QA
     # The email address that error messages come from
@@ -123,6 +131,10 @@ elif environment == 'qa':  # Test or QA
          'youpay-alerts+test@yougotagift.com'),
     )
 
+    DISPUTE_EMAIL_HELP = "anand@yougotagift.com"
+
     EMAIL_HELP = (
         ('Help - Test', 'tabbypg-alerts+test@yougotagift.com'),
     )
+
+    PAYPAL_DASHBOARD_LINK = "https://www.sandbox.paypal.com/"

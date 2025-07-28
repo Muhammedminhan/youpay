@@ -115,6 +115,7 @@ def handle_checkout_order_approved(webhook_data):
             'email_address'),
         payer_name=f"{payer_name.get('given_name', '')} {payer_name.get('surname', '')}".strip(),
         invoice_id=purchase_unit.get('invoice_id'),
+        payment_reference=purchase_unit.get('invoice_id'),
         merchant_id=purchase_unit.get('payee', {}).get('merchant_id'),
         payee_email=purchase_unit.get('payee', {}).get('email_address'),
         amount_value=purchase_unit.get('amount', {}).get('value'),
@@ -143,6 +144,7 @@ def handle_payment_capture_completed(webhook_data):
         capture_id=resource.get('id'),
         capture_status=resource.get('status'),
         invoice_id=resource.get('invoice_id'),
+        payment_reference=resource.get('invoice_id'),
         amount_value=resource.get('amount', {}).get('value'),
         amount_currency=resource.get('amount', {}).get('currency_code'),
         paypal_fee=seller_breakdown.get('paypal_fee', {}).get('value'),
@@ -162,8 +164,172 @@ def handle_payment_capture_completed(webhook_data):
     return log_entry
 
 
+def handle_payment_capture_declined(webhook_data):
+    resource = webhook_data.get('resource', {})
+    seller_breakdown = resource.get('seller_receivable_breakdown', {})
+
+    log_entry = PayPalWebhookLog(
+        event_id=webhook_data.get('id'),
+        event_type=webhook_data.get('event_type'),
+        resource_type=webhook_data.get('resource_type'),
+        summary=webhook_data.get('summary'),
+        order_id=resource.get('supplementary_data', {}).get('related_ids',
+                                                            {}).get(
+            'order_id'),
+        status=resource.get('status'),
+        capture_id=resource.get('id'),
+        capture_status=resource.get('status'),
+        invoice_id=resource.get('invoice_id'),
+        payment_reference=resource.get('invoice_id'),
+        amount_value=resource.get('amount', {}).get('value'),
+        amount_currency=resource.get('amount', {}).get('currency_code'),
+        paypal_fee=seller_breakdown.get('paypal_fee', {}).get('value'),
+        net_amount=seller_breakdown.get('net_amount', {}).get('value'),
+        gross_amount=seller_breakdown.get('gross_amount', {}).get('value'),
+        merchant_id=resource.get('payee', {}).get('merchant_id'),
+        payee_email=resource.get('payee', {}).get('email_address'),
+        payload=webhook_data,
+    )
+
+    log_entry.save()
+    return log_entry
+
+
+def handle_customer_dispute_created(webhook_data):
+    """
+    Handle CUSTOMER.DISPUTE.CREATED webhook event and create log entry.
+    """
+    resource = webhook_data.get('resource', {})
+    disputed_transaction = resource.get('disputed_transactions', [{}])[
+        0] if resource.get('disputed_transactions') else {}
+
+    log_entry = PayPalWebhookLog(
+        event_id=webhook_data.get('id'),
+        event_type=webhook_data.get('event_type'),
+        resource_type=webhook_data.get('resource_type'),
+        summary=webhook_data.get('summary'),
+        dispute_id=resource.get('dispute_id'),
+        status=resource.get('status'),
+        amount_value=resource.get('dispute_amount', {}).get('value'),
+        amount_currency=resource.get('dispute_amount', {}).get(
+            'currency_code'),
+        allowed_refund_amount=resource.get('refund_details', {}).get(
+            'allowed_refund_amount', {}).get('value'),
+        buyer_requested_amount=resource.get('offer', {}).get(
+            'buyer_requested_amount', {}).get('value'),
+        merchant_id=disputed_transaction.get('seller', {}).get('merchant_id'),
+        invoice_id=disputed_transaction.get('invoice_number'),
+        payload=webhook_data,
+    )
+
+    log_entry.save()
+    return log_entry
+
+
+def handle_dispute_updated_webhook(webhook_payload: dict):
+    """
+    Handles the PayPal CUSTOMER.DISPUTE.UPDATED webhook and logs it to PayPalWebhookLog.
+    """
+
+    try:
+        resource = webhook_payload.get("resource", {})
+        disputed_transaction = resource.get('disputed_transactions', [{}])[
+            0] if resource.get('disputed_transactions') else {}
+        dispute_id = resource.get("dispute_id")
+        status = resource.get("status")
+        stage = resource.get("dispute_stage")
+        invoice_id = disputed_transaction.get(
+            "invoice_number")
+        buyer_info = resource.get("buyer", {})
+        buyer_email = buyer_info.get("email_address")
+        buyer_name = buyer_info.get("name")
+        offer = resource.get("offer", {})
+        buyer_requested_amount = offer.get("buyer_requested_amount", {}).get(
+            "value")
+        buyer_currency = offer.get("buyer_requested_amount", {}).get(
+            "currency_code")
+        allowed_refund_amount = resource.get("refund_details", {}).get(
+            "allowed_refund_amount", {}).get("value")
+        seller_offered_amount = offer.get("seller_offered_amount", {}).get(
+            "value")
+
+        log_entry = PayPalWebhookLog.objects.create(
+            event_id=webhook_payload.get("id"),
+            event_type=webhook_payload.get("event_type"),
+            resource_type=webhook_payload.get("resource_type"),
+            summary=webhook_payload.get("summary"),
+            dispute_id=dispute_id,
+            status=status,
+            intent=stage,
+            invoice_id=invoice_id,
+            payment_reference=invoice_id,
+            payer_email=buyer_email,
+            payer_name=buyer_name,
+            buyer_requested_amount=buyer_requested_amount,
+            payable_or_receivable_currency_code=buyer_currency,
+            payload=webhook_payload,
+            allowed_refund_amount=allowed_refund_amount,
+            seller_offered_amount=seller_offered_amount,
+        )
+
+        logger.info(f"Dispute updated log saved for dispute_id={dispute_id}")
+        return log_entry
+
+    except Exception as e:
+        logger.error("Failed to log dispute updated webhook", exc_info=True)
+        return None
+
+
+def handle_dispute_resolved_webhook(payload):
+    """
+    Handle PayPal CUSTOMER.DISPUTE.RESOLVED webhook and store details in PayPalWebhookLog.
+    """
+    try:
+        resource = payload.get("resource", {})
+        dispute_id = resource.get("dispute_id")
+        summary = payload.get("summary")
+        event_id = payload.get("id")
+        event_type = payload.get("event_type")
+        resource_type = payload.get("resource_type")
+        dispute_amount = resource.get("dispute_amount", {})
+        refund_details = resource.get("refund_details", {})
+        offer = resource.get("offer", {})
+        disputed_txns = resource.get("disputed_transactions", [])
+        transaction = disputed_txns[0] if disputed_txns else {}
+
+        PayPalWebhookLog.objects.create(
+            event_id=event_id,
+            event_type=event_type,
+            resource_type=resource_type,
+            summary=summary,
+            dispute_id=dispute_id,
+            status=transaction.get("transaction_status"),
+            payer_email=transaction.get("buyer_email"),
+            merchant_id=transaction.get("seller", {}).get("merchant_id"),
+            payment_reference=transaction.get("invoice_number"),
+            invoice_id=transaction.get("invoice_number"),
+            amount_value=dispute_amount.get("value"),
+            amount_currency=dispute_amount.get("currency_code"),
+            allowed_refund_amount=refund_details.get("allowed_refund_amount",
+                                                     {}).get("value"),
+            buyer_requested_amount=offer.get("buyer_requested_amount",
+                                             {}).get("value"),
+            seller_offered_amount=offer.get(
+                "seller_offered_amount", {}).get("value"),
+            payload=payload
+        )
+    except Exception as e:
+        logger.error(
+            "Error storing PayPal CUSTOMER.DISPUTE.RESOLVED webhook: %s",
+            str(e), exc_info=True)
+
+
 WEBHOOK_EVENT_HANDLERS = {
     "CHECKOUT.ORDER.APPROVED": handle_checkout_order_approved,
     "PAYMENT.CAPTURE.COMPLETED": handle_payment_capture_completed,
     "PAYMENT.CAPTURE.REFUNDED": handle_payment_capture_refunded,
+    "PAYMENT.CAPTURE.DECLINED": handle_payment_capture_declined,
+    "CUSTOMER.DISPUTE.UPDATED": handle_dispute_updated_webhook,
+    "CUSTOMER.DISPUTE.CREATED": handle_customer_dispute_created,
+    "CUSTOMER.DISPUTE.RESOLVED": handle_dispute_resolved_webhook
 }
