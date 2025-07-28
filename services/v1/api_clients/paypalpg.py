@@ -79,6 +79,8 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
                 "cart_processing_fee": round_decimal(cart_processing_fee),
                 "cart_processing_fee_vat": cart_processing_fee_vat,
                 "processing_fee_vat": processing_fee_vat,
+                "processing_fee_percentage": processing_fee_charge,
+                "processing_fee_vat_percentage": vat_charge,
             }
             paypal_calculations = {"paypal_calculations": json.loads(
                 json.dumps(response_data, cls=DjangoJSONEncoder))}
