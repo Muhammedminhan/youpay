@@ -3,7 +3,6 @@ import logging
 from datetime import datetime
 
 import requests
-from decouple import config
 from rest_framework import status
 
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL,
@@ -110,7 +109,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                      "value": datetime.utcnow().isoformat() + "Z"}
                 ]
             }
-            merchant_id = config("PAYPAL_MERCHANT_ID")
+            merchant_id = self.paypal_config.merchant_id
 
             url = self.paypal_config.domain + PAYPAL_STC_ENDPOINT + f"{merchant_id}/{self.tracking_id_stc}"
 
@@ -789,7 +788,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         self.reference_id = request_data.get("payment_reference")
         self.transaction_id = request_data.get("transaction_id")
         self.transaction_obj = request_data.get("transaction_obj")
-        paypal_transaction = self.get_paypal_transaction()
+        paypal_transaction = request_data.get("paypal_transaction")
         capture_id = paypal_transaction.capture_id
         self.paypal_transaction = paypal_transaction
 
@@ -798,11 +797,10 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             url = self.paypal_config.domain + PAYPAL_REFUND_ENDPOINT + capture_id + "/refund"
             payload = {
                 "amount": {
-                    "value": str(
-                        self.transaction_obj.additional_total_amount),
+                    "value": float(paypal_transaction.amount),
                     "currency_code": self.transaction_obj.currency
                 },
-                "invoice_id": str(self.transaction_obj.invoice_id),
+                "invoice_id": str(self.transaction_obj.payment_reference),
                 "note": "Defective product"
             }
 
