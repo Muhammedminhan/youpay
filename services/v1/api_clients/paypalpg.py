@@ -11,6 +11,7 @@ from core.response_messages import YouPayResponse
 from core.utils import decrypt_string, round_decimal
 from gateways.paypal.integrations import PaypalManager
 from integrations.constants import ADDITIONAL_PROCESSING_FEE, PAYPAL_HUB_CODE
+from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from payments.constants import PAYMENT_METHOD_PAYPAL
 from payments.models import AdditionalCharge
 from payments.serializers.youpay_payments import (
@@ -107,6 +108,13 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
                         f"Transaction ID: {decrypted_id}")
 
             transaction_obj = self.get_youpay_transaction_data(decrypted_id)
+
+            if transaction_obj.point_collection_enabled:
+                """
+                Removing point collection enabled since tabby
+                """
+                payback = B2CPaybackManager()
+                payback.remove_collect_program_enabled(transaction_obj)
 
             response_data = self.calculate_paypal_charge(transaction_obj)
 
