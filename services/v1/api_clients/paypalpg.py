@@ -109,13 +109,6 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
 
             transaction_obj = self.get_youpay_transaction_data(decrypted_id)
 
-            if transaction_obj.point_collection_enabled:
-                """
-                Removing point collection enabled since tabby
-                """
-                payback = B2CPaybackManager()
-                payback.remove_collect_program_enabled(transaction_obj)
-
             response_data = self.calculate_paypal_charge(transaction_obj)
 
             if response_data:
@@ -169,6 +162,13 @@ class PayPalPaymentAPIView(APIView, YouPayTransactionCRUD):
             transaction_obj = self.get_youpay_transaction_data(decrypted_id)
             additional_charge_obj = AdditionalCharge.objects.filter(
                 transaction=transaction_obj).first()
+
+            if transaction_obj.point_collection_enabled:
+                """
+                Removing point collection enabled since tabby
+                """
+                payback = B2CPaybackManager()
+                payback.remove_collect_program_enabled(transaction_obj)
 
             if transaction_obj and additional_charge_obj:
                 serializer = YouPayTransactionDataSerializer(transaction_obj)
