@@ -297,13 +297,7 @@ class ConfigViewSet(ViewSet):
                                               False)
 
         if applepay_enabled:
-            currency = transaction.currency
-            charge_type = ADDITIONAL_PROCESSING_FEE
-            payment_gateway = CHECKOUTPG_HUB_CODE
-            payment_method = TOKEN_TYPE_APPLEPAY
-            additional_fee = get_gateway_additional_fee(currency, charge_type,
-                                                        payment_gateway,
-                                                        payment_method)
+            additional_fee = None
             additional_config = self.get_additional_config(additional_fee,
                                                            TOKEN_TYPE_APPLEPAY)
             applepay_config.update(additional_config)

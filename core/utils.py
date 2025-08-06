@@ -30,7 +30,8 @@ from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_CHANNEL_CONFIGURATIONS)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from notifications.constants import (FLAGGED_PAYMENT_MAIL, HUB_LINK,
-                                     AMAZON_HUB_LINK)
+                                     AMAZON_HUB_LINK,
+                                     TRANSACTION_DISPUTED_ALERT)
 from notifications.models import EmailTemplateConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
@@ -40,6 +41,7 @@ from payments.constants import (
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
+from youpay.settings.email import PAYPAL_DASHBOARD_LINK
 
 logger = logging.getLogger(__name__)
 
@@ -853,6 +855,54 @@ def get_flagged_email_data(payment):
 
     send_mail_payload = {
         "subject": "A transaction has been flagged.",
+        "mail_from": mail_from,
+        "mail_to": mail_to,
+        "template_data": template_data,
+        "template_code": template_obj.template_code,
+        "mail_engine_api": template_obj.endpoint_url
+    }
+
+    return send_mail_payload
+
+
+def get_dispute_alert_email_data(paypal_transaction):
+    template_obj = get_template_obj(TRANSACTION_DISPUTED_ALERT)
+
+    payment_reference = paypal_transaction.payment_reference
+    youpay_obj = YouPayTransactionCRUD()
+    transaction_obj = (
+        youpay_obj.get_youpay_transaction_data_with_payment_reference(
+            payment_reference))
+
+    template_data = {
+        "paypal_account_name": paypal_transaction.customer_name,
+        "paypal_account_email": paypal_transaction.customer_email,
+        "invoice_id": paypal_transaction.payment_reference,
+        "amount": float(paypal_transaction.amount),
+        "dashboard_link": PAYPAL_DASHBOARD_LINK,
+        "customer_name": transaction_obj.customer_name,
+        "customer_email": transaction_obj.customer_email,
+
+    }
+
+    mail_from = {
+        "email": settings.SERVER_EMAIL,
+        "name": "",
+        "alias": ""
+    }
+    mail_to = [{
+        "email": settings.EMAIL_HELP[0][1],
+        "name": "",
+        "alias": ""},
+        {
+            "email": settings.DISPUTE_EMAIL_HELP,
+            "name": "",
+            "alias": ""}
+    ]
+    subject = "Transaction Disputed"
+
+    send_mail_payload = {
+        "subject": subject,
         "mail_from": mail_from,
         "mail_to": mail_to,
         "template_data": template_data,

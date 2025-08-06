@@ -279,29 +279,33 @@ def get_announcements(platform):
     used to fetch the active announcements for payment gateways
     """
     payment_gateways = PaymentGateway.objects.filter(is_active=True)
+    announcements = Announcement.objects.filter(
+        gateway__in=payment_gateways,
+        platform=platform,
+        is_active=True,
+        payment_option__isnull=False
+    ).values(
+        'gateway__code',
+        'payment_option__payment_method',
+        'offer_message',
+        'offer_message_arabic'
+    ).distinct()
 
     announcements_dict = {}
 
-    for pg in payment_gateways:
-        announcement_objs = Announcement.objects.filter(
-            gateway=pg, platform=platform, is_active=True
-        )
+    for ann in announcements:
+        pg_code = ann['gateway__code']
+        method = ann['payment_option__payment_method']
 
-        payment_options_announcements = get_payment_options_announcements(
-            announcement_objs
-        )
+        announcement = {
+            LANGUAGE_CODE_EN: ann['offer_message'],
+            LANGUAGE_CODE_AR: ann['offer_message_arabic']
+        }
 
-        announcements_dict[pg.code] = {}
+        if pg_code not in announcements_dict:
+            announcements_dict[pg_code] = {}
 
-        for payment_options_dict in payment_options_announcements:
-            payment_method = payment_options_dict.get(
-                'payment_option__payment_method')
-            announcement = {
-                LANGUAGE_CODE_EN: payment_options_dict.get('offer_message'),
-                LANGUAGE_CODE_AR: payment_options_dict.get(
-                    'offer_message_arabic')
-            }
-            announcements_dict[pg.code][payment_method] = announcement
+        announcements_dict[pg_code][method] = announcement
 
     return announcements_dict
 
