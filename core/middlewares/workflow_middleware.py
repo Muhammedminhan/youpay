@@ -96,6 +96,9 @@ class PaymentStatusCheckMiddleware(object):
                                                      youpay_obj,
                                                      data)
 
+                    self.reset_previous_data(
+                        transaction_obj, youpay_obj, view_name)
+
             except TransactionMaxAttemptReached:
                 return JsonResponse(self.response, status=200)
 
@@ -144,6 +147,21 @@ class PaymentStatusCheckMiddleware(object):
         if transaction_obj is None:
             raise TransactionNotFound(
                 youpay_message_obj.TRANSACTION_NOT_FOUND)
+
+    def reset_previous_data(self, transaction_obj, youpay_obj, view_name):
+        """
+        Reset data which is related to previous payment stage and method
+        """
+        if view_name != 'PaypalPayment':
+            if transaction_obj.udf1 and "paypal_calculations" in transaction_obj.udf1:
+                udf1 = transaction_obj.udf1
+                udf1.pop("paypal_calculations", None)
+                youpay_obj.update_youpay_transaction_data(
+                    {
+                        "transaction_id": transaction_obj.transaction_id,
+                        "udf1": udf1
+                    }
+                )
 
     def check_transaction_already_paid(self, transaction_obj,
                                        youpay_message_obj):
