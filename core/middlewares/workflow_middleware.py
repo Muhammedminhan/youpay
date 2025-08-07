@@ -152,7 +152,7 @@ class PaymentStatusCheckMiddleware(object):
         """
         Reset data which is related to previous payment stage and method
         """
-        if view_name != 'PaypalPayment':
+        if view_name != 'PayPalPayment':
             if transaction_obj.udf1 and "paypal_calculations" in transaction_obj.udf1:
                 udf1 = transaction_obj.udf1
                 udf1.pop("paypal_calculations", None)
