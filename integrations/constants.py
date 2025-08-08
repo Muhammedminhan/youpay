@@ -157,7 +157,6 @@ APPLEPAY_SUCCESS_CODE_LISTS = [
     5103,
     5201,
     5308,  # redirect
-    1005,  # verification failed case
 ]
 
 ADCB_CHECKOUTPG_PAYMENT_NOT_PAID = 1012
