@@ -255,6 +255,12 @@ def calculate_balance(data):
         transaction_obj = data.get('transaction_obj')
         selected_amount = data.get('selected_amount')
         client_code = data.get("client_code")
+        payback_action = data.get("payback_action")
+
+        if payback_action == PAYBACK_ACTION_EARN:
+            payment_method = transaction_obj.payment_method
+        else:
+            payment_method = PAYMENT_METHOD.get(client_code)
 
         payment_reference = transaction_obj.payment_reference
 
@@ -307,7 +313,7 @@ def calculate_balance(data):
                     "redeemed_amount": selected_amount,
                     "payable_amount": calculated_balance.get(
                         'sum_card_payment_amount'),
-                    "payment_method": PAYMENT_METHOD.get(client_code)
+                    "payment_method": payment_method
                 }
                 crud_obj.update_youpay_transaction_data(update_data)
                 response_code = response_obj.SUCCESS
