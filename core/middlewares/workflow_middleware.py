@@ -19,6 +19,7 @@ from core.messages import (
     MIDDLEWARE_ALREADY_PAID_MESSAGE, MAX_RETRY_ARABIC_MESSAGE)
 from core.response_messages import YouPayResponse
 from core.utils import get_display_platform, get_display_program
+from gateways.paypal.constants import PAYPAL_PAYMENT_VIEW_NAME
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
@@ -152,8 +153,9 @@ class PaymentStatusCheckMiddleware(object):
         """
         Reset data which is related to previous payment stage and method
         """
-        if view_name != 'PayPalPayment':
-            if transaction_obj.udf1 and "paypal_calculations" in transaction_obj.udf1:
+        if view_name != PAYPAL_PAYMENT_VIEW_NAME:
+            if isinstance(transaction_obj.udf1,
+                          dict) and "paypal_calculations" in transaction_obj.udf1:
                 udf1 = transaction_obj.udf1
                 udf1.pop("paypal_calculations", None)
                 youpay_obj.update_youpay_transaction_data(
