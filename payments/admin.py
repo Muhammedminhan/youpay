@@ -122,7 +122,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
         ('Other Details', {
-            'fields': ('retry_count', 'session_id', 'browser_value',
+            'fields': ('udf1', 'retry_count', 'session_id', 'browser_value',
                        'loyalty_level', 'created_at',
                        'updated_at'
                        )
