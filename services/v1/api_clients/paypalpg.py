@@ -165,7 +165,7 @@ class PayPalPaymentAPIView(APIView, YouPayTransactionCRUD):
 
             if transaction_obj.point_collection_enabled:
                 """
-                Removing point collection enabled since tabby
+                Removing point collection enabled since paypal
                 """
                 payback = B2CPaybackManager()
                 payback.remove_collect_program_enabled(transaction_obj)
