@@ -1,7 +1,9 @@
+import json
 import logging
 from decimal import Decimal
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.serializers.json import DjangoJSONEncoder
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -51,11 +53,12 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
             self.vat_charge_percentage = vat_decimal
 
             processing_fee = base_amount * processing_fee_decimal
+            processing_fee_vat = processing_fee * vat_decimal
             cart_processing_fee = cart_base_amount * processing_fee_decimal
-            new_vat_amount = (transaction.VAT_amount +
-                              (processing_fee * vat_decimal))
-            new_cart_vat_amount = (transaction.cart_VAT_amount +
-                                   (cart_processing_fee * vat_decimal))
+            cart_processing_fee_vat = cart_processing_fee * vat_decimal
+            new_vat_amount = (transaction.VAT_amount + processing_fee_vat)
+            new_cart_vat_amount = (
+                    transaction.cart_VAT_amount + cart_processing_fee_vat)
             new_amount = (base_amount + transaction.service_fee +
                           processing_fee + new_vat_amount)
             new_cart_amount = (cart_base_amount + transaction.cart_service_fee
@@ -74,7 +77,15 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
                 "cart_service_fee": transaction.cart_service_fee,
                 "cart_vat_amount": round_decimal(new_cart_vat_amount),
                 "cart_processing_fee": round_decimal(cart_processing_fee),
+                "cart_processing_fee_vat": cart_processing_fee_vat,
+                "processing_fee_vat": processing_fee_vat,
+                "processing_fee_percentage": processing_fee_charge,
+                "processing_fee_vat_percentage": vat_charge,
             }
+            paypal_calculations = {"paypal_calculations": json.loads(
+                json.dumps(response_data, cls=DjangoJSONEncoder))}
+            transaction.udf1 = paypal_calculations
+            transaction.save()
             return response_data
         return None
 
