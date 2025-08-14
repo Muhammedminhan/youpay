@@ -13,7 +13,8 @@ from gateways.paypal.constants import (PAYPAL_STATUS_CHOICES,
                                        PAYPAL_EVENT_STATUS_MAPPING,
                                        PAYPAL_CAPTURE_STATUS_COMPLETED,
                                        PAYPAL_REFUND_STATUS_COMPLETED,
-                                       PAYPAL_ORDER_DISPUTED)
+                                       PAYPAL_ORDER_DISPUTED,
+                                       PAYPAL_FINAL_EVENT_TYPES)
 from payments.constants import (PAYMENT_STATUS_PAID, PAYMENT_STATUS_REFUNDED,
                                 PAYMENT_STATUS_CHARGEBACK)
 from payments.tasks import send_dispute_mail_alert
@@ -379,11 +380,13 @@ def update_paypal_transaction(sender, instance, created, **kwargs):
 
 
 def prepare_paypal_transaction_update_data(instance):
-    status = PAYPAL_EVENT_STATUS_MAPPING.get(instance.event_type)
-    update_data = {
-        'status': status,
-        'refund_id': instance.refund_id,
-    }
+    update_data = {}
+    if instance.event_type in PAYPAL_FINAL_EVENT_TYPES:
+        status = PAYPAL_EVENT_STATUS_MAPPING.get(instance.event_type)
+        update_data = {
+            'status': status,
+            'refund_id': instance.refund_id,
+        }
     return update_data
 
 
