@@ -305,7 +305,7 @@ class ConfigViewSet(ViewSet):
 
     def get_paypal_config(self, payment_option, transaction):
         paypal_config = {}
-        currency = transaction.currency
+        currency = transaction.cart_currency
         charge_type = ADDITIONAL_PROCESSING_FEE
         payment_gateway = PAYPAL_HUB_CODE
         payment_method = PAYMENT_METHOD_PAYPAL
