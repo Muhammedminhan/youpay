@@ -19,7 +19,7 @@ from amazonpgclient.models import AmazonPGTransactionData
 from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             BROWSER_VALUE_ENCRYPTION_KEY,
                             PAYMENT_GATEWAY_CHECKOUTPG,
-                            PAYMENT_GATEWAY_AMAZONPG)
+                            PAYMENT_GATEWAY_AMAZONPG, PAYMENT_GATEWAY_PAYPAL)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
@@ -828,6 +828,11 @@ def get_flagged_email_data(payment):
         search_param = payment.payment_reference
         if amazon_obj:
             search_param = amazon_obj.fort_id
+    elif payment.payment_gateway == PAYMENT_GATEWAY_PAYPAL:
+        dashboard_link = PAYPAL_DASHBOARD_LINK
+        dashboard = "PayPal Dashboard"
+        search_key = "Invoice id"
+        search_param = payment.payment_reference
     template_data = {
         'search_param': search_param,
         'amount': float(payment.amount),

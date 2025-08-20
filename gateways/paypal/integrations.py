@@ -8,7 +8,8 @@ from rest_framework import status
 from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_PAYPAL,
                             REQUEST_METHOD_PUT, REQUEST_METHOD_GET)
 from core.utils import (get_payment_gateway_config, get_app_config,
-                        get_redirect_url, wait_redis_lock)
+                        get_redirect_url, wait_redis_lock,
+                        get_flagged_email_data)
 from gateways.common import (_get_payment_reference_number, get_request_id,
                              unique_token_generator)
 from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
@@ -539,6 +540,10 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     "transaction_id": self.transaction_id,
                     "payment_status": PAYMENT_STATUS_PAID
                 }
+                from payments.tasks import send_flagged_mail_alert
+                email_data = get_flagged_email_data(self.transaction_obj)
+                send_flagged_mail_alert.delay(**email_data)
+
             else:
                 logger.error(
                     "paypal capture response status is not COMPLETED for {}".format(
