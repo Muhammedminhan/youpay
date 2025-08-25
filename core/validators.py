@@ -1,9 +1,11 @@
 import ipaddress
+import os
 import re
 import warnings
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from PIL import Image
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 from django.utils.deprecation import RemovedInDjango41Warning
@@ -13,6 +15,7 @@ from django.utils.regex_helper import _lazy_re_compile
 from django.utils.translation import gettext_lazy as _
 from django.utils.translation import ngettext_lazy
 
+from core.constants import MAX_LOGO_SIZE
 # These values, if given to validate(), will trigger the self.required check.
 from core.messages import ERROR_INVALID_IP
 
@@ -586,6 +589,22 @@ def validate_image_file_extension(value):
         allowed_extensions=get_available_image_extensions())(
         value
     )
+
+
+def validate_svg_or_image(value):
+    ext = os.path.splitext(value.name)[1].lower()
+
+    if ext == ".svg":
+        if value.size > MAX_LOGO_SIZE:
+            raise ValidationError("SVG file size must be below 4MB.")
+    else:
+        try:
+            img = Image.open(value)
+            width, height = img.size
+            if value.size > MAX_LOGO_SIZE:
+                raise ValidationError("Image file size must be below 4MB.")
+        except Exception:
+            raise ValidationError("Invalid image format.")
 
 
 @deconstructible

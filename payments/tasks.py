@@ -11,7 +11,7 @@ from django.db.models.functions import Now
 from adcbpgclient.models import ADCBTransactionData
 from core.utils import wait_redis_lock
 from integrations.models import GatewayChargeConfiguration
-from notifications.notification import FlaggedMailAlertView
+from notifications.notification import MailAlertView
 from payments.constants import (
     PAYMENT_STATUS_EXPIRED,
     TRANSACTION_EXPIRE_TIME, PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
@@ -358,7 +358,6 @@ def common_update_breakdown_fee(model_name, transaction_data_id, break_downs):
                 'holding_currency_amount'))
 
 
-@shared_task(name='fetch_groupgift_order_id')
 def fetch_groupgift_order_id():
     """
     task to collect order id from groupgift for payment references in youpay
@@ -429,9 +428,26 @@ def send_flagged_mail_alert(**kwargs):
     """
     reference_id = kwargs.get('template_data', {}).get('payment_reference')
     logger.info("flagged mail alert for {0}".format(reference_id))
-    response = FlaggedMailAlertView(**kwargs).send_mail()
+    response = MailAlertView(**kwargs).send_mail()
 
     logger.info("Successfully sent flagged alert email for {0}"
+                "".format(reference_id))
+    return response
+
+
+@shared_task()
+def send_dispute_mail_alert(**kwargs):
+    """
+    sending dispute alert mail to support team
+    :param data: data for email,
+    :return:
+    """
+    reference_id = kwargs.get('template_data', {}).get('payment_reference')
+    logger.info(
+        "Transaction disputed mail alert for {0}".format(reference_id))
+    response = MailAlertView(**kwargs).send_mail()
+
+    logger.info("Successfully sent transaction_disputed alert email for {0}"
                 "".format(reference_id))
     return response
 

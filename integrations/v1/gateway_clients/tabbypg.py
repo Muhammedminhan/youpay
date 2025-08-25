@@ -16,7 +16,6 @@ from integrations.constants import (
     PAYMENT_REQUEST_TYPE_PAYMENT, TABBYPG_CACHE_KEY, TABBYPG_HUB_CODE,
     TABBYPG_VERIFY_PAYMENT_ENDPOINT, PAYMENT_REQUEST_VERIFY
 )
-from integrations.messages import TABBYPG_CONNECTION_ERROR_MESSAGE
 from integrations.v1.serializers.tabbypg_payment_request import (
     TabbyPGPaymentRequestSerializer
 )
@@ -24,7 +23,7 @@ from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
     PAYMENT_METHOD_TABBY_UAE, PAYMENT_METHOD_TABBY_KSA,
     PAYMENT_STATUS_REJECTED,
-    PAYMENT_STATUS_REJECTED_RETRY)
+    PAYMENT_STATUS_REJECTED_RETRY, PAYMENT_STATUS_DECLINED)
 from services.constants import CURRENCY_UAE
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from services.v1.views.payment import PaymentRequestView
@@ -120,70 +119,62 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
         """if transaction is verified then proceed with payment"""
         try:
             if verify_status == status.HTTP_200_OK and is_verified:
-                tabbypg_conf = self.tabbypg_config
-                if tabbypg_conf:
-                    payment_data = self.get_tabbypg_payment_data(data)
-                    logger.info(
-                        "Youpay sending payment data is {}".format(
-                            payment_data))
-                    payment_data_to_send = json.dumps(payment_data)
-                    url = (self.tabbypg_config.domain +
-                           TABBYPG_CREATE_PAYMENT_ENDPOINT)
-                    headers = self.get_payment_header()
+                payment_data = self.get_tabbypg_payment_data(data)
+                logger.info("Youpay sending payment data is {}".format(
+                    payment_data))
+                payment_data_to_send = json.dumps(payment_data)
+                url = (self.tabbypg_config.domain +
+                       TABBYPG_CREATE_PAYMENT_ENDPOINT)
+                headers = self.get_payment_header()
 
-                    response = requests.post(url, data=payment_data_to_send,
-                                             headers=headers)
-                    logger.info("TabbyPG response is {}".format(response))
+                response = requests.post(url, data=payment_data_to_send,
+                                            headers=headers)
+                logger.info("TabbyPG response is {}".format(response))
+                response_data = response.json()
+                logger.info("tabbypg payment response: {}".format(response_data))
+
+                # storing Youpay to payment gateway request and response data
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=self.transaction_id,
+                    request_data=payment_data_to_send,
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
+                )
+
+                if response:
                     response_data = response.json()
-                    logger.info("tabbypg payment response: {}"
-                                .format(response_data))
-
-                    # storing Youpay to payment gateway request and response data
-                    self.create_youpay_to_payment_gateways_data(
-                        transaction_obj=transaction_obj,
-                        transaction_id=self.transaction_id,
-                        request_data=payment_data_to_send,
-                        response_data=response.text,
-                        request_method=REQUEST_METHOD_POST,
-                        request_type=PAYMENT_REQUEST_TYPE_PAYMENT,
-                    )
-
-                    if response:
-                        response_data = response.json()
-                        logger.info("tabbypg payment response: {}"
-                                    .format(response_data))
-                        if (response_data.get('status') == 200 and
-                                response_data.get(IS_REDIRECT) is True):
-                            self.payment_reference = response_data.get(
-                                "payment_ref_no")
-
-                            self.payment_status = PAYMENT_STATUS_PENDING
-
-                            self.update_youpay_transaction_data(
-                                self.prepare_data_to_update())
-                            response_data[IS_SUCCESS] = True
-                            return response_data, self.SUCCESS
-
-                        logger.error("Error in tabbypg payment, {}".format(
-                            response.text))
-
+                    logger.info("tabbypg payment response: {}".format(
+                        response_data))
+                    if (response_data.get('status') == 200 and
+                            response_data.get(IS_REDIRECT) is True):
                         self.payment_reference = response_data.get(
                             "payment_ref_no")
-                        self.payment_status = tabby_reject_check(
-                            response_data)
+
+                        self.payment_status = PAYMENT_STATUS_PENDING
 
                         self.update_youpay_transaction_data(
                             self.prepare_data_to_update())
+                        response_data[IS_SUCCESS] = True
+                        return response_data, self.SUCCESS
 
-                        response, code = self.process_tabby_failure_response()
+                    if (response_data.get("payment_status") !=
+                            PAYMENT_STATUS_REJECTED):
+                        logger.error("Error in tabbypg payment, "
+                                     "{}".format(response.text))
 
-                        return response, code
+                    self.payment_reference = response_data.get("payment_ref_no")
+                    self.payment_status = tabby_reject_check(response_data)
 
-                    return ({"error": response_data},
-                            self.TABBYPG_CONNECTION_ERROR)
-                else:
-                    logger.error(TABBYPG_CONNECTION_ERROR_MESSAGE)
-                    return {None}, self.TABBYPG_CONNECTION_ERROR
+                    self.update_youpay_transaction_data(
+                        self.prepare_data_to_update())
+
+                    response, code = self.process_tabby_failure_response()
+
+                    return response, code
+
+                return {"error": response_data}, self.TABBYPG_CONNECTION_ERROR
             else:
                 msg = (
                     "Youpay tabby transaction verification failed, "
@@ -228,11 +219,24 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                     "Verify payment response data {}".format(response_data))
 
                 is_payment_verified = False
+                youpay_payment_reference = self.transaction_obj.payment_reference
+                reference_from_tabby = response_data.get('reference')
+                payment_reference = None
+
                 if response_data.get('is_capture'):
                     payment_status = PAYMENT_STATUS_PAID
                     approved = True
                     is_payment_verified = True
                     response_summary = "Payment successful"
+                    payment_reference = reference_from_tabby
+
+                    # Added reference check to log an alert in case of mismatch
+                    if youpay_payment_reference != reference_from_tabby:
+                        logger.error(f"Tabby payment reference mismatch for "
+                                     f"transaction ID {transaction_id}: "
+                                     f"Tabby - {reference_from_tabby}, "
+                                     f"YouPay - {youpay_payment_reference}")
+
                 else:
                     payment_status = PAYMENT_STATUS_REJECTED_RETRY
                     approved = False
@@ -244,7 +248,8 @@ class TabbyPGManager(PaymentRequestView, PaymentHandlers):
                         "payment_status": payment_status,
                         "approved": approved,
                         "response_summary": response_summary,
-                        'is_payment_verified': is_payment_verified
+                        'is_payment_verified': is_payment_verified,
+                        'payment_reference': payment_reference
                     }
                 )
                 redirect_flag, response_data = is_redirect(transaction_id,

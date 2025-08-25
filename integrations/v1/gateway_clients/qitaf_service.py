@@ -11,15 +11,16 @@ from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string,
-                        auto_enable_or_disable_point_collection)
+                        auto_enable_or_disable_point_collection,
+                        get_channel_code)
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
     QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
     B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
-    CHECKOUTPG_PAYMENT_CONFIGURATIONS, PAYMENT_REQUEST_COLLECT_POINTS,
-    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY)
+    PAYMENT_REQUEST_COLLECT_POINTS,
+    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, EXPECTED_QITAF_ERRORS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -173,7 +174,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
-            logger.info("Response from Qitaf service {}".format(response))
+            logger.info("Response from Qitaf service {}".format(
+                response.json()))
             if response:
                 response_data = response.json()
                 logger.info("qitaf payment response: {}".format(
@@ -189,8 +191,14 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 return response_data, self.SUCCESS
 
-            logger.error("Error in qitaf otp, {}".format(response.json()))
-            self.response_data = response.json()
+            error_response = response.json()
+            error_message = error_response.get('response_data', {}).get(
+                'response_text', '')
+
+            if error_message not in EXPECTED_QITAF_ERRORS:
+                logger.error("Unexpected Qitaf error: {}".format(error_response))
+
+            self.response_data = error_response
 
             return ({"error": response.json()},
                     self.QITAF_CONNECTION_ERROR)
@@ -295,8 +303,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             ),
             "invoice_id": self.transaction_obj.invoice_id,
             "customer_ip_address": self.transaction_obj.ip,
-            "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
-                transaction_data.get("currency").upper()),
+            "channel_code": get_channel_code(self.transaction_obj),
         }
         return redeem_payload
 
@@ -394,6 +401,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             return {"errors": error}, self.QITAF_CONNECTION_ERROR
 
         finally:
+            if self.request_data.get("cvv"):
+                self.request_data["cvv"] = "***"
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,

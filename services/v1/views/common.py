@@ -16,7 +16,9 @@ from core.messages import (
     TRANSACTION_MSG,
     IS_REDIRECT
 )
+from core.models import PaymentConfiguration
 from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
+from integrations.models import AdditionalChargeConfiguration
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
@@ -29,14 +31,17 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_TOUCHPOINTS_AND_CARD,
                                 PAYMENT_METHOD_TOUCHPOINTS,
                                 PAYMENT_METHOD_MOKAFAA,
-                                PAYMENT_METHOD_MOKAFAA_AND_CARD)
+                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_METHOD_ANB,
+                                PAYMENT_METHOD_ANB_AND_CARD,
+                                PAYMENT_METHOD_PAYPAL)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
                                 SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
-from services.models import APIClient
+from services.models import APIClient, OfferDetails
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +190,7 @@ class YouPayTransactionCRUD(object):
         data_dict['earned_point'] = data.get('earned_point', None)
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
+        data_dict['udf1'] = data.get('udf1', None)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD,
@@ -192,6 +198,9 @@ class YouPayTransactionCRUD(object):
                                            PAYMENT_METHOD_NEQATY,
                                            PAYMENT_METHOD_MOKAFAA,
                                            PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                           PAYMENT_METHOD_ANB,
+                                           PAYMENT_METHOD_ANB_AND_CARD,
+                                           PAYMENT_METHOD_PAYPAL
                                            ]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
@@ -309,6 +318,55 @@ class YouPayTransactionCRUD(object):
                          "".format(currency))
         return settlement_entity
 
+    def create_offer_details(self, data):
+        """
+        Creates an OfferDetails record with the given data.
+
+        Parameters:
+            data (dict): Contains 'invoice_id', 'offer_details', and 'client'.
+        """
+        try:
+            OfferDetails.objects.create(
+                invoice_id=data.get('invoice_id'),
+                offer_details=data.get('offer_details'),
+                client=data.get('client')
+            )
+        except Exception as e:
+            logger.error("Error in creating offer details object  "
+                         "{}".format(str(e)))
+
+    def get_offer_details(self, transaction_obj):
+        """
+        Retrieves offer details for a given transaction.
+
+        Parameters:
+            transaction_obj: The transaction instance.
+
+        Returns:
+            dict or None: Offer details if found, else None.
+        """
+        invoice_id = transaction_obj.invoice_id
+        client = transaction_obj.api_client
+
+        try:
+            if not transaction_obj.is_offer_applicable:
+                return None
+            offer_detail_obj = OfferDetails.objects.filter(
+                invoice_id=invoice_id, client=client).last()
+
+            offer_details = offer_detail_obj.offer_details
+            if offer_details:
+                return offer_details
+            else:
+                logger.error(
+                    "Offer details not found for transaction {}".format(
+                        transaction_obj.transaction_id))
+                return None
+        except Exception as e:
+            logger.error("Error in getting offer details for {} ".format(
+                transaction_obj.transaction_id))
+            return None
+
 
 class ClientValidator(object):
     """
@@ -322,8 +380,7 @@ class ClientValidator(object):
             try:
                 client = APIClient.objects.get(api_key=api_key)
                 if client:
-                    client_id = client.pk
-                    return True, client_id
+                    return True, client
                 return False, client_id
             except Exception as e:
                 logger.info("Exception occurred when validating the client {}"
@@ -505,3 +562,29 @@ class AdditionalChargesUpdation(object):
             logger.error("Error in creating additional charge object for {} "
                          "{}".format(data.get('transaction').transaction_id,
                                      str(e)))
+
+def get_processing_charge(currency, charge_type, payment_gateway,
+                          payment_method):
+    """
+    Method to get additional charge configuration.
+    """
+    try:
+        payment_config = PaymentConfiguration.objects.get(
+            payment_method=payment_method,
+            payment_gateway__code=payment_gateway)
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            f"PaymentConfiguration not found for method: {payment_method}")
+        return None, None
+
+    try:
+        additional_charge_obj = AdditionalChargeConfiguration.objects.get(
+            currency__iso_code=currency, charge_type=charge_type,
+            payment_option=payment_config, is_active=True)
+    except AdditionalChargeConfiguration.DoesNotExist:
+        logger.error(
+            f"AdditionalChargeConfiguration not found for charge_type: "
+            f"{charge_type}, currency: {currency}")
+        return None, None
+
+    return additional_charge_obj.percentage, additional_charge_obj.VAT_percentage

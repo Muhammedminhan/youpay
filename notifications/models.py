@@ -13,7 +13,7 @@ class EmailTemplateConfiguration(AbstractDateTime, AbstractUserBase):
     configurations/utils/constant.py,
     """
     email_type = models.CharField(
-        max_length=25, choices=EMAIL_TYPES, null=True, blank=True,
+        max_length=100, choices=EMAIL_TYPES, null=True, blank=True,
         verbose_name='EmailType', help_text="Email type, eg:feedback email")
     template_code = models.CharField(
         max_length=10, null=True, blank=True,

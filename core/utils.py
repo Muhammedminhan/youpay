@@ -2,7 +2,7 @@ import json
 import logging
 from base64 import b64decode, b64encode
 from contextlib import contextmanager
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from functools import wraps
 from os import urandom
 from time import sleep
@@ -30,7 +30,8 @@ from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
                                     CHECKOUTPG_CHANNEL_CONFIGURATIONS)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from notifications.constants import (FLAGGED_PAYMENT_MAIL, HUB_LINK,
-                                     AMAZON_HUB_LINK)
+                                     AMAZON_HUB_LINK,
+                                     TRANSACTION_DISPUTED_ALERT)
 from notifications.models import EmailTemplateConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
@@ -40,6 +41,7 @@ from payments.constants import (
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
+from youpay.settings.email import PAYPAL_DASHBOARD_LINK
 
 logger = logging.getLogger(__name__)
 
@@ -240,19 +242,28 @@ def decimal_rounded(amount, decimal_notation):
     return amount_rounded
 
 
-def get_gateway_additional_fee(payment_option_name):
+def get_gateway_additional_fee(currency, charge_type, payment_gateway,
+                               payment_method):
     """
-    :param payment_option_name
-    :return:
+    Method to get additional charge configuration.
     """
     additional_fee = None
-    if payment_option_name:
-        try:
-            additional_fee = AdditionalChargeConfiguration.objects.get(
-                payment_option__name=payment_option_name, is_active=True)
-        except (AdditionalChargeConfiguration.DoesNotExist, Exception):
-            logging.info('No additional fee instance found for '
-                         '{}.'.format(payment_option_name))
+    try:
+        payment_config = PaymentConfiguration.objects.get(
+            payment_method=payment_method,
+            payment_gateway__code=payment_gateway)
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            f"PaymentConfiguration not found for method: {payment_method}")
+
+    try:
+        additional_fee = AdditionalChargeConfiguration.objects.get(
+            currency__iso_code=currency, charge_type=charge_type,
+            payment_option=payment_config, is_active=True)
+    except AdditionalChargeConfiguration.DoesNotExist:
+        logger.error(
+            f"AdditionalChargeConfiguration not found for charge_type: "
+            f"{charge_type}, currency: {currency}")
     return additional_fee
 
 
@@ -394,10 +405,11 @@ def process_checkoutpg_response_verification(**kwargs):
         else:
             redirect_url = get_redirect_url(youpay_transaction.failure_url,
                                             transaction_id)
+            response_summary = response_data.get("response_summary")
             response_data = {
                 IS_REDIRECT: True,
                 REDIRECT_URL: redirect_url,
-                TRANSACTION_MSG: {"response_summary": "Payment Failed"},
+                TRANSACTION_MSG: {"response_summary": response_summary},
                 IS_SUCCESS: False
             }
 
@@ -853,6 +865,54 @@ def get_flagged_email_data(payment):
     return send_mail_payload
 
 
+def get_dispute_alert_email_data(paypal_transaction):
+    template_obj = get_template_obj(TRANSACTION_DISPUTED_ALERT)
+
+    payment_reference = paypal_transaction.payment_reference
+    youpay_obj = YouPayTransactionCRUD()
+    transaction_obj = (
+        youpay_obj.get_youpay_transaction_data_with_payment_reference(
+            payment_reference))
+
+    template_data = {
+        "paypal_account_name": paypal_transaction.customer_name,
+        "paypal_account_email": paypal_transaction.customer_email,
+        "invoice_id": paypal_transaction.payment_reference,
+        "amount": float(paypal_transaction.amount),
+        "dashboard_link": PAYPAL_DASHBOARD_LINK,
+        "customer_name": transaction_obj.customer_name,
+        "customer_email": transaction_obj.customer_email,
+
+    }
+
+    mail_from = {
+        "email": settings.SERVER_EMAIL,
+        "name": "",
+        "alias": ""
+    }
+    mail_to = [{
+        "email": settings.EMAIL_HELP[0][1],
+        "name": "",
+        "alias": ""},
+        {
+            "email": settings.DISPUTE_EMAIL_HELP,
+            "name": "",
+            "alias": ""}
+    ]
+    subject = "Transaction Disputed"
+
+    send_mail_payload = {
+        "subject": subject,
+        "mail_from": mail_from,
+        "mail_to": mail_to,
+        "template_data": template_data,
+        "template_code": template_obj.template_code,
+        "mail_engine_api": template_obj.endpoint_url
+    }
+
+    return send_mail_payload
+
+
 def get_template_obj(email_type):
     try:
         email_conf = EmailTemplateConfiguration.objects.get(
@@ -883,3 +943,19 @@ def get_amazon_transaction_obj(reference):
         logger.error("Amazon transaction data not found for payment "
                      "reference: {}".format(reference))
         return None
+
+
+def round_decimal(amount, decimal_notation='0.01'):
+    """
+    Round the given amount to the specified decimal places (default: 2).
+
+    Args:
+        amount: The number to round (can be float, str, or Decimal).
+        decimal_notation: The rounding precision, e.g., '0.01' for 2 decimals.
+
+    Returns:
+        Rounded Decimal value.
+    """
+    if not isinstance(amount, Decimal):
+        amount = Decimal(str(amount))
+    return amount.quantize(Decimal(decimal_notation), rounding=ROUND_HALF_UP)

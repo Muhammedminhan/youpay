@@ -4,7 +4,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from payments.constants import MODEL_NAME_TRANSACTIONDATA
+from payments.constants import MODEL_NAME_TRANSACTIONDATA, CARD_BIN_MAX_LENGTH
 from payments.tasks import (common_update_financial_action_charges)
 from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_METHOD_CHOICES,
@@ -67,7 +67,7 @@ class TransactionData(models.Model):
         default=False, db_index=True,
         help_text='Denotes whether the flagged payment email was sent or not')
     card_bin = models.CharField(
-        max_length=6, null=True, blank=True,
+        max_length=CARD_BIN_MAX_LENGTH, null=True, blank=True,
         db_index=True, help_text=
         'Denotes the bin number of the card used for the payment')
     card_last4 = models.CharField(max_length=4, null=True, blank=True,

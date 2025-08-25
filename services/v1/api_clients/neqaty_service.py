@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -130,9 +131,12 @@ class NeqatyRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
         1.full redemption
         2.partial redemption
         """
+        request_data = copy.deepcopy(request.data)
+        if request_data.get("cvv"):
+            request_data["cvv"] = "***"
         logger.info(
             "NeqatyRedeemPointsAPIView API triggered, request data"
-            ": {}".format(request.data))
+            ": {}".format(request_data))
 
         try:
             transaction_id = request.data.get('transaction_id')
@@ -154,7 +158,11 @@ class NeqatyRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "encrypted_id": request.data.get('transaction_id'),
                     "reference_id": transaction_obj.payment_reference,
                     "customer_name": request.data.get('customer_name'),
-                    "order_reference": transaction_obj.order_reference
+                    "order_reference": transaction_obj.order_reference,
+                    "selected_amount": str(int(
+                        transaction_obj.redeemed_amount)),
+                    "checkout_amount": str(float(
+                        transaction_obj.payable_amount))
                 }
             )
             neqaty_service = NeqatyServiceManager()

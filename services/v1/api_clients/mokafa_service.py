@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -10,7 +11,8 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
-from integrations.v1.gateway_clients.mokafa_service import MokafaServiceManager
+from integrations.v1.gateway_clients.mokafa_service import (
+    MokafaServiceManager)
 from integrations.v1.serializers.mokafaa_serializers import (
     MokafaaRedemptionSerializer)
 from payments.constants import PAYMENT_METHOD_MOKAFAA
@@ -132,8 +134,11 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
         2.partial redemption
         """
         try:
+            request_data = copy.deepcopy(request.data)
+            if request_data.get("cvv"):
+                request_data["cvv"] = "***"
             logger.info("MokafaaRedeemPointsAPIView API triggered, request "
-                        "data: {}".format(request.data))
+                        "data: {}".format(request_data))
             mokafaa_redemption_serializer = MokafaaRedemptionSerializer(
                 data=request.data, context={'request': request})
 
@@ -142,7 +147,10 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
 
             points_redemption_data = validated_data
 
-            selected_amount_in_req = request.data.get("selected_amount")
+            selected_amount = str(int(
+                mokafaa_redemption_serializer.transaction_obj.redeemed_amount))
+            checkout_amount = str(float(
+                mokafaa_redemption_serializer.transaction_obj.payable_amount))
             customer_name = request.data.get("customer_name")
             transaction_order_reference = (
                 mokafaa_redemption_serializer.transaction_obj.order_reference)
@@ -154,8 +162,8 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                         mokafaa_redemption_serializer.transaction_obj.
                         payment_reference),
                     "one_time_password": validated_data.get('pin_number'),
-                    "selected_amount": selected_amount_in_req,
-                    "checkout_amount": validated_data.get('checkout_amount'),
+                    "selected_amount": selected_amount,
+                    "checkout_amount": checkout_amount,
                     "is_save_user_token": validated_data.get(
                         'is_save_user_token'),
                     "customer_name": customer_name,

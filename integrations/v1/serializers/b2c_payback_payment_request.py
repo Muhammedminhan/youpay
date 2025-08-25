@@ -4,7 +4,6 @@ from core.utils import encrypt_string
 from core.utils import get_app_config
 from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
                                     ADCB_TOKEN_TYPE, ADCB_REDEMPTION_CURRENCY,
-                                    CHECKOUT_UAE_CHANNEL_CODE,
                                     AMAZONPG_HUB_CODE)
 from services.v1.views.common import add_payment_gateway_info_in_url
 
@@ -92,7 +91,6 @@ class AuthenticateRequestSerializer(serializers.Serializer):
 
 class AuthenticateCheckoutRequestSerializer(AuthenticateRequestSerializer):
     is_save_user_token = serializers.SerializerMethodField()
-    channel_code = serializers.SerializerMethodField()
     token_type = serializers.SerializerMethodField()
     card_type = serializers.SerializerMethodField()
     redemption_currency = serializers.SerializerMethodField()
@@ -100,11 +98,6 @@ class AuthenticateCheckoutRequestSerializer(AuthenticateRequestSerializer):
 
     def get_is_save_user_token(self, data):
         return False
-
-    def get_channel_code(self, data):
-        if float(data.get('data', {}).get('checkout_amount')) > 0:
-            return CHECKOUT_UAE_CHANNEL_CODE
-        return data.get('transaction_data', {}).get('channel_code')
 
     def get_token_type(self, data):
         return ADCB_TOKEN_TYPE

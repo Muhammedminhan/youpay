@@ -14,11 +14,14 @@ from core.constants import (PAYMENT_GATEWAY_CHOICES,
 from core.exceptions import ClientWebhookFailed
 from core.models import AbstractDateTime, CustomerProfile, AbstractUserBase
 from core.validators import DecimalValidator
+from integrations.constants import PAYMENT_REQUEST_REDEMPTION
+from integrations.models import YoupayToPaymentGatewaysData
 from payments.constants import (
     YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES, PAYMENT_METHOD_CHOICES,
     PAYMENT_SCHEME_CHOICES, PAYMENT_SCHEME_NONE,
     PAYMENT_METHOD_NONE, SETTLEMENT_ENTITY_CHOICES, ALLOW_ARCHIVE_STATUS_LIST,
-    POINT_PROGRAMS)
+    POINT_PROGRAMS, PAYMENT_METHOD_QITAF, PAYMENT_METHOD_QITAFAND_CARD,
+    CARD_BIN_MAX_LENGTH)
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +92,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         default=False, db_index=True,
         help_text='Denotes whether the payment is marked as flagged or not.')
     card_bin = models.CharField(
-        max_length=6, null=True, blank=True, db_index=True,
+        max_length=CARD_BIN_MAX_LENGTH, null=True, blank=True, db_index=True,
         help_text='Denotes the bin number of the card used for the payment')
     card_last4 = models.CharField(max_length=4, null=True, blank=True,
                                   help_text='Denotes the last 4 digits of the'
@@ -147,6 +150,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                 help_text="to identify the language")
     order_items = models.JSONField(null=True, blank=True,
                                    help_text="used to store order history")
+    clevertap_items = models.JSONField(
+        null=True, blank=True,
+        help_text="used to store clevertap details received from the client")
     loyalty_level = models.IntegerField(
         null=True, blank=True, default=0,
         help_text="used to store loyalty level")
@@ -235,6 +241,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     brand_details = models.JSONField(null=True, blank=True,
                                      help_text="used to store brand details "
                                                "from the ecom side")
+    is_offer_applicable = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Denotes whether the payment is offer applicable.')
     brand_calculations = models.JSONField(null=True, blank=True,
                                           help_text="Calculated brand details")
     happy_credit_reference = models.CharField(max_length=120, null=True,
@@ -310,6 +319,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     order_id = models.CharField(
         max_length=50, null=True, blank=True,
         help_text="id related to the order received from client")
+    udf1 = models.JSONField(null=True, blank=True,
+                            help_text="Store values required for the client")
 
 
 @receiver(post_init, sender=YouPayTransactionData)
@@ -328,7 +339,8 @@ def youpay_transaction_data_post_save(sender, instance, created, **kwargs):
 
     if (instance.payment_gateway == PAYMENT_GATEWAY_B2CPAYBACK and
             instance.previous_status not in ALLOW_ARCHIVE_STATUS_LIST):
-        if instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST:
+        if (instance.payment_status in ALLOW_ARCHIVE_STATUS_LIST and
+                is_successful_redemption(instance)):
             reverse_redemption(instance)
 
 
@@ -396,6 +408,56 @@ def reverse_redemption(instance):
         logger.error(
             "Exception occurred {} on signal while triggering mail "
             "for {}, ".format(str(e), instance.transaction_id))
+
+
+def is_successful_redemption(instance):
+    """
+    Check if a successful redemption happened for a given transaction.
+    """
+    try:
+        logger.info(f"Initiating successful redemption check for "
+                    f"transaction: {instance.transaction_id}")
+
+        # Get the latest redemption API call instance
+        payment_data = YoupayToPaymentGatewaysData.objects.filter(
+            youpay_payment=instance, request_type=PAYMENT_REQUEST_REDEMPTION
+        ).order_by('-created_at').first()
+
+        if not payment_data:
+            logger.info(f"No Redemption API call found for "
+                        f"transaction: {instance.transaction_id}")
+            return False
+
+        data = payment_data.payment_response_data
+
+        if not isinstance(data, dict):  # Ensure data is a valid dictionary
+            return False
+
+        partner_response = data.get("partner_response") or {}
+        results = data.get("results") or {}
+
+        # Define redemption conditions
+        qitaf_success = (
+            instance.payment_method in
+            [PAYMENT_METHOD_QITAF, PAYMENT_METHOD_QITAFAND_CARD] and
+            data.get("status") in ["Success", 200]
+        )
+        adcb_success = results.get("redemption_status")
+        other_partner_success = partner_response.get("redemption_status")
+
+        if qitaf_success or adcb_success or other_partner_success:
+            logger.info(f"Successful redemption detected for transaction: "
+                        f"{instance.transaction_id}")
+            return True
+
+        logger.info(f"No successful redemption found for transaction: "
+                    f"{instance.transaction_id}")
+        return False
+
+    except Exception:
+        logger.error(f"Exception occurred during redemption check for "
+                     f"transaction: {instance.transaction_id}", exc_info=True)
+        return False
 
 
 class Announcement(AbstractDateTime, AbstractUserBase):
@@ -536,7 +598,8 @@ class ArchivedYouPayTransactionData(models.Model):
 
     is_fraud = models.BooleanField(default=False, db_index=True)
     is_flagged = models.BooleanField(default=False, db_index=True)
-    card_bin = models.CharField(max_length=6, null=True, blank=True,
+    card_bin = models.CharField(max_length=CARD_BIN_MAX_LENGTH, null=True,
+                                blank=True,
                                 db_index=True)
     card_last4 = models.CharField(max_length=4, null=True, blank=True)
     name_on_card = models.CharField(max_length=255, null=True, blank=True)

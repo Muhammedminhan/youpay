@@ -11,10 +11,14 @@ class YouPayResponse(object):
     2XXX - for checkoutpg
     3XXX - for tabbypg
     4XXX - for Amazon Pay
-    5XXX - for b2c
-    6XXX - for youpay
-    7xxx - for happy credits
-    8xxx - for qitaf
+    5XXX - for Apple Pay
+    6XXX - for neqaty
+    7xxx - for mokafaa
+    8xxx - for citi rewards
+    9XXX - for qitaf
+    10XXX - for AnB
+    11XXX - for b2c
+    12xxx - for happy credits
     """
 
     """Youpay related begins"""
@@ -31,6 +35,8 @@ class YouPayResponse(object):
     MIDDLEWARE_REDIRECTED = 1307
     TRANSACTION_NOT_FOUND = 1404
     MAX_PAYMENT_ATTEMPT_REACHED = 1416
+    BALANCE_CALCULATION_FAILED = 1501
+    CHARGE_CALCULATION_FAILED = 1502
 
     TRANSACTION_ALREADY_CLOSED = 1600
     REQUIRED_DATA_MISSING = 1601
@@ -61,10 +67,10 @@ class YouPayResponse(object):
     """tabbypg related ends"""
 
     """b2cpayback related begins"""
-    B2CPAYBACK_VERIFICATION_FAILED = 5600
-    B2CPAYBACK_VERIFICATION_SUCCESS = 5601
-    B2CPAYBACK_VERIFICATION_FAILED_TO_PROCESS = 5603
-    B2CPAYBACK_VERIFICATION_EXCEPTION = 5604
+    B2CPAYBACK_VERIFICATION_FAILED = 11600
+    B2CPAYBACK_VERIFICATION_SUCCESS = 11601
+    B2CPAYBACK_VERIFICATION_FAILED_TO_PROCESS = 11603
+    B2CPAYBACK_VERIFICATION_EXCEPTION = 11604
 
     """b2cpayback related ends"""
 
@@ -74,11 +80,11 @@ class YouPayResponse(object):
     """Amazonpay related ends"""
 
     """happy credits related begins"""
-    HAPPY_CREDITS_CONNECTION_ERROR = 7002
-    HAPPY_CREDITS_VERIFICATION_FAILED = 7600
-    HAPPY_REDEMPTION_SUCCESS = 7601
-    HAPPY_VERIFICATION_EXCEPTION = 7604
-    HAPPY_CREDITS_INSUFFICIENT_FUND = 7701
+    HAPPY_CREDITS_CONNECTION_ERROR = 12002
+    HAPPY_CREDITS_VERIFICATION_FAILED = 12600
+    HAPPY_REDEMPTION_SUCCESS = 12601
+    HAPPY_VERIFICATION_EXCEPTION = 12604
+    HAPPY_CREDITS_INSUFFICIENT_FUND = 12701
 
     """happy credits related ends"""
 
@@ -157,6 +163,33 @@ class YouPayResponse(object):
 
     """Mokafa related ends """
 
+    """AnB related begins"""
+    ANB_CONNECTION_ERROR = 10002
+    ANB_VALIDATION_FAILED = 10003
+    ANB_MEMBER_BALANCE_INSUFFICIENT = 10604
+    ANB_DUPLICATE_MOBILE_NUMBER = 10607
+    ANB_USER_DOES_NOT_EXIST = 10609
+    ANB_OTP_STILL_VALID = 10610
+    ANB_INVALID_OTP = 10704
+    ANB_INVALID_OTP_RESENT = 10706
+    ANB_OTP_EXPIRED = 10708
+    ANB_PAYMENT_FAILED = 10709
+    ANB_VERIFICATION_FAILED = 10807
+    ANB_VERIFICATION_EXCEPTION = 10808
+    """AnB related ends """
+
+    """PayPal related begins"""
+    PAYPAL_CONNECTION_ERROR = 18001
+    PAYPAL_VERIFICATION_FAILED = 18002
+    PAYPAL_VERIFICATION_SUCCESS = 18003
+    PAYPAL_VERIFICATION_EXCEPTION = 18004
+    PAYPAL_PAYMENT_FAILED = 18005
+    PAYPAL_INSUFFICIENT_FUNDS = 18006
+    PAYPAL_INVALID_REQUEST = 18007
+    PAYPAL_NOT_SUPPORTED = 18008
+    PAYAPL_PAYMENT_INCOMPLETE = 18009
+    """PayPal related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
@@ -174,6 +207,10 @@ class YouPayResponse(object):
             self.OTP_EXPIRED: "OTP is expired",
             self.INSUFFICIENT_BALANCE: (
                 "This member balance is insufficient for redemptions"),
+            self.BALANCE_CALCULATION_FAILED:
+                "Failed to calculate the point program balance. Please try "
+                "again with another payment option.",
+            self.CHARGE_CALCULATION_FAILED: "PayPal charge calculation failed",
 
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
@@ -277,7 +314,35 @@ class YouPayResponse(object):
             self.CITI_REWARDS_USER_BLOCKED: (
                 "Exceeded the limit. Please try again later"
             ),
-            self.TRANSACTION_ALREADY_CLOSED: "Transaction already processed!"
+            self.TRANSACTION_ALREADY_CLOSED: "Transaction already processed!",
+
+            self.ANB_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.ANB_VALIDATION_FAILED: "Validation failed",
+            self.ANB_MEMBER_BALANCE_INSUFFICIENT: "This member balance is "
+                                                  "insufficient for "
+                                                  "redemptions",
+            self.ANB_DUPLICATE_MOBILE_NUMBER: "Duplicate mobile number, "
+                                              "please try searching for the "
+                                              "customer using loyalty card "
+                                              "number or CIF",
+            self.ANB_USER_DOES_NOT_EXIST: "User does not exist",
+            self.ANB_OTP_STILL_VALID: "Last generated OTP is still valid",
+            self.ANB_INVALID_OTP: "OTP is invalid",
+            self.ANB_INVALID_OTP_RESENT: "Invalid OTP. OTP was resent, "
+                                         "please check it again",
+            self.ANB_OTP_EXPIRED: "OTP has expired",
+            self.ANB_PAYMENT_FAILED: "Payment failed",
+            self.ANB_VERIFICATION_FAILED: "Verification failed",
+            self.ANB_VERIFICATION_EXCEPTION: "Verification failed",
+
+            self.PAYPAL_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.PAYPAL_VERIFICATION_FAILED: "PayPal verification failed",
+            self.PAYPAL_VERIFICATION_EXCEPTION: "PayPal verification exception",
+            self.PAYPAL_PAYMENT_FAILED: "PayPal payment failed",
+            self.PAYPAL_INSUFFICIENT_FUNDS: "PayPal insufficient funds",
+            self.PAYPAL_INVALID_REQUEST: "PayPal invalid request",
+            self.PAYPAL_NOT_SUPPORTED: "PayPal not supported",
+            self.PAYAPL_PAYMENT_INCOMPLETE: "PayPal payment incomplete",
         })
 
     def get_400_message(self, message):

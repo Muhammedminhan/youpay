@@ -33,12 +33,7 @@ app.conf.beat_schedule = {
             'schedule': crontab(minute="*/300"),
             # Function Arguments
             'args': ()
-        },
-    'fetch-groupgift-order-id': {
-        'task': 'fetch_groupgift_order_id',
-        'schedule': crontab(minute="*/1"),
-        'args': ()
-    }
+    },
 }
 
 

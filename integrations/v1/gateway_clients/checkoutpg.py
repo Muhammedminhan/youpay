@@ -1,5 +1,7 @@
+import copy
 import json
 import logging
+from urllib.parse import urlencode
 
 import requests
 from rest_framework import status
@@ -168,7 +170,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, self.CHECKOUTPG_CONNECTION_ERROR
 
-    def get_saved_cards(self, email, currency):
+    def get_saved_cards(self, email, currency, channel_code=None):
         """
         Method for getting saved cards
         """
@@ -177,7 +179,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             try:
                 PARAMS = {'key': self.checkoutpg_config.api_key,
                           'email': email,
-                          'currency': currency}
+                          'currency': currency,
+                          'channel_code': channel_code}
                 URL = self.checkoutpg_config.domain + CHECKOUTPG_SAVED_CARD_ENDPOINT_V2
                 saved_cards = requests.get(url=URL, params=PARAMS)
                 if saved_cards:
@@ -213,6 +216,26 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
 
+    def delete_saved_card_v2(self, email, channel_code):
+        checkoutpg_config = get_checkoutpg_config()
+        if checkoutpg_config:
+            try:
+                header = self.get_payment_header()
+                query_params = urlencode(
+                    {"email": email, "channel_code": channel_code})
+                URL = (
+                        self.checkoutpg_config.domain +
+                        CHECKOUTPG_SAVED_CARD_ENDPOINT_V2 + "deactivate/?" + query_params)
+                response = requests.delete(url=URL, headers=header)
+                return json.loads(response.text)
+            except Exception as e:
+                logger.error(
+                    "Unable to delete saved card {0} details because, {1}"
+                    .format(email, str(e)))
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, None
+
     def saved_card_payment(self, data):
 
         transaction_data = data.get('transaction_data')
@@ -241,9 +264,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 if checkoutpg_config:
                     payment_data = self.get_checkout_payment_data(data)
                     self.channel_code = payment_data.get('channel_code')
+                    log_request_data = copy.deepcopy(payment_data)
+                    log_request_data["cvv"] = "***"
                     logger.info(
                         "Youpay sending savedcard payment data is {}".format(
-                            payment_data))
+                            log_request_data))
                     payment_data_to_send = json.dumps(payment_data)
                     url = (self.checkoutpg_config.domain +
                            CHECKOUTPG_PAYMENT_ENDPOINT)
@@ -259,7 +284,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
                         transaction_id=self.transaction_id,
-                        request_data=payment_data_to_send,
+                        request_data=json.dumps(log_request_data),
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
                         request_type=PAYMENT_REQUEST_TYPE_SAVED_CARD,
@@ -553,7 +578,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         params = {
             'cko-session-id': data.get('cko_session_id'),
             'channel_code': youpay_transaction.channel_code,
-            'invoice_id': youpay_transaction.invoice_id}
+            'invoice_id': youpay_transaction.invoice_id,
+        }
         response = requests.get(url, params=params)
         logger.info(
             "Checkout Verify API response for transaction {} is {}"

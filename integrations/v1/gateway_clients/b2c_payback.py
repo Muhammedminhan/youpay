@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -8,9 +9,8 @@ from core.constants import (REQUEST_METHOD_POST, REQUEST_METHOD_GET,
                             PAYMENT_GATEWAY_AMAZONPG)
 from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
-                        decrypt_string
+                        decrypt_string, get_channel_code
                         )
-from integrations.common import update_brand_details
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ADCB_AUTHENTICATE_API,
@@ -115,6 +115,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 if verify_status == status.HTTP_200_OK and is_verified:
                     balance_request_data = PointBalanceRequestSerializer(
                         request_dict)
+                    log_data = copy.deepcopy(balance_request_data.data)
+                    log_data['card_no'] = "********"
                     request_data_json = json.dumps(balance_request_data.data)
                     b2c_gateway_obj = get_payment_gateway_config(
                         B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
@@ -127,13 +129,13 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
                         transaction_id=transaction_obj.transaction_id,
-                        request_data=request_data_json,
+                        request_data=json.dumps(log_data),
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
                         request_type=PAYMENT_REQUEST_POINT_BALANCE
                     )
                     if response:
-                        return response, transaction_obj.transaction_id, None
+                        return response, transaction_obj, None
                     else:
                         logger.error(
                             "Error response received from point balance api "
@@ -169,8 +171,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             transaction_data = YouPayTransactionDataSerializer(
                 transaction_obj)
 
-            is_updated, brand_details = update_brand_details(
-                transaction_obj)
+            brand_details = transaction_obj.brand_details
 
             request_dict = {
                 'data': request_data,
@@ -189,7 +190,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     request_dict)
                 update_data = {
                     'cko-card-token': request_data.get('cko-card-token'),
-                    "item_details_list": brand_details
+                    "item_details_list": brand_details,
+                    "channel_code": get_channel_code(transaction_obj)
                 }
             update_data.update(authenticate_request_data.data)
             request_data_json = json.dumps(update_data)

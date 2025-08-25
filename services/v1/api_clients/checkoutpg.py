@@ -24,6 +24,7 @@ from services.constants import (
     TOKEN_TYPE_CARD,
     TOKEN_TYPE_PAYPAL, CHECKOUTPG_RESPONSE_MESSAGE_NULL_CODE
 )
+from services.utils import get_client_channel_code
 from services.v1.views.common import (
     YouPayTransactionCRUD,
     ClientValidator
@@ -48,9 +49,12 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD):
             if transaction_obj:
                 email = transaction_obj.customer_email
                 currency = transaction_obj.currency
+                client = transaction_obj.api_client
+                channel_code = get_client_channel_code(client)
 
                 checkout = CheckoutpgManager()
-                response_data = checkout.get_saved_cards(email, currency)
+                response_data = checkout.get_saved_cards(email, currency,
+                                                         channel_code)
 
                 data = self.response_obj.get_success_dict(
                     code=YouPayResponse.SUCCESS,

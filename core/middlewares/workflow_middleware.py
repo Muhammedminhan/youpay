@@ -16,9 +16,10 @@ from core.exceptions import (
     TransactionAlreadyVerified, TransactionMaxAttemptReached)
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, MIDDLEWARE_STATUS_CHECK_MESSAGE,
-    MIDDLEWARE_ALREADY_PAID_MESSAGE)
+    MIDDLEWARE_ALREADY_PAID_MESSAGE, MAX_RETRY_ARABIC_MESSAGE)
 from core.response_messages import YouPayResponse
 from core.utils import get_display_platform, get_display_program
+from gateways.paypal.constants import PAYPAL_PAYMENT_VIEW_NAME
 from payments.constants import (
     PAYMENT_STATUS_CANCELLED, PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_AUTHORIZED, PAYMENT_METHOD_APPLEPAY,
@@ -96,6 +97,9 @@ class PaymentStatusCheckMiddleware(object):
                                                      youpay_obj,
                                                      data)
 
+                    self.reset_previous_data(
+                        transaction_obj, youpay_obj, view_name)
+
             except TransactionMaxAttemptReached:
                 return JsonResponse(self.response, status=200)
 
@@ -144,6 +148,22 @@ class PaymentStatusCheckMiddleware(object):
         if transaction_obj is None:
             raise TransactionNotFound(
                 youpay_message_obj.TRANSACTION_NOT_FOUND)
+
+    def reset_previous_data(self, transaction_obj, youpay_obj, view_name):
+        """
+        Reset data which is related to previous payment stage and method
+        """
+        if view_name != PAYPAL_PAYMENT_VIEW_NAME:
+            if isinstance(transaction_obj.udf1,
+                          dict) and "paypal_calculations" in transaction_obj.udf1:
+                udf1 = transaction_obj.udf1
+                udf1.pop("paypal_calculations", None)
+                youpay_obj.update_youpay_transaction_data(
+                    {
+                        "transaction_id": transaction_obj.transaction_id,
+                        "udf1": udf1
+                    }
+                )
 
     def check_transaction_already_paid(self, transaction_obj,
                                        youpay_message_obj):
@@ -224,7 +244,8 @@ class PaymentStatusCheckMiddleware(object):
             cancel the transaction and redirect to cancel url
             """
 
-            message = "You have reached your maximum retry attempt"
+            message = (f"You have reached your maximum retry attempt -("
+                       f"{MAX_RETRY_ARABIC_MESSAGE})")
 
             youpay_obj.update_youpay_transaction_data(
                 {
@@ -298,7 +319,7 @@ class PaymentVerificationCheckMiddleware(object):
         if request.resolver_match:
             view_name = request.resolver_match.view_name
         try:
-            if view_name in VERIFY_PAYMENT_CLASSES:
+            if view_name in VERIFY_PAYMENT_CLASSES and self.transaction_obj:
                 logger.info("Middleware : {} Started for clevertap {}".format(
                     view_name, self.transaction_obj.transaction_id))
 
