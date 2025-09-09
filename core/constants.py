@@ -84,7 +84,8 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'NeqatyGenerateOTPAPIView',
     'AmazonPGSavedCard',
     'MokafaaRedeemPointsAPIView',
-    'PayPalPayment'
+    'PayPalPayment',
+    'NeqatyPointBalanceAPIView'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
