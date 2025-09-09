@@ -13,8 +13,8 @@ from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
                         decrypt_browser_value, get_display_platform,
                         get_display_program)
-from integrations.constants import (ADCB_CLIENT_CODE, B2CPAYBACK_HUB_CODE,
-                                    CHECKOUTPG_HUB_CODE, QITAF_CLIENT_CODE,
+from integrations.constants import (ADCB_CLIENT_CODE, CHECKOUTPG_HUB_CODE,
+                                    QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
                                     ANB_CLIENT_CODE,
                                     ADDITIONAL_PROCESSING_FEE,
@@ -138,35 +138,18 @@ class ConfigViewSet(ViewSet):
             'logo': get_logo_url(client)
         }
 
-        checkoutpg_config = self.get_checkout_config(payment_options,
-                                                     transaction)
-        tabbypg_config = self.get_tabby_conf(payment_options)
-        # sessionkey = self.get_browser_value(transaction) if transaction else None
-        b2c_configs = self.get_b2c_config(payment_options,
-                                          transaction,
-                                          payment_config_data)
-
         response_data = {
             "data": {
                 "api_client": api_client,
                 "payment_options": payment_options,
-                "checkoutpg_config": checkoutpg_config.response_data if
-                checkoutpg_config else None,
-                "adcb_config": b2c_configs.get('adcb_config', {}),
-                "tabbypg_config": tabbypg_config,
-                "applepay_config": self.get_applepay_config(payment_options,
-                                                            transaction),
-                "paypal_config": self.get_paypal_config(payment_options,
-                                                        transaction),
-                "neqaty_config": b2c_configs.get('neqaty_config', {}),
-                "mokafa_config": b2c_configs.get('mokafa_config', {}),
-                "anb_config": b2c_configs.get('anb_config', {}),
                 "amount": transaction.amount if transaction else None,
                 "currency": transaction.currency if transaction else None,
                 "country_code": transaction.country_code if transaction else
                 None,
                 "service_fee": transaction.service_fee if transaction else
                 None,
+                "paypal_config": self.get_paypal_config(payment_options,
+                                                        transaction),
                 "vat_amount": transaction.VAT_amount if transaction else None,
                 "base_amount": transaction.base_amount if transaction else
                 None,
@@ -180,7 +163,6 @@ class ConfigViewSet(ViewSet):
                 else None,
                 "cart_base_amount": transaction.cart_base_amount if
                 transaction else None,
-                "qitaf_config": b2c_configs.get('qitaf_config', {}),
                 "citi_config": self.check_citi_allowed_denominations(
                     payment_options, transaction),
                 "redirect_url": self._get_redirect_url(transaction),
@@ -197,7 +179,8 @@ class ConfigViewSet(ViewSet):
                 "is_offer_enabled": transaction.is_offer_applicable,
                 "purchase_origin": (transaction.clevertap_items or {}).get(
                     "purchase_origin"),
-            },
+                **payment_config_data,
+            }
         }
 
         return response_data
@@ -383,8 +366,7 @@ class ConfigViewSet(ViewSet):
         config_dict = {}
         if True in [adcb_enabled, qitaf_enabled, neqaty_enabled,
                     mokafa_enabled, anb_enabled]:
-            b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
-                                                transaction)
+            b2c_config = {}
             config_list = (b2c_config.response_data.get("results") if
                            b2c_config else {})
             if adcb_enabled:

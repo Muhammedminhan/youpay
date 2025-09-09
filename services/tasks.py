@@ -3,7 +3,7 @@ import logging
 from celery import shared_task
 from django.db.models import Q
 
-from integrations.constants import CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE
+from integrations.constants import CHECKOUTPG_HUB_CODE
 from integrations.v1.gateway_clients.b2c_payback import B2CPaybackManager
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from services.models import ConfigurationData
@@ -38,8 +38,9 @@ def sync_configuration_data(payment_gateway=None, currency=None):
         response = None
         if item.payment_gateway.code == CHECKOUTPG_HUB_CODE:
             response = get_checkout_conf(item.channel_code)
-        elif item.payment_gateway.code == B2CPAYBACK_HUB_CODE:
-            response = get_b2c_conf(item.currency.iso_code)
+        else:
+            response = get_b2c_conf(item.currency.iso_code,
+                                    item.payment_gateway)
 
         if response:
             logger.info(
@@ -71,17 +72,19 @@ def get_checkout_conf(channel_code):
     return checkout_config
 
 
-def get_b2c_conf(currency):
+def get_b2c_conf(currency, gateway_obj=None):
     """
     Get B2CPayback configurations.
 
     Args:
         currency (str): The ISO code of the currency.
+        gateway_obj (obj): The gateway object.
 
     Returns:
         dict: Configuration data for B2CPayback.
     """
     b2c_payback_obj = B2CPaybackManager()
-    b2c_config = b2c_payback_obj.get_configurations(currency)
+    b2c_config = b2c_payback_obj.get_configurations(currency,
+                                                    gateway_obj)
     logger.info("B2CPayback response: {}".format(b2c_config))
     return b2c_config

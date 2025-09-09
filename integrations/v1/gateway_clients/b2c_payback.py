@@ -64,7 +64,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
         }
         return headers
 
-    def get_configurations(self, currency):
+    def get_configurations(self, currency, gateway_obj=None):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
         currency = str(currency)
         config_request_data = {
@@ -72,7 +72,10 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             "product_code": product_code
         }
         request_data_json = json.dumps(config_request_data)
-        b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
+        if gateway_obj:
+            b2c_gateway_obj = gateway_obj
+        else:
+            b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                      B2CPAYBACK_HUB_CODE)
         b2c_payback_domain = b2c_gateway_obj.domain
         try:

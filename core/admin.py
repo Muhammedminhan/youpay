@@ -220,8 +220,10 @@ class PaymentConfigurationAdmin(AdminAbstract):
         return queryset.select_related('payment_gateway')
 
     def get_fields(self, request, obj=None):
-        fields = ('payment_method', 'active',
+        fields = ('payment_method', 'code', 'active',
                   'guest_user_enabled', 'beta_version',
+                  'is_second_project_config_enabled',
+                  'payment_method_config',
                   'partial_redemption_allowed',
                   'burn_full_redemption_enabled', 'earn_enabled',
                   'earn_on_partial_redemption',
@@ -229,8 +231,10 @@ class PaymentConfigurationAdmin(AdminAbstract):
                   'created_by', 'modified_by')
 
         if obj and obj.payment_gateway.code != B2C_PAYBACK_GATEWAY_CODE:
-            fields = ('payment_method', 'active',
+            fields = ('payment_method', 'code', 'active',
                       'guest_user_enabled', 'beta_version',
+                      'is_second_project_config_enabled',
+                      'payment_method_config',
                       'payment_gateway', 'created_at', 'updated_at',
                       'created_by', 'modified_by')
         return fields
@@ -240,7 +244,7 @@ class PaymentConfigurationAdmin(AdminAbstract):
             return (
                 'created_at', 'updated_at', 'created_by', 'modified_by')
         return (
-            'payment_method', 'payment_gateway', 'created_at', 'updated_at',
+            'payment_gateway', 'created_at', 'updated_at',
             'created_by', 'modified_by')
 
 

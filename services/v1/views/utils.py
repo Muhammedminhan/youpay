@@ -1,6 +1,7 @@
 import json
 import logging
 
+from django.core.cache import cache
 from django.db.models import Q
 
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
@@ -11,7 +12,8 @@ from core.core_serializers import PaymentConfigurationSerializer
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, BetaUser
-from core.utils import get_cached_payment_method_config
+from core.utils import get_cached_payment_method_config, \
+    get_configuration_data
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE, PAYPAL_HUB_CODE
@@ -358,23 +360,76 @@ def get_payment_methods(transaction, client, country):
             payment_method_query)
 
         payment_options = {}
-        payment_config_data = {}
+        payment_config_map = {}
 
         for config in payment_method_configs:
-            payment_option_key = get_payment_option_constant(
-                config.payment_method.payment_gateway,
-                config.payment_method.payment_method
-            )
+            method = config.payment_method
+            method_key = method.payment_method
 
-            payment_config_data[
-                payment_option_key] = PaymentConfigurationSerializer(
-                config.payment_method).data
+            logger.info("Processing payment method=%s for transaction_id=%s",
+                        method_key, transaction.transaction_id)
+            try:
+                method_config = PaymentConfigurationSerializer(method).data
+                if method.payment_gateway.code == CHECKOUTPG_HUB_CODE and method_key in [
+                    PAYMENT_OPTION_CHECKOUT_CARD,
+                    PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
+                ]:
+                    if "checkoutpg_config" not in payment_config_map:
+                        logger.info(
+                            "Loading checkoutpg_config for transaction_id=%s",
+                            transaction.transaction_id)
+                        checkout_obj = get_configuration_data(
+                            CHECKOUTPG_HUB_CODE, transaction)
+                        payment_config_map[
+                            "checkoutpg_config"] = checkout_obj.response_data
 
-            is_enabled = update_payment_method_config(transaction, config,
-                                                      payment_config_data,
-                                                      payment_option_key)
+                else:
+                    if method.is_second_project_config_enabled:
+                        method_specific_config = method.payment_method_config
+                        if not method_specific_config:
+                            second_project_obj = get_second_project_configuration_data(
+                                method.payment_gateway, transaction)
+                            if second_project_obj:
+                                results = second_project_obj.response_data.get(
+                                    "results", [])
+                                method_specific_config = next(
+                                    (item for item in results if
+                                     item["code"] == method.code), None
+                                )
+                                if method_specific_config:
+                                    method.payment_method_config = method_specific_config
+                                    method.save(update_fields=[
+                                        "payment_method_config"])
 
-            payment_options[payment_option_key] = is_enabled
+                        if method_specific_config:
+                            merged_config = {**method_specific_config,
+                                             **method_config}
+                            dynamic_key = f"{method_key.lower()}_config"
+                            payment_config_map[dynamic_key] = merged_config
+                            method_config[
+                                dynamic_key] = method_specific_config
+                        else:
+                            logger.error(
+                                "Missing second project configuration for method=%s, transaction_id=%s",
+                                method.code,
+                                transaction.transaction_id,
+                            )
+                            continue
+
+                is_enabled = update_payment_method_config(transaction, config,
+                                                          payment_config_map,
+                                                          method_key)
+                payment_options[method_key] = is_enabled
+
+            except Exception as inner_exc:
+                logger.error(
+                    "Error while processing payment method=%s for transaction_id=%s: %s",
+                    method_key,
+                    transaction.transaction_id,
+                    str(inner_exc),
+                    exc_info=True,
+                )
+                continue
 
         if payment_options.get('happy_credits') is not None:
             if platform not in [PURCHASE_PLATFORM_ANDROID,
@@ -383,12 +438,24 @@ def get_payment_methods(transaction, client, country):
 
     except Exception as e:
         payment_options = None
-        payment_config_data = None
+        payment_config_map = None
         logger.error(
             "Error occurred while getting payment options for "
             "transaction, {}, {}".format(transaction.transaction_id, str(e)),
             exc_info=True)
-    return payment_options, payment_config_data
+    return payment_options, payment_config_map
+
+
+def get_second_project_configuration_data(gateway, transaction_obj):
+    cache_key = f"payment_config_{gateway.code}"
+    payment_method_config = cache.get(cache_key)
+    if not payment_method_config:
+        payment_method_config = get_configuration_data(gateway.code,
+                                                       transaction_obj,
+                                                       gateway)
+        cache.set(cache_key, payment_method_config, timeout=180)
+
+    return payment_method_config
 
 
 def get_payment_option_constant(payment_gateway, payment_method):

@@ -8,6 +8,7 @@ from os import urandom
 from time import sleep
 
 import redis
+import requests
 from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
 from django.conf import settings
@@ -24,10 +25,11 @@ from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
                          PaymentConfiguration)
-from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
+from integrations.constants import (CHECKOUTPG_HUB_CODE,
                                     PAYMENT_METHOD_CONFIG_CACHE_KEY,
                                     PAYMENT_CONFIG_CACHE_KEY,
-                                    CHECKOUTPG_CHANNEL_CONFIGURATIONS)
+                                    CHECKOUTPG_CHANNEL_CONFIGURATIONS,
+                                    CONTENT_TYPE_HEADERS)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from notifications.constants import (FLAGGED_PAYMENT_MAIL, HUB_LINK,
                                      AMAZON_HUB_LINK,
@@ -40,6 +42,8 @@ from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_SCHEME_MADA)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
+from services.v1.constants import B2C_PAYBACK_YOUPAY_PRODUCT_CODE, \
+    B2C_PAYBACK_CONFIG_ENDPOINT
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
 from youpay.settings.email import PAYPAL_DASHBOARD_LINK
 
@@ -548,9 +552,9 @@ def get_currency_by_iso_code(code):
     return currency
 
 
-def create_configuration_data(code, transaction):
+def create_configuration_data(code, transaction, gateway_obj):
     """create configuration data"""
-    from services.tasks import get_checkout_conf, get_b2c_conf
+    from services.tasks import get_checkout_conf
     config_data = None
     response = None
     currency = transaction.currency
@@ -560,8 +564,8 @@ def create_configuration_data(code, transaction):
         channel_code = get_channel_code(transaction)
         response = get_checkout_conf(channel_code)
 
-    elif code == B2CPAYBACK_HUB_CODE:
-        response = get_b2c_conf(currency)
+    else:
+        response = get_conf(currency, gateway_obj)
     if response:
         payment_gateway = get_payment_gateway_by_code(code)
         currency_obj = get_currency_by_iso_code(currency)
@@ -576,7 +580,51 @@ def create_configuration_data(code, transaction):
     return config_data
 
 
-def get_configuration_data(code, transaction):
+def get_conf(currency, gateway_obj=None):
+    """
+    Get configurations.
+
+    Args:
+        currency (str): The ISO code of the currency.
+        gateway_obj (obj): The gateway object.
+
+    Returns:
+        dict: Configuration data.
+    """
+    config = get_configurations(currency, gateway_obj)
+    logger.info("Config  response: {}".format(config))
+    return config
+
+
+def get_configurations(currency, gateway_obj=None):
+    product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
+    currency = str(currency)
+    config_request_data = {
+        "currency": currency,
+        "product_code": product_code
+    }
+    request_data_json = json.dumps(config_request_data)
+    gateway_domain = gateway_obj.domain
+    try:
+        url = gateway_domain + B2C_PAYBACK_CONFIG_ENDPOINT
+
+        response = requests.post(url, data=request_data_json,
+                                 headers=CONTENT_TYPE_HEADERS)
+        if response:
+            return response.json()
+        else:
+            logger.error(
+                "No configuration received from configuration api "
+                "call to b2cpayback, response "
+                "{}".format(response.text))
+            return None
+    except Exception as e:
+        logger.error("config api call to b2cpayback failed",
+                     exc_info=e)
+        return None
+
+
+def get_configuration_data(code, transaction, gateway_obj=None):
     """Get configuration data based on the transaction."""
     try:
         if code == CHECKOUTPG_HUB_CODE:
@@ -590,7 +638,8 @@ def get_configuration_data(code, transaction):
     except (ConfigurationData.DoesNotExist, Exception):
         logging.error(f'No configuration data instance found for code {code} '
                       f'and currency {transaction.currency}.')
-        config_data = create_configuration_data(code, transaction)
+        config_data = create_configuration_data(code, transaction,
+                                                gateway_obj)
     return config_data
 
 
