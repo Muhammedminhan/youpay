@@ -3,8 +3,7 @@ from django.db import models
 
 from core.constants import GUEST_USER_OPTIONS, BETA_USER_OPTIONS, \
     BETA_USER_DISABLED
-from payments.constants import (PAYMENT_OPTION_CHOICES,
-                                PAYMENT_METHOD_MODEL_CHOICES)
+from payments.constants import (PAYMENT_OPTION_CHOICES)
 
 # Create your models here.
 
@@ -136,8 +135,17 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
 class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
     payment_method = models.CharField(
         max_length=100, db_index=True,
-        choices=PAYMENT_METHOD_MODEL_CHOICES,
         help_text='Chosen payment method')
+    payment_method_config = models.JSONField(
+        max_length=100, blank=True, null=True,
+        help_text='Config data for the payment method')
+    is_second_project_config_enabled = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Denotes whether the second project config is enabled or '
+                  'not')
+    code = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text='Code for the payment method')
     active = models.BooleanField(
         default=False, db_index=True, help_text='Denotes whether the payment '
                                                 'method is active or not')
