@@ -22,6 +22,7 @@ from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     PAYMENT_REQUEST_CREATE_TRANSACTION,
                                     CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2,
                                     CHECKOUTPG_HUB_CODE,
+                                    PAYMENT_REQUEST_CREATE_SESSION
                                     )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
@@ -800,3 +801,82 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "id {}, err : {}".format(self.transaction_id, str(e)))
             logger.error(msg)
             return None, self.APPLE_PAY_CONNECTION_ERROR
+
+    def get_payment_session(self, transaction_obj, display_name):
+        """
+        Method for creating a Checkout.com payment session
+        """
+        if self.checkoutpg_config:
+            amount = transaction_obj.amount
+            currency = transaction_obj.currency
+            reference = transaction_obj.order_id
+            country = transaction_obj.country_code
+            customer_name = transaction_obj.customer_name
+            customer_email = transaction_obj.customer_email
+            success_url = transaction_obj.success_url
+            failure_url = transaction_obj.failure_url
+
+            session_request_data = {
+                "amount": int(amount),
+                "currency": currency,
+                "reference": reference,
+                "display_name": display_name,
+                "billing": {
+                    "address": {
+                        "country": country
+                    }
+                },
+                "customer": {
+                    "name": customer_name,
+                    "email": customer_email
+                },
+                "success_url": success_url,
+                "failure_url": failure_url
+            }
+            try:
+                url = "https://api.sandbox.checkout.com/payment-sessions"
+                key = (
+                    "sk_sbox_wizazccqyuofiemdnb424wjg2ev"
+                    if transaction_obj.currency == "AED"
+                    else "sk_sbox_wcxgpykr7selqtwpeh5jvtuuniw"
+                )
+
+                headers = {
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json"
+                }
+
+                response = requests.post(url, json=session_request_data,
+                                         headers=headers)
+
+                logger.info(
+                    "Checkout create session response for transaction %s: %s",
+                    transaction_obj.id, response.text
+                )
+
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=self.transaction_id,
+                    request_data=json.dumps(session_request_data),
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_CREATE_SESSION,
+                )
+
+                if response:
+                    return response.json(), self.SUCCESS
+                logger.error(
+                    "Checkout session creation failed for transaction %s: %s",
+                    transaction_obj.id, response.text
+                )
+                return None, self.PAYMENT_FAILED
+
+            except Exception as e:
+                logger.error(
+                    "Unable to create checkout session for user %s because %s",
+                    transaction_obj.customer_email, str(e)
+                )
+                return None, self.PAYMENT_FAILED
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, self.PAYMENT_FAILED
