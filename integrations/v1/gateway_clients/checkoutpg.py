@@ -36,7 +36,8 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
-                                PAYMENT_METHOD_APPLEPAY
+                                PAYMENT_METHOD_APPLEPAY, CREATE_SESSION_URL_SB,
+                                AED_PRIVATE_KEY, SAR_PRIVATE_KEY
                                 )
 from services.v1.views.common import (AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
@@ -834,11 +835,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "failure_url": failure_url
             }
             try:
-                url = "https://api.sandbox.checkout.com/payment-sessions"
+                url = CREATE_SESSION_URL_SB
                 key = (
-                    "sk_sbox_wizazccqyuofiemdnb424wjg2ev"
+                    AED_PRIVATE_KEY
                     if transaction_obj.currency == "AED"
-                    else "sk_sbox_wcxgpykr7selqtwpeh5jvtuuniw"
+                    else SAR_PRIVATE_KEY
                 )
 
                 headers = {
