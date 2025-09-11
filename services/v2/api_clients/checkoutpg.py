@@ -108,7 +108,7 @@ class CreatePaymentSession(APIView, YouPayTransactionCRUD):
                 if status_code == checkout.SUCCESS and response_data:
                     data = self.response_obj.get_success_dict(
                         code=YouPayResponse.SUCCESS,
-                        success_dict={'data': {"saved_cards": response_data}}
+                        success_dict={'data': response_data}
                     )
                     return Response(data, status=status.HTTP_200_OK)
                 else:
