@@ -11,14 +11,13 @@ from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
 from core.messages import (REDIRECT_URL, IS_REDIRECT, IS_SUCCESS,
                            GATEWAY_ERROR_OCCURRED)
 from core.response_messages import YouPayResponse
-from core.utils import (get_payment_gateway_config, get_app_config,
+from core.utils import (get_app_config,
                         decrypt_string,
                         auto_enable_or_disable_point_collection,
-                        get_channel_code)
+                        get_channel_code,
+                        get_config_from_payment_configurations)
 from integrations.common import update_brand_details, get_redemption_details
 from integrations.constants import (
-    B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE,
     NEQATY_POINT_BALANCE_API, PAYMENT_REQUEST_POINT_BALANCE,
     PAYMENT_REQUEST_GENERATE_OTP, NEQATY_OTP_GENERATION_API,
     NEQATY_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
@@ -49,8 +48,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
     """
 
     def __init__(self):
-        self.neqaty_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                        B2CPAYBACK_HUB_CODE)
+        self.neqaty_config = None
         self.transaction_id = None
         self.transaction_obj = None
         self.request_data = {}
@@ -91,6 +89,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
 
             self.transaction_obj = request_data.get('transaction_obj')
             self.transaction_id = str(self.transaction_obj.transaction_id)
+            self.neqaty_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_NEQATY)
             language = self.transaction_obj.language
 
             is_updated, brand_details = update_brand_details(
@@ -212,6 +212,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         """
         try:
             self.transaction_obj = data.get('transaction_obj')
+            self.neqaty_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_NEQATY)
             self.transaction_id = self.transaction_obj.transaction_id
             redeem_code = data.get('redeem_code')
             data.pop('transaction_obj')
@@ -283,6 +285,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
+            self.neqaty_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_NEQATY)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             language = self.transaction_obj.language
@@ -566,10 +570,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 request_data['channel_code'] = get_channel_code(
                     transaction_obj)
 
-                gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
-
-                neqaty_domain = gateway_obj.domain
+                neqaty_domain = get_config_from_payment_configurations(
+                    self.transaction_obj, PAYMENT_METHOD_NEQATY)
                 url = (neqaty_domain + NEQATY_VERIFY_API +
                        "?&redemption_partner=NEQATY")
 
@@ -718,6 +720,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             }
 
             self.transaction_obj = transaction_obj
+            self.neqaty_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_NEQATY)
             self.transaction_id = str(self.transaction_obj.transaction_id)
 
             logger.info(
