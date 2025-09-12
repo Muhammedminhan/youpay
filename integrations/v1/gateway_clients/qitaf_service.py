@@ -12,11 +12,12 @@ from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string,
                         auto_enable_or_disable_point_collection,
-                        get_channel_code)
+                        get_channel_code,
+                        get_config_from_payment_configurations)
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
-    QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
+    QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CPAYBACK_HUB_CODE,
+    PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
     PAYMENT_REQUEST_COLLECT_POINTS,
@@ -47,8 +48,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
     """
 
     def __init__(self):
-        self.qitaf_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                       B2CPAYBACK_HUB_CODE)
+        self.qitaf_config = None
         self.transaction_id = None
         self.transaction_obj = None
         self.request_data = {}
@@ -153,6 +153,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             request_data = data['request_data']
             self.transaction_obj = request_data.get('transaction_obj')
+            self.qitaf_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_QITAF)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.get_qitaf_payment_data(request_data)
             qitaf_phone_number = request_data.get("mobile_number")
@@ -226,6 +228,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             request_data = data
 
             self.transaction_obj = request_data.get('transaction_obj')
+            self.qitaf_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_QITAF)
             self.transaction_id = str(self.transaction_obj.transaction_id)
 
             request_data.pop('transaction_obj')
@@ -314,6 +318,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
+            self.qitaf_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_QITAF)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             language = self.transaction_obj.language
@@ -635,8 +641,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 formatted_data = format_verify_data(
                     request_data, transaction_obj)
-                gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                gateway_obj = get_config_from_payment_configurations(
+                    self.transaction_obj, PAYMENT_METHOD_QITAF)
 
                 qitaf_domain = gateway_obj.domain
                 url = (qitaf_domain + QITAF_VERIFY_API +
