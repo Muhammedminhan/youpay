@@ -13,6 +13,7 @@ from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import MultipleObjectsReturned
 from django.urls import reverse_lazy
 from rest_framework import status
 
@@ -1008,3 +1009,33 @@ def round_decimal(amount, decimal_notation='0.01'):
     if not isinstance(amount, Decimal):
         amount = Decimal(str(amount))
     return amount.quantize(Decimal(decimal_notation), rounding=ROUND_HALF_UP)
+
+
+def get_config_from_payment_configurations(transaction, payment_method):
+    try:
+        configs = (
+            PaymentConfiguration.objects.get(
+                payment_method=payment_method,
+                active=True,
+                paymentmethodconfig__active=True,
+                paymentmethodconfig__client__client_code=transaction.api_client,
+                paymentmethodconfig__country=transaction.country,
+            )
+        )
+        gateway = configs.payment_gateway
+        return gateway
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            "Payment configuration not found for transaction: {}".format(
+                transaction.transaction_id))
+        return None
+    except MultipleObjectsReturned:
+        logger.error(
+            "Multiple payment configurations found for transaction: {}".format(
+                transaction.transaction_id))
+        return None
+    except Exception as e:
+        logger.error(
+            "Error occurred while getting payment configuration for "
+            "transaction: {}".format(transaction.transaction_id))
+        return None

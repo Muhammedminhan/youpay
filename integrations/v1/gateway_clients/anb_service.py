@@ -9,7 +9,8 @@ from core.constants import (PAYMENT_GATEWAY_B2CPAYBACK, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
-                        decrypt_string)
+                        decrypt_string,
+                        get_config_from_payment_configurations)
 from integrations.constants import (B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
                                     ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
                                     PAYMENT_REQUEST_GENERATE_OTP,
@@ -40,8 +41,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
     """
 
     def __init__(self):
-        self.anb_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                     B2CPAYBACK_HUB_CODE)
+        self.anb_config = None
         self.transaction_id = None
         self.transaction_obj = None
         self.request_data = {}
@@ -98,6 +98,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             request_data = data.get('request_data')
             self.transaction_obj = request_data.get('transaction_obj')
+            self.anb_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_ANB)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.get_anb_payment_data(request_data)
             # Dynamically determine the key and value for 'mobile_number' or
@@ -185,6 +187,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
+            self.anb_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_ANB)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             serializer = YouPayTransactionDataSerializer(self.transaction_obj)

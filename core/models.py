@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.constants import GUEST_USER_OPTIONS, BETA_USER_OPTIONS, \
@@ -191,6 +192,26 @@ class PaymentMethodConfig(models.Model):
     guest_user_enabled = models.BooleanField(
         default=True, help_text='Denotes whether the payment method is '
                                 'available for the guest user')
+
+    def clean(self):
+        super().clean()
+        if self.active:
+            conflict = PaymentMethodConfig.objects.filter(
+                payment_method__payment_method=self.payment_method.payment_method,
+                country=self.country,
+                client=self.client,
+                active=True,
+            ).exclude(pk=self.pk)
+
+            if conflict.exists():
+                raise ValidationError(
+                    f"Only one active config is allowed per client={self.client}, "
+                    f"country={self.country}, and payment_method={self.payment_method.payment_method}."
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.country} - {self.client}"
