@@ -1018,8 +1018,8 @@ def get_config_from_payment_configurations(transaction, payment_method):
                 payment_method=payment_method,
                 active=True,
                 paymentmethodconfig__active=True,
-                paymentmethodconfig__client__client_code=transaction.api_client,
-                paymentmethodconfig__country=transaction.country,
+                paymentmethodconfig__client=transaction.api_client,
+                paymentmethodconfig__country__iso_code=transaction.country_code,
             )
         )
         gateway = configs.payment_gateway

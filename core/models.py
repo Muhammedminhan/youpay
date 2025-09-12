@@ -181,7 +181,8 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
 
 class PaymentMethodConfig(models.Model):
     payment_method = models.ForeignKey(
-        'PaymentConfiguration', on_delete=models.CASCADE)
+        'PaymentConfiguration', on_delete=models.CASCADE,
+        related_name='paymentmethodconfig')
     country = models.ForeignKey(
         'core.Country', on_delete=models.CASCADE)
     client = models.ForeignKey(
