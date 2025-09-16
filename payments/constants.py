@@ -299,3 +299,4 @@ CARD_BIN_MAX_LENGTH = 10
 CREATE_SESSION_URL_SB = "https://api.sandbox.checkout.com/payment-sessions"
 AED_PRIVATE_KEY = "sk_sbox_wizazccqyuofiemdnb424wjg2ev"
 SAR_PRIVATE_KEY = "sk_sbox_wcxgpykr7selqtwpeh5jvtuuniw"
+SUBMIT_SESSION_URL_SB = "https://api.sandbox.checkout.com/payment-sessions/"
