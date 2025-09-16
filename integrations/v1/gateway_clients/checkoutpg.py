@@ -37,7 +37,8 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
                                 PAYMENT_METHOD_APPLEPAY, CREATE_SESSION_URL_SB,
-                                AED_PRIVATE_KEY, SAR_PRIVATE_KEY
+                                AED_PRIVATE_KEY, SAR_PRIVATE_KEY,
+                                SUBMIT_SESSION_URL_SB,
                                 )
 from services.v1.views.common import (AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
@@ -875,6 +876,79 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             except Exception as e:
                 logger.error(
                     "Unable to create checkout session for user %s because %s",
+                    transaction_obj.customer_email, str(e)
+                )
+                return None, self.PAYMENT_FAILED
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, self.PAYMENT_FAILED
+
+    def submit_payment_session(self, transaction_obj, session_data, session_id):
+        """
+        Method for submitting a Checkout.com payment session
+        """
+        if self.checkoutpg_config:
+            amount = transaction_obj.amount
+            reference = transaction_obj.order_id
+            name = transaction_obj.order_reference
+
+            session_request_data = {
+                "session_data": session_data,
+                "amount": int(amount),
+                "reference": reference,
+                "items": [
+                    {
+                        "name": name,
+                        "quantity": 1,
+                        "unit_price": int(amount)
+                    }
+                ],
+                "3ds": {
+                "enabled": False
+                }
+            }
+
+            try:
+                url = SUBMIT_SESSION_URL_SB + session_id + "/submit"
+                key = (
+                    AED_PRIVATE_KEY
+                    if transaction_obj.currency == "AED"
+                    else SAR_PRIVATE_KEY
+                )
+
+                headers = {
+                    "Authorization": f"Bearer {key}",
+                    "Content-Type": "application/json"
+                }
+
+                response = requests.post(url, json=session_request_data,
+                                         headers=headers)
+
+                logger.info(
+                    "Checkout submit session response for transaction %s: %s",
+                    transaction_obj.id, response.text
+                )
+
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction_obj,
+                    transaction_id=self.transaction_id,
+                    request_data=json.dumps(session_request_data),
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_CREATE_SESSION,
+                )
+
+                if response:
+                    return response.json(), self.SUCCESS
+                logger.error(
+                    "Checkout session submission failed for transaction %s: %s",
+                    transaction_obj.id, response.text
+                )
+                return None, self.PAYMENT_FAILED
+
+            except Exception as e:
+                logger.error(
+                    "Unable to submit checkout session for user %s because %s",
                     transaction_obj.customer_email, str(e)
                 )
                 return None, self.PAYMENT_FAILED
