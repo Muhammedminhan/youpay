@@ -524,13 +524,15 @@ def payment_configuration_check(**kwargs):
     payment_options, payment_config_data = get_payment_methods(
         transaction_obj, client, country)
 
+    payment_config_key = payment_method + "_config"
+
     if payback_action == PAYBACK_ACTION_EARN:
-        if payment_method not in payment_config_data:
+        if payment_config_key not in payment_config_data:
             raise PaymentConfigurationFailed(
                 "PaymentConfiguration for {} is not active or unavailable for "
                 "transaction {}".format(payment_method, transaction_id))
 
-        payment_config_datum = payment_config_data[payment_method]
+        payment_config_datum = payment_config_data[payment_config_key]
 
         if payment_config_datum.get('earn_enabled') is False:
             raise PaymentConfigurationFailed(
