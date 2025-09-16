@@ -904,7 +904,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     }
                 ],
                 "3ds": {
-                "enabled": False
+                "enabled": True
                 }
             }
 
