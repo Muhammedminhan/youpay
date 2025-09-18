@@ -132,13 +132,12 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
             for form in self.forms:
                 form.instance.guest_user_enabled = True
                 form.cleaned_data['guest_user_enabled'] = True
-                form.instance.save()
         elif parent_instance.guest_user_enabled == GUEST_USER_DISABLE:
             for form in self.forms:
                 form.instance.guest_user_enabled = False
                 form.cleaned_data['guest_user_enabled'] = False
-                form.instance.save()
 
+        objs = super().save(commit=commit)
         invalidate_cached_payment_method_config()
 
         return super().save(commit)
