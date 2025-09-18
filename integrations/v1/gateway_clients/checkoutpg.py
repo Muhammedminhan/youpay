@@ -43,6 +43,7 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
 from services.v1.views.common import (AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
+from .utils import get_response_url
 
 logger = logging.getLogger(__name__)
 
@@ -815,8 +816,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             country = transaction_obj.country_code
             customer_name = transaction_obj.customer_name
             customer_email = transaction_obj.customer_email
-            success_url = transaction_obj.success_url
-            failure_url = transaction_obj.failure_url
+            response_url = get_response_url(transaction_obj)
 
             session_request_data = {
                 "amount": int(amount),
@@ -832,8 +832,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     "name": customer_name,
                     "email": customer_email
                 },
-                "success_url": success_url,
-                "failure_url": failure_url
+                "success_url": response_url,
+                "failure_url": response_url
             }
             try:
                 url = CREATE_SESSION_URL_SB
@@ -904,9 +904,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     }
                 ],
                 "3ds": {
-                "enabled": True,
-                "attempt_n3d": False,
-                "challenge_indicator": "challenge_requested"
+                "enabled": True
                 }
             }
 
