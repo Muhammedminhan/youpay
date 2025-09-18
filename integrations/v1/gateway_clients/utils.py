@@ -3,9 +3,11 @@ import logging
 
 import requests
 
-from core.constants import PAYBACK_ACTION_EARN
+from core.constants import (PAYBACK_ACTION_EARN, PURCHASE_PLATFORM_IOS,
+                            PURCHASE_PLATFORM_ANDROID)
 from core.response_messages import YouPayResponse
-from core.utils import get_payment_gateway_config, get_channel_code
+from core.utils import (get_payment_gateway_config, get_channel_code,
+                        get_app_config, encrypt_string)
 from integrations.common import update_brand_details
 from integrations.constants import (ADCB_CLIENT_CODE,
                                     ADCB_CHECKOUTPG_PAYMENT_NOT_PAID,
@@ -22,10 +24,11 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CLIENT_CODE_MAPPING,
                                     CLIENT_CODE_MAPPING_ARABIC,
                                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
-                                    PAYMENT_METHOD
+                                    PAYMENT_METHOD, CHECKOUTPG_HUB_CODE
                                     )
 from payments.models import YouPayTransactionData
 from services.v1.views.common import YouPayTransactionCRUD
+from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
 
@@ -487,3 +490,32 @@ def process_calculated_item_details(data):
 
     data["calculated_item_details"] = list(unique_brands.values())
     return data
+
+
+def get_response_url(transaction_obj):
+    """
+    Method for generating response URL
+    """
+    app_config = get_app_config()
+    frontend_domain = app_config.front_end_domain
+    path = app_config.redirect_path
+
+    transaction_id = transaction_obj.transaction_id
+    code = CHECKOUTPG_HUB_CODE
+
+    query_params = {
+        "id": encrypt_string(str(transaction_id)),
+        "gty": code,
+    }
+
+    if transaction_obj.platform in [PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID]:
+        query_params["platform"] = "app"
+
+    query_string = urlencode(query_params)
+    url = "{}/{}/{}?{}".format(
+        frontend_domain.strip("/"),
+        transaction_obj.language,
+        path.lstrip("/"),
+        query_string
+    )
+    return url
