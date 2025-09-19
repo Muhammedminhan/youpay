@@ -571,7 +571,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     transaction_obj)
 
                 neqaty_domain = get_config_from_payment_configurations(
-                    self.transaction_obj, PAYMENT_METHOD_NEQATY)
+                    transaction_obj, PAYMENT_METHOD_NEQATY)
                 url = (neqaty_domain + NEQATY_VERIFY_API +
                        "?&redemption_partner=NEQATY")
 
