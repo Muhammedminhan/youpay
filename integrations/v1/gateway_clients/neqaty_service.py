@@ -570,8 +570,9 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 request_data['channel_code'] = get_channel_code(
                     transaction_obj)
 
-                neqaty_domain = get_config_from_payment_configurations(
+                neqaty_config = get_config_from_payment_configurations(
                     transaction_obj, PAYMENT_METHOD_NEQATY)
+                neqaty_domain = neqaty_config.domain
                 url = (neqaty_domain + NEQATY_VERIFY_API +
                        "?&redemption_partner=NEQATY")
 
