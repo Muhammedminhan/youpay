@@ -642,7 +642,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 formatted_data = format_verify_data(
                     request_data, transaction_obj)
                 gateway_obj = get_config_from_payment_configurations(
-                    self.transaction_obj, PAYMENT_METHOD_QITAF)
+                    transaction_obj, PAYMENT_METHOD_QITAF)
 
                 qitaf_domain = gateway_obj.domain
                 url = (qitaf_domain + QITAF_VERIFY_API +
