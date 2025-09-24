@@ -10,8 +10,9 @@ from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from services.utils import get_client_channel_code
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from core.utils import decrypt_string
-from services.constants import APPLEPAY_DISPLAY_NAME
+from payments.constants import PAYMENT_OPTION_CARD, PAYMENT_STATUS_PENDING
 from core.messages import TRANSACTION_DOESNT_EXIST
+from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 
 logger = logging.getLogger(__name__)
 
@@ -97,15 +98,26 @@ class CreatePaymentSession(APIView, YouPayTransactionCRUD):
             )
 
             if transaction_obj:
-                display_name = APPLEPAY_DISPLAY_NAME
                 checkout = CheckoutpgManager()
 
-                # Unpack (response_data, status_code)
-                response_data, status_code = checkout.get_payment_session(
-                    transaction_obj, display_name
-                )
+                response_data, status_code = (
+                    checkout.get_payment_session(transaction_obj))
 
                 if status_code == checkout.SUCCESS and response_data:
+                    transaction_data = {
+                        "transaction_id": transaction_obj.transaction_id,
+                        "payment_reference": response_data.get('reference_id'),
+                        "channel_code": response_data.get('channel_code'),
+                        "payment_method": PAYMENT_OPTION_CARD,
+                        "payment_status": PAYMENT_STATUS_PENDING,
+                        "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
+                    }
+                    self.update_youpay_transaction_data(transaction_data)
+
+                    response_data.pop('channel_code', None)
+                    response_data.pop('reference_id', None)
+                    response_data.pop('status', None)
+
                     data = self.response_obj.get_success_dict(
                         code=YouPayResponse.SUCCESS,
                         success_dict={'data': response_data}
@@ -140,20 +152,17 @@ class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
         """
         try:
             transaction_id = request.data.get('transaction_id')
-            session_data = request.data.get('session_data')
-            session_id = request.data.get('session_id')
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id)
             )
 
             if transaction_obj:
                 checkout = CheckoutpgManager()
-
                 response_data, status_code = checkout.submit_payment_session(
-                    transaction_obj, session_data, session_id
+                    transaction_obj, request.data
                 )
-
                 if status_code == checkout.SUCCESS and response_data:
+                    response_data.pop('reference_id', None)
                     data = self.response_obj.get_success_dict(
                         code=YouPayResponse.SUCCESS,
                         success_dict={'data': response_data}
@@ -165,7 +174,6 @@ class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
                     )
                     return Response(data.get('errors'),
                                     status=status.HTTP_400_BAD_REQUEST)
-
             else:
                 data = self.response_obj.get_404_message(
                     message=TRANSACTION_DOESNT_EXIST

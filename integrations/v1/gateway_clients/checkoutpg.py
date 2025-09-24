@@ -22,7 +22,8 @@ from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     PAYMENT_REQUEST_CREATE_TRANSACTION,
                                     CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2,
                                     CHECKOUTPG_HUB_CODE,
-                                    PAYMENT_REQUEST_CREATE_SESSION
+                                    PAYMENT_REQUEST_CREATE_SESSION,
+                                    PAYMENT_REQUEST_SUBMIT_SESSION
                                     )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
@@ -36,14 +37,15 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
-                                PAYMENT_METHOD_APPLEPAY, CREATE_SESSION_URL_SB,
-                                AED_PRIVATE_KEY, SAR_PRIVATE_KEY,
-                                SUBMIT_SESSION_URL_SB,
+                                PAYMENT_METHOD_APPLEPAY,
+                                CREATE_SESSION_ENDPOINT,
+                                SUBMIT_SESSION_ENDPOINT
                                 )
 from services.v1.views.common import (AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from .utils import get_response_url
+from services.constants import TOKEN_TYPE_CARD
 
 logger = logging.getLogger(__name__)
 
@@ -805,50 +807,32 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(msg)
             return None, self.APPLE_PAY_CONNECTION_ERROR
 
-    def get_payment_session(self, transaction_obj, display_name):
+    def get_payment_session(self, transaction_obj):
         """
-        Method for creating a Checkout.com payment session
+        Method for creating a Checkout payment session
         """
         if self.checkoutpg_config:
-            amount = transaction_obj.amount
-            currency = transaction_obj.currency
-            reference = transaction_obj.order_id
-            country = transaction_obj.country_code
-            customer_name = transaction_obj.customer_name
-            customer_email = transaction_obj.customer_email
-            response_url = get_response_url(transaction_obj)
-
-            session_request_data = {
-                "amount": int(amount),
-                "currency": currency,
-                "reference": reference,
-                "display_name": display_name,
-                "billing": {
-                    "address": {
-                        "country": country
-                    }
-                },
-                "customer": {
-                    "name": customer_name,
-                    "email": customer_email
-                },
-                "success_url": response_url,
-                "failure_url": response_url
+            request_data = {
+                "amount": str(transaction_obj.amount),
+                "currency": transaction_obj.currency,
+                "invoice_pk": transaction_obj.invoice_id,
+                "token_type": TOKEN_TYPE_CARD,
+                "client_code": transaction_obj.api_client.client_code,
+                "channel_code": get_channel_code(transaction_obj),
+                "response_url": get_response_url(transaction_obj),
+                "amount_in_aed": str(transaction_obj.amount_in_aed),
+                "customer_name": transaction_obj.customer_name,
+                "customer_email": transaction_obj.customer_email,
+                "order_reference": transaction_obj.order_reference,
+                "customer_ip_address": transaction_obj.ip,
+                "country_code": transaction_obj.country_code
             }
+
             try:
-                url = CREATE_SESSION_URL_SB
-                key = (
-                    AED_PRIVATE_KEY
-                    if transaction_obj.currency == "AED"
-                    else SAR_PRIVATE_KEY
-                )
+                url = self.checkoutpg_config.domain + CREATE_SESSION_ENDPOINT
+                headers = self.get_payment_header()
 
-                headers = {
-                    "Authorization": f"Bearer {key}",
-                    "Content-Type": "application/json"
-                }
-
-                response = requests.post(url, json=session_request_data,
+                response = requests.post(url, data=json.dumps(request_data),
                                          headers=headers)
 
                 logger.info(
@@ -858,18 +842,22 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
-                    transaction_id=self.transaction_id,
-                    request_data=json.dumps(session_request_data),
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=json.dumps(request_data),
                     response_data=response.text,
                     request_method=REQUEST_METHOD_POST,
                     request_type=PAYMENT_REQUEST_CREATE_SESSION,
                 )
 
                 if response:
-                    return response.json(), self.SUCCESS
+                    response_data = response.json()
+                    response_data.update({
+                        "channel_code": request_data.get("channel_code")
+                    })
+                    return response_data, self.SUCCESS
                 logger.error(
                     "Checkout session creation failed for transaction %s: %s",
-                    transaction_obj.id, response.text
+                    transaction_obj.transaction_id, response.text
                 )
                 return None, self.PAYMENT_FAILED
 
@@ -883,46 +871,28 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, self.PAYMENT_FAILED
 
-    def submit_payment_session(self, transaction_obj, session_data, session_id):
+    def submit_payment_session(self, transaction_obj, request_data):
         """
-        Method for submitting a Checkout.com payment session
+        Method for submitting a Checkout payment session
         """
         if self.checkoutpg_config:
-            amount = transaction_obj.amount
-            reference = transaction_obj.order_id
-            name = transaction_obj.order_reference
+            is_save_user_token = request_data.get('is_save_user_token', False)
+            token = request_data.get('token') if is_save_user_token else None
 
-            session_request_data = {
-                "session_data": session_data,
-                "amount": int(amount),
-                "reference": reference,
-                "items": [
-                    {
-                        "name": name,
-                        "quantity": 1,
-                        "unit_price": int(amount)
-                    }
-                ],
-                "3ds": {
-                "enabled": True
-                }
+            payment_request_data = {
+                "session_data": request_data.get('session_data'),
+                "payment_reference": transaction_obj.payment_reference,
+                "session_id": request_data.get('session_id'),
             }
+            if token:
+                payment_request_data.update({"token": token})
 
             try:
-                url = SUBMIT_SESSION_URL_SB + session_id + "/submit"
-                key = (
-                    AED_PRIVATE_KEY
-                    if transaction_obj.currency == "AED"
-                    else SAR_PRIVATE_KEY
-                )
+                url = self.checkoutpg_config.domain + SUBMIT_SESSION_ENDPOINT
+                headers = self.get_payment_header()
 
-                headers = {
-                    "Authorization": f"Bearer {key}",
-                    "Content-Type": "application/json"
-                }
-
-                response = requests.post(url, json=session_request_data,
-                                         headers=headers)
+                response = requests.post(url, data=json.dumps(
+                    payment_request_data), headers=headers)
 
                 logger.info(
                     "Checkout submit session response for transaction %s: %s",
@@ -931,18 +901,18 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
-                    transaction_id=self.transaction_id,
-                    request_data=json.dumps(session_request_data),
+                    transaction_id=transaction_obj.transaction_id,
+                    request_data=json.dumps(payment_request_data),
                     response_data=response.text,
                     request_method=REQUEST_METHOD_POST,
-                    request_type=PAYMENT_REQUEST_CREATE_SESSION,
+                    request_type=PAYMENT_REQUEST_SUBMIT_SESSION,
                 )
 
                 if response:
                     return response.json(), self.SUCCESS
                 logger.error(
                     "Checkout session submission failed for transaction %s: %s",
-                    transaction_obj.id, response.text
+                    transaction_obj.transaction_id, response.text
                 )
                 return None, self.PAYMENT_FAILED
 
