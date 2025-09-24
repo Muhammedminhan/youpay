@@ -261,7 +261,7 @@ def calculate_balance(data):
             payment_method = PAYMENT_METHOD.get(client_code)
 
         b2c_config = get_config_from_payment_configurations(
-            transaction_obj, payment_method)
+            transaction_obj, PAYMENT_METHOD.get(client_code))
 
         payment_reference = transaction_obj.payment_reference
 

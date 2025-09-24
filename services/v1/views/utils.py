@@ -365,9 +365,6 @@ def get_payment_methods(transaction, client, country):
         for config in payment_method_configs:
             method = config.payment_method
             method_key = method.payment_method
-
-            logger.info("Processing payment method=%s for transaction_id=%s",
-                        method_key, transaction.transaction_id)
             try:
                 method_config = PaymentConfigurationSerializer(method).data
                 if method.payment_gateway.code == CHECKOUTPG_HUB_CODE and method_key in [
