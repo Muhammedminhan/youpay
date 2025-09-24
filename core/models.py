@@ -138,7 +138,7 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
         max_length=100, db_index=True,
         help_text='Chosen payment method')
     payment_method_config = models.JSONField(
-        max_length=100, blank=True, null=True,
+        blank=True, null=True,
         help_text='Config data for the payment method')
     is_second_project_config_enabled = models.BooleanField(
         default=False, db_index=True,

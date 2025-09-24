@@ -18,7 +18,7 @@ from integrations.constants import (ADCB_CLIENT_CODE, CHECKOUTPG_HUB_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
                                     ANB_CLIENT_CODE,
                                     ADDITIONAL_PROCESSING_FEE,
-                                    PAYPAL_HUB_CODE)
+                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -366,7 +366,8 @@ class ConfigViewSet(ViewSet):
         config_dict = {}
         if True in [adcb_enabled, qitaf_enabled, neqaty_enabled,
                     mokafa_enabled, anb_enabled]:
-            b2c_config = {}
+            b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
+                                                transaction)
             config_list = (b2c_config.response_data.get("results") if
                            b2c_config else {})
             if adcb_enabled:

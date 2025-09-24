@@ -5,8 +5,9 @@ from django.contrib import admin
 from django.core.cache import cache
 
 from integrations.constants import B2CPAYBACK_HUB_CODE
-from payments.constants import PAYMENT_METHOD_QITAF, PAYMENT_METHOD_ANB, \
-    PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_ADCB
+from payments.constants import (PAYMENT_METHOD_QITAF, PAYMENT_METHOD_ANB,
+                                PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_ADCB,
+                                PAYMENT_METHOD_MOKAFAA)
 from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
                         GUEST_USER_CUSTOM, BETA_USER_ONLY_EARN,
                         BETA_USER_ONLY_BURN)
@@ -140,7 +141,7 @@ class PaymentMethodConfigInlineFormset(forms.models.BaseInlineFormSet):
         objs = super().save(commit=commit)
         invalidate_cached_payment_method_config()
 
-        return super().save(commit)
+        return objs
 
 
 class PaymentMethodConfigInline(admin.TabularInline):
@@ -233,7 +234,7 @@ class PaymentConfigurationAdmin(AdminAbstract):
         if obj and obj.payment_method in [PAYMENT_METHOD_QITAF,
                                           PAYMENT_METHOD_ANB,
                                           PAYMENT_METHOD_NEQATY,
-                                          PAYMENT_METHOD_ANB,
+                                          PAYMENT_METHOD_MOKAFAA,
                                           PAYMENT_METHOD_ADCB]:
             fields = ('payment_method', 'code', 'active',
                       'guest_user_enabled', 'beta_version',
