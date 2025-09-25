@@ -351,10 +351,10 @@ def get_payment_methods(transaction, client, country):
         payment_method_query = Q(payment_method__active=True, client=client,
                                  country=country, active=True)
         if transaction.is_guest:
-            payment_method_query = Q(payment_method__active=True,
-                                     client=client,
-                                     country=country, active=True,
-                                     guest_user_enabled=True)
+            payment_method_query &= Q(guest_user_enabled=True)
+        if transaction.redemption_partner:
+            payment_method_query &= Q(
+                payment_method__payment_method=transaction.redemption_partner)
 
         payment_method_config_qs = get_cached_payment_method_config()
         payment_method_configs = payment_method_config_qs.filter(

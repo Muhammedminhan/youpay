@@ -163,8 +163,6 @@ class ConfigViewSet(ViewSet):
                 else None,
                 "cart_base_amount": transaction.cart_base_amount if
                 transaction else None,
-                "citi_config": self.check_citi_allowed_denominations(
-                    payment_options, transaction),
                 "redirect_url": self._get_redirect_url(transaction),
                 "announcements": get_announcements(transaction.platform),
                 "is_guest": transaction.is_guest,
