@@ -8,10 +8,10 @@ from rest_framework import status
 from core.constants import (PAYMENT_GATEWAY_B2CPAYBACK, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
-from core.utils import (get_payment_gateway_config, get_app_config,
-                        decrypt_string)
-from integrations.constants import (B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
-                                    ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
+from core.utils import (get_app_config,
+                        decrypt_string,
+                        get_config_from_payment_configurations)
+from integrations.constants import (ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
                                     PAYMENT_REQUEST_GENERATE_OTP,
                                     CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     B2CP_REDEEM_POINTS_API,
@@ -40,8 +40,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
     """
 
     def __init__(self):
-        self.anb_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                     B2CPAYBACK_HUB_CODE)
+        self.anb_config = None
         self.transaction_id = None
         self.transaction_obj = None
         self.request_data = {}
@@ -98,6 +97,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             request_data = data.get('request_data')
             self.transaction_obj = request_data.get('transaction_obj')
+            self.anb_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_ANB)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.get_anb_payment_data(request_data)
             # Dynamically determine the key and value for 'mobile_number' or
@@ -185,6 +186,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
+            self.anb_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_ANB)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             serializer = YouPayTransactionDataSerializer(self.transaction_obj)
@@ -459,8 +462,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                     transaction_id)
                 formatted_data = format_verify_data(request_data,
                                                     transaction_obj)
-                gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                gateway_obj = get_config_from_payment_configurations(
+                    transaction_obj, PAYMENT_METHOD_ANB)
                 anb_domain = gateway_obj.domain
                 url = (anb_domain + B2CP_VERIFY_API +
                        "?&redemption_partner=ANB")

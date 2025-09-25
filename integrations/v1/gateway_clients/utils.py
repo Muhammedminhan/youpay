@@ -5,7 +5,8 @@ import requests
 
 from core.constants import PAYBACK_ACTION_EARN
 from core.response_messages import YouPayResponse
-from core.utils import get_payment_gateway_config, get_channel_code
+from core.utils import (get_channel_code,
+                        get_config_from_payment_configurations)
 from integrations.common import update_brand_details
 from integrations.constants import (ADCB_CLIENT_CODE,
                                     ADCB_CHECKOUTPG_PAYMENT_NOT_PAID,
@@ -21,7 +22,6 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     SPONSOR_PAYMENT_NETWORK_VALUE,
                                     CLIENT_CODE_MAPPING,
                                     CLIENT_CODE_MAPPING_ARABIC,
-                                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
                                     PAYMENT_METHOD
                                     )
 from payments.models import YouPayTransactionData
@@ -248,8 +248,6 @@ def calculate_balance(data):
     Calculate service charge
     """
     response_obj = YouPayResponse()
-    b2c_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                            B2CPAYBACK_HUB_CODE)
     crud_obj = YouPayTransactionCRUD()
     try:
         transaction_obj = data.get('transaction_obj')
@@ -261,6 +259,9 @@ def calculate_balance(data):
             payment_method = transaction_obj.payment_method
         else:
             payment_method = PAYMENT_METHOD.get(client_code)
+
+        b2c_config = get_config_from_payment_configurations(
+            transaction_obj, PAYMENT_METHOD.get(client_code))
 
         payment_reference = transaction_obj.payment_reference
 

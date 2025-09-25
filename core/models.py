@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.constants import GUEST_USER_OPTIONS, BETA_USER_OPTIONS, \
     BETA_USER_DISABLED
-from payments.constants import (PAYMENT_OPTION_CHOICES,
-                                PAYMENT_METHOD_MODEL_CHOICES)
+from payments.constants import (PAYMENT_OPTION_CHOICES)
 
 # Create your models here.
 
@@ -136,8 +136,17 @@ class PaymentMethod(AbstractDateTime, AbstractUserBase):
 class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
     payment_method = models.CharField(
         max_length=100, db_index=True,
-        choices=PAYMENT_METHOD_MODEL_CHOICES,
         help_text='Chosen payment method')
+    payment_method_config = models.JSONField(
+        max_length=100, blank=True, null=True,
+        help_text='Config data for the payment method')
+    is_second_project_config_enabled = models.BooleanField(
+        default=False, db_index=True,
+        help_text='Denotes whether the second project config is enabled or '
+                  'not')
+    code = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text='Code for the payment method')
     active = models.BooleanField(
         default=False, db_index=True, help_text='Denotes whether the payment '
                                                 'method is active or not')
@@ -172,7 +181,8 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
 
 class PaymentMethodConfig(models.Model):
     payment_method = models.ForeignKey(
-        'PaymentConfiguration', on_delete=models.CASCADE)
+        'PaymentConfiguration', on_delete=models.CASCADE,
+        related_name='paymentmethodconfig')
     country = models.ForeignKey(
         'core.Country', on_delete=models.CASCADE)
     client = models.ForeignKey(
@@ -183,6 +193,26 @@ class PaymentMethodConfig(models.Model):
     guest_user_enabled = models.BooleanField(
         default=True, help_text='Denotes whether the payment method is '
                                 'available for the guest user')
+
+    def clean(self):
+        super().clean()
+        if self.active:
+            conflict = PaymentMethodConfig.objects.filter(
+                payment_method__payment_method=self.payment_method.payment_method,
+                country=self.country,
+                client=self.client,
+                active=True,
+            ).exclude(pk=self.pk)
+
+            if conflict.exists():
+                raise ValidationError(
+                    f"Only one active config is allowed per client={self.client}, "
+                    f"country={self.country}, and payment_method={self.payment_method.payment_method}."
+                )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.country} - {self.client}"
