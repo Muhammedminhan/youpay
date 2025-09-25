@@ -107,6 +107,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'point_collection_enabled',
                        'maximum_redeemable_points',
                        'minimum_redeemable_points', 'amount_conversion_rate',
+                       'redemption_partner'
                        )
         }),
         ('Happycredits transaction details', {
