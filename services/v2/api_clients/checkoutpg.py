@@ -10,7 +10,8 @@ from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from services.utils import get_client_channel_code
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from core.utils import decrypt_string
-from payments.constants import PAYMENT_OPTION_CARD, PAYMENT_STATUS_PENDING
+from payments.constants import (PAYMENT_OPTION_CARD, PAYMENT_STATUS_PENDING,
+                                POINT_PAYMENT_METHODS)
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 
@@ -104,15 +105,17 @@ class CreatePaymentSession(APIView, YouPayTransactionCRUD):
                     checkout.get_payment_session(transaction_obj))
 
                 if status_code == checkout.SUCCESS and response_data:
-                    transaction_data = {
-                        "transaction_id": transaction_obj.transaction_id,
-                        "payment_reference": response_data.get('reference_id'),
-                        "channel_code": response_data.get('channel_code'),
-                        "payment_method": PAYMENT_OPTION_CARD,
-                        "payment_status": PAYMENT_STATUS_PENDING,
-                        "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                    }
-                    self.update_youpay_transaction_data(transaction_data)
+                    if (transaction_obj.payment_method not in
+                       POINT_PAYMENT_METHODS):
+                        transaction_data = {
+                            "transaction_id": transaction_obj.transaction_id,
+                            "payment_reference": response_data.get('reference_id'),
+                            "channel_code": response_data.get('channel_code'),
+                            "payment_method": PAYMENT_OPTION_CARD,
+                            "payment_status": PAYMENT_STATUS_PENDING,
+                            "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
+                        }
+                        self.update_youpay_transaction_data(transaction_data)
 
                     response_data.pop('channel_code', None)
                     response_data.pop('reference_id', None)

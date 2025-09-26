@@ -877,15 +877,13 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
-            token = request_data.get('token') if is_save_user_token else None
 
             payment_request_data = {
                 "session_data": request_data.get('session_data'),
                 "payment_reference": transaction_obj.payment_reference,
                 "session_id": request_data.get('session_id'),
+                "is_save_user_token": is_save_user_token
             }
-            if token:
-                payment_request_data.update({"token": token})
 
             try:
                 url = self.checkoutpg_config.domain + SUBMIT_SESSION_ENDPOINT

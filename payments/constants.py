@@ -298,3 +298,6 @@ CARD_BIN_MAX_LENGTH = 10
 
 CREATE_SESSION_ENDPOINT = '/gateway/checkout/api/v1/create-session/'
 SUBMIT_SESSION_ENDPOINT = '/gateway/checkout/api/v1/submit-session/'
+
+POINT_PAYMENT_METHODS = [PAYMENT_METHOD_QITAF, PAYMENT_METHOD_NEQATY,
+                         PAYMENT_METHOD_MOKAFAA, PAYMENT_METHOD_ANB]
