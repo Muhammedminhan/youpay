@@ -20,7 +20,7 @@ hpa:
 enableKedaCron: true
 keda:
   name: 'youpay-[JIRA_ID]-redis-keda'
-  minReplicas: 0
+  minReplicas: 1
   desiredReplicas: 1
   maxReplicas: 1
   start: "0 7 * * 1-5"
