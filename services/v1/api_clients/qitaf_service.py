@@ -262,16 +262,13 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.redeem_points(
                 points_redemption_data)
-            logger.info(f"Qitaf Redeem Points Response : {response_data}, "
-                        f"code : {code}")
+
             if response_data and code == 1000:
                 formatted_res = qitaf_response_formatter(response_data, code)
-                logger.info(f"Qitaf Formatted Response : {formatted_res}")
                 data = self.response_obj.get_success_dict(
                     code=code,
                     success_dict=formatted_res
                 )
-                logger.info(f"Qitaf Response Data : {data}")
                 return Response(data, status=status.HTTP_200_OK)
             else:
                 """Need to show error message to Front end
