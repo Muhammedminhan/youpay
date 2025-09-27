@@ -10,8 +10,7 @@ from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from services.utils import get_client_channel_code
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from core.utils import decrypt_string
-from payments.constants import (PAYMENT_OPTION_CARD, PAYMENT_STATUS_PENDING,
-                                POINT_PAYMENT_METHODS)
+from payments.constants import PAYMENT_OPTION_CARD, PAYMENT_STATUS_PENDING
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 
@@ -88,12 +87,14 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
 class CreatePaymentSession(APIView, YouPayTransactionCRUD):
     response_obj = YouPayResponse()
 
-    def get(self, request):
+    def post(self, request):
         """
         Method for creating payment session
         """
         try:
-            transaction_id = request.GET.get('transaction_id')
+            transaction_id = request.data.get('transaction_id')
+            is_partial_payment = request.data.get('is_partial_payment', False)
+
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id)
             )
@@ -105,17 +106,21 @@ class CreatePaymentSession(APIView, YouPayTransactionCRUD):
                     checkout.get_payment_session(transaction_obj))
 
                 if status_code == checkout.SUCCESS and response_data:
-                    if (transaction_obj.payment_method not in
-                       POINT_PAYMENT_METHODS):
+                    reference = response_data.get('reference')
+                    if not is_partial_payment:
                         transaction_data = {
                             "transaction_id": transaction_obj.transaction_id,
-                            "payment_reference": response_data.get('reference_id'),
+                            "payment_reference": reference,
                             "channel_code": response_data.get('channel_code'),
                             "payment_method": PAYMENT_OPTION_CARD,
                             "payment_status": PAYMENT_STATUS_PENDING,
                             "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
                         }
                         self.update_youpay_transaction_data(transaction_data)
+                    else:
+                        transaction_obj.additional_reference = reference
+                        transaction_obj.save()
+                        logger.info(f"Saving session reference: {reference}")
 
                     response_data.pop('channel_code', None)
                     response_data.pop('reference_id', None)
