@@ -102,8 +102,8 @@ class CreatePaymentSession(APIView, YouPayTransactionCRUD):
             if transaction_obj:
                 checkout = CheckoutpgManager()
 
-                response_data, status_code = (
-                    checkout.get_payment_session(transaction_obj))
+                response_data, status_code = (checkout.get_payment_session(
+                    transaction_obj, is_partial_payment))
 
                 if status_code == checkout.SUCCESS and response_data:
                     reference = response_data.get('reference_id')
