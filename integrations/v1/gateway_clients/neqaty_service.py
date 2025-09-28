@@ -39,6 +39,7 @@ from services.v1.views.common import (add_payment_gateway_info_in_url,
                                       YouPayTransactionCRUD)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -356,7 +357,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         response_redeem_options = []
 
         for option in redeem_options:
-            redeem_amount = option.get("redeemAmount")
+            redeem_amount = Decimal(option.get("redeemAmount"))
             if redeem_amount > total_amount:
                 continue
             if program_offer:
