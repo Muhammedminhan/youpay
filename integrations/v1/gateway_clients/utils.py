@@ -492,7 +492,7 @@ def process_calculated_item_details(data):
     return data
 
 
-def get_response_url(transaction_obj):
+def get_response_url(transaction_obj, is_partial_payment):
     """
     Method for generating response URL
     """
@@ -510,6 +510,20 @@ def get_response_url(transaction_obj):
 
     if transaction_obj.platform in [PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID]:
         query_params["platform"] = "app"
+
+    if is_partial_payment:
+        PAYMENT_METHOD_REVERSE = {v: k for k, v in PAYMENT_METHOD.items()}
+
+        payment_method = transaction_obj.payment_method
+        redemption_partner = payment_method.split("_")[0]
+
+        gty = PAYMENT_METHOD_REVERSE.get(redemption_partner)
+
+        query_params.update({
+            "redemption_reference_id": transaction_obj.payment_reference,
+            "redemption_partner": redemption_partner.upper(),
+            "gty": gty
+        })
 
     query_string = urlencode(query_params)
     url = "{}/{}/{}?{}".format(

@@ -821,7 +821,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "token_type": TOKEN_TYPE_CARD,
                 "client_code": transaction_obj.api_client.client_code,
                 "channel_code": get_channel_code(transaction_obj),
-                "response_url": get_response_url(transaction_obj),
+                "response_url": get_response_url(
+                    transaction_obj, is_partial_payment),
                 "amount_in_aed": str(transaction_obj.amount_in_aed),
                 "customer_name": transaction_obj.customer_name,
                 "customer_email": transaction_obj.customer_email,
