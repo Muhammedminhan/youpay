@@ -807,7 +807,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(msg)
             return None, self.APPLE_PAY_CONNECTION_ERROR
 
-    def get_payment_session(self, transaction_obj, is_partial_payment):
+    def create_payment_session(self, transaction_obj, is_mada,
+                               is_partial_payment):
         """
         Method for creating a Checkout payment session
         """
@@ -828,7 +829,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "customer_email": transaction_obj.customer_email,
                 "order_reference": transaction_obj.order_reference,
                 "customer_ip_address": transaction_obj.ip,
-                "country_code": transaction_obj.country_code
+                "country_code": transaction_obj.country_code,
+                "is_mada": is_mada
             }
 
             try:
