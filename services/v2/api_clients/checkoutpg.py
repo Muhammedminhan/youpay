@@ -145,7 +145,7 @@ class CreatePaymentSession(APIView, YouPayTransactionCRUD):
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
-            logger.exception("Error in CreatePaymentSession.get")
+            logger.exception("Error in CreatePaymentSession.post")
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

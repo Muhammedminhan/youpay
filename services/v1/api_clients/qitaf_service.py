@@ -473,6 +473,13 @@ def qitaf_response_formatter(data, code):
         data['code'] = code
         data['reason'], data['message'] = message, message
         data[IS_SUCCESS] = is_success
+        if not qitaf_response.get("is_full_redemption"):
+            data['data'] = {
+                "id": qitaf_response.get("id"),
+                "status": qitaf_response.get("status"),
+                "type": qitaf_response.get("type"),
+                "action": qitaf_response.get("action")
+            }
         data.pop('qitaf_response', None)
     if errors:
         errors['message'] = COMMON_ERROR_MESSAGE_EN

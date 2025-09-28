@@ -506,14 +506,15 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             "handle_mokafaa_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
+        data = {}
         partner_response = response_data.get('partner_response')
         name_on_card = partner_response.get("customer_name", "")
         language = payment_data.language
         is_full_redemption = partner_response.get("is_full_redemption", False)
-        if is_full_redemption is False:
-            redirect_url = partner_response.get('redirect_url')
 
-            if redirect_url:
+        if is_full_redemption is False:
+            if partner_response.get('is_payment_success'):
+                redirect_url = partner_response.get('action', {}).get('url')
                 is_success = True
                 is_redirect = True
                 self.payment_status = PAYMENT_STATUS_PENDING
@@ -532,6 +533,13 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 self.points_redeemed_mobile_number = partner_response.get(
                     'redeemed_mobile_number')
                 self.point_program = PAYMENT_METHOD_MOKAFAA
+
+                data = {
+                    "id": partner_response.get("id"),
+                    "status": partner_response.get("status"),
+                    "type": partner_response.get("type"),
+                    "action": partner_response.get("action")
+                }
 
             else:
                 redirect_url = ('{}?transaction_id={}'.format(
@@ -609,6 +617,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             "mokafaa_response": response_data,
             "is_success": is_success
         }
+        if data:
+            return_response["data"] = data
         return return_response
 
     def mokafaa_error_response_message(self, response_data, language):

@@ -405,19 +405,18 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
 
-        is_full_redemption = response_data.get("partner_response").get(
-            "is_full_redemption", False)
-        redemption_status = response_data.get("partner_response").get(
-            "redemption_status", False)
+        partner_response = response_data.get('partner_response')
+        is_full_redemption = partner_response.get("is_full_redemption", False)
+        redemption_status = partner_response.get("redemption_status", False)
         name_on_card = ""
         message = self.SUCCESS
         amount = payment_data.amount
+        data = {}
 
         if redemption_status:
             if is_full_redemption is False:
-                redirect_url = response_data.get('partner_response',
-                                                 {}).get('url')
-                if redirect_url:
+                if partner_response.get('is_payment_success'):
+                    redirect_url = partner_response.get('action', {}).get('url')
                     is_success = True
                     is_redirect = True
                     self.payment_status = PAYMENT_STATUS_PENDING
@@ -431,6 +430,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                             earn_on_partial_redemption=True
                         )))
 
+                    data = {
+                        "id": partner_response.get("id"),
+                        "status": partner_response.get("status"),
+                        "type": partner_response.get("type"),
+                        "action": partner_response.get("action")
+                    }
 
                 else:
                     redirect_url = ('{}?transaction_id={}'.format(
@@ -484,6 +489,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             IS_REDIRECT: is_redirect,
             "is_success": is_success
         }
+        if data:
+            return_response["data"] = data
         return return_response
 
     def handle_neqaty_point_redeem_response(self, response, transaction_obj,
