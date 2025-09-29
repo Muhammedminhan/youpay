@@ -231,7 +231,7 @@ class PaymentConfigurationAdmin(AdminAbstract):
                   'payment_gateway', 'created_at', 'updated_at',
                   'created_by', 'modified_by')
 
-        if obj and obj.payment_method in [PAYMENT_METHOD_QITAF,
+        if obj and obj.payment_method not in [PAYMENT_METHOD_QITAF,
                                           PAYMENT_METHOD_ANB,
                                           PAYMENT_METHOD_NEQATY,
                                           PAYMENT_METHOD_MOKAFAA,
