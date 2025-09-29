@@ -18,12 +18,12 @@
             var parts = widgetName.split('-');
             var id = parts[1];
 
-            var guestUserSliderId = '#paymentmethodconfig_set-' + id + '-guest_user_enabled';
+            var guestUserSliderId = '#paymentmethodconfig-' + id + '-guest_user_enabled';
             var guestUserSliderContainer = $(guestUserSliderId).closest('.slider-container');
             var guestUserSliderCheckbox = guestUserSliderContainer.find('input[type="checkbox"]');
 
             if (guestUserSliderContainer.length) {
-                if ($('#paymentmethodconfig_set-' + id + '-active').prop('checked')) {
+                if ($('#paymentmethodconfig-' + id + '-active').prop('checked')) {
                     guestUserSliderContainer.show();
                     // Check if 'guest_user_enabled' is set to 'Enable' or 'Disable'
                     if (guestUserEnabledStatus === 'Enable') {

@@ -36,6 +36,9 @@ class PaymentGateway(AbstractDateTime, AbstractUserBase):
                             help_text='Gateway identification code')
     gateway_name = models.CharField(max_length=255,
                                     help_text='Name of the payment gateway')
+    gateway_cache_key = models.CharField(max_length=255, blank=True,
+                                         null=True,
+                                         help_text='Cache key for the gateway')
     description = models.TextField(null=True, blank=True,
                                    help_text='Description of the payment '
                                              'gateway')
