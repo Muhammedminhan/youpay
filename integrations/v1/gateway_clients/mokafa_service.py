@@ -618,7 +618,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             "mokafaa_response": response_data,
             "is_success": is_success
         }
-        if data:
+        if data and partner_response.get('is_payment_success'):
             return_response["data"] = data
         return return_response
 

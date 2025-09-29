@@ -473,7 +473,7 @@ def qitaf_response_formatter(data, code):
         data['code'] = code
         data['reason'], data['message'] = message, message
         data[IS_SUCCESS] = is_success
-        if not qitaf_response.get("is_full_redemption"):
+        if qitaf_response.get("is_payment_success"):
             data['data'] = {
                 "id": qitaf_response.get("id"),
                 "status": qitaf_response.get("status"),
