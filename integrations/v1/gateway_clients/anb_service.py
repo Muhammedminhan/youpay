@@ -351,10 +351,11 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         language = payment_data.language
         is_full_redemption = partner_response.get("is_full_redemption", False)
         if is_full_redemption is False:
-            if partner_response.get('is_payment_success'):
+            redirect_url = (partner_response.get('url') or
+                            partner_response.get('action', {}).get('url'))
+            if redirect_url:
                 is_success = True
                 is_redirect = True
-                redirect_url = partner_response.get('action', {}).get('url')
                 self.payment_status = PAYMENT_STATUS_PENDING
                 self.redeemed_amount = partner_response.get('redeemed_amount')
                 self.redeemed_point = partner_response.get(

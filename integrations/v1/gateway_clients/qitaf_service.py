@@ -509,10 +509,11 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         is_full_redemption = response_data.get("is_full_redemption", False)
         if is_full_redemption is False:
             # Handle qitaf partial redemption response
-            if response_data.get('is_payment_success'):
+            redirect_url = (response_data.get('url') or
+                            response_data.get('action', {}).get('url'))
+            if redirect_url:
                 is_success = True
                 is_redirect = True
-                redirect_url = response_data.get('action', {}).get('url')
                 self.payment_status = PAYMENT_STATUS_PENDING
                 self.is_qitaf_enabled = True
                 self.point_collection_enabled = (

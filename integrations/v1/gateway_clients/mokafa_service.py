@@ -513,8 +513,9 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         is_full_redemption = partner_response.get("is_full_redemption", False)
 
         if is_full_redemption is False:
-            if partner_response.get('is_payment_success'):
-                redirect_url = partner_response.get('action', {}).get('url')
+            redirect_url = (partner_response.get('url') or
+                            partner_response.get('action', {}).get('url'))
+            if redirect_url:
                 is_success = True
                 is_redirect = True
                 self.payment_status = PAYMENT_STATUS_PENDING
