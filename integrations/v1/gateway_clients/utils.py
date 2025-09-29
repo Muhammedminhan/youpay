@@ -24,11 +24,13 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CLIENT_CODE_MAPPING,
                                     CLIENT_CODE_MAPPING_ARABIC,
                                     B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
-                                    PAYMENT_METHOD, CHECKOUTPG_HUB_CODE
+                                    PAYMENT_METHOD, CHECKOUTPG_HUB_CODE,
+                                    QITAF_HUB_CODE
                                     )
 from payments.models import YouPayTransactionData
 from services.v1.views.common import YouPayTransactionCRUD
 from urllib.parse import urlencode
+from payments.constants import PAYMENT_METHOD_QITAF
 
 logger = logging.getLogger(__name__)
 
@@ -524,6 +526,9 @@ def get_response_url(transaction_obj, is_partial_payment):
             "redemption_partner": redemption_partner.upper(),
             "gty": gty
         })
+
+        if redemption_partner == PAYMENT_METHOD_QITAF:
+            query_params["gty"] = QITAF_HUB_CODE
 
     query_string = urlencode(query_params)
     url = "{}/{}/{}?{}".format(
