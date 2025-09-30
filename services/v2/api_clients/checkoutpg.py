@@ -172,6 +172,11 @@ class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
                 )
                 if status_code == checkout.SUCCESS and response_data:
                     response_data.pop('reference_id', None)
+
+                    name_on_card = response_data.get('customer_name', "")
+                    transaction_obj.name_on_card = name_on_card
+                    transaction_obj.save()
+
                     data = self.response_obj.get_success_dict(
                         code=YouPayResponse.SUCCESS,
                         success_dict={'data': response_data}
