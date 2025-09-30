@@ -2,12 +2,14 @@ import logging
 import random
 import string
 
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.exceptions import PaymentConfigurationFailed
+from core.models import PaymentMethodConfig, Country
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
@@ -40,6 +42,7 @@ from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
+from services.v1.views.common import ClientValidator
 from services.v1.views.utils import (get_announcements,
                                      get_session_id_from_header,
                                      get_country_for_configuration,
@@ -523,3 +526,106 @@ def get_mobile_logo_url(client):
         return client.mobile_logo_file.url
     else:
         return None
+
+
+class RedemptionPartnerPrograms(APIView, ClientValidator, YouPayResponse):
+    """
+    API view for retrieving redemption partner programs for a client.
+    """
+
+    def get(self, request):
+        """
+        Handles GET requests to retrieve redemption partner programs.
+
+        Args:
+            request: The HTTP request object.
+
+        Returns:
+            Response: DRF Response object with payment options and configuration map.
+        """
+        validate, client = self.validate_client(request)
+        if not validate:
+            logger.info(
+                "Payment request client validation failed for order_reference"
+            )
+            self.return_data = self.get_400_message(
+                message="Client Does Not Exist"
+            )
+            return Response(
+                self.return_data.get('errors'),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        country_code = request.GET.get('country_code', None)
+        country = Country.objects.get(iso_code=country_code)
+        language_code = request.GET.get('lang', None)
+
+        try:
+            is_guest = True if request.GET.get(
+                'is_guest').lower() == 'true' else False
+            payment_method_query = Q(
+                payment_method__active=True,
+                client=client,
+                active=True,
+                payment_method__burn_full_redemption_enabled=True,
+                country=country
+            )
+            if is_guest:
+                payment_method_query &= Q(guest_user_enabled=True)
+            payment_method_configs = PaymentMethodConfig.objects.filter(
+                payment_method_query
+            )
+
+            payment_options = []
+
+            for config in payment_method_configs:
+                method = config.payment_method
+                method_key = method.payment_method
+                try:
+                    if method.is_second_project_config_enabled:
+                        method_specific_config = method.payment_method_config
+
+                        if method_specific_config:
+                            payment_options.append({
+                                "name": method_specific_config.get(
+                                    'display_name_ar') if language_code == 'ar' else method_key,
+                                "code": method_specific_config.get("code"),
+                                "logo": method_specific_config.get("logo"),
+                                "redemption_amount": method_specific_config.get(
+                                    "redemption_amount")
+                            })
+                        else:
+                            logger.error(
+                                "Missing second project configuration for method=%s",
+                                method.code
+                            )
+                            continue
+                except Exception as inner_exc:
+                    logger.error(
+                        "Error while processing payment method=%s: %s",
+                        method_key,
+                        str(inner_exc),
+                        exc_info=True
+                    )
+                    continue
+
+            response_data = {
+                "payment_options": payment_options,
+            }
+            return Response(
+                self.get_success_dict(
+                    code=self.SUCCESS,
+                    success_dict=response_data
+                ),
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            logger.error(
+                "Error occurred while getting payment options: %s",
+                str(e),
+                exc_info=True
+            )
+            return Response(
+                self.get_404_message(message=str(e)),
+                status=status.HTTP_404_NOT_FOUND
+            )
