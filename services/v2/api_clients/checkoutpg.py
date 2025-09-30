@@ -173,7 +173,7 @@ class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
                 if status_code == checkout.SUCCESS and response_data:
                     response_data.pop('reference_id', None)
 
-                    name_on_card = response_data.get('customer_name', "")
+                    name_on_card = request.data.get('customer_name', "")
                     transaction_obj.name_on_card = name_on_card
                     transaction_obj.save()
 
