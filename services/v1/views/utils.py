@@ -64,6 +64,7 @@ def reformat_payment_request_data(data):
     urls = data.get('urls')
     order_history = data.get('order_history')
     order_items = data.get('order_items')
+    data['redemption_partner'] = data.get('redemption_partner', None)
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
@@ -85,7 +86,6 @@ def reformat_payment_request_data(data):
             order.get('additional_currency_decimal_notation'))
         data['order_id'] = order.get('order_id')
         data['is_offer_applicable'] = order.get('is_offer_applicable', False)
-        data['redemption_partner'] = order.get('redemption_partner')
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')

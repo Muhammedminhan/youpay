@@ -146,8 +146,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         language = data_formatted.get('language')
 
-                        order = data_formatted.get('order', {})
-                        redemption_partner = order.get('redemption_partner')
+                        redemption_partner = data_formatted.get(
+                            'redemption_partner')
 
                         if redemption_partner:
                             redirect_url = PAYMENT_REDIRECT_URL + "{}/{}/{}".format(
