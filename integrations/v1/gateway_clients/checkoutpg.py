@@ -887,7 +887,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "session_data": request_data.get('session_data'),
                 "payment_reference": transaction_obj.payment_reference,
                 "session_id": request_data.get('session_id'),
-                "is_save_user_token": is_save_user_token
+                "is_save_user_token": is_save_user_token,
+                "name_on_card": request_data.get('customer_name')
             }
 
             try:
