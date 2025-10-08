@@ -558,6 +558,7 @@ class RedemptionPartnerPrograms(APIView, ClientValidator, YouPayResponse):
         country_code = request.GET.get('country_code', None)
         country = Country.objects.get(iso_code=country_code)
         language_code = request.GET.get('lang', None)
+        currency_code = country.currency.iso_code
 
         try:
             is_guest = True if request.GET.get(
@@ -592,7 +593,7 @@ class RedemptionPartnerPrograms(APIView, ClientValidator, YouPayResponse):
                                 "code": method_specific_config.get("code"),
                                 "logo": method_specific_config.get("logo"),
                                 "redemption_amount": method_specific_config.get(
-                                    "redemption_amount")
+                                    "redemption_amount").get(currency_code),
                             })
                         else:
                             logger.error(
