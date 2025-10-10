@@ -880,7 +880,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
             payment_request_data = {
                 "session_data": request_data.get('session_data'),
-                "payment_reference": transaction_obj.payment_reference,
+                "payment_reference": transaction_obj.additional_reference,
                 "session_id": request_data.get('session_id'),
                 "is_save_user_token": is_save_user_token,
                 "customer_name": request_data.get('customer_name'),
