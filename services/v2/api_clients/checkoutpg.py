@@ -108,20 +108,12 @@ class CreatePaymentSession(APIView, YouPayTransactionCRUD):
 
                 if status_code == checkout.SUCCESS and response_data:
                     reference = response_data.get('reference_id')
-                    if not is_partial_payment:
-                        transaction_data = {
-                            "transaction_id": transaction_obj.transaction_id,
-                            "payment_reference": reference,
-                            "channel_code": response_data.get('channel_code'),
-                            "payment_method": PAYMENT_OPTION_CARD,
-                            "payment_status": PAYMENT_STATUS_PENDING,
-                            "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                        }
-                        self.update_youpay_transaction_data(transaction_data)
-                    else:
-                        transaction_obj.additional_reference = reference
-                        transaction_obj.save()
-                        logger.info(f"Saving session reference: {reference}")
+                    chanel_code = response_data.get('channel_code')
+
+                    transaction_obj.additional_reference = reference
+                    transaction_obj.channel_code = chanel_code
+                    transaction_obj.save()
+                    logger.info(f"Saving session reference: {reference}")
 
                     response_data.pop('channel_code', None)
                     response_data.pop('reference_id', None)
@@ -171,11 +163,17 @@ class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
                     transaction_obj, request.data
                 )
                 if status_code == checkout.SUCCESS and response_data:
-                    response_data.pop('reference_id', None)
+                    transaction_data = {
+                        "transaction_id": transaction_obj.transaction_id,
+                        "payment_status": PAYMENT_STATUS_PENDING,
+                        "payment_reference": response_data.get('reference_id'),
+                        "payment_method": PAYMENT_OPTION_CARD,
+                        "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
+                        "name_on_card": request.data.get("customer_name")
+                    }
+                    self.update_youpay_transaction_data(transaction_data)
 
-                    name_on_card = request.data.get('customer_name', "")
-                    transaction_obj.name_on_card = name_on_card
-                    transaction_obj.save()
+                    response_data.pop('reference_id', None)
 
                     data = self.response_obj.get_success_dict(
                         code=YouPayResponse.SUCCESS,

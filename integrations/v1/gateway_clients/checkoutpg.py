@@ -818,17 +818,12 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             request_data = {
                 "amount": str(amount),
                 "currency": transaction_obj.currency,
-                "invoice_pk": transaction_obj.invoice_id,
-                "token_type": TOKEN_TYPE_CARD,
-                "client_code": transaction_obj.api_client.client_code,
                 "channel_code": get_channel_code(transaction_obj),
                 "response_url": get_response_url(
                     transaction_obj, is_partial_payment),
-                "amount_in_aed": str(transaction_obj.amount_in_aed),
                 "customer_name": transaction_obj.customer_name,
                 "customer_email": transaction_obj.customer_email,
                 "order_reference": transaction_obj.order_reference,
-                "customer_ip_address": transaction_obj.ip,
                 "country_code": transaction_obj.country_code,
                 "is_mada": is_mada
             }
@@ -888,7 +883,18 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "payment_reference": transaction_obj.payment_reference,
                 "session_id": request_data.get('session_id'),
                 "is_save_user_token": is_save_user_token,
-                "name_on_card": request_data.get('customer_name')
+                "customer_name": request_data.get('customer_name'),
+                "amount": str(transaction_obj.amount),
+                "order_reference": transaction_obj.order_reference,
+                "currency": transaction_obj.currency,
+                "customer_email": transaction_obj.customer_email,
+                "amount_in_aed": str(transaction_obj.amount_in_aed),
+                "invoice_id": transaction_obj.invoice_id,
+                "order_id": transaction_obj.order_id,
+                "token_type": TOKEN_TYPE_CARD,
+                "channel_code": transaction_obj.channel_code,
+                "client_code": transaction_obj.api_client.client_code,
+                "customer_ip_address": transaction_obj.ip
             }
 
             try:
