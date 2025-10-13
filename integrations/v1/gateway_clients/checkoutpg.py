@@ -39,9 +39,11 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
                                 PAYMENT_METHOD_APPLEPAY,
                                 CREATE_SESSION_ENDPOINT,
-                                SUBMIT_SESSION_ENDPOINT
+                                SUBMIT_SESSION_ENDPOINT,
+                                PAYMENT_OPTION_CARD, PAYMENT_STATUS_DECLINED,
+                                PAYMENT_STATUS_DECLINED_RETRY
                                 )
-from services.v1.views.common import (AdditionalChargesUpdation)
+from services.v1.views.common import AdditionalChargesUpdation
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from .utils import get_response_url
@@ -919,7 +921,37 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 )
 
                 if response:
-                    return response.json(), self.SUCCESS
+                    response_data = response.json()
+
+                    transaction_data = {
+                        "transaction_id": transaction_obj.transaction_id,
+                        "payment_status": PAYMENT_STATUS_PENDING,
+                        "payment_reference": response_data.get('reference_id'),
+                        "payment_method": PAYMENT_OPTION_CARD,
+                        "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
+                        "name_on_card": request_data.get("customer_name")
+                    }
+                    response_data.pop('reference_id', None)
+
+                    status = response_data.get('status', '')
+                    if status == "Declined":
+                        declined_response = self.handle_submit_session_response(
+                            response_data, transaction_obj
+                        )
+
+                        if declined_response.get("redirect_url"):
+                            transaction_data["payment_status"] = (
+                                PAYMENT_STATUS_DECLINED)
+                        else:
+                            transaction_data["payment_status"] = (
+                                PAYMENT_STATUS_DECLINED_RETRY)
+
+                        self.update_youpay_transaction_data(transaction_data)
+                        return declined_response, self.PRE_AUTH
+
+                    self.update_youpay_transaction_data(transaction_data)
+                    return response_data, self.SUCCESS
+
                 logger.error(
                     "Checkout session submission failed for transaction %s: %s",
                     transaction_obj.transaction_id, response.text
@@ -935,3 +967,27 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         else:
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, self.PAYMENT_FAILED
+
+    def handle_submit_session_response(self, response_data, transaction_obj):
+        """
+        Method for handling submit session response
+        """
+        decline_reason = response_data.get('decline_reason')
+        decline_category = response_data.get('decline_category')
+
+        is_redirect_flag = decline_category != 20000
+        redirect_url = None
+
+        if is_redirect_flag:
+            redirect_url = ('{}?transaction_id={}'.format(
+            transaction_obj.failure_url, transaction_obj.transaction_id))
+
+        response = {
+            IS_REDIRECT: is_redirect_flag,
+            "redirect_url": redirect_url,
+            IS_SUCCESS: False,
+            "message": decline_reason,
+            "code": self.PRE_AUTH
+        }
+
+        return response

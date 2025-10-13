@@ -10,9 +10,7 @@ from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from services.utils import get_client_channel_code
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
 from core.utils import decrypt_string
-from payments.constants import PAYMENT_OPTION_CARD, PAYMENT_STATUS_PENDING
 from core.messages import TRANSACTION_DOESNT_EXIST
-from core.constants import PAYMENT_GATEWAY_CHECKOUTPG
 
 logger = logging.getLogger(__name__)
 
@@ -163,29 +161,19 @@ class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
                     transaction_obj, request.data
                 )
                 if status_code == checkout.SUCCESS and response_data:
-                    transaction_data = {
-                        "transaction_id": transaction_obj.transaction_id,
-                        "payment_status": PAYMENT_STATUS_PENDING,
-                        "payment_reference": response_data.get('reference_id'),
-                        "payment_method": PAYMENT_OPTION_CARD,
-                        "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                        "name_on_card": request.data.get("customer_name")
-                    }
-                    self.update_youpay_transaction_data(transaction_data)
-
-                    response_data.pop('reference_id', None)
-
                     data = self.response_obj.get_success_dict(
                         code=YouPayResponse.SUCCESS,
                         success_dict={'data': response_data}
                     )
                     return Response(data, status=status.HTTP_200_OK)
-                else:
-                    data = self.response_obj.get_400_message(
-                        message="Failed to submit payment session"
-                    )
-                    return Response(data.get('errors'),
-                                    status=status.HTTP_400_BAD_REQUEST)
+
+                if status_code == checkout.PRE_AUTH:
+                    return Response(response_data, status=status.HTTP_200_OK)
+
+                data = self.response_obj.get_400_message(
+                    message="Failed to submit payment session")
+                return Response(data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
                     message=TRANSACTION_DOESNT_EXIST
