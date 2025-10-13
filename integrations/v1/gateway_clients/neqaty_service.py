@@ -448,6 +448,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     message = response_data.get("partner_response").get(
                         "checkout_response_data", {}).get("response_summary",
                                                           "Payment Failed")
+                    if partner_response.get("status") == "Declined":
+                        message = partner_response.get("decline_reason")
                     self.payment_status = PAYMENT_STATUS_DECLINED
 
             else:

@@ -378,6 +378,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = True
                 message = self.anb_error_response_message(response_data,
                                                               language)
+                if partner_response.get("status") == "Declined":
+                    message = partner_response.get("decline_reason")
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
             if response_data.get('code') == self.SUCCESS:

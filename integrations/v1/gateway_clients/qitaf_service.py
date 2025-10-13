@@ -537,7 +537,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 is_success = False
                 is_redirect = True
                 message = self.qitaf_error_response_message(response_data)
-
+                if response_data.get("status") == "Declined":
+                    message = response_data.get("decline_reason")
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
             """Handle qiTaf full redemption response"""
