@@ -896,7 +896,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "token_type": TOKEN_TYPE_CARD,
                 "channel_code": transaction_obj.channel_code,
                 "client_code": transaction_obj.api_client.client_code,
-                "customer_ip_address": transaction_obj.ip
+                "customer_ip_address": transaction_obj.ip,
+                "is_mada": request_data.get('is_mada', False)
             }
 
             try:
