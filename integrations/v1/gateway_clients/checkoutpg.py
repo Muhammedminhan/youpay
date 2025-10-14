@@ -23,7 +23,9 @@ from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2,
                                     CHECKOUTPG_HUB_CODE,
                                     PAYMENT_REQUEST_CREATE_SESSION,
-                                    PAYMENT_REQUEST_SUBMIT_SESSION
+                                    PAYMENT_REQUEST_SUBMIT_SESSION,
+                                    PAYMENT_DECLINED_STATUS,
+                                    SOFT_DECLINE_RANGE
                                     )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
@@ -935,7 +937,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     response_data.pop('reference_id', None)
 
                     status = response_data.get('status', '')
-                    if status == "Declined":
+                    if status == PAYMENT_DECLINED_STATUS:
                         declined_response = self.handle_submit_session_response(
                             response_data, transaction_obj
                         )
@@ -976,7 +978,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         decline_reason = response_data.get('decline_reason')
         decline_category = response_data.get('decline_category')
 
-        is_redirect_flag = decline_category != 20000
+        is_redirect_flag = decline_category != SOFT_DECLINE_RANGE
         redirect_url = None
 
         if is_redirect_flag:

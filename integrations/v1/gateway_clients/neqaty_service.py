@@ -25,7 +25,7 @@ from integrations.constants import (
     CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
     NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS,
-    EXPECTED_NEQATY_ERRORS)
+    EXPECTED_NEQATY_ERRORS, PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import (
     process_offer_eligibility, process_calculated_item_details)
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
@@ -452,7 +452,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     message = response_data.get("partner_response").get(
                         "checkout_response_data", {}).get("response_summary",
                                                           "Payment Failed")
-                    if partner_response.get("status") == "Declined":
+                    if partner_response.get("status") == PAYMENT_DECLINED_STATUS:
                         message = partner_response.get("decline_reason")
                     self.payment_status = PAYMENT_STATUS_DECLINED
 

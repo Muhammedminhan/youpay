@@ -16,7 +16,8 @@ from integrations.constants import (ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
                                     CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     B2CP_REDEEM_POINTS_API,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    B2CP_VERIFY_API, PAYMENT_REQUEST_VERIFY)
+                                    B2CP_VERIFY_API, PAYMENT_REQUEST_VERIFY,
+                                    PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.anb_serializer import (
     AnbPaymentRequestSerializer)
@@ -381,7 +382,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = True
                 message = self.anb_error_response_message(response_data,
                                                               language)
-                if partner_response.get("status") == "Declined":
+                if partner_response.get("status") == PAYMENT_DECLINED_STATUS:
                     message = partner_response.get("decline_reason")
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:

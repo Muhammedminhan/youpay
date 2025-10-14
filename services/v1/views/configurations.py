@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
+from django.conf import settings
 
 from core.exceptions import PaymentConfigurationFailed
 from core.response_messages import YouPayResponse
@@ -180,6 +181,7 @@ class ConfigViewSet(ViewSet):
                 "is_offer_enabled": transaction.is_offer_applicable,
                 "purchase_origin": (transaction.clevertap_items or {}).get(
                     "purchase_origin"),
+                "environment": settings.ENVIRONMENT
                 **payment_config_data,
             }
         }

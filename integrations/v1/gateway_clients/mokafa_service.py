@@ -20,7 +20,8 @@ from integrations.constants import (
     PAYMENT_REQUEST_GENERATE_OTP, B2CP_OTP_GENERATION_API,
     B2CP_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     B2CP_VERIFY_API,
-    PAYMENT_REQUEST_VERIFY, EXPECTED_MOKAFAA_ERRORS)
+    PAYMENT_REQUEST_VERIFY, EXPECTED_MOKAFAA_ERRORS,
+    PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.mokafaa_serializers import (
     MokafaaPaymentRequestSerializer)
@@ -555,7 +556,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = True
                 message = self.mokafaa_error_response_message(response_data,
                                                               language)
-                if partner_response.get("status") == "Declined":
+                if partner_response.get("status") == PAYMENT_DECLINED_STATUS:
                     message = partner_response.get("decline_reason")
 
                 self.payment_status = PAYMENT_STATUS_DECLINED

@@ -24,7 +24,7 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     CLIENT_CODE_MAPPING,
                                     CLIENT_CODE_MAPPING_ARABIC,
                                     PAYMENT_METHOD, CHECKOUTPG_HUB_CODE,
-                                    QITAF_HUB_CODE
+                                    QITAF_HUB_CODE, PAYMENT_PLATFORM_APP,
                                     )
 from payments.models import YouPayTransactionData
 from services.v1.views.common import YouPayTransactionCRUD
@@ -511,15 +511,15 @@ def get_response_url(transaction_obj, is_partial_payment):
     }
 
     if transaction_obj.platform in [PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID]:
-        query_params["platform"] = "app"
+        query_params["platform"] = PAYMENT_PLATFORM_APP
 
     if is_partial_payment:
-        PAYMENT_METHOD_REVERSE = {v: k for k, v in PAYMENT_METHOD.items()}
+        partner_code_map = {v: k for k, v in PAYMENT_METHOD.items()}
 
         payment_method = transaction_obj.payment_method
         redemption_partner = payment_method.split("_")[0]
 
-        gty = PAYMENT_METHOD_REVERSE.get(redemption_partner)
+        gty = partner_code_map.get(redemption_partner)
 
         query_params.update({
             "redemption_reference_id": transaction_obj.payment_reference,
