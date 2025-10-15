@@ -181,7 +181,6 @@ class ConfigViewSet(ViewSet):
                 "is_offer_enabled": transaction.is_offer_applicable,
                 "purchase_origin": (transaction.clevertap_items or {}).get(
                     "purchase_origin"),
-                "environment": settings.ENVIRONMENT,
                 **payment_config_data,
             }
         }
