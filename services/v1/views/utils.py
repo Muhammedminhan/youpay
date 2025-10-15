@@ -371,7 +371,7 @@ def get_payment_methods(transaction, client, country):
                 if method.payment_gateway.code == CHECKOUTPG_HUB_CODE and method_key in [
                     PAYMENT_OPTION_CHECKOUT_CARD,
                     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
-                ] or method.partial_redemption_allowed:
+                ]:
                     if "checkoutpg_config" not in payment_config_map:
                         logger.info(
                             "Loading checkoutpg_config for transaction_id=%s",
@@ -383,6 +383,15 @@ def get_payment_methods(transaction, client, country):
 
                 else:
                     if method.is_second_project_config_enabled:
+                        if method.partial_redemption_allowed:
+                            if "checkoutpg_config" not in payment_config_map:
+                                logger.info(
+                                    "Loading checkoutpg_config for transaction_id=%s",
+                                    transaction.transaction_id)
+                                checkout_obj = get_configuration_data(
+                                    CHECKOUTPG_HUB_CODE, transaction)
+                                payment_config_map[
+                                    "checkoutpg_config"] = checkout_obj.response_data
                         method_specific_config = method.payment_method_config
                         if not method_specific_config:
                             second_project_obj = get_second_project_configuration_data(
