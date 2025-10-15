@@ -61,6 +61,8 @@ class AnbRedemptionSerializer(serializers.Serializer):
     token_type = serializers.SerializerMethodField()
     card_number = serializers.SerializerMethodField()
     card_expiry = serializers.SerializerMethodField()
+    session_id = serializers.SerializerMethodField()
+    session_data = serializers.SerializerMethodField()
 
     def get_selected_amount(self, data):
         data = self.context.get('request').data
@@ -103,6 +105,14 @@ class AnbRedemptionSerializer(serializers.Serializer):
     def get_card_expiry(self, data):
         data = self.context.get('request').data
         return data.get('card_expiry')
+
+    def get_session_id(self, data):
+        data = self.context.get('request').data
+        return data.get('session_id')
+
+    def get_session_data(self, data):
+        data = self.context.get('request').data
+        return data.get('session_data')
 
     @property
     def transaction_obj(self):

@@ -21,7 +21,8 @@ from integrations.constants import (
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
     PAYMENT_REQUEST_COLLECT_POINTS,
-    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, EXPECTED_QITAF_ERRORS)
+    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, EXPECTED_QITAF_ERRORS,
+    PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -515,8 +516,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         is_full_redemption = response_data.get("is_full_redemption", False)
         if is_full_redemption is False:
             # Handle qitaf partial redemption response
-            redirect_url = response_data.get('url')
-
+            redirect_url = (response_data.get('url') or
+                            response_data.get('action', {}).get('url'))
             if redirect_url:
                 is_success = True
                 is_redirect = True
@@ -543,7 +544,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 is_success = False
                 is_redirect = True
                 message = self.qitaf_error_response_message(response_data)
-
+                if response_data.get("status") == PAYMENT_DECLINED_STATUS:
+                    message = response_data.get("decline_reason")
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
             """Handle qiTaf full redemption response"""

@@ -16,7 +16,8 @@ from integrations.constants import (ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
                                     CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     B2CP_REDEEM_POINTS_API,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    B2CP_VERIFY_API, PAYMENT_REQUEST_VERIFY)
+                                    B2CP_VERIFY_API, PAYMENT_REQUEST_VERIFY,
+                                    PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.anb_serializer import (
     AnbPaymentRequestSerializer)
@@ -348,12 +349,14 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
             "handle_anb_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
+        data = {}
         partner_response = response_data.get('partner_response')
         name_on_card = partner_response.get("customer_name", "")
         language = payment_data.language
         is_full_redemption = partner_response.get("is_full_redemption", False)
         if is_full_redemption is False:
-            redirect_url = partner_response.get('redirect_url')
+            redirect_url = (partner_response.get('url') or
+                            partner_response.get('action', {}).get('url'))
             if redirect_url:
                 is_success = True
                 is_redirect = True
@@ -365,6 +368,12 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 self.points_redeemed_mobile_number = partner_response.get(
                     'redeemed_mobile_number')
                 self.point_program = PAYMENT_METHOD_ANB
+                data = {
+                    "id": partner_response.get("id"),
+                    "status": partner_response.get("status"),
+                    "type": partner_response.get("type"),
+                    "action": partner_response.get("action")
+                }
             else:
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.failure_url,
@@ -373,6 +382,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = True
                 message = self.anb_error_response_message(response_data,
                                                               language)
+                if partner_response.get("status") == PAYMENT_DECLINED_STATUS:
+                    message = partner_response.get("decline_reason")
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
             if response_data.get('code') == self.SUCCESS:
@@ -438,6 +449,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
             "anb_response": response_data,
             "is_success": is_success
         }
+        if data and partner_response.get("is_payment_success"):
+            return_response["data"] = data
         return return_response
 
     def verification(self, request_data):

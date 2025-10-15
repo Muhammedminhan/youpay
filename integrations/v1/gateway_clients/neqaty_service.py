@@ -25,7 +25,7 @@ from integrations.constants import (
     CONTENT_TYPE_HEADERS,
     PAYMENT_REQUEST_VERIFY, REDEMPTION_PARTNER_NEQATY,
     NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS,
-    EXPECTED_NEQATY_ERRORS)
+    EXPECTED_NEQATY_ERRORS, PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import (
     process_offer_eligibility, process_calculated_item_details)
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
@@ -38,6 +38,7 @@ from services.v1.views.common import (add_payment_gateway_info_in_url,
                                       YouPayTransactionCRUD)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -360,7 +361,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         response_redeem_options = []
 
         for option in redeem_options:
-            redeem_amount = option.get("redeemAmount")
+            redeem_amount = Decimal(option.get("redeemAmount"))
             if redeem_amount > total_amount:
                 continue
             if program_offer:
@@ -409,18 +410,18 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
 
-        is_full_redemption = response_data.get("partner_response").get(
-            "is_full_redemption", False)
-        redemption_status = response_data.get("partner_response").get(
-            "redemption_status", False)
+        partner_response = response_data.get('partner_response')
+        is_full_redemption = partner_response.get("is_full_redemption", False)
+        redemption_status = partner_response.get("redemption_status", False)
         name_on_card = ""
         message = self.SUCCESS
         amount = payment_data.amount
+        data = {}
 
         if redemption_status:
             if is_full_redemption is False:
-                redirect_url = response_data.get('partner_response',
-                                                 {}).get('url')
+                redirect_url = (partner_response.get('url') or
+                                partner_response.get('action', {}).get('url'))
                 if redirect_url:
                     is_success = True
                     is_redirect = True
@@ -435,6 +436,12 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                             earn_on_partial_redemption=True
                         )))
 
+                    data = {
+                        "id": partner_response.get("id"),
+                        "status": partner_response.get("status"),
+                        "type": partner_response.get("type"),
+                        "action": partner_response.get("action")
+                    }
 
                 else:
                     redirect_url = ('{}?transaction_id={}'.format(
@@ -445,6 +452,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                     message = response_data.get("partner_response").get(
                         "checkout_response_data", {}).get("response_summary",
                                                           "Payment Failed")
+                    if partner_response.get("status") == PAYMENT_DECLINED_STATUS:
+                        message = partner_response.get("decline_reason")
                     self.payment_status = PAYMENT_STATUS_DECLINED
 
             else:
@@ -488,6 +497,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             IS_REDIRECT: is_redirect,
             "is_success": is_success
         }
+        if data and partner_response.get('is_payment_success'):
+            return_response["data"] = data
         return return_response
 
     def handle_neqaty_point_redeem_response(self, response, transaction_obj,
