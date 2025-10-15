@@ -322,7 +322,8 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     udf1 = models.JSONField(null=True, blank=True,
                             help_text="Store values required for the client")
     additional_reference = models.CharField(max_length=120, null=True,
-                                            blank=True, db_index=True)
+                            blank=True, db_index=True, help_text="Reference "
+                            "stored during session creation for future use")
 
 @receiver(post_init, sender=YouPayTransactionData)
 def set_previous_status(sender, instance, **kwargs):
