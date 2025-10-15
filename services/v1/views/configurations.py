@@ -593,7 +593,9 @@ class RedemptionPartnerPrograms(APIView, ClientValidator, YouPayResponse):
                                 "code": method_specific_config.get("code"),
                                 "logo": method_specific_config.get("logo"),
                                 "redemption_amount": method_specific_config.get(
-                                    "redemption_amount").get(currency_code),
+                                    "redemption_amount").get(
+                                    currency_code) if method_specific_config.get(
+                                    "redemption_amount") else None,
                             })
                         else:
                             logger.error(
