@@ -566,7 +566,6 @@ class UpdateAmounts(APIView):
                     youpay_transaction_obj.VAT_amount = vat_amount
 
                 youpay_transaction_obj.brand_calculations = None
-
                 youpay_transaction_obj.save()
 
                 data = response_obj.get_success_dict(code=response_obj.SUCCESS)
@@ -578,6 +577,14 @@ class UpdateAmounts(APIView):
                     response_obj.get_404_message(message="Payment request "
                     "object not found."), status=status.HTTP_404_NOT_FOUND
                 )
+
+        except YouPayTransactionData.DoesNotExist:
+            logger.error(f"YouPayTransactionData not found for "
+                         f"transaction_id: {transaction_id}")
+            data = response_obj.get_404_message(
+                message="YouPayTransactionData object not found."
+            )
+            return Response(data, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
             message = str(e)
