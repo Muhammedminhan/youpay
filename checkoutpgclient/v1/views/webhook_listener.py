@@ -130,8 +130,6 @@ class WebhookListener(APIView, WebhookDataFormat):
                         auth_code=str(request_data.get('auth_code', None)),
                         response_summary=str(
                             request_data.get('response_summary', None)),
-                        checkout_response_code=str(
-                            request_data.get('checkout_response_code', None)),
                         idempotency_key=str(
                             request_data.get('idempotency_key')),
                         is_fraud=request_data.get('is_fraud'),

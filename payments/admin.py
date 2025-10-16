@@ -76,7 +76,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Payment details', {
             'fields': ('amount', 'currency', 'country_code',
-                       'transaction_id', 'payment_reference', 'additional_reference',
+                       'transaction_id', 'payment_reference',
                        'settlement_entity', 'payment_gateway',
                        'channel_code', 'payment_method', 'payment_scheme',
                        'platform', 'response_summary', 'service_fee',

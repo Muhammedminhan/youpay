@@ -22,10 +22,6 @@ from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     PAYMENT_REQUEST_CREATE_TRANSACTION,
                                     CHECKOUTPG_KEY_AND_SECRET_ENDPOINT_V2,
                                     CHECKOUTPG_HUB_CODE,
-                                    PAYMENT_REQUEST_CREATE_SESSION,
-                                    PAYMENT_REQUEST_SUBMIT_SESSION,
-                                    PAYMENT_DECLINED_STATUS,
-                                    SOFT_DECLINE_RANGE
                                     )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
@@ -39,17 +35,11 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_SAVED_CARD,
                                 PAYMENT_METHOD_CARD, PAYMENT_METHOD_PAYPAL,
-                                PAYMENT_METHOD_APPLEPAY,
-                                CREATE_SESSION_ENDPOINT,
-                                SUBMIT_SESSION_ENDPOINT,
-                                PAYMENT_OPTION_CARD, PAYMENT_STATUS_DECLINED,
-                                PAYMENT_STATUS_DECLINED_RETRY
+                                PAYMENT_METHOD_APPLEPAY
                                 )
-from services.v1.views.common import AdditionalChargesUpdation
+from services.v1.views.common import (AdditionalChargesUpdation)
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
-from .utils import get_response_url
-from services.constants import TOKEN_TYPE_CARD
 
 logger = logging.getLogger(__name__)
 
@@ -810,187 +800,3 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "id {}, err : {}".format(self.transaction_id, str(e)))
             logger.error(msg)
             return None, self.APPLE_PAY_CONNECTION_ERROR
-
-    def create_payment_session(self, transaction_obj, is_mada,
-                               is_partial_payment):
-        """
-        Method for creating a Checkout payment session
-        """
-        if self.checkoutpg_config:
-            amount = (transaction_obj.payable_amount if is_partial_payment
-                      else transaction_obj.amount)
-            request_data = {
-                "amount": str(amount),
-                "currency": transaction_obj.currency,
-                "channel_code": get_channel_code(transaction_obj),
-                "response_url": get_response_url(
-                    transaction_obj, is_partial_payment),
-                "customer_name": transaction_obj.customer_name,
-                "customer_email": transaction_obj.customer_email,
-                "order_reference": transaction_obj.order_reference,
-                "country_code": transaction_obj.country_code,
-                "is_mada": is_mada
-            }
-
-            try:
-                url = self.checkoutpg_config.domain + CREATE_SESSION_ENDPOINT
-                headers = self.get_payment_header()
-
-                response = requests.post(url, data=json.dumps(request_data),
-                                         headers=headers)
-
-                logger.info(
-                    "Checkout create session response for transaction %s: %s",
-                    transaction_obj.id, response.text
-                )
-
-                self.create_youpay_to_payment_gateways_data(
-                    transaction_obj=transaction_obj,
-                    transaction_id=transaction_obj.transaction_id,
-                    request_data=json.dumps(request_data),
-                    response_data=response.text,
-                    request_method=REQUEST_METHOD_POST,
-                    request_type=PAYMENT_REQUEST_CREATE_SESSION,
-                )
-
-                if response:
-                    response_data = response.json()
-                    response_data.update({
-                        "channel_code": request_data.get("channel_code")
-                    })
-                    return response_data, self.SUCCESS
-                logger.error(
-                    "Checkout session creation failed for transaction %s: %s",
-                    transaction_obj.transaction_id, response.text
-                )
-                return None, self.PAYMENT_FAILED
-
-            except Exception as e:
-                logger.error(
-                    "Unable to create checkout session for user %s because %s",
-                    transaction_obj.customer_email, str(e)
-                )
-                return None, self.PAYMENT_FAILED
-        else:
-            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
-            return None, self.PAYMENT_FAILED
-
-    def submit_payment_session(self, transaction_obj, request_data):
-        """
-        Method for submitting a Checkout payment session
-        """
-        if self.checkoutpg_config:
-            is_save_user_token = request_data.get('is_save_user_token', False)
-
-            payment_request_data = {
-                "session_data": request_data.get('session_data'),
-                "payment_reference": transaction_obj.additional_reference,
-                "session_id": request_data.get('session_id'),
-                "is_save_user_token": is_save_user_token,
-                "customer_name": request_data.get('customer_name'),
-                "amount": str(transaction_obj.amount),
-                "order_reference": transaction_obj.order_reference,
-                "currency": transaction_obj.currency,
-                "customer_email": transaction_obj.customer_email,
-                "amount_in_aed": str(transaction_obj.amount_in_aed),
-                "invoice_id": transaction_obj.invoice_id,
-                "order_id": transaction_obj.order_id,
-                "token_type": TOKEN_TYPE_CARD,
-                "channel_code": transaction_obj.channel_code,
-                "client_code": transaction_obj.api_client.client_code,
-                "customer_ip_address": transaction_obj.ip,
-                "is_mada": request_data.get('is_mada', False)
-            }
-
-            try:
-                url = self.checkoutpg_config.domain + SUBMIT_SESSION_ENDPOINT
-                headers = self.get_payment_header()
-
-                response = requests.post(url, data=json.dumps(
-                    payment_request_data), headers=headers)
-
-                logger.info(
-                    "Checkout submit session response for transaction %s: %s",
-                    transaction_obj.id, response.text
-                )
-
-                self.create_youpay_to_payment_gateways_data(
-                    transaction_obj=transaction_obj,
-                    transaction_id=transaction_obj.transaction_id,
-                    request_data=json.dumps(payment_request_data),
-                    response_data=response.text,
-                    request_method=REQUEST_METHOD_POST,
-                    request_type=PAYMENT_REQUEST_SUBMIT_SESSION,
-                )
-
-                if response:
-                    response_data = response.json()
-
-                    transaction_data = {
-                        "transaction_id": transaction_obj.transaction_id,
-                        "payment_status": PAYMENT_STATUS_PENDING,
-                        "payment_reference": response_data.get('reference_id'),
-                        "payment_method": PAYMENT_OPTION_CARD,
-                        "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                        "name_on_card": request_data.get("customer_name")
-                    }
-                    response_data.pop('reference_id', None)
-
-                    status = response_data.get('status', '')
-                    if status == PAYMENT_DECLINED_STATUS:
-                        declined_response = self.handle_submit_session_response(
-                            response_data, transaction_obj
-                        )
-
-                        if declined_response.get("redirect_url"):
-                            transaction_data["payment_status"] = (
-                                PAYMENT_STATUS_DECLINED)
-                        else:
-                            transaction_data["payment_status"] = (
-                                PAYMENT_STATUS_DECLINED_RETRY)
-
-                        self.update_youpay_transaction_data(transaction_data)
-                        return declined_response, self.PRE_AUTH
-
-                    self.update_youpay_transaction_data(transaction_data)
-                    return response_data, self.SUCCESS
-
-                logger.error(
-                    "Checkout session submission failed for transaction %s: %s",
-                    transaction_obj.transaction_id, response.text
-                )
-                return None, self.PAYMENT_FAILED
-
-            except Exception as e:
-                logger.error(
-                    "Unable to submit checkout session for user %s because %s",
-                    transaction_obj.customer_email, str(e)
-                )
-                return None, self.PAYMENT_FAILED
-        else:
-            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
-            return None, self.PAYMENT_FAILED
-
-    def handle_submit_session_response(self, response_data, transaction_obj):
-        """
-        Method for handling submit session response
-        """
-        decline_reason = response_data.get('decline_reason')
-        decline_category = response_data.get('decline_category')
-
-        is_redirect_flag = decline_category != SOFT_DECLINE_RANGE
-        redirect_url = None
-
-        if is_redirect_flag:
-            redirect_url = ('{}?transaction_id={}'.format(
-            transaction_obj.failure_url, transaction_obj.transaction_id))
-
-        response = {
-            IS_REDIRECT: is_redirect_flag,
-            "redirect_url": redirect_url,
-            IS_SUCCESS: False,
-            "message": decline_reason,
-            "code": self.PRE_AUTH
-        }
-
-        return response

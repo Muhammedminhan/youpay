@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
-from django.conf import settings
 
 from core.exceptions import PaymentConfigurationFailed
 from core.response_messages import YouPayResponse
@@ -47,7 +46,6 @@ from services.v1.views.utils import (get_announcements,
                                      get_client_for_configuration,
                                      get_payment_methods
                                      )
-from services.models import PaymentRequestData
 
 logger = logging.getLogger(__name__)
 
@@ -528,66 +526,3 @@ def get_mobile_logo_url(client):
         return client.mobile_logo_file.url
     else:
         return None
-
-
-class UpdateAmounts(APIView):
-    """
-    API for updating service fee and VAT for a new payment attempt
-    """
-
-    def post(self, request):
-        """
-        Extracts service fee and VAT from PaymentRequest table and updates
-        them in YouPayTransactionData.
-        """
-        response_obj = YouPayResponse()
-        transaction_id = decrypt_string(request.GET.get('id', None))
-
-        try:
-            youpay_transaction_obj = YouPayTransactionData.objects.get(
-                transaction_id=transaction_id)
-            order_reference = youpay_transaction_obj.order_reference
-
-            payment_request_object = PaymentRequestData.objects.filter(
-                order_reference=order_reference).first()
-
-            if payment_request_object:
-                request_data = payment_request_object.request_data
-
-                # Extract values from request_data
-                service_fee = request_data.get("order", {}).get("service_fee")
-                vat_amount = request_data.get("order", {}).get("VAT_amount")
-
-                if service_fee is not None:
-                    youpay_transaction_obj.service_fee = service_fee
-
-                if vat_amount is not None:
-                    youpay_transaction_obj.VAT_amount = vat_amount
-
-                youpay_transaction_obj.brand_calculations = None
-                youpay_transaction_obj.save()
-
-                data = response_obj.get_success_dict(code=response_obj.SUCCESS)
-                return Response(data,status=status.HTTP_200_OK)
-            else:
-                logger.error("Payment Request not fount for order reference: "
-                             "{}".format(order_reference))
-                return Response(
-                    response_obj.get_404_message(message="Payment request "
-                    "object not found."), status=status.HTTP_404_NOT_FOUND
-                )
-
-        except YouPayTransactionData.DoesNotExist:
-            logger.error(f"YouPayTransactionData not found for "
-                         f"transaction_id: {transaction_id}")
-            data = response_obj.get_404_message(
-                message="YouPayTransactionData object not found."
-            )
-            return Response(data, status=status.HTTP_404_NOT_FOUND)
-
-        except Exception as e:
-            message = str(e)
-            logger.error("Exception occurred while updating amounts for "
-                         "transaction {}: {}".format(transaction_id, message))
-            data = response_obj.get_404_message(message=message)
-            return Response(data, status=status.HTTP_404_NOT_FOUND)

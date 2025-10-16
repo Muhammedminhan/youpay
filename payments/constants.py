@@ -295,6 +295,3 @@ REDEEM_AMOUNT_APPLICABLE_LIST = [
 GROUPGIFT_ORDER_ID_ENDPOINT = '/payments/api/v2/order/references/'
 
 CARD_BIN_MAX_LENGTH = 10
-
-CREATE_SESSION_ENDPOINT = '/gateway/checkout/api/v1/create-session/'
-SUBMIT_SESSION_ENDPOINT = '/gateway/checkout/api/v1/submit-session/'
