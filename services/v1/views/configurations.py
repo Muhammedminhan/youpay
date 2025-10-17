@@ -570,7 +570,7 @@ class UpdateAmounts(APIView):
                 data = response_obj.get_success_dict(code=response_obj.SUCCESS)
                 return Response(data,status=status.HTTP_200_OK)
             else:
-                logger.error("Payment Request not fount for order reference: "
+                logger.error("Payment Request not found for order reference: "
                              "{}".format(order_reference))
                 return Response(
                     response_obj.get_404_message(message="Payment request "
