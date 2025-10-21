@@ -15,7 +15,8 @@ from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 ApplePayStatusUpdateAPI)
 from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI,
-                                              RedemptionPartnerPrograms)
+                                              RedemptionPartnerPrograms,
+                                              UpdateAmounts)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization,
                                    AmazonPGSavedCard)
@@ -154,6 +155,9 @@ urlpatterns = [
     path('anb/redeem-points/', AnbRedeemPointsAPIView.as_view(),
          name='AnbRedeemPointsAPIView'),
     path('anb/verify/', AnbVerify.as_view(), name='AnbVerify'),
+
+    # API for updating service fee and VAT for a new payment attempt
+    path('update-amounts/', UpdateAmounts.as_view()),
 
     # PayPal Endpoints
     path('paypal/charge/', PayPalChargeAPIView.as_view(), name='PayPalCharge'),
