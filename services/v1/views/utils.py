@@ -331,6 +331,18 @@ def get_country_for_configuration(transaction):
     return country
 
 
+def get_second_project_configuration_data(gateway, transaction_obj):
+    cache_key = f"payment_config_{gateway.code}"
+    payment_method_config = cache.get(cache_key)
+    if not payment_method_config:
+        payment_method_config = get_configuration_data(gateway.code,
+                                                       transaction_obj,
+                                                       gateway)
+        cache.set(cache_key, payment_method_config, timeout=180)
+
+    return payment_method_config
+
+
 def get_client_for_configuration(transaction):
     try:
         client = APIClient.objects.get(id=transaction.api_client_id)
@@ -451,18 +463,6 @@ def get_payment_methods(transaction, client, country):
             "transaction, {}, {}".format(transaction.transaction_id, str(e)),
             exc_info=True)
     return payment_options, payment_config_map
-
-
-def get_second_project_configuration_data(gateway, transaction_obj):
-    cache_key = f"payment_config_{gateway.code}"
-    payment_method_config = cache.get(cache_key)
-    if not payment_method_config:
-        payment_method_config = get_configuration_data(gateway.code,
-                                                       transaction_obj,
-                                                       gateway)
-        cache.set(cache_key, payment_method_config, timeout=180)
-
-    return payment_method_config
 
 
 def get_payment_option_constant(payment_gateway, payment_method):
