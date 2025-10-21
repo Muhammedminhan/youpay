@@ -590,7 +590,8 @@ class RedemptionPartnerPrograms(APIView, ClientValidator, YouPayResponse):
                             payment_options.append({
                                 "name": method_key,
                                 "display_name": method_specific_config.get(
-                                    'display_name_ar') if language_code == 'ar' else method_key,
+                                    'display_name_ar') if language_code == 'ar' else method_specific_config.get(
+                                    "display_name"),
                                 "code": method_specific_config.get("code"),
                                 "logo": method_specific_config.get("logo"),
                                 "redemption_amount": method_specific_config.get(

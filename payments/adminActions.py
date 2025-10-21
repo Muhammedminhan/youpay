@@ -1,15 +1,17 @@
 import json
 import logging
-
 import requests
+
 from django.contrib import messages
 from django.core.serializers.json import DjangoJSONEncoder
+
 from rest_framework import status
 
-from core.constants import PAYMENT_GATEWAY_PAYPAL
-from core.utils import get_flagged_email_data
+from core.response_messages import YouPayResponse
 from integrations.constants import B2CPAYBACK_HUB_CODE
 from integrations.models import PaymentGateway
+from integrations.v1.gateway_clients.neqaty_service import (
+    NeqatyServiceManager)
 from payments.constants import (ALLOW_ARCHIVE_STATUS_LIST,
                                 PAYMENT_STATUS_PAID,
                                 PAYMENT_METHOD_QITAFAND_CARD,
@@ -201,49 +203,5 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
         response_message = (
             "Syncing qitaf earn failed with error : {}".format(str(e)))
         logger.error(response_message, exc_info=e)
-        modeladmin.message_user(request, response_message,
-                                level=messages.ERROR)
-
-
-def mark_flagged_for_paypal(modeladmin, request, queryset):
-    """
-    Function to mark PayPal transactions as flagged.
-    """
-    try:
-        if queryset.count() > 10:
-            modeladmin.message_user(request,
-                                    "You can only select 10 transaction to process.",
-                                    level=messages.WARNING)
-            return
-
-        for transaction in queryset:
-            if transaction.payment_gateway == PAYMENT_GATEWAY_PAYPAL:
-                if transaction.payment_status == PAYMENT_STATUS_PAID:
-                    transaction.is_flagged = True
-                    transaction.save()
-                    from payments.tasks import send_flagged_mail_alert
-                    email_data = get_flagged_email_data(transaction)
-                    send_flagged_mail_alert.delay(**email_data)
-                    logger.info(
-                        f"Transaction {transaction.transaction_id} marked as flagged.")
-                    modeladmin.message_user(
-                        request, f"Transaction {transaction.transaction_id} "
-                                 f"marked as flagged.",
-                        level=messages.SUCCESS)
-                else:
-                    modeladmin.message_user(
-                        request,
-                        f"Transaction {transaction.transaction_id} is not paid, "
-                        f"cannot be flagged.",
-                        level=messages.WARNING)
-            else:
-                modeladmin.message_user(
-                    request,
-                    f"Transaction {transaction.transaction_id} is not a "
-                    f"PayPal transaction, cannot be flagged.",
-                    level=messages.WARNING)
-    except Exception as e:
-        response_message = f"Marking PayPal transactions as flagged failed: {str(e)}"
-        logger.error(response_message, exc_info=True)
         modeladmin.message_user(request, response_message,
                                 level=messages.ERROR)

@@ -4,8 +4,7 @@ from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
 from payments.adminActions import (archive_transaction_data,
                                    collect_b2c_program_points_for_transaction,
-                                   sync_qitaf_earn_to_purchase_request,
-                                   mark_flagged_for_paypal)
+                                   sync_qitaf_earn_to_purchase_request)
 from payments.forms import AnnouncementForm
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification, AdditionalCharge,
@@ -22,8 +21,7 @@ class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
     actions = [archive_transaction_data,
                collect_b2c_program_points_for_transaction,
-               sync_qitaf_earn_to_purchase_request,
-               mark_flagged_for_paypal]
+               sync_qitaf_earn_to_purchase_request]
     archive_transaction_data.short_description = (
         "Archive Selected Transaction data")
     collect_b2c_program_points_for_transaction.short_description = (
@@ -31,8 +29,6 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     sync_qitaf_earn_to_purchase_request.short_description = (
         "Sync qitaf earn data"
     )
-    mark_flagged_for_paypal.short_description = (
-        "Mark PayPal transactions as flagged for review")
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
                     'payment_status', 'invoice_id', 'order_reference',
@@ -107,7 +103,6 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'point_collection_enabled',
                        'maximum_redeemable_points',
                        'minimum_redeemable_points', 'amount_conversion_rate',
-                       'redemption_partner'
                        )
         }),
         ('Happycredits transaction details', {
