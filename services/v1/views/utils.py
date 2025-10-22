@@ -64,7 +64,7 @@ def reformat_payment_request_data(data):
     urls = data.get('urls')
     order_history = data.get('order_history')
     order_items = data.get('order_items')
-    data['redemption_partner'] = data.get('redemption_partner', None)
+    data['redemption_partner'] = data.get('redemption_partner')
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')

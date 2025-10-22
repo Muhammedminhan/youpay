@@ -7,7 +7,6 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
-from django.conf import settings
 
 from core.exceptions import PaymentConfigurationFailed
 from core.models import PaymentMethodConfig, Country
@@ -40,6 +39,7 @@ from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
                                 APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
                                 APPLEPAY_LABEL)
+from services.models import PaymentRequestData
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
@@ -50,7 +50,6 @@ from services.v1.views.utils import (get_announcements,
                                      get_client_for_configuration,
                                      get_payment_methods
                                      )
-from services.models import PaymentRequestData
 
 logger = logging.getLogger(__name__)
 
@@ -621,14 +620,32 @@ class RedemptionPartnerPrograms(APIView, ClientValidator, YouPayResponse):
                 self.return_data.get('errors'),
                 status=status.HTTP_400_BAD_REQUEST
             )
+
         country_code = request.GET.get('country_code', None)
-        country = Country.objects.get(iso_code=country_code)
-        language_code = request.GET.get('lang', None)
-        currency_code = country.currency.iso_code
+        if not country_code:
+            self.return_data = self.get_400_message(
+                message="Missing required parameter: country_code"
+            )
+            return Response(
+                self.return_data.get('errors'),
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
+            country = Country.objects.get(iso_code=country_code)
+        except Country.DoesNotExist:
+            self.return_data = self.get_404_message(
+                message=f"Country with code '{country_code}' does not exist"
+            )
+            return Response(
+                self.return_data.get('errors'),
+                status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            language_code = request.GET.get('lang', None)
+            currency_code = country.currency.iso_code
             is_guest = True if request.GET.get(
-                'is_guest').lower() == 'true' else False
+                'is_guest', '').lower() == 'true' else False
             payment_method_query = Q(
                 payment_method__active=True,
                 client=client,
@@ -652,15 +669,16 @@ class RedemptionPartnerPrograms(APIView, ClientValidator, YouPayResponse):
                         method_specific_config = method.payment_method_config
 
                         if method_specific_config:
+                            display_name = method_specific_config.get(
+                                'display_name_ar') if language_code == 'ar' else method_specific_config.get(
+                                "display_name")
                             payment_options.append({
                                 "name": method_key,
-                                "display_name": method_specific_config.get(
-                                    'display_name_ar') if language_code == 'ar' else method_specific_config.get(
-                                    "display_name"),
+                                "display_name": display_name,
                                 "code": method_specific_config.get("code"),
                                 "logo": method_specific_config.get("logo"),
                                 "redemption_amount": method_specific_config.get(
-                                    "redemption_amount").get(
+                                    "redemption_amount", {}).get(
                                     currency_code) if method_specific_config.get(
                                     "redemption_amount") else None,
                             })
