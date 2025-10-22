@@ -20,7 +20,10 @@ from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_STC_ENDPOINT,
                                        PAYPAL_REFUND_STATUS_COMPLETED,
                                        PAYPAL_REFUND_ENDPOINT,
-                                       PAYPAL_RESPONSE_COMPLETE_STATUS)
+                                       PAYPAL_RESPONSE_COMPLETE_STATUS,
+                                       PAYPAL_ACCOUNT_UNVERIFIED,
+                                       PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED,
+                                       PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
@@ -426,7 +429,8 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             headers.update({
                 "PayPal-Client-Metadata-Id": self.tracking_id_stc
             })
-            order_status = self.check_order_approval(order_id,
+            order_status, order_status_code = self.check_order_approval(
+                order_id,
                                                      paypal_transaction)
             if order_status["status"] == PAYPAL_ORDER_STATUS_APPROVED:
                 url = self.paypal_config.domain + PAYPAL_ORDER_ENDPOINT + '/' + order_id + '/capture'
@@ -469,8 +473,17 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                     "message": "Paypal Payment Not Complete",
                 }
                 return return_data, self.PAYPAL_PAYMENT_INCOMPLETE
-            else:
-                return None, self.PAYPAL_CONNECTION_ERROR
+
+            redirect_url = get_redirect_url(
+                self.transaction_obj.failure_url,
+                self.transaction_id)
+            return_data = {
+                "status": 400,
+                "is_redirect": True,
+                "is_success": False,
+                "redirect_url": redirect_url,
+            }
+            return return_data, order_status_code
 
         except requests.ConnectTimeout as timeout_err:
             logger.error(
@@ -735,19 +748,39 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         if not order_data:
             logger.error(
                 "No order data found for order_id {}".format(order_id))
-            return {"status": "error", "message": "Order details not found"}
+            return {"status": "error",
+                    "message": "Order details not found"}, self.PAYPAL_CONNECTION_ERROR
 
         status = order_data.get("status")
+        paypal_source = order_data.get("payment_source", {}).get(
+            "paypal", {})
 
         if status == "APPROVED":
-            update_data = {
-                "status": PAYPAL_ORDER_STATUS_APPROVED
+            order_status_code = self.SUCCESS
+            issues = {
+                "account_status": paypal_source.get("account_status"),
+                "address_country_code": paypal_source.get("address", {}).get(
+                    "country_code"),
+                "card_issuer_country": paypal_source.get("card", {}).get(
+                    "country_code")
             }
+            updated_status = PAYPAL_ORDER_STATUS_APPROVED
+
+            if issues["account_status"] != "VERIFIED":
+                updated_status = PAYPAL_ACCOUNT_UNVERIFIED
+                order_status_code = self.PAYPAL_ACCOUNT_UNVERIFIED
+            elif issues["address_country_code"] == "IN":
+                updated_status = PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED
+                order_status_code = self.PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED
+            elif issues["card_issuer_country"] == "IN":
+                updated_status = PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED
+                order_status_code = self.PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED
+
             self.update_paypal_transaction_data(paypal_transaction,
-                                                update_data)
-            logger.info("Order is APPROVED for transaction {}".format(
-                self.transaction_id))
-            return {"status": PAYPAL_ORDER_STATUS_APPROVED}
+                                                {"status": updated_status})
+            logger.info(
+                f"Order {updated_status} for transaction {self.transaction_id}")
+            return {"status": updated_status}, order_status_code
 
         elif status == "CREATED":
             links = order_data.get("links", [])
@@ -765,7 +798,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 return {
                     "status": PAYPAL_ORDER_STATUS_CREATED,
                     "redirect_url": approval_url
-                }
+                }, self.PAYPAL_PAYMENT_INCOMPLETE
             else:
                 logger.error(
                     "Approval URL not found in PayPal order response for transaction {}".format(
@@ -773,7 +806,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 return {
                     "status": "error",
                     "message": "Approval link not found"
-                }
+                }, self.PAYPAL_CONNECTION_ERROR
 
         else:
             logger.error(
@@ -782,7 +815,7 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             return {
                 "status": "error",
                 "message": "Order is not approved or ready"
-            }
+            }, self.PAYPAL_CONNECTION_ERROR
 
     def refund_paypal_transaction(self, request_data):
         self.reference_id = request_data.get("payment_reference")

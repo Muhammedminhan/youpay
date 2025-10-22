@@ -187,7 +187,10 @@ class YouPayResponse(object):
     PAYPAL_INSUFFICIENT_FUNDS = 18006
     PAYPAL_INVALID_REQUEST = 18007
     PAYPAL_NOT_SUPPORTED = 18008
-    PAYAPL_PAYMENT_INCOMPLETE = 18009
+    PAYPAL_PAYMENT_INCOMPLETE = 18009
+    PAYPAL_ACCOUNT_UNVERIFIED = 18010
+    PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED = 18011
+    PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED = 18012
     """PayPal related ends"""
 
     MESSAGE = {}
@@ -342,7 +345,16 @@ class YouPayResponse(object):
             self.PAYPAL_INSUFFICIENT_FUNDS: "PayPal insufficient funds",
             self.PAYPAL_INVALID_REQUEST: "PayPal invalid request",
             self.PAYPAL_NOT_SUPPORTED: "PayPal not supported",
-            self.PAYAPL_PAYMENT_INCOMPLETE: "PayPal payment incomplete",
+            self.PAYPAL_PAYMENT_INCOMPLETE: "PayPal payment incomplete",
+            self.PAYPAL_ACCOUNT_UNVERIFIED: (
+                "Please verify your PayPal account to complete the transaction. "
+                "-(يرجى التحقق من حسابك في باي بال لإتمام المعاملة.)"),
+            self.PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED: (
+                "PayPal account country is not supported for this transaction. "
+                "-(بلد حساب باي بال غير مدعوم لهذه المعاملة.)"),
+            self.PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED: (
+                "The card linked to your PayPal account is from an unsupported"
+                " country. -(البطاقة المرتبطة بحسابك في باي بال صادرة من دولة غير مدعومة.)"),
         })
 
     def get_400_message(self, message):
