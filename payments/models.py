@@ -203,7 +203,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         help_text='Minimum points used for citi rewards point redemption')
     redemption_partner = models.CharField(
         max_length=200, null=True, blank=True,
-        help_text="Used to identify the redemption partner")
+        help_text="Used to identify the redemption partner in case of add balance")
     amount_conversion_rate = models.DecimalField(
         null=True, blank=True, decimal_places=10, max_digits=12,
         help_text=('Conversion rate received from citi '
