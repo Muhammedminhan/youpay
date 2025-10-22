@@ -15,10 +15,13 @@ from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 ApplePayStatusUpdateAPI)
 from services.v1.views.configurations import (ConfigViewSet,
                                               ClientStaticFilesAPI,
+                                              RedemptionPartnerPrograms,
                                               UpdateAmounts)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization,
                                    AmazonPGSavedCard)
+from .api_clients.anb_service import (AnbGenerateOTPAPIView,
+                                      AnbRedeemPointsAPIView, AnbVerify)
 from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiPointRedemptionAPIView,
                                        CitiGenerateOTPAPIView)
@@ -34,19 +37,17 @@ from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyVerify,
                                          UpdateNeqatyPhoneNumber,
                                          NeqatyTransactionSync)
+from .api_clients.paypalpg import (PayPalChargeAPIView,
+                                   PayPalPaymentAPIView, PayPalVerifyAPIView)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
-from .api_clients.anb_service import (AnbGenerateOTPAPIView,
-                                      AnbRedeemPointsAPIView, AnbVerify)
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
                             AdditionalChargeCalculation,
                             EarnRedemptionPartnerPoints)
-from .api_clients.paypalpg import (PayPalChargeAPIView,
-                                   PayPalPaymentAPIView, PayPalVerifyAPIView)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -113,6 +114,9 @@ urlpatterns = [
 
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
+
+    # API for getting redemption partner programs list
+    path('redemption-partner-programs/', RedemptionPartnerPrograms.as_view()),
 
     # Citi Rewards endpoints
     path('citi/generate-otp/', CitiGenerateOTPAPIView.as_view(),
