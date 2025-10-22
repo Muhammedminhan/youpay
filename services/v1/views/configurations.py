@@ -2,12 +2,14 @@ import logging
 import random
 import string
 
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.exceptions import PaymentConfigurationFailed
+from core.models import PaymentMethodConfig, Country
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
@@ -37,9 +39,11 @@ from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
                                 APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
                                 APPLEPAY_LABEL)
+from services.models import PaymentRequestData
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
 )
+from services.v1.views.common import ClientValidator
 from services.v1.views.utils import (get_announcements,
                                      get_session_id_from_header,
                                      get_country_for_configuration,
@@ -163,8 +167,6 @@ class ConfigViewSet(ViewSet):
                 else None,
                 "cart_base_amount": transaction.cart_base_amount if
                 transaction else None,
-                "citi_config": self.check_citi_allowed_denominations(
-                    payment_options, transaction),
                 "redirect_url": self._get_redirect_url(transaction),
                 "announcements": get_announcements(transaction.platform),
                 "is_guest": transaction.is_guest,
@@ -526,3 +528,193 @@ def get_mobile_logo_url(client):
         return client.mobile_logo_file.url
     else:
         return None
+
+
+class UpdateAmounts(APIView):
+    """
+    API for updating service fee and VAT for a new payment attempt
+    """
+
+    def post(self, request):
+        """
+        Extracts service fee and VAT from PaymentRequest table and updates
+        them in YouPayTransactionData.
+        """
+        response_obj = YouPayResponse()
+        transaction_id = decrypt_string(request.GET.get('id', None))
+
+        try:
+            youpay_transaction_obj = YouPayTransactionData.objects.get(
+                transaction_id=transaction_id)
+            order_reference = youpay_transaction_obj.order_reference
+
+            payment_request_object = PaymentRequestData.objects.filter(
+                order_reference=order_reference).first()
+
+            if payment_request_object:
+                request_data = payment_request_object.request_data
+
+                # Extract values from request_data
+                service_fee = request_data.get("order", {}).get("service_fee")
+                vat_amount = request_data.get("order", {}).get("VAT_amount")
+
+                if service_fee is not None:
+                    youpay_transaction_obj.service_fee = service_fee
+
+                if vat_amount is not None:
+                    youpay_transaction_obj.VAT_amount = vat_amount
+
+                youpay_transaction_obj.brand_calculations = None
+                youpay_transaction_obj.save()
+
+                data = response_obj.get_success_dict(code=response_obj.SUCCESS)
+                return Response(data,status=status.HTTP_200_OK)
+            else:
+                logger.error("Payment Request not found for order reference: "
+                             "{}".format(order_reference))
+                return Response(
+                    response_obj.get_404_message(message="Payment request "
+                    "object not found."), status=status.HTTP_404_NOT_FOUND
+                )
+
+        except YouPayTransactionData.DoesNotExist:
+            logger.error(f"YouPayTransactionData not found for "
+                         f"transaction_id: {transaction_id}")
+            data = response_obj.get_404_message(
+                message="YouPayTransactionData object not found."
+            )
+            return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            message = str(e)
+            logger.error("Exception occurred while updating amounts for "
+                         "transaction {}: {}".format(transaction_id, message))
+            data = response_obj.get_404_message(message=message)
+            return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+
+class RedemptionPartnerPrograms(APIView, ClientValidator, YouPayResponse):
+    """
+    API view for retrieving redemption partner programs for a client.
+    """
+
+    def get(self, request):
+        """
+        Handles GET requests to retrieve redemption partner programs.
+
+        Args:
+            request: The HTTP request object.
+
+        Returns:
+            Response: DRF Response object with payment options and configuration map.
+        """
+        validate, client = self.validate_client(request)
+        if not validate:
+            logger.info(
+                "Payment request client validation failed for order_reference"
+            )
+            self.return_data = self.get_400_message(
+                message="Client Does Not Exist"
+            )
+            return Response(
+                self.return_data.get('errors'),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        country_code = request.GET.get('country_code', None)
+        if not country_code:
+            self.return_data = self.get_400_message(
+                message="Missing required parameter: country_code"
+            )
+            return Response(
+                self.return_data.get('errors'),
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            country = Country.objects.get(iso_code=country_code)
+        except Country.DoesNotExist:
+            self.return_data = self.get_404_message(
+                message=f"Country with code '{country_code}' does not exist"
+            )
+            return Response(
+                self.return_data.get('errors'),
+                status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            language_code = request.GET.get('lang', None)
+            currency_code = country.currency.iso_code
+            is_guest = True if request.GET.get(
+                'is_guest', '').lower() == 'true' else False
+            payment_method_query = Q(
+                payment_method__active=True,
+                client=client,
+                active=True,
+                payment_method__burn_full_redemption_enabled=True,
+                country=country
+            )
+            if is_guest:
+                payment_method_query &= Q(guest_user_enabled=True)
+            payment_method_configs = PaymentMethodConfig.objects.filter(
+                payment_method_query
+            )
+
+            payment_options = []
+
+            for config in payment_method_configs:
+                method = config.payment_method
+                method_key = method.payment_method
+                try:
+                    if method.is_second_project_config_enabled:
+                        method_specific_config = method.payment_method_config
+
+                        if method_specific_config:
+                            display_name = method_specific_config.get(
+                                'display_name_ar') if language_code == 'ar' else method_specific_config.get(
+                                "display_name")
+                            payment_options.append({
+                                "name": method_key,
+                                "display_name": display_name,
+                                "code": method_specific_config.get("code"),
+                                "logo": method_specific_config.get("logo"),
+                                "redemption_amount": method_specific_config.get(
+                                    "redemption_amount", {}).get(
+                                    currency_code) if method_specific_config.get(
+                                    "redemption_amount") else None,
+                            })
+                        else:
+                            logger.error(
+                                "Missing second project configuration for method=%s",
+                                method.code
+                            )
+                            continue
+                except Exception as inner_exc:
+                    logger.error(
+                        "Error while processing payment method=%s: %s",
+                        method_key,
+                        str(inner_exc),
+                        exc_info=True
+                    )
+                    continue
+
+            response_data = {
+                "payment_options": payment_options,
+            }
+            return Response(
+                self.get_success_dict(
+                    code=self.SUCCESS,
+                    success_dict=response_data
+                ),
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            logger.error(
+                "Error occurred while getting payment options: %s",
+                str(e),
+                exc_info=True
+            )
+            return Response(
+                self.get_404_message(message=str(e)),
+                status=status.HTTP_404_NOT_FOUND
+            )

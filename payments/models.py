@@ -201,6 +201,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     minimum_redeemable_points = models.DecimalField(
         null=True, blank=True, decimal_places=4, max_digits=15,
         help_text='Minimum points used for citi rewards point redemption')
+    redemption_partner = models.CharField(
+        max_length=200, null=True, blank=True,
+        help_text="Used to identify the redemption partner in case of add "
+                  "balance")
     amount_conversion_rate = models.DecimalField(
         null=True, blank=True, decimal_places=10, max_digits=12,
         help_text=('Conversion rate received from citi '
@@ -321,7 +325,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         help_text="id related to the order received from client")
     udf1 = models.JSONField(null=True, blank=True,
                             help_text="Store values required for the client")
-
+    additional_reference = models.CharField(max_length=120, null=True,
+                            blank=True, db_index=True, help_text="Reference "
+                            "stored during session creation for future use")
 
 @receiver(post_init, sender=YouPayTransactionData)
 def set_previous_status(sender, instance, **kwargs):
