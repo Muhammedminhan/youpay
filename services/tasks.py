@@ -55,9 +55,10 @@ def sync_configuration_data(payment_gateway=None, currency=None):
 
             response_results = response.get("results", [])
             if not response_results:
-                logger.error(
-                    f"No results found in response for gateway {item.payment_gateway.code}"
-                )
+                if item.payment_gateway.code != CHECKOUTPG_HUB_CODE:
+                    logger.error(
+                        f"No results found in response for gateway {item.payment_gateway.code}"
+                    )
                 continue
 
             payment_methods = PaymentConfiguration.objects.filter(
