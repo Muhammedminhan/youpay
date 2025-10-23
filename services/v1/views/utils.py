@@ -64,6 +64,7 @@ def reformat_payment_request_data(data):
     urls = data.get('urls')
     order_history = data.get('order_history')
     order_items = data.get('order_items')
+    data['redemption_partner'] = data.get('redemption_partner')
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
@@ -362,10 +363,10 @@ def get_payment_methods(transaction, client, country):
         payment_method_query = Q(payment_method__active=True, client=client,
                                  country=country, active=True)
         if transaction.is_guest:
-            payment_method_query = Q(payment_method__active=True,
-                                     client=client,
-                                     country=country, active=True,
-                                     guest_user_enabled=True)
+            payment_method_query &= Q(guest_user_enabled=True)
+        if transaction.redemption_partner:
+            payment_method_query &= Q(
+                payment_method__payment_method=transaction.redemption_partner)
 
         payment_method_config_qs = get_cached_payment_method_config()
         payment_method_configs = payment_method_config_qs.filter(
@@ -394,6 +395,15 @@ def get_payment_methods(transaction, client, country):
 
                 else:
                     if method.is_second_project_config_enabled:
+                        if method.partial_redemption_allowed:
+                            if "checkoutpg_config" not in payment_config_map:
+                                logger.info(
+                                    "Loading checkoutpg_config for transaction_id=%s",
+                                    transaction.transaction_id)
+                                checkout_obj = get_configuration_data(
+                                    CHECKOUTPG_HUB_CODE, transaction)
+                                payment_config_map[
+                                    "checkoutpg_config"] = checkout_obj.response_data
                         method_specific_config = method.payment_method_config
                         if not method_specific_config:
                             second_project_obj = get_second_project_configuration_data(

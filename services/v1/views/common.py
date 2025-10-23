@@ -156,6 +156,7 @@ class YouPayTransactionCRUD(object):
             'points_redeemed_mobile_number', None)
         data_dict['point_program'] = data.get('point_program', None)
         data_dict['earn_reference'] = data.get('earn_reference', None)
+        data_dict['redemption_partner'] = data.get('redemption_partner', None)
 
         data_dict['additional_vat'] = data.get('additional_vat', None)
         data_dict['additional_processing_fee'] = (
