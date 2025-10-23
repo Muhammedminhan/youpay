@@ -980,17 +980,19 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         is_redirect_flag = decline_category != SOFT_DECLINE_RANGE
         redirect_url = None
+        code = self.PRE_AUTH
 
         if is_redirect_flag:
             redirect_url = ('{}?transaction_id={}'.format(
             transaction_obj.failure_url, transaction_obj.transaction_id))
+            code = self.PAYMENT_FAILED
 
         response = {
             IS_REDIRECT: is_redirect_flag,
             "redirect_url": redirect_url,
             IS_SUCCESS: False,
             "message": decline_reason,
-            "code": self.PRE_AUTH
+            "code": code
         }
 
         return response
