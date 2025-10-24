@@ -855,9 +855,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                 if response:
                     response_data = response.json()
-                    response_data.update({
-                        "channel_code": request_data.get("channel_code")
-                    })
+                    response_data.pop('status', None)
                     return response_data, self.SUCCESS
                 logger.error(
                     "Checkout session creation failed for transaction %s: %s",
@@ -884,7 +882,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
             payment_request_data = {
                 "session_data": request_data.get('session_data'),
-                "payment_reference": transaction_obj.additional_reference,
                 "session_id": request_data.get('session_id'),
                 "is_save_user_token": is_save_user_token,
                 "customer_name": request_data.get('customer_name'),
@@ -896,7 +893,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "invoice_id": transaction_obj.invoice_id,
                 "order_id": transaction_obj.order_id,
                 "token_type": TOKEN_TYPE_CARD,
-                "channel_code": transaction_obj.channel_code,
+                "channel_code": get_channel_code(transaction_obj),
                 "client_code": transaction_obj.api_client.client_code,
                 "customer_ip_address": transaction_obj.ip,
                 "is_mada": request_data.get('is_mada', False)
