@@ -929,7 +929,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         "payment_reference": response_data.get('reference_id'),
                         "payment_method": PAYMENT_OPTION_CARD,
                         "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                        "name_on_card": request_data.get("customer_name")
+                        "name_on_card": request_data.get("customer_name"),
+                        "channel_code": payment_request_data.get('channel_code')
                     }
                     response_data.pop('reference_id', None)
 
