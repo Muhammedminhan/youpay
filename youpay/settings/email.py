@@ -138,3 +138,5 @@ elif environment == 'qa':  # Test or QA
     )
 
     PAYPAL_DASHBOARD_LINK = "https://www.sandbox.paypal.com/"
+else:
+    PAYPAL_DASHBOARD_LINK = "https://www.sandbox.paypal.com/"

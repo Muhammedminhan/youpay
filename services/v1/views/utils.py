@@ -74,6 +74,7 @@ def reformat_payment_request_data(data):
         data['VAT_amount'] = order.get('VAT_amount')
         data['currency'] = order.get('currency')
         data['country_code'] = order.get('country_code')
+        data['platform_fee'] = order.get('platform_fee')
 
         data['cart_amount'] = order.get('cart_amount')
         data['cart_currency'] = order.get('cart_currency')
@@ -86,6 +87,7 @@ def reformat_payment_request_data(data):
             order.get('additional_currency_decimal_notation'))
         data['order_id'] = order.get('order_id')
         data['is_offer_applicable'] = order.get('is_offer_applicable', False)
+        data['cart_platform_fee'] = order.get('cart_platform_fee')
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')

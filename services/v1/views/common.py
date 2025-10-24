@@ -192,6 +192,7 @@ class YouPayTransactionCRUD(object):
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
         data_dict['udf1'] = data.get('udf1', None)
+        data_dict['auth_code'] = data.get('auth_code', None)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD,
