@@ -2,12 +2,13 @@ from django.db import models
 
 from core.constants import (REQUEST_METHOD_CHOICES, REQUEST_METHOD_NONE,
                             CHARGE_TYPE, CHARGE_TYPE_FIXED)
-from core.models import AbstractDateTime, AbstractUserBase, Currency
+from core.models import (AbstractDateTime, AbstractUserBase, Currency,
+                         PaymentConfiguration)
 from core.validators import DecimalValidator
 from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
-                                    PAYMENT_REQUEST_TYPE_CHOICES)
-from services.constants import (PAYMENT_OPTION_NAME_CHOICES,
-                                TOKEN_TYPE_ADCB_POINTS)
+                                    PAYMENT_REQUEST_TYPE_CHOICES,
+                                    ADDITIONAL_CHARGE_TYPE_CHOICES)
+from services.constants import (PAYMENT_OPTION_NAME_CHOICES)
 
 YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
 
@@ -35,6 +36,9 @@ class PaymentGateway(AbstractDateTime, AbstractUserBase):
                             help_text='Gateway identification code')
     gateway_name = models.CharField(max_length=255,
                                     help_text='Name of the payment gateway')
+    gateway_cache_key = models.CharField(max_length=255, blank=True,
+                                         null=True,
+                                         help_text='Cache key for the gateway')
     description = models.TextField(null=True, blank=True,
                                    help_text='Description of the payment '
                                              'gateway')
@@ -53,6 +57,8 @@ class PaymentGateway(AbstractDateTime, AbstractUserBase):
         help_text="used to store amount validation json data")
     webhook_api_key = models.CharField(max_length=255, blank=True, null=True,
                                        help_text='API Key String for webhook')
+    merchant_id = models.CharField(max_length=255, blank=True, null=True,
+                                   help_text='Merchant ID of the gateway')
 
     def __str__(self):
         return self.gateway_name
@@ -124,12 +130,22 @@ class PaymentOptions(AbstractDateTime, AbstractUserBase):
 
 class AdditionalChargeConfiguration(AbstractDateTime, AbstractUserBase):
     payment_option = models.ForeignKey(
-        PaymentOptions, on_delete=models.CASCADE,
+        PaymentConfiguration, on_delete=models.CASCADE,
         related_name="additional_fee_payment_option"
     )
+    charge_type = models.CharField(max_length=50, null=True, blank=True,
+                                   choices=ADDITIONAL_CHARGE_TYPE_CHOICES,
+                                   help_text='Type of additional charge applied')
     percentage = models.DecimalField(
         default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
-        help_text='Percentage value for the processing fee')
+        help_text='Percentage value for the additional fee')
+    currency = models.ForeignKey(
+        Currency, on_delete=models.CASCADE, null=True, blank=True,
+        related_name="additional_charge_currency",
+        help_text='Currency applicable for charge')
+    VAT_percentage = models.DecimalField(
+        default=0.0, decimal_places=2, null=True, blank=True, max_digits=5,
+        help_text='Percentage value for the additional VAT charge')
     fixed_amount = models.DecimalField(
         decimal_places=4, max_digits=12, null=True, blank=True,
         validators=[DecimalValidator(12, 4)],

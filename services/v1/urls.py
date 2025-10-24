@@ -14,10 +14,14 @@ from services.v1.api_clients.checkoutpg import (SavedCardPayment, CardPayment,
                                                 PaypalPayment,
                                                 ApplePayStatusUpdateAPI)
 from services.v1.views.configurations import (ConfigViewSet,
-                                              ClientStaticFilesAPI)
+                                              ClientStaticFilesAPI,
+                                              RedemptionPartnerPrograms,
+                                              UpdateAmounts)
 from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization,
                                    AmazonPGSavedCard)
+from .api_clients.anb_service import (AnbGenerateOTPAPIView,
+                                      AnbRedeemPointsAPIView, AnbVerify)
 from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiPointRedemptionAPIView,
                                        CitiGenerateOTPAPIView)
@@ -33,12 +37,12 @@ from .api_clients.neqaty_service import (NeqatyPointBalanceAPIView,
                                          NeqatyVerify,
                                          UpdateNeqatyPhoneNumber,
                                          NeqatyTransactionSync)
+from .api_clients.paypalpg import (PayPalChargeAPIView,
+                                   PayPalPaymentAPIView, PayPalVerifyAPIView)
 from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
-from .api_clients.anb_service import (AnbGenerateOTPAPIView,
-                                      AnbRedeemPointsAPIView, AnbVerify)
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
@@ -111,6 +115,9 @@ urlpatterns = [
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
 
+    # API for getting redemption partner programs list
+    path('redemption-partner-programs/', RedemptionPartnerPrograms.as_view()),
+
     # Citi Rewards endpoints
     path('citi/generate-otp/', CitiGenerateOTPAPIView.as_view(),
          name='CitiGenerateOTPAPIView'),
@@ -147,5 +154,14 @@ urlpatterns = [
          name='AnbGenerateOTPAPIView'),
     path('anb/redeem-points/', AnbRedeemPointsAPIView.as_view(),
          name='AnbRedeemPointsAPIView'),
-    path('anb/verify/', AnbVerify.as_view(), name='AnbVerify')
+    path('anb/verify/', AnbVerify.as_view(), name='AnbVerify'),
+
+    # API for updating service fee and VAT for a new payment attempt
+    path('update-amounts/', UpdateAmounts.as_view()),
+
+    # PayPal Endpoints
+    path('paypal/charge/', PayPalChargeAPIView.as_view(), name='PayPalCharge'),
+    path('paypal/payment/', PayPalPaymentAPIView.as_view(),
+         name='PayPalPayment'),
+    path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
 ]

@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -221,8 +222,12 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
         2.partial redemption
         """
         try:
+            request_data = copy.deepcopy(request.data)
+            if request_data.get("cvv"):
+                request_data["cvv"] = "***"
+
             logger.info("QitafRedeemPointsAPIView API triggered, request data"
-                        ": {}".format(request.data))
+                        ": {}".format(request_data))
             qitaf_redemption_serializer = QitafRedemptionSerializer(
                 data=request.data, context={'request': request})
 
@@ -230,17 +235,15 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             validated_data = qitaf_redemption_serializer.data
 
             points_redemption_data = validated_data
+            transaction_obj = qitaf_redemption_serializer.transaction_obj
 
-            selected_amount = str(int(
-                qitaf_redemption_serializer.transaction_obj.redeemed_amount))
-            checkout_amount = str(float(
-                qitaf_redemption_serializer.transaction_obj.payable_amount))
-            transaction_order_reference = (
-                qitaf_redemption_serializer.transaction_obj.order_reference)
+            selected_amount = str(int(transaction_obj.redeemed_amount))
+            checkout_amount = str(float(transaction_obj.payable_amount))
+            transaction_order_reference = transaction_obj.order_reference
             points_redemption_data.update(
                 {
-                    "transaction_obj": qitaf_redemption_serializer.transaction_obj,
-                    "reference_id": qitaf_redemption_serializer.transaction_obj.payment_reference,
+                    "transaction_obj": transaction_obj,
+                    "reference_id": transaction_obj.payment_reference,
                     "pin_number": validated_data.get('pin_number'),
                     "selected_amount": selected_amount,
                     "checkout_amount": checkout_amount,
@@ -251,14 +254,15 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "token": validated_data.get('token'),
                     "token_type": validated_data.get('token_type'),
                     "encrypted_id": request.data.get('transaction_id'),
-                    "brand_calculations": (
-                        qitaf_redemption_serializer.transaction_obj.brand_calculations),
-                    "order_reference": transaction_order_reference
+                    "brand_calculations": transaction_obj.brand_calculations,
+                    "order_reference": transaction_order_reference,
+                    "checkout_reference": transaction_obj.additional_reference
                 }
             )
             qitaf_service = QitafServiceManager()
             response_data, code = qitaf_service.redeem_points(
                 points_redemption_data)
+
             if response_data and code == 1000:
                 formatted_res = qitaf_response_formatter(response_data, code)
                 data = self.response_obj.get_success_dict(
@@ -469,6 +473,13 @@ def qitaf_response_formatter(data, code):
         data['code'] = code
         data['reason'], data['message'] = message, message
         data[IS_SUCCESS] = is_success
+        if qitaf_response.get("is_payment_success"):
+            data['data'] = {
+                "id": qitaf_response.get("id"),
+                "status": qitaf_response.get("status"),
+                "type": qitaf_response.get("type"),
+                "action": qitaf_response.get("action")
+            }
         data.pop('qitaf_response', None)
     if errors:
         errors['message'] = COMMON_ERROR_MESSAGE_EN

@@ -2,16 +2,18 @@ import json
 import logging
 from base64 import b64decode, b64encode
 from contextlib import contextmanager
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from functools import wraps
 from os import urandom
 from time import sleep
 
 import redis
+import requests
 from Crypto.Cipher import AES
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import MultipleObjectsReturned
 from django.urls import reverse_lazy
 from rest_framework import status
 
@@ -24,13 +26,15 @@ from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
                            IS_SUCCESS)
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
                          PaymentConfiguration)
-from integrations.constants import (CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE,
+from integrations.constants import (CHECKOUTPG_HUB_CODE,
                                     PAYMENT_METHOD_CONFIG_CACHE_KEY,
                                     PAYMENT_CONFIG_CACHE_KEY,
-                                    CHECKOUTPG_CHANNEL_CONFIGURATIONS)
+                                    CHECKOUTPG_CHANNEL_CONFIGURATIONS,
+                                    CONTENT_TYPE_HEADERS)
 from integrations.models import PaymentGateway, AdditionalChargeConfiguration
 from notifications.constants import (FLAGGED_PAYMENT_MAIL, HUB_LINK,
-                                     AMAZON_HUB_LINK)
+                                     AMAZON_HUB_LINK,
+                                     TRANSACTION_DISPUTED_ALERT)
 from notifications.models import EmailTemplateConfiguration
 from payments.constants import (
     PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_DECLINED_RETRY,
@@ -39,7 +43,10 @@ from payments.constants import (
     PAYMENT_STATUS_PENDING, PAYMENT_SCHEME_MADA)
 from services.constants import SOFT_DECLINE_RESPONSE_CODE_STARTSWITH
 from services.models import ConfigurationData
+from services.v1.constants import B2C_PAYBACK_YOUPAY_PRODUCT_CODE, \
+    B2C_PAYBACK_CONFIG_ENDPOINT
 from services.v1.views.common import YouPayTransactionCRUD, is_redirect
+from youpay.settings.email import PAYPAL_DASHBOARD_LINK
 
 logger = logging.getLogger(__name__)
 
@@ -240,19 +247,28 @@ def decimal_rounded(amount, decimal_notation):
     return amount_rounded
 
 
-def get_gateway_additional_fee(payment_option_name):
+def get_gateway_additional_fee(currency, charge_type, payment_gateway,
+                               payment_method):
     """
-    :param payment_option_name
-    :return:
+    Method to get additional charge configuration.
     """
     additional_fee = None
-    if payment_option_name:
-        try:
-            additional_fee = AdditionalChargeConfiguration.objects.get(
-                payment_option__name=payment_option_name, is_active=True)
-        except (AdditionalChargeConfiguration.DoesNotExist, Exception):
-            logging.info('No additional fee instance found for '
-                         '{}.'.format(payment_option_name))
+    try:
+        payment_config = PaymentConfiguration.objects.get(
+            payment_method=payment_method,
+            payment_gateway__code=payment_gateway)
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            f"PaymentConfiguration not found for method: {payment_method}")
+
+    try:
+        additional_fee = AdditionalChargeConfiguration.objects.get(
+            currency__iso_code=currency, charge_type=charge_type,
+            payment_option=payment_config, is_active=True)
+    except AdditionalChargeConfiguration.DoesNotExist:
+        logger.error(
+            f"AdditionalChargeConfiguration not found for charge_type: "
+            f"{charge_type}, currency: {currency}")
     return additional_fee
 
 
@@ -537,9 +553,9 @@ def get_currency_by_iso_code(code):
     return currency
 
 
-def create_configuration_data(code, transaction):
+def create_configuration_data(code, transaction, gateway_obj):
     """create configuration data"""
-    from services.tasks import get_checkout_conf, get_b2c_conf
+    from services.tasks import get_checkout_conf
     config_data = None
     response = None
     currency = transaction.currency
@@ -549,8 +565,8 @@ def create_configuration_data(code, transaction):
         channel_code = get_channel_code(transaction)
         response = get_checkout_conf(channel_code)
 
-    elif code == B2CPAYBACK_HUB_CODE:
-        response = get_b2c_conf(currency)
+    else:
+        response = get_conf(currency, gateway_obj)
     if response:
         payment_gateway = get_payment_gateway_by_code(code)
         currency_obj = get_currency_by_iso_code(currency)
@@ -565,7 +581,51 @@ def create_configuration_data(code, transaction):
     return config_data
 
 
-def get_configuration_data(code, transaction):
+def get_conf(currency, gateway_obj=None):
+    """
+    Get configurations.
+
+    Args:
+        currency (str): The ISO code of the currency.
+        gateway_obj (obj): The gateway object.
+
+    Returns:
+        dict: Configuration data.
+    """
+    config = get_configurations(currency, gateway_obj)
+    logger.info("Config  response: {}".format(config))
+    return config
+
+
+def get_configurations(currency, gateway_obj=None):
+    product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
+    currency = str(currency)
+    config_request_data = {
+        "currency": currency,
+        "product_code": product_code
+    }
+    request_data_json = json.dumps(config_request_data)
+    gateway_domain = gateway_obj.domain
+    try:
+        url = gateway_domain + B2C_PAYBACK_CONFIG_ENDPOINT
+
+        response = requests.post(url, data=request_data_json,
+                                 headers=CONTENT_TYPE_HEADERS)
+        if response:
+            return response.json()
+        else:
+            logger.error(
+                "No configuration received from configuration api "
+                "call to b2cpayback, response "
+                "{}".format(response.text))
+            return None
+    except Exception as e:
+        logger.error("config api call to b2cpayback failed",
+                     exc_info=e)
+        return None
+
+
+def get_configuration_data(code, transaction, gateway_obj=None):
     """Get configuration data based on the transaction."""
     try:
         if code == CHECKOUTPG_HUB_CODE:
@@ -579,7 +639,8 @@ def get_configuration_data(code, transaction):
     except (ConfigurationData.DoesNotExist, Exception):
         logging.error(f'No configuration data instance found for code {code} '
                       f'and currency {transaction.currency}.')
-        config_data = create_configuration_data(code, transaction)
+        config_data = create_configuration_data(code, transaction,
+                                                gateway_obj)
     return config_data
 
 
@@ -854,6 +915,54 @@ def get_flagged_email_data(payment):
     return send_mail_payload
 
 
+def get_dispute_alert_email_data(paypal_transaction):
+    template_obj = get_template_obj(TRANSACTION_DISPUTED_ALERT)
+
+    payment_reference = paypal_transaction.payment_reference
+    youpay_obj = YouPayTransactionCRUD()
+    transaction_obj = (
+        youpay_obj.get_youpay_transaction_data_with_payment_reference(
+            payment_reference))
+
+    template_data = {
+        "paypal_account_name": paypal_transaction.customer_name,
+        "paypal_account_email": paypal_transaction.customer_email,
+        "invoice_id": paypal_transaction.payment_reference,
+        "amount": float(paypal_transaction.amount),
+        "dashboard_link": PAYPAL_DASHBOARD_LINK,
+        "customer_name": transaction_obj.customer_name,
+        "customer_email": transaction_obj.customer_email,
+
+    }
+
+    mail_from = {
+        "email": settings.SERVER_EMAIL,
+        "name": "",
+        "alias": ""
+    }
+    mail_to = [{
+        "email": settings.EMAIL_HELP[0][1],
+        "name": "",
+        "alias": ""},
+        {
+            "email": settings.DISPUTE_EMAIL_HELP,
+            "name": "",
+            "alias": ""}
+    ]
+    subject = "Transaction Disputed"
+
+    send_mail_payload = {
+        "subject": subject,
+        "mail_from": mail_from,
+        "mail_to": mail_to,
+        "template_data": template_data,
+        "template_code": template_obj.template_code,
+        "mail_engine_api": template_obj.endpoint_url
+    }
+
+    return send_mail_payload
+
+
 def get_template_obj(email_type):
     try:
         email_conf = EmailTemplateConfiguration.objects.get(
@@ -883,4 +992,50 @@ def get_amazon_transaction_obj(reference):
     except Exception as e:
         logger.error("Amazon transaction data not found for payment "
                      "reference: {}".format(reference))
+        return None
+
+
+def round_decimal(amount, decimal_notation='0.01'):
+    """
+    Round the given amount to the specified decimal places (default: 2).
+
+    Args:
+        amount: The number to round (can be float, str, or Decimal).
+        decimal_notation: The rounding precision, e.g., '0.01' for 2 decimals.
+
+    Returns:
+        Rounded Decimal value.
+    """
+    if not isinstance(amount, Decimal):
+        amount = Decimal(str(amount))
+    return amount.quantize(Decimal(decimal_notation), rounding=ROUND_HALF_UP)
+
+
+def get_config_from_payment_configurations(transaction, payment_method):
+    try:
+        configs = (
+            PaymentConfiguration.objects.get(
+                payment_method=payment_method,
+                active=True,
+                paymentmethodconfig__active=True,
+                paymentmethodconfig__client=transaction.api_client,
+                paymentmethodconfig__country__iso_code=transaction.country_code,
+            )
+        )
+        gateway = configs.payment_gateway
+        return gateway
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            "Payment configuration not found for transaction: {}".format(
+                transaction.transaction_id))
+        return None
+    except MultipleObjectsReturned:
+        logger.error(
+            "Multiple payment configurations found for transaction: {}".format(
+                transaction.transaction_id))
+        return None
+    except Exception as e:
+        logger.error(
+            "Error occurred while getting payment configuration for "
+            "transaction: {}".format(transaction.transaction_id))
         return None

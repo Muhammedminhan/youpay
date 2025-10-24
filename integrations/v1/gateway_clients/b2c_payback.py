@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 
@@ -8,7 +9,8 @@ from core.constants import (REQUEST_METHOD_POST, REQUEST_METHOD_GET,
                             PAYMENT_GATEWAY_AMAZONPG)
 from core.messages import IS_SUCCESS, REDIRECT_URL, IS_REDIRECT
 from core.utils import (get_payment_gateway_config,
-                        decrypt_string, get_channel_code
+                        decrypt_string, get_channel_code,
+                        get_config_from_payment_configurations
                         )
 from integrations.constants import (ADCB_POINT_BALANCE_API,
                                     B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
@@ -34,7 +36,8 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
     AuthenticateCheckoutRequestSerializer
 )
 from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
-                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED)
+                                PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED,
+                                PAYMENT_METHOD_ADCB)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -63,7 +66,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
         }
         return headers
 
-    def get_configurations(self, currency):
+    def get_configurations(self, currency, gateway_obj=None):
         product_code = B2C_PAYBACK_YOUPAY_PRODUCT_CODE
         currency = str(currency)
         config_request_data = {
@@ -71,7 +74,10 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             "product_code": product_code
         }
         request_data_json = json.dumps(config_request_data)
-        b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
+        if gateway_obj:
+            b2c_gateway_obj = gateway_obj
+        else:
+            b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
                                                      B2CPAYBACK_HUB_CODE)
         b2c_payback_domain = b2c_gateway_obj.domain
         try:
@@ -114,9 +120,11 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 if verify_status == status.HTTP_200_OK and is_verified:
                     balance_request_data = PointBalanceRequestSerializer(
                         request_dict)
+                    log_data = copy.deepcopy(balance_request_data.data)
+                    log_data['card_no'] = "********"
                     request_data_json = json.dumps(balance_request_data.data)
-                    b2c_gateway_obj = get_payment_gateway_config(
-                        B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                    b2c_gateway_obj = get_config_from_payment_configurations(
+                        transaction_obj, PAYMENT_METHOD_ADCB)
                     b2c_payback_domain = b2c_gateway_obj.domain
                     CONTENT_TYPE_HEADERS[
                         'X-API-KEY'] = b2c_gateway_obj.api_key
@@ -126,7 +134,7 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
                         transaction_id=transaction_obj.transaction_id,
-                        request_data=request_data_json,
+                        request_data=json.dumps(log_data),
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
                         request_type=PAYMENT_REQUEST_POINT_BALANCE
@@ -192,8 +200,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 }
             update_data.update(authenticate_request_data.data)
             request_data_json = json.dumps(update_data)
-            b2c_gateway_obj = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                         B2CPAYBACK_HUB_CODE)
+            b2c_gateway_obj = get_config_from_payment_configurations(
+                transaction_obj, PAYMENT_METHOD_ADCB)
             b2c_payback_domain = b2c_gateway_obj.domain
             url = b2c_payback_domain + ADCB_AUTHENTICATE_API
 
@@ -243,8 +251,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                     request_data, transaction_obj
                 )
                 request_data_json = json.dumps(formatted_data)
-                b2c_gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                b2c_gateway_obj = get_config_from_payment_configurations(
+                    transaction_obj, PAYMENT_METHOD_ADCB)
                 b2c_payback_domain = b2c_gateway_obj.domain
                 url = b2c_payback_domain + ADCB_REDEMPTION_API
                 response = requests.post(url, data=request_data_json,
@@ -405,8 +413,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
             return None
 
     def get_payment_data_and_url(self, request_data, transaction_obj):
-        b2c_gateway_obj = get_payment_gateway_config(
-            B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+        b2c_gateway_obj = get_config_from_payment_configurations(
+            transaction_obj, PAYMENT_METHOD_ADCB)
         b2c_payback_domain = b2c_gateway_obj.domain
         gateway_hub_code = request_data.get('gateway_hub_code')
         if gateway_hub_code == AMAZONPG_HUB_CODE:
@@ -438,8 +446,8 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
         payload = {}
         response = {}
         try:
-            b2c_gateway_obj = get_payment_gateway_config(
-                B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+            b2c_gateway_obj = get_config_from_payment_configurations(
+                transaction, PAYMENT_METHOD_ADCB)
             b2c_payback_domain = b2c_gateway_obj.domain
             url = b2c_payback_domain + B2C_REVERSE_REDEMPTION_API
             payload = {

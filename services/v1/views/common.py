@@ -16,7 +16,9 @@ from core.messages import (
     TRANSACTION_MSG,
     IS_REDIRECT
 )
+from core.models import PaymentConfiguration
 from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
+from integrations.models import AdditionalChargeConfiguration
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 YOUGOTAGIFT_KSA, PAYMENT_END_STATUS_LIST,
@@ -31,7 +33,8 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_MOKAFAA,
                                 PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                 PAYMENT_METHOD_ANB,
-                                PAYMENT_METHOD_ANB_AND_CARD)
+                                PAYMENT_METHOD_ANB_AND_CARD,
+                                PAYMENT_METHOD_PAYPAL)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -153,6 +156,7 @@ class YouPayTransactionCRUD(object):
             'points_redeemed_mobile_number', None)
         data_dict['point_program'] = data.get('point_program', None)
         data_dict['earn_reference'] = data.get('earn_reference', None)
+        data_dict['redemption_partner'] = data.get('redemption_partner', None)
 
         data_dict['additional_vat'] = data.get('additional_vat', None)
         data_dict['additional_processing_fee'] = (
@@ -187,6 +191,7 @@ class YouPayTransactionCRUD(object):
         data_dict['earned_point'] = data.get('earned_point', None)
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
+        data_dict['udf1'] = data.get('udf1', None)
         data_dict['auth_code'] = data.get('auth_code', None)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
@@ -196,7 +201,8 @@ class YouPayTransactionCRUD(object):
                                            PAYMENT_METHOD_MOKAFAA,
                                            PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                            PAYMENT_METHOD_ANB,
-                                           PAYMENT_METHOD_ANB_AND_CARD
+                                           PAYMENT_METHOD_ANB_AND_CARD,
+                                           PAYMENT_METHOD_PAYPAL
                                            ]:
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
@@ -558,3 +564,29 @@ class AdditionalChargesUpdation(object):
             logger.error("Error in creating additional charge object for {} "
                          "{}".format(data.get('transaction').transaction_id,
                                      str(e)))
+
+def get_processing_charge(currency, charge_type, payment_gateway,
+                          payment_method):
+    """
+    Method to get additional charge configuration.
+    """
+    try:
+        payment_config = PaymentConfiguration.objects.get(
+            payment_method=payment_method,
+            payment_gateway__code=payment_gateway)
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            f"PaymentConfiguration not found for method: {payment_method}")
+        return None, None
+
+    try:
+        additional_charge_obj = AdditionalChargeConfiguration.objects.get(
+            currency__iso_code=currency, charge_type=charge_type,
+            payment_option=payment_config, is_active=True)
+    except AdditionalChargeConfiguration.DoesNotExist:
+        logger.error(
+            f"AdditionalChargeConfiguration not found for charge_type: "
+            f"{charge_type}, currency: {currency}")
+        return None, None
+
+    return additional_charge_obj.percentage, additional_charge_obj.VAT_percentage

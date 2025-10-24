@@ -40,6 +40,7 @@ urlpatterns = [
     path('happycredits/', include('happycreditsclient.urls')),
     path('citirewards/', include('citirewardsclient.urls')),
     path('qitaf/', include('qitafclient.urls')),
+    path('gateways/', include('gateways.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()

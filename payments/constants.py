@@ -206,6 +206,7 @@ PAYMENT_OPTION_APPLEPAY = PAYMENT_METHOD_APPLEPAY
 PAYMENT_OPTION_CHECKOUT_CARD = 'checkout_card'
 PAYMENT_OPTION_CHECKOUT_SAVED_CARD = 'checkout_saved_card'
 PAYMENT_OPTION_CHECKOUT_APPLEPAY = 'checkout_applepay'
+PAYMENT_OPTION_CHECKOUT_PAYPAL = 'checkout_paypal'
 PAYMENT_OPTION_AMAZON_CARD = 'amazon_card'
 PAYMENT_OPTION_AMAZON_SAVED_CARD = 'amazon_saved_card'
 PAYMENT_OPTION_AMAZON_APPLEPAY = 'amazon_applepay'
@@ -292,3 +293,8 @@ REDEEM_AMOUNT_APPLICABLE_LIST = [
 ]
 
 GROUPGIFT_ORDER_ID_ENDPOINT = '/payments/api/v2/order/references/'
+
+CARD_BIN_MAX_LENGTH = 10
+
+CREATE_SESSION_ENDPOINT = '/gateway/checkout/api/v1/create-session/'
+SUBMIT_SESSION_ENDPOINT = '/gateway/checkout/api/v1/submit-session/'

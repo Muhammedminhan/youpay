@@ -3,9 +3,11 @@ import logging
 
 import requests
 
-from core.constants import PAYBACK_ACTION_EARN
+from core.constants import (PAYBACK_ACTION_EARN, PURCHASE_PLATFORM_IOS,
+                            PURCHASE_PLATFORM_ANDROID)
 from core.response_messages import YouPayResponse
-from core.utils import get_payment_gateway_config, get_channel_code
+from core.utils import (get_channel_code, get_app_config, encrypt_string,
+                        get_config_from_payment_configurations)
 from integrations.common import update_brand_details
 from integrations.constants import (ADCB_CLIENT_CODE,
                                     ADCB_CHECKOUTPG_PAYMENT_NOT_PAID,
@@ -21,11 +23,13 @@ from integrations.constants import (ADCB_CLIENT_CODE,
                                     SPONSOR_PAYMENT_NETWORK_VALUE,
                                     CLIENT_CODE_MAPPING,
                                     CLIENT_CODE_MAPPING_ARABIC,
-                                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE,
-                                    PAYMENT_METHOD
+                                    PAYMENT_METHOD, CHECKOUTPG_HUB_CODE,
+                                    QITAF_HUB_CODE, PAYMENT_PLATFORM_APP,
                                     )
 from payments.models import YouPayTransactionData
 from services.v1.views.common import YouPayTransactionCRUD
+from urllib.parse import urlencode
+from payments.constants import PAYMENT_METHOD_QITAF
 
 logger = logging.getLogger(__name__)
 
@@ -248,13 +252,20 @@ def calculate_balance(data):
     Calculate service charge
     """
     response_obj = YouPayResponse()
-    b2c_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                            B2CPAYBACK_HUB_CODE)
     crud_obj = YouPayTransactionCRUD()
     try:
         transaction_obj = data.get('transaction_obj')
         selected_amount = data.get('selected_amount')
         client_code = data.get("client_code")
+        payback_action = data.get("payback_action")
+
+        if payback_action == PAYBACK_ACTION_EARN:
+            payment_method = transaction_obj.payment_method
+        else:
+            payment_method = PAYMENT_METHOD.get(client_code)
+
+        b2c_config = get_config_from_payment_configurations(
+            transaction_obj, PAYMENT_METHOD.get(client_code))
 
         payment_reference = transaction_obj.payment_reference
 
@@ -307,7 +318,7 @@ def calculate_balance(data):
                     "redeemed_amount": selected_amount,
                     "payable_amount": calculated_balance.get(
                         'sum_card_payment_amount'),
-                    "payment_method": PAYMENT_METHOD.get(client_code)
+                    "payment_method": payment_method
                 }
                 crud_obj.update_youpay_transaction_data(update_data)
                 response_code = response_obj.SUCCESS
@@ -481,3 +492,49 @@ def process_calculated_item_details(data):
 
     data["calculated_item_details"] = list(unique_brands.values())
     return data
+
+
+def get_response_url(transaction_obj, is_partial_payment):
+    """
+    Method for generating response URL
+    """
+    app_config = get_app_config()
+    frontend_domain = app_config.front_end_domain
+    path = app_config.redirect_path
+
+    transaction_id = transaction_obj.transaction_id
+    code = CHECKOUTPG_HUB_CODE
+
+    query_params = {
+        "id": encrypt_string(str(transaction_id)),
+        "gty": code,
+    }
+
+    if transaction_obj.platform in [PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID]:
+        query_params["platform"] = PAYMENT_PLATFORM_APP
+
+    if is_partial_payment:
+        partner_code_map = {v: k for k, v in PAYMENT_METHOD.items()}
+
+        payment_method = transaction_obj.payment_method
+        redemption_partner = payment_method.split("_")[0]
+
+        gty = partner_code_map.get(redemption_partner)
+
+        query_params.update({
+            "redemption_reference_id": transaction_obj.payment_reference,
+            "redemption_partner": redemption_partner.upper(),
+            "gty": gty
+        })
+
+        if redemption_partner == PAYMENT_METHOD_QITAF:
+            query_params["gty"] = QITAF_HUB_CODE
+
+    query_string = urlencode(query_params)
+    url = "{}/{}/{}?{}".format(
+        frontend_domain.strip("/"),
+        transaction_obj.language,
+        path.lstrip("/"),
+        query_string
+    )
+    return url

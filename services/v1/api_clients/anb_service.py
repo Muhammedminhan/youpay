@@ -1,17 +1,18 @@
+import copy
 import json
 import logging
 
 from rest_framework import status
-from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
-from services.v1.views.common import YouPayTransactionCRUD
 from integrations.v1.gateway_clients.anb_service import AnbServiceManager
 from integrations.v1.serializers.anb_serializer import AnbRedemptionSerializer
 from services.v1.serializers.payment_request import AnbOTPSerializer
+from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
 
@@ -91,27 +92,25 @@ class AnbRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                 redemption result.
         """
         try:
+            request_data = copy.deepcopy(request.data)
+            if request_data.get("cvv"):
+                request_data["cvv"] = "***"
             logger.info("AnbRedeemPointsAPIView triggered for request "
-                        "data: {}".format(request.data))
+                        "data: {}".format(request_data))
             anb_redemption_serializer = AnbRedemptionSerializer(
                 data=request.data, context={'request': request})
             anb_redemption_serializer.is_valid(raise_exception=True)
             validated_data = anb_redemption_serializer.data
             points_redemption_data = validated_data
-            selected_amount = str(int(
-                anb_redemption_serializer.transaction_obj.redeemed_amount))
-            checkout_amount = str(float(
-                anb_redemption_serializer.transaction_obj.payable_amount))
+            transaction_obj = anb_redemption_serializer.transaction_obj
+            selected_amount = str(int(transaction_obj.redeemed_amount))
+            checkout_amount = str(float(transaction_obj.payable_amount))
             customer_name = request.data.get("customer_name")
-            transaction_order_reference = (
-                anb_redemption_serializer.transaction_obj.order_reference)
+            transaction_order_reference = transaction_obj.order_reference
             points_redemption_data.update(
                 {
-                    "transaction_obj": (
-                        anb_redemption_serializer.transaction_obj),
-                    "referance_id": (
-                        anb_redemption_serializer.transaction_obj.
-                        payment_reference),
+                    "transaction_obj": transaction_obj,
+                    "referance_id": transaction_obj.payment_reference,
                     "one_time_password": validated_data.get('pin_number'),
                     "selected_amount": selected_amount,
                     "checkout_amount": checkout_amount,
@@ -122,24 +121,15 @@ class AnbRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "token": validated_data.get('token'),
                     "token_type": validated_data.get('token_type'),
                     "encrypted_id": request.data.get('transaction_id'),
-                    "brand_calculations": (
-                        anb_redemption_serializer.transaction_obj.
-                        brand_calculations),
+                    "brand_calculations": transaction_obj.brand_calculations,
                     "order_reference": transaction_order_reference,
-                    "transaction_id": str(
-                        anb_redemption_serializer.transaction_obj.
-                        transaction_id),
-                    "language_code": (
-                        anb_redemption_serializer.transaction_obj.language
-                    ),
-                    "currency": (
-                        anb_redemption_serializer.transaction_obj.currency
-                    ),
-                    "amount_in_aed": str(
-                        anb_redemption_serializer.transaction_obj.
-                        amount_in_aed),
+                    "transaction_id": str(transaction_obj.transaction_id),
+                    "language_code": transaction_obj.language,
+                    "currency": transaction_obj.currency,
+                    "amount_in_aed": str(transaction_obj.amount_in_aed),
                     "card_number": validated_data.get("card_number"),
                     "card_expiry": validated_data.get("card_expiry"),
+                    "checkout_reference": transaction_obj.additional_reference
                 }
             )
             anb_service = AnbServiceManager()

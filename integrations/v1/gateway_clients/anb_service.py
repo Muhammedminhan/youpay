@@ -8,18 +8,16 @@ from rest_framework import status
 from core.constants import (PAYMENT_GATEWAY_B2CPAYBACK, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
-from core.utils import (get_payment_gateway_config, get_app_config,
-                        decrypt_string)
-from services.v1.views.payment import PaymentRequestView
-from services.v1.views.payment_handlers import PaymentHandlers
-from services.v1.views.common import add_payment_gateway_info_in_url
-from integrations.constants import (B2CPAYBACK_HUB_CODE, B2CP_CACHE_KEY,
-                                    ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
+from core.utils import (get_app_config,
+                        decrypt_string,
+                        get_config_from_payment_configurations)
+from integrations.constants import (ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
                                     PAYMENT_REQUEST_GENERATE_OTP,
                                     CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     B2CP_REDEEM_POINTS_API,
                                     PAYMENT_REQUEST_REDEMPTION,
-                                    B2CP_VERIFY_API, PAYMENT_REQUEST_VERIFY)
+                                    B2CP_VERIFY_API, PAYMENT_REQUEST_VERIFY,
+                                    PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.anb_serializer import (
     AnbPaymentRequestSerializer)
@@ -27,10 +25,12 @@ from payments.constants import (PAYMENT_METHOD_ANB, PAYMENT_STATUS_PENDING,
                                 PAYMENT_METHOD_ANB_AND_CARD,
                                 PAYMENT_STATUS_DECLINED,
                                 PAYMENT_STATUS_PAID,
-                                PAYMENT_STATUS_DECLINED_RETRY,
                                 LANGUAGE_CODE_AR)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
+from services.v1.views.common import add_payment_gateway_info_in_url
+from services.v1.views.payment import PaymentRequestView
+from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
 
@@ -41,8 +41,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
     """
 
     def __init__(self):
-        self.anb_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                     B2CPAYBACK_HUB_CODE)
+        self.anb_config = None
         self.transaction_id = None
         self.transaction_obj = None
         self.request_data = {}
@@ -99,6 +98,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             request_data = data.get('request_data')
             self.transaction_obj = request_data.get('transaction_obj')
+            self.anb_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_ANB)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.get_anb_payment_data(request_data)
             # Dynamically determine the key and value for 'mobile_number' or
@@ -124,6 +125,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
             self.request_data = payload
             payload['apiclient'] = self.transaction_obj.api_client.name
             payload['client_code'] = ANB_CLIENT_CODE
+
+            logger.info("anb config is {}".format(self.anb_config))
 
             url = self.anb_config.domain + B2CP_OTP_GENERATION_API
             headers = self.get_payment_header()
@@ -184,6 +187,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
+            self.anb_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_ANB)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             serializer = YouPayTransactionDataSerializer(self.transaction_obj)
@@ -252,6 +257,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                          "{}".format(e), exc_info=True)
             return {"errors": error}, self.ANB_CONNECTION_ERROR
         finally:
+            if self.request_data.get("cvv"):
+                self.request_data["cvv"] = "***"
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
                 transaction_id=self.transaction_id,
@@ -342,12 +349,14 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
             "handle_anb_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
+        data = {}
         partner_response = response_data.get('partner_response')
         name_on_card = partner_response.get("customer_name", "")
         language = payment_data.language
         is_full_redemption = partner_response.get("is_full_redemption", False)
         if is_full_redemption is False:
-            redirect_url = partner_response.get('redirect_url')
+            redirect_url = (partner_response.get('url') or
+                            partner_response.get('action', {}).get('url'))
             if redirect_url:
                 is_success = True
                 is_redirect = True
@@ -359,6 +368,12 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 self.points_redeemed_mobile_number = partner_response.get(
                     'redeemed_mobile_number')
                 self.point_program = PAYMENT_METHOD_ANB
+                data = {
+                    "id": partner_response.get("id"),
+                    "status": partner_response.get("status"),
+                    "type": partner_response.get("type"),
+                    "action": partner_response.get("action")
+                }
             else:
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.failure_url,
@@ -367,6 +382,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = True
                 message = self.anb_error_response_message(response_data,
                                                               language)
+                if partner_response.get("status") == PAYMENT_DECLINED_STATUS:
+                    message = partner_response.get("decline_reason")
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
             if response_data.get('code') == self.SUCCESS:
@@ -432,6 +449,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
             "anb_response": response_data,
             "is_success": is_success
         }
+        if data and partner_response.get("is_payment_success"):
+            return_response["data"] = data
         return return_response
 
     def verification(self, request_data):
@@ -456,8 +475,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                     transaction_id)
                 formatted_data = format_verify_data(request_data,
                                                     transaction_obj)
-                gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                gateway_obj = get_config_from_payment_configurations(
+                    transaction_obj, PAYMENT_METHOD_ANB)
                 anb_domain = gateway_obj.domain
                 url = (anb_domain + B2CP_VERIFY_API +
                        "?&redemption_partner=ANB")

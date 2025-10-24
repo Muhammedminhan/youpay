@@ -17,10 +17,12 @@ class AdditionalChargeConfigurationAdminForm(forms.ModelForm):
         payment_option = self.cleaned_data.get('payment_option')
         percentage = self.cleaned_data.get('percentage')
         fixed_amount = self.cleaned_data.get('fixed_amount')
+        charge_type = self.cleaned_data.get('charge_type')
+        currency = self.cleaned_data.get('currency')
         instance_id = self.instance.pk if self.instance else None
         obj_exist = AdditionalChargeConfiguration.objects.filter(
-            payment_option=payment_option,
-            is_active=True).exclude(pk=instance_id)
+            payment_option=payment_option, charge_type=charge_type,
+            is_active=True, currency=currency).exclude(pk=instance_id)
         if is_active and obj_exist.exists():
             raise ValidationError('Additional charge already exists '
                                   'for the same payment option.')

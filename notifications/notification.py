@@ -5,10 +5,10 @@ from core.mail_engine_base import MailEngineClient
 logger = logging.getLogger(__name__)
 
 
-class FlaggedMailAlertView(MailEngineClient):
+class MailAlertView(MailEngineClient):
 
     def __init__(self, *args, **kwargs):
-        super(FlaggedMailAlertView, self).__init__()
+        super(MailAlertView, self).__init__()
         self.subject = str(kwargs.get('subject'))
         self.template_code = kwargs.get('template_code')
         self.mail_from = kwargs.get('mail_from')

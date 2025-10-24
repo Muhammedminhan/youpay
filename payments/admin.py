@@ -77,7 +77,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         }),
         ('Payment details', {
             'fields': ('amount', 'currency', 'country_code',
-                       'transaction_id', 'payment_reference',
+                       'transaction_id', 'payment_reference', 'additional_reference',
                        'settlement_entity', 'payment_gateway', 'auth_code',
                        'channel_code', 'payment_method', 'payment_scheme',
                        'platform', 'response_summary', 'service_fee',
@@ -110,7 +110,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
             'fields': ('credit_balance_amount', 'available_credit_balance',
                        )
         }),
-        ('Paypal Additional Fee details', {
+        ('Additional Fee details', {
             'fields': ('additional_currency_decimal_notation',
                        'additional_vat_percentage', 'additional_vat',
                        'additional_processing_fee',
@@ -123,7 +123,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        )
         }),
         ('Other Details', {
-            'fields': ('retry_count', 'session_id', 'browser_value',
+            'fields': ('udf1', 'retry_count', 'session_id', 'browser_value',
                        'loyalty_level', 'created_at',
                        'updated_at'
                        )
