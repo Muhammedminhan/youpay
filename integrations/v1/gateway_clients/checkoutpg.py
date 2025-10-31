@@ -879,6 +879,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
+            channel_code = get_channel_code(transaction_obj)
 
             payment_request_data = {
                 "session_data": request_data.get('session_data'),
@@ -893,7 +894,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "invoice_id": transaction_obj.invoice_id,
                 "order_id": transaction_obj.order_id,
                 "token_type": TOKEN_TYPE_CARD,
-                "channel_code": get_channel_code(transaction_obj),
+                "channel_code": channel_code,
                 "client_code": transaction_obj.api_client.client_code,
                 "customer_ip_address": transaction_obj.ip,
                 "is_mada": request_data.get('is_mada', False)
@@ -930,7 +931,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         "payment_method": PAYMENT_OPTION_CARD,
                         "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
                         "name_on_card": request_data.get("customer_name"),
-                        "channel_code": payment_request_data.get('channel_code')
+                        "channel_code": channel_code
                     }
                     response_data.pop('reference_id', None)
 
