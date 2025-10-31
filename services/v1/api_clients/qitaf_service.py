@@ -255,8 +255,7 @@ class QitafRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "token_type": validated_data.get('token_type'),
                     "encrypted_id": request.data.get('transaction_id'),
                     "brand_calculations": transaction_obj.brand_calculations,
-                    "order_reference": transaction_order_reference,
-                    "checkout_reference": transaction_obj.additional_reference
+                    "order_reference": transaction_order_reference
                 }
             )
             qitaf_service = QitafServiceManager()
