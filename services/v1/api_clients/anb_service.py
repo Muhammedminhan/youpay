@@ -128,8 +128,7 @@ class AnbRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "currency": transaction_obj.currency,
                     "amount_in_aed": str(transaction_obj.amount_in_aed),
                     "card_number": validated_data.get("card_number"),
-                    "card_expiry": validated_data.get("card_expiry"),
-                    "checkout_reference": transaction_obj.additional_reference
+                    "card_expiry": validated_data.get("card_expiry")
                 }
             )
             anb_service = AnbServiceManager()
