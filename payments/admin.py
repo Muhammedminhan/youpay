@@ -36,7 +36,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                     'payment_Gateway', 'created_at', 'updated_at',)
     readonly_fields = (
         'transaction_id', 'created_at', 'updated_at', 'customer_email',
-        'customer_phone', 'loyalty_level')
+        'customer_phone', 'loyalty_level', 'customer_uid')
     search_fields = ('transaction_id', 'customer_email', 'invoice_id',
                      'payment_reference', 'order_reference')
     list_filter = ('settlement_entity', 'payment_status', 'api_client',
@@ -53,7 +53,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Customer details', {
             'fields': ('customer_name', 'customer_email', 'customer_phone',
-                       'is_guest', 'ip', 'language',
+                       'is_guest', 'ip', 'language', 'customer_uid'
                        )
         }),
         ('Card details', {
