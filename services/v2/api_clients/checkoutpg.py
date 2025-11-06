@@ -105,18 +105,6 @@ class CreatePaymentSession(APIView, YouPayTransactionCRUD):
                     transaction_obj, is_mada, is_partial_payment))
 
                 if status_code == checkout.SUCCESS and response_data:
-                    reference = response_data.get('reference_id')
-                    chanel_code = response_data.get('channel_code')
-
-                    transaction_obj.additional_reference = reference
-                    transaction_obj.channel_code = chanel_code
-                    transaction_obj.save()
-                    logger.info(f"Saving session reference: {reference}")
-
-                    response_data.pop('channel_code', None)
-                    response_data.pop('reference_id', None)
-                    response_data.pop('status', None)
-
                     data = self.response_obj.get_success_dict(
                         code=YouPayResponse.SUCCESS,
                         success_dict={'data': response_data}
