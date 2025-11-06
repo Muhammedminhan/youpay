@@ -307,10 +307,6 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         max_length=100, null=True, blank=True,
         choices=SETTLEMENT_ENTITY_CHOICES,
         help_text="used to store settlement entity")
-    auth_code = models.CharField(
-        max_length=50, null=True, blank=True,
-        help_text="The acquirer authorization code, if the payment was "
-                  "authorized.")
     is_guest = models.BooleanField(
         default=False, db_index=True,
         help_text='Denotes whether the payment is done by guest user or not.')

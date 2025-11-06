@@ -261,8 +261,15 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                 'is_gcc_card': instance.is_gcc_card,
                 'is_fraud': instance.is_fraud,
                 'is_flagged': instance.is_flagged,
-                'auth_code': instance.auth_code,
             }
+            if (any(transaction_obj.order_reference.startswith(prefix) for
+                    prefix in ['TOP', 'PMT']) and '|REW|' in
+                    transaction_obj.order_reference):
+                data_to_update["udf1"] = {
+                    'auth_code': instance.auth_code,
+                    'is_notification': instance.is_notification,
+                    'idempotency_key': instance.idempotency_key
+                }
             return data_to_update
         else:
             logger.info(
