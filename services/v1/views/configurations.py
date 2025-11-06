@@ -177,6 +177,7 @@ class ConfigViewSet(ViewSet):
                 "retry_count": transaction.retry_count,
                 "store": country_name,
                 "customer_email": transaction.customer_email,
+                "customer_uid": transaction.customer_uid,
                 "client_code": client.client_code,
                 "is_offer_enabled": transaction.is_offer_applicable,
                 "purchase_origin": (transaction.clevertap_items or {}).get(
