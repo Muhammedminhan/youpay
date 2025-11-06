@@ -9,6 +9,7 @@ from core.response_messages import YouPayResponse
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from services.utils import get_client_channel_code
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
+from core.utils import decrypt_string
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,13 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
         Method for getting saved card list
         """
         try:
-            validate, client = self.validate_client(request)
-            if not validate:
+            transaction_id = request.query_params.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id)
+            )
+            _, client = self.validate_client(request)
+            client_obj = getattr(transaction_obj, "api_client", None) or client
+            if not client_obj:
                 logger.info(
                     "payment request client validation failed for {0}"
                     .format("order_reference"))
@@ -30,17 +36,17 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
                     message="Client Does Not Exist")
                 return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
-            raw_email = request.query_params.get('customer_email')
+            raw_email = request.query_params.get('customer_email') or ""
             customer_uid = request.query_params.get('customer_uid')
             email = urllib.parse.unquote(raw_email)
             currency = None
-            channel_code = get_client_channel_code(client)
+            channel_code = get_client_channel_code(client_obj)
 
             checkout = CheckoutpgManager()
             response_data = checkout.get_saved_cards_v3(email, currency,
                                                         channel_code,
                                                         customer_uid,
-                                                        client.client_code)
+                                                        client_obj.client_code)
 
             data = self.response_obj.get_success_dict(
                 code=YouPayResponse.SUCCESS,
