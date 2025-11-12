@@ -253,7 +253,6 @@ class CheckoutVerification(APIView):
                     request.query_params.get('id')),
                 'cko_session_id': request.query_params.get(
                     'cko-session-id')}
-            logger.info("rewards-log: payment_data", payment_data)
             checkout = CheckoutpgManager()
             response_data, code = checkout.verify_payment(payment_data)
             if response_data:
