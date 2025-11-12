@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.forms.models import model_to_dict
 from rest_framework import status
 
 from core.constants import (
@@ -250,14 +251,14 @@ class YouPayTransactionCRUD(object):
                         update_calculated_gateway_charges)
                     update_calculated_gateway_charges.delay(
                         transaction_id=transaction_id)
-                logger.info("rewards-log: transaction_obj",
-                            {transaction_obj.__dict__})
+                logger.info("rewards-log: transaction_obj  = %s",
+                            model_to_dict(transaction_obj))
                 return True
             else:
                 logger.error("unable to find the transaction object for {}"
                              "".format(transaction_id))
-                logger.info("rewards-log: transaction_obj",
-                            {transaction_obj.__dict__})
+                logger.info("rewards-log: transaction_obj  = %s",
+                            model_to_dict(transaction_obj))
                 return False
         except Exception as e:
             logger.error("Unable to update the transaction object, {0}"

@@ -382,11 +382,18 @@ def process_checkoutpg_response_verification(**kwargs):
     channel_code = kwargs.get('channel_code')
     response_code = kwargs.get('response_data', {}).get('response_code')
     payment_scheme = get_payment_scheme(response_data)
-    logger.info("rewards-log: {} {} {} {} {} {}".format(response_data,
-                                                        is_pre_auth,
-                                                        payment_method,
-                                                        channel_code,
-                                                        response_code, payment_scheme))
+    logger.info("rewards-log: response_data",
+                response_data)
+    logger.info("rewards-log: is_pre_auth",
+                is_pre_auth)
+    logger.info("rewards-log: payment_method",
+                payment_method)
+    logger.info("rewards-log: channel_code",
+                channel_code)
+    logger.info("rewards-log: response_code",
+                response_code)
+    logger.info("rewards-log: payment_scheme",
+                payment_scheme)
 
     reference_from_checkout = response_data.get("reference")
     logger.info("rewards-log: reference_from_checkout", reference_from_checkout)
@@ -443,7 +450,8 @@ def process_checkoutpg_response_verification(**kwargs):
     is_flagged = response_data.get("is_flagged")
 
     is_payment_verified = False
-    logger.info("rewards-log: {} {}".format(response_code, is_flagged))
+    logger.info("rewards-log: response_code", response_code)
+    logger.info("rewards-log: is_flagged", is_flagged)
     if (response_code is None and
             response_data.get(
                 "status").lower() == PAYMENT_STATUS_DECLINED):
@@ -459,7 +467,9 @@ def process_checkoutpg_response_verification(**kwargs):
         payment_status, is_payment_verified = checkout_decline_check(
             response_data)
         approved = response_data.get('approved', False)
-        logger.info("rewards-log: {} {} {}".format(source, payment_status, approved))
+        logger.info("rewards-log: source", source)
+        logger.info("rewards-log: payment_status", payment_status)
+        logger.info("rewards-log: approved", approved)
         if source == PAYMENT_METHOD_APPLEPAY and approved:
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID

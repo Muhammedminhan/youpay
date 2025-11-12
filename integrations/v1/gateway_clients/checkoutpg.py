@@ -4,6 +4,7 @@ import logging
 from urllib.parse import urlencode
 
 import requests
+from django.forms.models import model_to_dict
 from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
@@ -887,8 +888,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
             channel_code = get_channel_code(transaction_obj)
-            logger.info("rewards-log: {} {}".format (is_save_user_token,
-                                                channel_code))
+            logger.info("rewards-log: is_save_user_token",is_save_user_token)
+            logger.info("rewards-log: channel_code",channel_code)
 
             payment_request_data = {
                 "session_data": request_data.get('session_data'),
@@ -913,7 +914,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             try:
                 url = self.checkoutpg_config.domain + SUBMIT_SESSION_ENDPOINT
                 headers = self.get_payment_header()
-                logger.info("rewards-log: {} {}".format(url, headers))
+                logger.info("rewards-log: url", url)
+                logger.info("rewards-log: headers", headers)
 
                 response = requests.post(url, data=json.dumps(
                     payment_request_data), headers=headers)
@@ -922,8 +924,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     "Checkout submit session response for transaction %s: %s",
                     transaction_obj.id, response.text
                 )
-                logger.info("rewards-log: {} {}".format(response,
-                                                        response.text))
+                logger.info("rewards-log: response", response)
+                logger.info("rewards-log: response.text", response.text)
+
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_obj.transaction_id,
@@ -955,7 +958,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     if status == PAYMENT_DECLINED_STATUS:
                         logger.info("rewards-log: PAYMENT_DECLINED_STATUS",
                                     PAYMENT_DECLINED_STATUS)
-                        logger.info("rewards-log: transaction_obj", {transaction_obj.__dict__})
+                        logger.info("rewards-log: transaction_obj = %s", model_to_dict(transaction_obj))
                         declined_response = self.handle_submit_session_response(
                             response_data, transaction_obj
                         )
@@ -970,8 +973,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             logger.info("rewards-log: transaction_data",
                                         transaction_data)
                         self.update_youpay_transaction_data(transaction_data)
-                        logger.info("rewards-log: {} {}".format(declined_response,
-                                                                self.PRE_AUTH))
+                        logger.info("rewards-log: declined_response",
+                                    declined_response)
+                        logger.info("rewards-log: self.PRE_AUTH",
+                                    self.PRE_AUTH)
                         return declined_response, self.PRE_AUTH
 
                     self.update_youpay_transaction_data(transaction_data)
@@ -999,21 +1004,21 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         decline_reason = response_data.get('decline_reason')
         decline_category = response_data.get('decline_category')
-        logger.info("rewards-log: {} {}".format(decline_reason,
-                                              decline_category))
+        logger.info("rewards-log: decline_reason", decline_reason)
+        logger.info("rewards-log: decline_category".format(decline_category))
 
         is_redirect_flag = decline_category != SOFT_DECLINE_RANGE
         redirect_url = None
         code = self.PRE_AUTH
-        logger.info("rewards-log: {} {}".format(is_redirect_flag,
-                                              code))
+        logger.info("rewards-log: is_redirect_flag",is_redirect_flag)
+        logger.info("rewards-log: code", code)
 
         if is_redirect_flag:
             redirect_url = ('{}?transaction_id={}'.format(
             transaction_obj.failure_url, transaction_obj.transaction_id))
             code = self.PAYMENT_FAILED
-            logger.info("rewards-log: {} {}".format(redirect_url,
-                                              code))
+            logger.info("rewards-log: redirect_url", redirect_url)
+            logger.info("rewards-log: code",code)
 
         response = {
             IS_REDIRECT: is_redirect_flag,
