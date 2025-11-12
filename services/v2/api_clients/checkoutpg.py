@@ -138,14 +138,10 @@ class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
         Method for submitting payment session
         """
         try:
-            logger.info("rewards-log: SubmitPaymentSession called")
             transaction_id = request.data.get('transaction_id')
-            logger.info("rewards-log: transaction_id", transaction_id)
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id)
             )
-            logger.info("rewards-log: transaction_obj", transaction_obj)
-            logger.info("rewards-log: request.data", request.data)
 
             if transaction_obj:
                 checkout = CheckoutpgManager()
@@ -157,23 +153,19 @@ class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
                         code=YouPayResponse.SUCCESS,
                         success_dict={'data': response_data}
                     )
-                    logger.info("rewards-log: data", data)
                     return Response(data, status=status.HTTP_200_OK)
 
                 if status_code == checkout.PRE_AUTH:
-                    logger.info("rewards-log: status_code", status_code)
                     return Response(response_data, status=status.HTTP_200_OK)
 
                 data = self.response_obj.get_400_message(
                     message="Failed to submit payment session")
-                logger.info("rewards-log: data", data)
                 return Response(data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
             else:
                 data = self.response_obj.get_404_message(
                     message=TRANSACTION_DOESNT_EXIST
                 )
-                logger.info("rewards-log: data", data)
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:

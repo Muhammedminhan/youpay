@@ -382,28 +382,14 @@ def process_checkoutpg_response_verification(**kwargs):
     channel_code = kwargs.get('channel_code')
     response_code = kwargs.get('response_data', {}).get('response_code')
     payment_scheme = get_payment_scheme(response_data)
-    logger.info("rewards-log: response_data",
-                response_data)
-    logger.info("rewards-log: is_pre_auth",
-                is_pre_auth)
-    logger.info("rewards-log: payment_method",
-                payment_method)
-    logger.info("rewards-log: channel_code",
-                channel_code)
-    logger.info("rewards-log: response_code",
-                response_code)
-    logger.info("rewards-log: payment_scheme",
-                payment_scheme)
 
     reference_from_checkout = response_data.get("reference")
-    logger.info("rewards-log: reference_from_checkout", reference_from_checkout)
 
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(
         transaction_id)
 
     youpay_payment_referance = youpay_transaction.payment_reference
-    logger.info("rewards-log: youpay_payment_referance", youpay_payment_referance)
 
     if ((youpay_payment_referance != reference_from_checkout) and
             youpay_payment_referance):
@@ -415,15 +401,12 @@ def process_checkoutpg_response_verification(**kwargs):
             " reference id from checkout {}, youpay referance {}"
             "".format(transaction_id, reference_from_checkout,
                       youpay_payment_referance))
-        logger.info("rewards-log: Payment Referance mismatch found")
         if response_code.startswith(
                 SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
             logger.info(
                 "transaction failed for transaction id {}, pre-auth soft "
                 "decline response code {}".format(
                     transaction_id, response_code))
-            logger.info("rewards-log: SOFT_DECLINE_RESPONSE_CODE_STARTSWITH",
-                  SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
         else:
             redirect_url = get_redirect_url(youpay_transaction.failure_url,
                                             transaction_id)
@@ -434,14 +417,13 @@ def process_checkoutpg_response_verification(**kwargs):
                 TRANSACTION_MSG: {"response_summary": response_summary},
                 IS_SUCCESS: False
             }
-            logger.info("rewards-log: response_data", response_data)
 
             return False, response_data
 
     if is_pre_auth:
         response_data = format_pre_auth_payment_response_for_verify(
             response_data)
-        logger.info("rewards-log: is_pre_auth -> response_data", response_data)
+
     logger.info(
         "Verify payment response data for transaction {} --> {}".format(
             transaction_id, response_data))
@@ -450,8 +432,6 @@ def process_checkoutpg_response_verification(**kwargs):
     is_flagged = response_data.get("is_flagged")
 
     is_payment_verified = False
-    logger.info("rewards-log: response_code", response_code)
-    logger.info("rewards-log: is_flagged", is_flagged)
     if (response_code is None and
             response_data.get(
                 "status").lower() == PAYMENT_STATUS_DECLINED):
@@ -460,16 +440,13 @@ def process_checkoutpg_response_verification(**kwargs):
         retry payments
         '''
         payment_status = PAYMENT_STATUS_DECLINED_RETRY
-        logger.info("rewards-log: payment_status", payment_status)
     else:
         source = response_data.get('source', None)
 
         payment_status, is_payment_verified = checkout_decline_check(
             response_data)
         approved = response_data.get('approved', False)
-        logger.info("rewards-log: source", source)
-        logger.info("rewards-log: payment_status", payment_status)
-        logger.info("rewards-log: approved", approved)
+
         if source == PAYMENT_METHOD_APPLEPAY and approved:
             # For Applepay only
             payment_status = PAYMENT_STATUS_PAID

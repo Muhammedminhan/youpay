@@ -189,7 +189,6 @@ def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
             status is not in ALLOWED_STATUS_FOR_YOUPAY_WEBHOOK_UPDATE
             """
             status = instance.status
-            logger.info("rewards-log: status", status)
             if status not in ALLOWED_STATUS_FOR_YOUPAY_WEBHOOK_UPDATE:
                 logger.info(
                     "Checkoutpg TransactionData post_save Not Triggered for "
@@ -210,7 +209,6 @@ def youpay_transaction_data_post_save_on_webhook(sender, instance, created,
             instance, payment_reference)
 
         if data_to_update:
-            logger.info("rewards-log: data_to_update", data_to_update)
             transaction_id = data_to_update.get('transaction_id')
             from integrations.v1.gateway_clients.checkoutpg import (
                 CheckoutpgManager)
