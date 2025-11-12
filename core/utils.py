@@ -389,14 +389,14 @@ def process_checkoutpg_response_verification(**kwargs):
                                                         response_code, payment_scheme))
 
     reference_from_checkout = response_data.get("reference")
-    print("rewards-log: reference_from_checkout", reference_from_checkout)
+    logger.info("rewards-log: reference_from_checkout", reference_from_checkout)
 
     youpay = YouPayTransactionCRUD()
     youpay_transaction = youpay.get_youpay_transaction_data(
         transaction_id)
 
     youpay_payment_referance = youpay_transaction.payment_reference
-    print("rewards-log: youpay_payment_referance", youpay_payment_referance)
+    logger.info("rewards-log: youpay_payment_referance", youpay_payment_referance)
 
     if ((youpay_payment_referance != reference_from_checkout) and
             youpay_payment_referance):
@@ -408,14 +408,14 @@ def process_checkoutpg_response_verification(**kwargs):
             " reference id from checkout {}, youpay referance {}"
             "".format(transaction_id, reference_from_checkout,
                       youpay_payment_referance))
-        print("rewards-log: Payment Referance mismatch found")
+        logger.info("rewards-log: Payment Referance mismatch found")
         if response_code.startswith(
                 SOFT_DECLINE_RESPONSE_CODE_STARTSWITH):
             logger.info(
                 "transaction failed for transaction id {}, pre-auth soft "
                 "decline response code {}".format(
                     transaction_id, response_code))
-            print("rewards-log: SOFT_DECLINE_RESPONSE_CODE_STARTSWITH",
+            logger.info("rewards-log: SOFT_DECLINE_RESPONSE_CODE_STARTSWITH",
                   SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
         else:
             redirect_url = get_redirect_url(youpay_transaction.failure_url,
