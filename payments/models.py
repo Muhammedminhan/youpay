@@ -369,6 +369,7 @@ def youpay_update_client(instance):
         service = ClientService()
         payment_transaction = YouPayTransactionData.objects.get(
             id=instance.id)
+        logger.info("rewards-log: payment_transaction", payment_transaction)
 
         if instance.previous_status != instance.payment_status:
             # logger for youpay status update
