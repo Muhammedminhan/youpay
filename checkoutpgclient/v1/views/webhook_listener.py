@@ -36,12 +36,14 @@ class WebhookListener(APIView, WebhookDataFormat):
     )
 
     def post(self, request):
+        logger.info("rewards-log: webhook received")
         request_data = json.loads(request.data)
         transaction_id = None
         invoice_id = None
         payment_status = None
         payment_reference = None
         track_info = None
+        logger.info("rewards-log: webhook received - request_data", request_data)
         try:
 
             invoice_pk = request_data.get("invoice_id")
@@ -49,6 +51,7 @@ class WebhookListener(APIView, WebhookDataFormat):
             payment_reference = request_data.get('payment_reference', None)
 
             payment_status = str(request_data.get('status', None))
+            logger.info("rewards-log: payment_status", payment_status)
 
             track_info = "Webhook received "
 
@@ -101,6 +104,8 @@ class WebhookListener(APIView, WebhookDataFormat):
                     transaction_obj.card_type = self.get_card_type(
                         request_data.get('api_response_data'))
                     transaction_obj.save()
+                    logger.info("rewards-log: transaction_obj",
+                                transaction_obj.__dict__)
                     track_info = track_info + ", checkoutpg client updated"
 
                 else:
@@ -160,6 +165,8 @@ class WebhookListener(APIView, WebhookDataFormat):
             response_data = {'message': "Checkout webhook listener "
                                         "successfully processed data",
                              'status': True}
+            logger.info("rewards-log: transaction_obj",
+                        transaction_obj.__dict__)
 
             return self.pg_response('HTTP_200_OK', data=response_data)
         except Exception as e:
