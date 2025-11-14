@@ -455,6 +455,10 @@ def get_payment_methods(transaction, client, country):
                     )
                     if is_via_payment_link and isinstance(payment_options, dict):
                         payment_options.pop("checkout_saved_card", None)
+                        logger.info("Payment link transaction found. "
+                                    "Removing checkout_saved_card from "
+                                    "payment_options for transaction_id {}"
+                                    .format(transaction.transaction_id))
 
             except Exception as inner_exc:
                 logger.error(
