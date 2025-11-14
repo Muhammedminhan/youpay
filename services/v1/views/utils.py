@@ -65,6 +65,9 @@ def reformat_payment_request_data(data):
     order_history = data.get('order_history')
     order_items = data.get('order_items')
     data['redemption_partner'] = data.get('redemption_partner')
+    udf1 = data.get('udf1')
+    if udf1:
+        data['udf1'] = udf1
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
@@ -441,6 +444,21 @@ def get_payment_methods(transaction, client, country):
                                                           payment_config_map,
                                                           method_key)
                 payment_options[method_key] = is_enabled
+                if (transaction.order_reference.startswith('TOP') and '|REW|'
+                        in transaction.order_reference):
+                    udf1 = getattr(transaction, "udf1", None)
+                    if not udf1:
+                        continue
+                    is_via_payment_link = (
+                            isinstance(udf1, dict) and
+                            udf1.get("is_via_payment_link") is True
+                    )
+                    if is_via_payment_link and isinstance(payment_options, dict):
+                        payment_options.pop("checkout_saved_card", None)
+                        logger.info("Payment link transaction found. "
+                                    "Removing checkout_saved_card from "
+                                    "payment_options for transaction_id {}"
+                                    .format(transaction.transaction_id))
 
             except Exception as inner_exc:
                 logger.error(
