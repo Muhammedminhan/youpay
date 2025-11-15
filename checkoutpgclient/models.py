@@ -265,11 +265,13 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
             if (any(transaction_obj.order_reference.startswith(prefix) for
                     prefix in ['TOP', 'PMT']) and '|REW|' in
                     transaction_obj.order_reference):
-                data_to_update["udf1"] = {
+                existing_udf1 = getattr(transaction_obj, "udf1", {}) or {}
+                existing_udf1.update({
                     'auth_code': instance.auth_code,
                     'is_notification': instance.is_notification,
                     'idempotency_key': instance.idempotency_key
-                }
+                })
+                data_to_update["udf1"] = existing_udf1
             return data_to_update
         else:
             logger.info(
