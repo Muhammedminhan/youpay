@@ -192,7 +192,6 @@ class YouPayTransactionCRUD(object):
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
         data_dict['udf1'] = data.get('udf1', None)
-        logger.info("rewards-debug: udf1=========>>>>: %s", data_dict)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD,
@@ -233,9 +232,6 @@ class YouPayTransactionCRUD(object):
                 if data_dict.get('is_full_redemption') == False:
                     transaction_obj.is_full_redemption = False
                     self.saved_fields.append('is_full_redemption')
-                    logger.info("rewards-debug: "
-                                "self.saved_fields=========>>>> %s",
-                                self.saved_fields)
 
                 self.update_point_program_on_transaction_obj(
                     transaction_obj)
