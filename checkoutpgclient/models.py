@@ -263,8 +263,9 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                 'is_flagged': instance.is_flagged,
             }
             if (any(transaction_obj.order_reference.startswith(prefix) for
-                    prefix in ['TOP', 'PMT']) and '|REW|' in
-                    transaction_obj.order_reference):
+                    prefix in ['TOP', 'PMT']) and any(
+                tag in transaction_obj.order_reference for tag in
+                ["|REW|", "|REWSA|"])):
                 existing_udf1 = getattr(transaction_obj, "udf1", {}) or {}
                 existing_udf1.update({
                     'auth_code': instance.auth_code,
