@@ -444,8 +444,9 @@ def get_payment_methods(transaction, client, country):
                                                           payment_config_map,
                                                           method_key)
                 payment_options[method_key] = is_enabled
-                if (transaction.order_reference.startswith('TOP') and '|REW|'
-                        in transaction.order_reference):
+                if (transaction.order_reference.startswith('TOP') and any(
+                        tag in transaction.order_reference for tag in [
+                            '|REW|', '|REWSA|'])):
                     udf1 = getattr(transaction, "udf1", None)
                     if not udf1:
                         continue

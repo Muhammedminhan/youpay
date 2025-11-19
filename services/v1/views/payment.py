@@ -359,8 +359,9 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             "payment_method": payment_method,
         }
         if (any(transaction_obj.order_reference.startswith(prefix) for
-                prefix in ['TOP', 'PMT']) and '|REW|' in
-                transaction_obj.order_reference):
+                prefix in ['TOP', 'PMT']) and any(
+            tag in transaction_obj.order_reference for tag in
+            ["|REW|", "|REWSA|"])):
             verify_body["order_reference"] = str(
                 transaction_obj.order_reference)
         return verify_body
