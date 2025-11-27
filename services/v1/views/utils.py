@@ -620,3 +620,20 @@ def check_is_user_beta_enabled(transaction):
         return True if beta_user else False
     except BetaUser.DoesNotExist:
         return False
+
+
+def is_rewards_order_reference(order_reference):
+    """
+    Checks if the given order reference is a rewards order reference.
+
+    Args:
+        order_reference (str): The order reference of the transaction object.
+
+    Returns:
+        bool: True if the order reference starts with 'TOP' or 'PMT' and
+        contains '|REW|', False otherwise.
+    """
+    if order_reference is None:
+        return False
+    return any(order_reference.startswith(prefix) for prefix
+               in ['TOP', 'PMT']) and '|REW|' in order_reference

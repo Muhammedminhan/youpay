@@ -6,6 +6,7 @@ from django.dispatch import receiver
 
 from payments.constants import MODEL_NAME_TRANSACTIONDATA, CARD_BIN_MAX_LENGTH
 from payments.tasks import (common_update_financial_action_charges)
+from services.v1.views.utils import is_rewards_order_reference
 from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_METHOD_CHOICES,
                         PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
@@ -262,9 +263,7 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                 'is_fraud': instance.is_fraud,
                 'is_flagged': instance.is_flagged,
             }
-            if (any(transaction_obj.order_reference.startswith(prefix) for
-                    prefix in ['TOP', 'PMT']) and '|REW|' in
-                    transaction_obj.order_reference):
+            if is_rewards_order_reference(transaction_obj.order_reference):
                 data_to_update["udf1"] = {
                     'auth_code': instance.auth_code,
                     'is_notification': instance.is_notification,

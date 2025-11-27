@@ -74,7 +74,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     platform_fee = models.DecimalField(decimal_places=4, max_digits=12,
                                      null=True, blank=True,
                                      validators=[DecimalValidator(12, 4)],
-                                     help_text = "used to store platform fee")
+                                     help_text="used to store platform fee")
     order_history = models.JSONField(null=True, blank=True,
                                      help_text="used to store order history")
     payment_gateway = models.CharField(max_length=20, null=True, blank=True,

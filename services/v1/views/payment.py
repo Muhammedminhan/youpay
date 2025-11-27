@@ -43,7 +43,7 @@ from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
 from services.v1.views.utils import (
     reformat_payment_request_data,
     payment_configuration_check,
-    get_country_for_configuration
+    get_country_for_configuration, is_rewards_order_reference
 )
 
 logger = logging.getLogger(__name__)
@@ -358,9 +358,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             "currency": transaction_obj.currency,
             "payment_method": payment_method,
         }
-        if (any(transaction_obj.order_reference.startswith(prefix) for
-                prefix in ['TOP', 'PMT']) and '|REW|' in
-                transaction_obj.order_reference):
+        if is_rewards_order_reference(transaction_obj.order_reference):
             verify_body["order_reference"] = str(
                 transaction_obj.order_reference)
         return verify_body
