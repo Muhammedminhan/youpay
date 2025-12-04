@@ -7,7 +7,8 @@ from django.db.models import Q
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
                             PAYBACK_ACTION_EARN, FORMAT_PARTIAL_PAYMENTS,
                             BETA_USER_ENABLED, BETA_USER_ONLY_EARN,
-                            BETA_USER_ONLY_BURN)
+                            BETA_USER_ONLY_BURN, REWARDS_ORDER_PREFIXES,
+                            REWARDS_ORDER_TAGS, REWARDS_TOP_UP_ORDER_PREFIX)
 from core.core_serializers import PaymentConfigurationSerializer
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
@@ -444,8 +445,10 @@ def get_payment_methods(transaction, client, country):
                                                           payment_config_map,
                                                           method_key)
                 payment_options[method_key] = is_enabled
-                if (transaction.order_reference.startswith('TOP') and '|REW|'
-                        in transaction.order_reference):
+                if (transaction.order_reference.startswith(
+                        REWARDS_TOP_UP_ORDER_PREFIX) and any(
+                        tag in transaction.order_reference for tag in
+                        REWARDS_ORDER_TAGS)):
                     udf1 = getattr(transaction, "udf1", None)
                     if not udf1:
                         continue
@@ -635,5 +638,6 @@ def is_rewards_order_reference(order_reference):
     """
     if order_reference is None:
         return False
-    return any(order_reference.startswith(prefix) for prefix
-               in ['TOP', 'PMT']) and '|REW|' in order_reference
+    return (any(order_reference.startswith(prefix) for
+                    prefix in REWARDS_ORDER_PREFIXES) and any(
+                tag in order_reference for tag in REWARDS_ORDER_TAGS))
