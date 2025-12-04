@@ -125,7 +125,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
             self.request_data = payload
             payload['apiclient'] = self.transaction_obj.api_client.name
             payload['client_code'] = ANB_CLIENT_CODE
-
+            
             logger.info("anb config is {}".format(self.anb_config))
 
             url = self.anb_config.domain + B2CP_OTP_GENERATION_API
