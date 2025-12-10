@@ -580,6 +580,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 request_data['invoice_id'] = transaction_obj.invoice_id
                 request_data['channel_code'] = get_channel_code(
                     transaction_obj)
+                request_data['redemption_reference_id'] = (
+                    transaction_obj.payment_reference)
 
                 neqaty_config = get_config_from_payment_configurations(
                     transaction_obj, PAYMENT_METHOD_NEQATY)
