@@ -186,6 +186,8 @@ class ConfigViewSet(ViewSet):
                 "purchase_origin": (transaction.clevertap_items or {}).get(
                     "purchase_origin"),
                 **payment_config_data,
+                "applepay_config": self.get_applepay_config(payment_options,
+                                                            transaction),
             }
         }
 
