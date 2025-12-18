@@ -1,12 +1,27 @@
+import logging
+
+from django.conf import settings
+from django.db import transaction, IntegrityError
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from rest_framework.authentication import BasicAuthentication
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
+from rest_framework.views import APIView
 
 from core.messages import ERROR_MESSAGE, ERROR_MISSING_FIELDS
+from core.models import Country, PaymentConfiguration, PaymentMethodConfig
 from services.models import APIClient
+from services.v1.auth.client_registration_permission import (
+    APIClientRegistrationPermission)
+from services.v1.constants import CLIENT_WEBHOOK_ENDPOINT_PREFIX
 from services.v1.serializers.client_registrattion import (
-    APIClientRegistrationSerializer)
+    APIClientRegistrationSerializer, APIClientRequestSerializer,
+    APIClientResponseSerializer)
+
+logger = logging.getLogger(__name__)
 
 
 class APIClientRegistrationViewSet(ViewSet):
@@ -80,3 +95,112 @@ class APIClientRegistrationViewSet(ViewSet):
             return Response({'message': ERROR_MESSAGE, "error": str(e),
                              "status": status.HTTP_400_BAD_REQUEST},
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class APIClientRegistrationView(APIView):
+    authentication_classes = [BasicAuthentication]
+    permission_classes = [APIClientRegistrationPermission]
+
+    def post(self, request, *args, **kwargs):
+        serializer = APIClientRequestSerializer(
+            data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(
+                {
+                    "errors": {
+                        "code": 400,
+                        "message": serializer.errors
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        admin = self.get_created_by()
+        if not admin:
+            return Response(
+                {
+                    "errors": {
+                        "code": 404,
+                        "message": "Client registration failed, admin user "
+                                   "not found"
+                    }
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+        data = serializer.validated_data
+
+        name = data.get('name', None)
+        client_domain = data.get('client_domain', None)
+        webhook_url = client_domain + CLIENT_WEBHOOK_ENDPOINT_PREFIX
+        is_active = data.get('is_active', True)
+        brand_details_path = data.get('brand_details_path', None)
+        allow_aed_converted_amount = data.get(
+            'show_aed_equivalent_amount', False)
+        checkout_channel_code = data.get(
+            'currency_channel_config', {})
+        logo_file = data.get('logo_file', None)
+        mobile_logo_file = data.get('mobile_logo_file', None)
+        client_code = data.get('product_code', None)
+        allowed_country_codes = data.get(
+            'allowed_payment_countries', [])
+        payment_method_codes = data.get('payment_method', [])
+
+        with transaction.atomic():
+            try:
+                client, _ = APIClient.objects.get_or_create(
+                    name=name,
+                    client_domain=client_domain,
+                    client_code=client_code,
+                    defaults={
+                        'webhook_url': webhook_url,
+                        'is_active': is_active,
+                        'brand_details_path': brand_details_path,
+                        'allow_aed_converted_amount':
+                            allow_aed_converted_amount,
+                        'logo_file': logo_file,
+                        'mobile_logo_file': mobile_logo_file,
+                        'checkout_channel_code': checkout_channel_code,
+                        'created_by': admin,
+                        'modified_by': admin
+                    }
+                )
+            except APIClient.MultipleObjectsReturned:
+                logger.error("client with name {0}, client code {1} and "
+                            "domain {2} found more than once, returning the "
+                            "latest.".format(name, client_code,
+                                             client_domain))
+
+                client = APIClient.objects.filter(
+                    name=name, client_domain=client_domain,
+                    client_code=client_code
+                ).order_by('-id').first()
+
+            for country_code in allowed_country_codes:
+                country = Country.objects.get(iso_code=country_code)
+                for method_code in payment_method_codes:
+                    payment_config = (PaymentConfiguration.objects.get(
+                        payment_method=method_code))
+                    try:
+                        PaymentMethodConfig.objects.create(
+                            payment_method=payment_config, country=country,
+                            client=client, active=True
+                        )
+                    except (IntegrityError, ValidationError):
+                        logger.error("A payment configuration with the same "
+                               "client, country, and payment method "
+                               "already exists")
+                        continue
+
+
+        result = APIClientResponseSerializer(instance=client)
+        return Response(result.data, status=status.HTTP_200_OK)
+
+    @staticmethod
+    def get_created_by():
+        try:
+            admin_user_name = settings.ADMIN_USER_NAME
+            admin = User.objects.get(username=admin_user_name)
+        except User.DoesNotExist:
+            logger.error("Admin user not found")
+            admin = None
+        return admin

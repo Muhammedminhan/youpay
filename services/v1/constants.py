@@ -5,3 +5,5 @@ B2C_PAYBACK_CONFIG_ENDPOINT = '/payback/api/v1/configuration/'
 B2C_PAYBACK_GATEWAY_CODE = 'PAYMTB2CPBK'
 
 B2C_PAYBACK_NO_RESPONSE_MESSAGE = "Unable to complete transaction request"
+
+CLIENT_WEBHOOK_ENDPOINT_PREFIX = 'api/v1/webhook/'

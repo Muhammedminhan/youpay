@@ -246,3 +246,5 @@ CACHES = {
 }
 
 ENVIRONMENT = config('ENVIRONMENT')
+
+ADMIN_USER_NAME = config('ADMIN_USER_NAME', 'ygpay-admin@yougotagift.com')

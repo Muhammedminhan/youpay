@@ -43,7 +43,8 @@ from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
-from .views.client_registration import APIClientRegistrationViewSet
+from .views.client_registration import (APIClientRegistrationViewSet,
+                                        APIClientRegistrationView)
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
                             AdditionalChargeCalculation,
@@ -55,6 +56,7 @@ router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
     path("", include(router.urls)),
+    path('registration/client/', APIClientRegistrationView.as_view()),
     path('additional-charges/', AdditionalChargeCalculation.as_view()),
     path('payment/', PaymentRequestView.as_view(), name='PaymentRequestView'),
     # For testing purpose
