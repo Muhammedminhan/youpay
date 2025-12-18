@@ -6,4 +6,4 @@ B2C_PAYBACK_GATEWAY_CODE = 'PAYMTB2CPBK'
 
 B2C_PAYBACK_NO_RESPONSE_MESSAGE = "Unable to complete transaction request"
 
-CLIENT_WEBHOOK_ENDPOINT_PREFIX = 'api/v1/webhook/'
+CLIENT_WEBHOOK_ENDPOINT_PREFIX = 'youpay/api/v1/webhook/'
