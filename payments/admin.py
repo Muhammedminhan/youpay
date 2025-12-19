@@ -70,7 +70,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('Cart details', {
             'fields': ('cart_amount', 'amount_in_aed', 'cart_currency',
                        'cart_service_fee',
-                       'cart_base_amount', 'cart_VAT_amount', 'brand_details',
+                       'cart_base_amount', 'cart_VAT_amount',
+                       'cart_platform_fee', 'brand_details',
                        'brand_calculations', 'is_offer_applicable'
                        )
         }),
@@ -80,8 +81,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'settlement_entity', 'payment_gateway',
                        'channel_code', 'payment_method', 'payment_scheme',
                        'platform', 'response_summary', 'service_fee',
-                       'base_amount', 'VAT_amount', 'gateway_charge',
-                       'is_payment_verified'
+                       'base_amount', 'VAT_amount', 'platform_fee',
+                       'gateway_charge', 'is_payment_verified'
                        )
         }),
         ('URLs', {

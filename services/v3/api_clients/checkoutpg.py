@@ -36,8 +36,8 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
                     message="Client Does Not Exist")
                 return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
-            raw_email = request.query_params.get('customer_email') or ""
-            customer_uid = request.query_params.get('customer_uid')
+            raw_email = request.query_params.get('customer_email', "")
+            customer_uid = request.query_params.get('customer_uid', "")
             email = urllib.parse.unquote(raw_email)
             currency = None
             channel_code = get_client_channel_code(client_obj)

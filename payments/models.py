@@ -71,6 +71,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                      null=True, blank=True,
                                      validators=[DecimalValidator(12, 4)],
                                      help_text="used to store VAT amount")
+    platform_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                     null=True, blank=True,
+                                     validators=[DecimalValidator(12, 4)],
+                                     help_text="used to store platform fee")
     order_history = models.JSONField(null=True, blank=True,
                                      help_text="used to store order history")
     payment_gateway = models.CharField(max_length=20, null=True, blank=True,
@@ -242,6 +246,12 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    cart_platform_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                          null=True, blank=True,
+                                          validators=[
+                                                DecimalValidator(12, 4)],
+                                          help_text="used to store cart "
+                                                    "platform fee")
     brand_details = models.JSONField(null=True, blank=True,
                                      help_text="used to store brand details "
                                                "from the ecom side")
