@@ -246,7 +246,7 @@ class YouPayResponse(object):
             self.MOKAFAA_OTP_STILL_VALID: "Last generated OTP is still valid",
 
             self.CLIENT_TRANSACTION_VERIFICATION_FAILED: (
-                "Transaction verification failed"),
+                "Transaction verification failed -(فشل التحقق من المعاملة)"),
             self.TRANSACTION_NOT_FOUND: "Transaction not found",
             self.MISSING_CLIENT_INFO: "API Client data missing",
             self.MAX_PAYMENT_ATTEMPT_REACHED: "Max payment attempt reached",

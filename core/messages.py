@@ -8,7 +8,7 @@ PAYMENT_REQUEST_KEYS_ERROR = (
     "Payment request data is not in proper format, one of the data is missing"
     " ie order or payment or customer or urls")
 MIDDLEWARE_STATUS_CHECK_MESSAGE = ("Seems like this transaction is already "
-                                   "closed")
+                                   "closed -(يبدو أن هذه المعاملة قد تم إغلاقها )")
 MIDDLEWARE_ALREADY_PAID_MESSAGE = (
     "Transaction Unsuccessful : You are trying to pay again "
     "for a successful transaction. ")
