@@ -225,6 +225,8 @@ class PaymentConfigurationAdmin(AdminAbstract):
                   'guest_user_enabled', 'beta_version',
                   'is_second_project_config_enabled',
                   'payment_method_config',
+                  'address_blocked_countries',
+                  'method_blocked_countries',
                   'partial_redemption_allowed',
                   'burn_full_redemption_enabled', 'earn_enabled',
                   'earn_on_partial_redemption',
@@ -239,6 +241,8 @@ class PaymentConfigurationAdmin(AdminAbstract):
             fields = ('payment_method', 'code', 'active',
                       'guest_user_enabled', 'beta_version',
                       'is_second_project_config_enabled',
+                      'address_blocked_countries',
+                      'method_blocked_countries',
                       'payment_method_config',
                       'payment_gateway', 'created_at', 'updated_at',
                       'created_by', 'modified_by')

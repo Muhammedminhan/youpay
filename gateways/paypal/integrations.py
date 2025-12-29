@@ -25,6 +25,7 @@ from gateways.paypal.constants import (PAYPAL_ORDER_STATUS_CREATED,
                                        PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED,
                                        PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED)
 from gateways.paypal.models import PaymentAccessToken, PaypalTransaction
+from integrations.common import get_payment_config
 from integrations.constants import (PAYMENT_REQUEST_TYPE_CREATE_ORDER,
                                     PAYMENT_REQUEST_TYPE_CAPTURE_ORDER,
                                     PAYPAL_HUB_CODE, PAYPAL_CACHE_KEY,
@@ -754,7 +755,17 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         status = order_data.get("status")
         paypal_source = order_data.get("payment_source", {}).get(
             "paypal", {})
+        payment_config = get_payment_config(PAYMENT_METHOD_PAYPAL,
+                                            PAYPAL_HUB_CODE)
+        blocked_address_country_codes = list(
+            payment_config.address_blocked_countries.values_list("iso_code",
+                                                                 flat=True)
+        )
 
+        blocked_method_country_codes = list(
+            payment_config.method_blocked_countries.values_list("iso_code",
+                                                                flat=True)
+        )
         if status == "APPROVED":
             order_status_code = self.SUCCESS
             issues = {
@@ -769,10 +780,12 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             if issues["account_status"] != "VERIFIED":
                 updated_status = PAYPAL_ACCOUNT_UNVERIFIED
                 order_status_code = self.PAYPAL_ACCOUNT_UNVERIFIED
-            elif issues["address_country_code"] == "IN":
+            elif issues[
+                "address_country_code"] in blocked_address_country_codes:
                 updated_status = PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED
                 order_status_code = self.PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED
-            elif issues["card_issuer_country"] == "IN":
+            elif issues[
+                "card_issuer_country"] in blocked_method_country_codes:
                 updated_status = PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED
                 order_status_code = self.PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED
 
