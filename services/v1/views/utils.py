@@ -7,7 +7,8 @@ from django.db.models import Q
 from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
                             PAYBACK_ACTION_EARN, FORMAT_PARTIAL_PAYMENTS,
                             BETA_USER_ENABLED, BETA_USER_ONLY_EARN,
-                            BETA_USER_ONLY_BURN)
+                            BETA_USER_ONLY_BURN, REWARDS_ORDER_PREFIXES,
+                            REWARDS_ORDER_TAGS, REWARDS_TOP_UP_ORDER_PREFIX)
 from core.core_serializers import PaymentConfigurationSerializer
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
@@ -65,6 +66,9 @@ def reformat_payment_request_data(data):
     order_history = data.get('order_history')
     order_items = data.get('order_items')
     data['redemption_partner'] = data.get('redemption_partner')
+    udf1 = data.get('udf1')
+    if udf1:
+        data['udf1'] = udf1
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
@@ -74,6 +78,7 @@ def reformat_payment_request_data(data):
         data['VAT_amount'] = order.get('VAT_amount')
         data['currency'] = order.get('currency')
         data['country_code'] = order.get('country_code')
+        data['platform_fee'] = order.get('platform_fee')
 
         data['cart_amount'] = order.get('cart_amount')
         data['cart_currency'] = order.get('cart_currency')
@@ -86,6 +91,7 @@ def reformat_payment_request_data(data):
             order.get('additional_currency_decimal_notation'))
         data['order_id'] = order.get('order_id')
         data['is_offer_applicable'] = order.get('is_offer_applicable', False)
+        data['cart_platform_fee'] = order.get('cart_platform_fee')
 
         data['invoice_id'] = payment.get('invoice_id')
         data['order_reference'] = payment.get('order_reference')
@@ -439,6 +445,23 @@ def get_payment_methods(transaction, client, country):
                                                           payment_config_map,
                                                           method_key)
                 payment_options[method_key] = is_enabled
+                if (transaction.order_reference.startswith(
+                        REWARDS_TOP_UP_ORDER_PREFIX) and any(
+                        tag in transaction.order_reference for tag in
+                        REWARDS_ORDER_TAGS)):
+                    udf1 = getattr(transaction, "udf1", None)
+                    if not udf1:
+                        continue
+                    is_via_payment_link = (
+                            isinstance(udf1, dict) and
+                            udf1.get("is_via_payment_link") is True
+                    )
+                    if is_via_payment_link and isinstance(payment_options, dict):
+                        payment_options.pop("checkout_saved_card", None)
+                        logger.info("Payment link transaction found. "
+                                    "Removing checkout_saved_card from "
+                                    "payment_options for transaction_id {}"
+                                    .format(transaction.transaction_id))
 
             except Exception as inner_exc:
                 logger.error(
@@ -600,3 +623,21 @@ def check_is_user_beta_enabled(transaction):
         return True if beta_user else False
     except BetaUser.DoesNotExist:
         return False
+
+
+def is_rewards_order_reference(order_reference):
+    """
+    Checks if the given order reference is a rewards order reference.
+
+    Args:
+        order_reference (str): The order reference of the transaction object.
+
+    Returns:
+        bool: True if the order reference starts with 'TOP' or 'PMT' and
+        contains '|REW|', False otherwise.
+    """
+    if order_reference is None:
+        return False
+    return (any(order_reference.startswith(prefix) for
+                    prefix in REWARDS_ORDER_PREFIXES) and any(
+                tag in order_reference for tag in REWARDS_ORDER_TAGS))
