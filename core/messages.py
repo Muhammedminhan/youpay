@@ -8,13 +8,14 @@ PAYMENT_REQUEST_KEYS_ERROR = (
     "Payment request data is not in proper format, one of the data is missing"
     " ie order or payment or customer or urls")
 MIDDLEWARE_STATUS_CHECK_MESSAGE = ("Seems like this transaction is already "
-                                   "closed")
+                                   "closed -( يبدو أن هذه المعاملة قد تم إغلاقها )")
 MIDDLEWARE_ALREADY_PAID_MESSAGE = (
     "Transaction Unsuccessful : You are trying to pay again "
     "for a successful transaction. ")
 GATEWAY_ERROR_OCCURRED = (
     "Service is temporarily unavailable please choose another payment option,"
-    " sorry for the inconvenience caused")
+    " sorry for the inconvenience caused"
+    " ( طريقة الدفع هذه غير متاحة حاليا، جرب تدفع بطريقة ثانية )-")
 
 REDIRECT_URL = 'redirect_url'
 TRANSACTION_MSG = 'transaction_message'
