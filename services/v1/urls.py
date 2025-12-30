@@ -43,6 +43,7 @@ from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
+from .api_clients.tpay import TPayInitializeAPIView
 from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
@@ -164,4 +165,8 @@ urlpatterns = [
     path('paypal/payment/', PayPalPaymentAPIView.as_view(),
          name='PayPalPayment'),
     path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
+
+    # TPay Endpoints
+    path('tpay/initialize/', TPayInitializeAPIView.as_view(),
+         name='TPayInitialize'),
 ]

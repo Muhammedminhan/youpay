@@ -1,7 +1,10 @@
+import hmac
+import hashlib
 import logging
 
 from django.db import transaction
 from rest_framework import status
+from datetime import datetime, timezone
 
 from core.constants import (
     PAYMENT_GATEWAY_CHECKOUTPG, PAYMENT_GATEWAY_HAPPYCREDITS,
@@ -40,7 +43,8 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
-                                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
+                                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH,
+                                TPAY_PUBLIC_KEY, TPAY_PRIVATE_KEY)
 from services.models import APIClient, OfferDetails
 
 logger = logging.getLogger(__name__)
@@ -589,3 +593,78 @@ def get_processing_charge(currency, charge_type, payment_gateway,
         return None, None
 
     return additional_charge_obj.percentage, additional_charge_obj.VAT_percentage
+
+def generate_tpay_epoch_timespan():
+    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    delta = now - epoch
+
+    days = delta.days
+    seconds = delta.seconds
+    microseconds = delta.microseconds
+
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+
+    fraction = f"{microseconds * 10:07d}"
+
+    return f"{days}.{hours:02}:{minutes:02}:{secs:02}.{fraction}"
+
+def generate_script_signature():
+    epoch_time = generate_tpay_epoch_timespan()
+
+    digest = hmac.new(
+        TPAY_PRIVATE_KEY.encode(),
+        epoch_time.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    return epoch_time, f"{TPAY_PUBLIC_KEY}:{digest}"
+
+def generate_checkout_signature(
+    merchant_template_key,
+    msisdn,
+    operator_code,
+    product_catalog,
+    product_price,
+    language,
+    order_info,
+    redirect_url
+):
+    message = (
+        merchant_template_key +
+        msisdn +
+        operator_code +
+        product_catalog +
+        str(product_price) +
+        str(language) +
+        order_info +
+        redirect_url
+    )
+
+    digest = hmac.new(
+        TPAY_PRIVATE_KEY.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    return f"{TPAY_PUBLIC_KEY}:{digest}"
+
+def get_operator_code(msisdn):
+    if not msisdn:
+        return "42401"
+
+    if not msisdn.startswith("971"):
+        return "42401"
+
+    prefix = msisdn[3:5]
+
+    if prefix in {"50", "51"}:
+        return "42402"  # Etisalat
+    elif prefix in {"52", "54", "55", "56"}:
+        return "42403"  # Du
+    elif prefix in {"58", "59"}:
+        return "42405"  # Virgin
+    else:
+        return "42401"  # Default UAE

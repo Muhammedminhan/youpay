@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'notifications',
     'gateways',
     'gateways.paypal',
+    'gateways.tpay',
 
 
     # 3rd party apps
