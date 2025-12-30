@@ -595,6 +595,9 @@ def get_processing_charge(currency, charge_type, payment_gateway,
     return additional_charge_obj.percentage, additional_charge_obj.VAT_percentage
 
 def generate_tpay_epoch_timespan():
+    """
+        Generates the current timestamp in TPay-required epoch format.
+    """
     epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
     now = datetime.now(timezone.utc)
     delta = now - epoch
@@ -612,6 +615,9 @@ def generate_tpay_epoch_timespan():
     return f"{days}.{hours:02}:{minutes:02}:{secs:02}.{fraction}"
 
 def generate_script_signature():
+    """
+        Generates the script signature required to load the TPay checkout script.
+    """
     epoch_time = generate_tpay_epoch_timespan()
 
     digest = hmac.new(
@@ -622,16 +628,11 @@ def generate_script_signature():
 
     return epoch_time, f"{TPAY_PUBLIC_KEY}:{digest}"
 
-def generate_checkout_signature(
-    merchant_template_key,
-    msisdn,
-    operator_code,
-    product_catalog,
-    product_price,
-    language,
-    order_info,
-    redirect_url
-):
+def generate_checkout_signature(merchant_template_key, msisdn, operator_code,
+        product_catalog, product_price, language, order_info, redirect_url):
+    """
+        Generates the checkout signature for TPay One-Time Payment.
+    """
     message = (
         merchant_template_key +
         msisdn +
@@ -652,6 +653,9 @@ def generate_checkout_signature(
     return f"{TPAY_PUBLIC_KEY}:{digest}"
 
 def get_operator_code(msisdn):
+    """
+        Returns the TPay operatorCode (MCC + MNC) based on the UAE MSISDN prefix.
+    """
     if not msisdn:
         return "42401"
 
