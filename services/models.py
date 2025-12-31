@@ -5,7 +5,8 @@ from django.db import models
 
 from core.constants import (
     PURCHASE_PLATFORM_CHOICES,
-    PAYMENT_REQUEST_LANGUAGE_CHOICES)
+    PAYMENT_REQUEST_LANGUAGE_CHOICES,
+    SAVED_CARD_API_VERSIONS)
 from core.models import (AbstractDateTime, AbstractUserBase, CustomerProfile,
                          Currency)
 from core.validators import (DecimalValidator, MinLengthValidator,
@@ -68,6 +69,9 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     checkout_channel_code = models.JSONField(
         null=True, blank=True,
         help_text="channel code used by client")
+    saved_card_api_version = models.CharField(
+        max_length=5, choices=SAVED_CARD_API_VERSIONS, default='v1', null=True,
+        help_text='API version to be used for saved card listing')
 
     def __str__(self):
         return self.name
