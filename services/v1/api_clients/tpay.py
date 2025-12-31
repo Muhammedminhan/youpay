@@ -10,7 +10,7 @@ from core.utils import decrypt_string
 from services.v1.views.common import (generate_script_signature,
                                       generate_checkout_signature,
                                       get_operator_code, YouPayTransactionCRUD)
-from services.constants import TPAY_MERCHANT_TEMPLATE_KEY
+from services.constants import TPAY_MERCHANT_TEMPLATE_KEY, TPAY_REDIRECT_URL
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
 
             msisdn = request.data.get("msisdn", "")
             product_catalog = request.data.get("product_catalog")
-            redirect_url = transaction_obj.success_url
+            redirect_url = TPAY_REDIRECT_URL
             language = transaction_obj.language
             language_code = 1 if language == LANGUAGE_ENGLISH else 2
             order_info = transaction_obj.order_id

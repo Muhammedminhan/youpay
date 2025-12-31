@@ -65,3 +65,4 @@ BALANCE_CALCULATION_FAILED_CODE = 1501
 TPAY_PUBLIC_KEY = "e0YMWhBBUvvCnkicibAr"
 TPAY_PRIVATE_KEY = "JTm7ZsIvzvHK8thBuzg7"
 TPAY_MERCHANT_TEMPLATE_KEY = "YOUPay"
+TPAY_REDIRECT_URL = "https://youpay-frontend-qa-beta.sit.yougotagift.co/en/payment-response"
