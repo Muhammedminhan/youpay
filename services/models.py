@@ -4,14 +4,17 @@ import secrets
 from django.db import models
 
 from core.constants import (
-    PURCHASE_PLATFORM_CHOICES,
     PAYMENT_REQUEST_LANGUAGE_CHOICES,
-    SAVED_CARD_API_VERSIONS)
-from core.models import (AbstractDateTime, AbstractUserBase, CustomerProfile,
-                         Currency)
-from core.validators import (DecimalValidator, MinLengthValidator,
-                             URLValidator, validate_svg_or_image
-                             )
+    PURCHASE_PLATFORM_CHOICES,
+    SAVED_CARD_API_VERSIONS,
+)
+from core.models import AbstractDateTime, AbstractUserBase, Currency, CustomerProfile
+from core.validators import (
+    DecimalValidator,
+    MinLengthValidator,
+    URLValidator,
+    validate_svg_or_image,
+)
 
 
 # Create your models here.
@@ -72,6 +75,8 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     saved_card_api_version = models.CharField(
         max_length=5, choices=SAVED_CARD_API_VERSIONS, default='v1', null=True,
         help_text='API version to be used for saved card listing')
+    client_package = models.CharField(
+        max_length=100, blank=True, null=True)
 
     def __str__(self):
         return self.name

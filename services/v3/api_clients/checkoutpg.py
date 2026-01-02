@@ -6,10 +6,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.response_messages import YouPayResponse
+from core.utils import decrypt_string
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from services.utils import get_client_channel_code
-from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
-from core.utils import decrypt_string
+from services.v1.views.common import ClientValidator, YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +22,15 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
         Method for getting saved card list
         """
         try:
+            raw_email = request.query_params.get('customer_email', "")
+            customer_uid = request.query_params.get('customer_uid', "")
+            email = urllib.parse.unquote(raw_email)
             transaction_id = request.query_params.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id)
             )
             _, client = self.validate_client(request)
-            client_obj = getattr(transaction_obj, "api_client", None) or client
+            client_obj = getattr(transaction_obj, "api_client", client)
             if not client_obj:
                 logger.info(
                     "payment request client validation failed for {0}"
@@ -35,10 +38,9 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
                 data = self.response_obj.get_400_message(
                     message="Client Does Not Exist")
                 return Response(data, status=status.HTTP_400_BAD_REQUEST)
-
-            raw_email = request.query_params.get('customer_email', "")
-            customer_uid = request.query_params.get('customer_uid', "")
-            email = urllib.parse.unquote(raw_email)
+            if transaction_obj:
+                email = transaction_obj.customer_email
+                customer_uid = transaction_obj.customer_uid
             currency = None
             channel_code = get_client_channel_code(client_obj)
 
