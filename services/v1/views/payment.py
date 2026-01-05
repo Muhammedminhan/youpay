@@ -6,7 +6,7 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 from core.constants import PAYBACK_ACTION_EARN
 from core.exceptions import PaymentConfigurationFailed
@@ -1021,9 +1021,6 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
     API to refund redeemed points
     """
 
-    def __init__(self):
-        self.return_data = None
-
     def post(self, request):
         try:
             validate, client = self.validate_client(request)
@@ -1038,14 +1035,29 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                 )
 
             order_id = request.data.get("order_id")
-            refund_amount = Decimal(request.data.get("refund_amount"))
+            refund_amount_raw = request.data.get("refund_amount")
             currency = request.data.get("currency")
             transaction_id = request.data.get("transaction_id")
 
-            if not order_id or not transaction_id or not refund_amount or not currency:
+            if not order_id or not transaction_id or not refund_amount_raw or not currency:
                 self.return_data = self.get_400_message(
                     message="order_id, transaction_id, refund_amount and "
                             "currency are required fields"
+                )
+                return Response(
+                    self.return_data.get("errors"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                refund_amount = Decimal(refund_amount_raw)
+            except (InvalidOperation, TypeError):
+                logger.error(
+                    "Invalid refund_amount received | order_id=%s | value=%s",
+                    order_id, refund_amount_raw
+                )
+                self.return_data = self.get_400_message(
+                    message="Invalid refund amount"
                 )
                 return Response(
                     self.return_data.get("errors"),
@@ -1062,6 +1074,10 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                     transaction_id=transaction_id
                 )
             except YouPayTransactionData.DoesNotExist:
+                logger.info(
+                    "Refund transaction not found | order_id=%s | transaction_id=%s",
+                    order_id, transaction_id
+                )
                 self.return_data = self.get_400_message(
                     message="Transaction not found or not eligible for refund"
                 )
@@ -1071,6 +1087,10 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                 )
 
             if not transaction.redeemed_points or transaction.redeemed_points <= 0:
+                logger.info(
+                    "No redeemed points found | transaction_id=%s",
+                    transaction.transaction_id
+                )
                 self.return_data = self.get_400_message(
                     message="No redeemed points found for this transaction"
                 )
@@ -1096,15 +1116,17 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
 
                 response = requests.post(
                     url,
-                    data=json.dumps(payload),
+                    json=payload,
                     headers=headers,
                     timeout=10
                 )
 
                 if response.status_code != 200:
                     logger.error(
-                        "Redemption reversal failed for transaction %s | Response: %s",
+                        "Redemption reversal failed | transaction_id=%s | "
+                        "status=%s | response=%s",
                         transaction.transaction_id,
+                        response.status_code,
                         response.text
                     )
                     self.return_data = self.get_400_message(
@@ -1116,12 +1138,15 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                     )
 
                 logger.info(
-                    "Redemption reversal success for transaction %s",
+                    "Redemption reversal success | transaction_id=%s",
                     transaction.transaction_id
                 )
 
             except Exception as e:
-                logger.exception("Exception during redemption reversal")
+                logger.error(
+                    "Error during redemption reversal | transaction_id=%s | "
+                    "error=%s", transaction.transaction_id, str(e)
+                )
                 self.return_data = self.get_400_message(
                     message="Unable to process points refund at the moment"
                 )
@@ -1131,11 +1156,7 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                 )
 
             transaction.payment_status = PAYMENT_STATUS_REVERSED
-            transaction.save(
-                update_fields=[
-                    "payment_status"
-                ]
-            )
+            transaction.save(update_fields=["payment_status"])
 
             success_response = {
                 "order_id": order_id,
@@ -1150,13 +1171,13 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                 success_dict=success_response
             )
 
-            return Response(
-                self.return_data,
-                status=status.HTTP_200_OK
-            )
+            return Response(self.return_data, status=status.HTTP_200_OK)
 
         except Exception as e:
-            logger.exception("Unhandled exception in RefundPointsAPIView")
+            logger.error(
+                "Unhandled error in RefundPointsAPIView | error=%s",
+                str(e)
+            )
             self.return_data = self.get_400_message(
                 message="Something went wrong while processing refund"
             )
