@@ -37,7 +37,8 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                 PAYMENT_METHOD_ANB,
                                 PAYMENT_METHOD_ANB_AND_CARD,
-                                PAYMENT_STATUS_REVERSED)
+                                PAYMENT_STATUS_REVERSED,
+                                REFUND_STATUS_COMPLETED, REFUND_TYPE_POINTS)
 from payments.models import YouPayTransactionData
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
@@ -1139,8 +1140,8 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
             success_response = {
                 "order_id": order_id,
                 "amount": refund_amount,
-                "refund_type": "POINTS",
-                "refund_status": "COMPLETED",
+                "refund_type": REFUND_TYPE_POINTS,
+                "refund_status": REFUND_STATUS_COMPLETED,
                 "message": "Redeemed points refunded successfully"
             }
 

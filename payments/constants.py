@@ -298,3 +298,6 @@ CARD_BIN_MAX_LENGTH = 10
 
 CREATE_SESSION_ENDPOINT = '/gateway/checkout/api/v1/create-session/'
 SUBMIT_SESSION_ENDPOINT = '/gateway/checkout/api/v1/submit-session/'
+
+REFUND_STATUS_COMPLETED = "COMPLETED"
+REFUND_TYPE_POINTS = "POINTS"
