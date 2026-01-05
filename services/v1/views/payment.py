@@ -6,6 +6,7 @@ from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from decimal import Decimal
 
 from core.constants import PAYBACK_ACTION_EARN
 from core.exceptions import PaymentConfigurationFailed
@@ -15,10 +16,12 @@ from core.utils import (decrypt_payment_data,
                         encrypt_string, decrypt_string, get_redirect_url,
                         wait_redis_lock, get_gateway_additional_fee,
                         decimal_rounded, encrypt_payment_data,
-                        get_cached_payment_method_config)
+                        get_cached_payment_method_config,
+                        get_config_from_payment_configurations)
 from integrations.common import update_offer_details
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
-                                    MOKAFAA_CLIENT_CODE)
+                                    MOKAFAA_CLIENT_CODE,
+                                    B2C_REVERSE_REDEMPTION_API)
 from integrations.v1.gateway_clients.utils import calculate_balance
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
@@ -33,7 +36,9 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 REDEEM_AMOUNT_APPLICABLE_LIST,
                                 PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                 PAYMENT_METHOD_ANB,
-                                PAYMENT_METHOD_ANB_AND_CARD)
+                                PAYMENT_METHOD_ANB_AND_CARD,
+                                PAYMENT_STATUS_REVERSED)
+from payments.models import YouPayTransactionData
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
 from services.v1.serializers.payment_request import (
@@ -1008,3 +1013,153 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             logger.error("{} Error in Earn Redemption Partner Points api "
                          "".format(self.class_name), exc_info=e)
             return Response({"error": str(e), })
+
+
+class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
+    """
+    API to refund redeemed points
+    """
+
+    def __init__(self):
+        self.return_data = None
+
+    def post(self, request):
+        try:
+            validate, client = self.validate_client(request)
+            if not validate:
+                logger.info("Refund request client validation failed")
+                self.return_data = self.get_400_message(
+                    message="Client Does Not Exist"
+                )
+                return Response(
+                    self.return_data.get("errors"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            order_id = request.data.get("order_id")
+            refund_amount = Decimal(request.data.get("refund_amount"))
+            currency = request.data.get("currency")
+            transaction_id = request.data.get("transaction_id")
+
+            if not order_id or not transaction_id or not refund_amount or not currency:
+                self.return_data = self.get_400_message(
+                    message="order_id, transaction_id, refund_amount and "
+                            "currency are required fields"
+                )
+                return Response(
+                    self.return_data.get("errors"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                transaction = YouPayTransactionData.objects.get(
+                    order_id=order_id,
+                    api_client=client,
+                    payment_status=PAYMENT_STATUS_PAID,
+                    currency=currency,
+                    amount=refund_amount,
+                    transaction_id=transaction_id
+                )
+            except YouPayTransactionData.DoesNotExist:
+                self.return_data = self.get_400_message(
+                    message="Transaction not found or not eligible for refund"
+                )
+                return Response(
+                    self.return_data.get("errors"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if not transaction.redeemed_points or transaction.redeemed_points <= 0:
+                self.return_data = self.get_400_message(
+                    message="No redeemed points found for this transaction"
+                )
+                return Response(
+                    self.return_data.get("errors"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                b2c_gateway_obj = get_config_from_payment_configurations(
+                    transaction, transaction.payment_method
+                )
+
+                url = b2c_gateway_obj.domain + B2C_REVERSE_REDEMPTION_API
+                payload = {
+                    "reference_id": transaction.payment_reference
+                }
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': b2c_gateway_obj.api_key,
+                    'X-API-KEY': b2c_gateway_obj.api_key
+                }
+
+                response = requests.post(
+                    url,
+                    data=json.dumps(payload),
+                    headers=headers,
+                    timeout=10
+                )
+
+                if response.status_code != 200:
+                    logger.error(
+                        "Redemption reversal failed for transaction %s | Response: %s",
+                        transaction.transaction_id,
+                        response.text
+                    )
+                    self.return_data = self.get_400_message(
+                        message="Unable to process points refund at the moment"
+                    )
+                    return Response(
+                        self.return_data.get("errors"),
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                logger.info(
+                    "Redemption reversal success for transaction %s",
+                    transaction.transaction_id
+                )
+
+            except Exception as e:
+                logger.exception("Exception during redemption reversal")
+                self.return_data = self.get_400_message(
+                    message="Unable to process points refund at the moment"
+                )
+                return Response(
+                    self.return_data.get("errors"),
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            transaction.payment_status = PAYMENT_STATUS_REVERSED
+            transaction.save(
+                update_fields=[
+                    "payment_status"
+                ]
+            )
+
+            success_response = {
+                "order_id": order_id,
+                "amount": refund_amount,
+                "refund_type": "POINTS",
+                "refund_status": "COMPLETED",
+                "message": "Redeemed points refunded successfully"
+            }
+
+            self.return_data = self.get_success_dict(
+                code=self.SUCCESS,
+                success_dict=success_response
+            )
+
+            return Response(
+                self.return_data,
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            logger.exception("Unhandled exception in RefundPointsAPIView")
+            self.return_data = self.get_400_message(
+                message="Something went wrong while processing refund"
+            )
+            return Response(
+                self.return_data.get("errors"),
+                status=status.HTTP_400_BAD_REQUEST
+            )
