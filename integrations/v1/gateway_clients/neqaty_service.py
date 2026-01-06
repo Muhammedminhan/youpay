@@ -27,7 +27,8 @@ from integrations.constants import (
     NEQATY_EARN_POINTS_API, PAYMENT_REQUEST_COLLECT_POINTS,
     EXPECTED_NEQATY_ERRORS, PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import (
-    process_offer_eligibility, process_calculated_item_details)
+    process_offer_eligibility, process_calculated_item_details,
+    format_verify_data)
 from payments.constants import (PAYMENT_STATUS_PENDING, PAYMENT_METHOD_NEQATY,
                                 LANGUAGE_CODE_AR,
                                 PAYMENT_METHOD_NEQATY_AND_CARD,
@@ -576,10 +577,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 transaction_id = decrypt_string(request_transaction_id)
                 transaction_obj = self.get_youpay_transaction_data(
                     transaction_id)
-
-                request_data['invoice_id'] = transaction_obj.invoice_id
-                request_data['channel_code'] = get_channel_code(
-                    transaction_obj)
+                formatted_data = format_verify_data(
+                    request_data, transaction_obj)
 
                 neqaty_config = get_config_from_payment_configurations(
                     transaction_obj, PAYMENT_METHOD_NEQATY)
@@ -587,8 +586,8 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 url = (neqaty_domain + NEQATY_VERIFY_API +
                        "?&redemption_partner=NEQATY")
 
-                request_data.pop("transaction_id")
-                response = requests.get(url, params=request_data,
+                formatted_data.pop("transaction_id")
+                response = requests.get(url, params=formatted_data,
                                         headers=CONTENT_TYPE_HEADERS)
 
                 return_response_data = {}
@@ -640,7 +639,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
                 self.create_youpay_to_payment_gateways_data(
                     transaction_obj=transaction_obj,
                     transaction_id=transaction_obj.transaction_id,
-                    request_data=json.dumps(request_data),
+                    request_data=json.dumps(formatted_data),
                     response_data=json.dumps(response_data),
                     request_method=REQUEST_METHOD_GET,
                     request_type=PAYMENT_REQUEST_VERIFY

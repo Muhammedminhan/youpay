@@ -106,6 +106,7 @@ def format_adcb_verify_data(request_data, transaction_obj):
 def format_verify_data(request_data, transaction_obj):
     request_data['invoice_id'] = transaction_obj.invoice_id
     request_data['channel_code'] = get_channel_code(transaction_obj)
+    request_data['redemption_reference_id'] = transaction_obj.payment_reference
     return request_data
 
 
