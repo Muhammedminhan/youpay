@@ -1066,7 +1066,7 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
 
             try:
                 transaction = YouPayTransactionData.objects.get(
-                    order_id=order_id,
+                    invoice_id=order_id,
                     api_client=client,
                     payment_status=PAYMENT_STATUS_PAID,
                     currency=currency,
@@ -1075,7 +1075,7 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                 )
             except YouPayTransactionData.DoesNotExist:
                 logger.info(
-                    "Refund transaction not found | order_id=%s | transaction_id=%s",
+                    "Refund transaction not found | invoice_id=%s | transaction_id=%s",
                     order_id, transaction_id
                 )
                 self.return_data = self.get_400_message(
