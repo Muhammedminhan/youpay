@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from decimal import Decimal, ROUND_HALF_UP
 import logging
 
 from core.constants import LANGUAGE_ENGLISH
@@ -42,7 +43,10 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
             language_code = 1 if language == LANGUAGE_ENGLISH else 2
             order_info = transaction_obj.order_id
             operator_code = get_operator_code(msisdn)
-            product_price = transaction_obj.amount
+            product_price = format(Decimal(str(
+                transaction_obj.amount)).quantize(Decimal("0.00"),
+                rounding=ROUND_HALF_UP), "f"
+            )
 
             # Script signature
             epoch, script_signature = generate_script_signature()
