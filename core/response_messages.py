@@ -46,6 +46,7 @@ class YouPayResponse(object):
     INSUFFICIENT_BALANCE = 1018
     OTP_STILL_VALID = 1019
     PAYMENT_REFUND_FAILED = 1020
+    PAYMENT_REFUND_NOT_ELIGIBLE = 1021
 
     """Youpay related ends"""
 
@@ -213,6 +214,7 @@ class YouPayResponse(object):
                 "again with another payment option.",
             self.CHARGE_CALCULATION_FAILED: "PayPal charge calculation failed",
             self.PAYMENT_REFUND_FAILED: "Failed to process points reversal",
+            self.PAYMENT_REFUND_NOT_ELIGIBLE: "Transaction not eligible for refund",
 
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,

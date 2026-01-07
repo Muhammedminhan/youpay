@@ -1080,8 +1080,8 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                     "Refund transaction not found | invoice_id=%s | transaction_id=%s",
                     order_id, transaction_id
                 )
-                self.return_data = self.get_400_message(
-                    message="Transaction not found or not eligible for refund"
+                self.return_data = self.get_error_dict(
+                    self.PAYMENT_REFUND_NOT_ELIGIBLE
                 )
                 return Response(
                     self.return_data.get("errors"),
@@ -1093,9 +1093,9 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                     "No redeemed points found | transaction_id=%s",
                     transaction.transaction_id
                 )
-                self.return_data = self.get_400_message(
-                    message="No redeemed points found for this transaction"
-                )
+                self.return_data = self.get_error_dict(
+                        self.PAYMENT_REFUND_NOT_ELIGIBLE
+                    )
                 return Response(
                     self.return_data.get("errors"),
                     status=status.HTTP_400_BAD_REQUEST
