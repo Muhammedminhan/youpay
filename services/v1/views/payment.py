@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from decimal import Decimal, InvalidOperation
 
-from core.constants import PAYBACK_ACTION_EARN
+from core.constants import PAYBACK_ACTION_EARN, REQUEST_METHOD_POST
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR, REDIRECT_URL
 from core.response_messages import YouPayResponse
@@ -21,7 +21,8 @@ from core.utils import (decrypt_payment_data,
 from integrations.common import update_offer_details
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
                                     MOKAFAA_CLIENT_CODE,
-                                    B2C_REVERSE_REDEMPTION_API)
+                                    B2C_REVERSE_REDEMPTION_API,
+                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
 from integrations.v1.gateway_clients.utils import calculate_balance
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
@@ -38,7 +39,8 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_ANB,
                                 PAYMENT_METHOD_ANB_AND_CARD,
                                 PAYMENT_STATUS_REVERSED,
-                                REFUND_STATUS_COMPLETED, REFUND_TYPE_POINTS)
+                                REFUND_STATUS_COMPLETED, REFUND_TYPE_POINTS,
+                                PAYMENT_STATUS_REFUNDED)
 from payments.models import YouPayTransactionData
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
@@ -1121,6 +1123,17 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                     timeout=10
                 )
 
+                request_data_log = payload.copy()
+                request_data_log.update({"refund_request_data": request.data})
+                self.create_youpay_to_payment_gateways_data(
+                    transaction_obj=transaction,
+                    transaction_id=transaction.transaction_id,
+                    request_data=json.dumps(request_data_log),
+                    response_data=response.text,
+                    request_method=REQUEST_METHOD_POST,
+                    request_type=PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION
+                )
+
                 if response.status_code != 200:
                     logger.error(
                         "Redemption reversal failed | transaction_id=%s | "
@@ -1129,8 +1142,8 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                         response.status_code,
                         response.text
                     )
-                    self.return_data = self.get_400_message(
-                        message="Unable to process points refund at the moment"
+                    self.return_data = self.get_error_dict(
+                        self.PAYMENT_REFUND_FAILED
                     )
                     return Response(
                         self.return_data.get("errors"),
@@ -1155,7 +1168,9 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
-            transaction.payment_status = PAYMENT_STATUS_REVERSED
+            payable_amount = transaction.payable_amount
+            transaction.payment_status = PAYMENT_STATUS_REVERSED if (
+                    payable_amount > 0) else PAYMENT_STATUS_REFUNDED
             transaction.save(update_fields=["payment_status"])
 
             success_response = {
