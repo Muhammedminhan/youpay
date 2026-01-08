@@ -196,9 +196,10 @@ class APIClientRegistrationView(APIView):
                             client=client, active=True
                         )
                     except (IntegrityError, ValidationError):
-                        logger.error("A payment configuration with the same "
-                               "client, country, and payment method "
-                               "already exists")
+                        logger.error(f"A payment configuration with the same "
+                                     f"client-{client.name}, country-"
+                                     f"{country.iso_code}, and payment "
+                                     f"method-{method_code} already exists")
                         continue
 
 
