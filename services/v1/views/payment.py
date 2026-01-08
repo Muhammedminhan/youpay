@@ -48,6 +48,7 @@ from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
                                       AdditionalChargesUpdation)
+from services.v1.views.payment_handlers import PaymentHandlers
 from services.v1.views.utils import (
     reformat_payment_request_data,
     payment_configuration_check,
@@ -1018,7 +1019,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             return Response({"error": str(e), })
 
 
-class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
+class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse,
+                          PaymentHandlers):
     """
     API to refund redeemed points
     """
@@ -1037,29 +1039,25 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                 )
 
             order_id = request.data.get("order_id")
-            refund_amount_raw = request.data.get("refund_amount")
+            refund_amount = request.data.get("refund_amount")
             currency = request.data.get("currency")
             transaction_id = request.data.get("transaction_id")
+            refund_reason = request.data.get("refund_reason")
 
-            if not order_id or not transaction_id or not refund_amount_raw or not currency:
-                self.return_data = self.get_400_message(
-                    message="order_id, transaction_id, refund_amount and "
-                            "currency are required fields"
-                )
-                return Response(
-                    self.return_data.get("errors"),
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+            missing_fields = [
+                field for field, value in {
+                    "order_id": order_id,
+                    "transaction_id": transaction_id,
+                    "refund_amount": refund_amount,
+                    "currency": currency,
+                    "refund_reason": refund_reason,
+                }.items()
+                if value in (None, "")
+            ]
 
-            try:
-                refund_amount = Decimal(refund_amount_raw)
-            except (InvalidOperation, TypeError):
-                logger.error(
-                    "Invalid refund_amount received | order_id=%s | value=%s",
-                    order_id, refund_amount_raw
-                )
+            if missing_fields:
                 self.return_data = self.get_400_message(
-                    message="Invalid refund amount"
+                    message=f"Missing required fields: {', '.join(missing_fields)}"
                 )
                 return Response(
                     self.return_data.get("errors"),
@@ -1072,7 +1070,7 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                     api_client=client,
                     payment_status=PAYMENT_STATUS_PAID,
                     currency=currency,
-                    amount=refund_amount,
+                    amount=Decimal(refund_amount),
                     transaction_id=transaction_id
                 )
             except YouPayTransactionData.DoesNotExist:
@@ -1102,8 +1100,9 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                 )
 
             try:
+                payment_method = transaction.payment_method.split("_")[0]
                 b2c_gateway_obj = get_config_from_payment_configurations(
-                    transaction, transaction.payment_method
+                    transaction, payment_method
                 )
 
                 url = b2c_gateway_obj.domain + B2C_REVERSE_REDEMPTION_API
@@ -1169,9 +1168,13 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse):
                 )
 
             payable_amount = transaction.payable_amount
-            transaction.payment_status = PAYMENT_STATUS_REVERSED if (
-                    payable_amount > 0) else PAYMENT_STATUS_REFUNDED
-            transaction.save(update_fields=["payment_status"])
+            transaction.payment_status = (
+                PAYMENT_STATUS_REVERSED
+                if payable_amount > 0
+                else PAYMENT_STATUS_REFUNDED
+            )
+            transaction.refund_reason = refund_reason
+            transaction.save(update_fields=["payment_status", "refund_reason"])
 
             success_response = {
                 "order_id": order_id,

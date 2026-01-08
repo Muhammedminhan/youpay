@@ -9,6 +9,7 @@ from payments.forms import AnnouncementForm
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification, AdditionalCharge,
                              ArchivedYouPayTransactionData)
+from payments.constants import PAYMENT_STATUS_REFUNDED, PAYMENT_STATUS_REVERSED
 
 
 class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
@@ -64,7 +65,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('Order details', {
             'fields': ('invoice_id', 'order_id', 'order_reference',
                        'api_client', 'order_history', 'payment_status',
-                       'approved', 'order_items', 'clevertap_items',
+                       'refund_reason', 'approved', 'order_items',
+                       'clevertap_items',
                        )
         }),
         ('Cart details', {
@@ -139,6 +141,14 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
             return display_string
         else:
             return None
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.payment_status not in (
+                PAYMENT_STATUS_REFUNDED,
+                PAYMENT_STATUS_REVERSED,
+        ):
+            return self.readonly_fields + ('refund_reason',)
+        return self.readonly_fields
 
 
 class AnnouncementAdmin(AdminAbstract):
