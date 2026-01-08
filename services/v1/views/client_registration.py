@@ -98,10 +98,21 @@ class APIClientRegistrationViewSet(ViewSet):
 
 
 class APIClientRegistrationView(APIView):
+    """
+    Handles registration of new API clients via an authenticated HTTP POST
+    request.
+    """
     authentication_classes = [BasicAuthentication]
     permission_classes = [APIClientRegistrationPermission]
 
     def post(self, request, *args, **kwargs):
+        """
+        Registers a new API client or retrieves an existing one.
+
+        Validates the request data, creates or retrieves the api client and
+        related payment configurations if needed, and returns the client
+        details or an error response.
+        """
         serializer = APIClientRequestSerializer(
             data=request.data, context={'request': request})
         if not serializer.is_valid():
@@ -165,10 +176,9 @@ class APIClientRegistrationView(APIView):
                     }
                 )
             except APIClient.MultipleObjectsReturned:
-                logger.error("client with name {0}, client code {1} and "
-                            "domain {2} found more than once, returning the "
-                            "latest.".format(name, client_code,
-                                             client_domain))
+                logger.error(f"client with name {name}, client code "
+                             f"{client_code} and domain {client_domain} "
+                             f"found more than once, returning the latest.")
 
                 client = APIClient.objects.filter(
                     name=name, client_domain=client_domain,

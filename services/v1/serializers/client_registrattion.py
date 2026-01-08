@@ -2,7 +2,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 
 from core.validators import URLValidator
+from integrations.constants import (PAYMENT_MEDIUM_IOS, PAYMENT_MEDIUM_WEB,
+                                    PAYMENT_MEDIUM_MOBILE_WEB,
+                                    PAYMENT_MEDIUM_ANDROID)
 from integrations.models import PaymentGateway, PaymentConfiguration
+from services.constants import CURRENCY_UAE, CURRENCY_KSA
 from services.models import APIClient
 from core.models import Country
 
@@ -32,6 +36,7 @@ class PaymentGatewaySerializer(serializers.ModelSerializer):
 
 class APIClientRequestSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, required=True)
+    is_client_active = serializers.BooleanField(required=False)
     client_domain = serializers.CharField(max_length=100, required=True,
                                           validators=[URLValidator()])
     logo_file = serializers.ImageField(required=False, allow_null=True)
@@ -59,8 +64,10 @@ class APIClientRequestSerializer(serializers.Serializer):
         return value
 
     def validate_currency_channel_config(self, value):
-        allowed_currencies = {"AED", "SAR"}
-        allowed_platforms = {"IOS", "WEB", "MWEB", "ANDROID"}
+        allowed_currencies = {CURRENCY_UAE, CURRENCY_KSA}
+        allowed_platforms = {PAYMENT_MEDIUM_IOS, PAYMENT_MEDIUM_WEB,
+                             PAYMENT_MEDIUM_MOBILE_WEB,
+                             PAYMENT_MEDIUM_ANDROID}
 
         for currency, channels in value.items():
             if currency not in allowed_currencies:
