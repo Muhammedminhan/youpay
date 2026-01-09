@@ -29,6 +29,7 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id)
             )
+            currency = None
             _, client = self.validate_client(request)
             client_obj = getattr(transaction_obj, "api_client", client)
             if not client_obj:
@@ -41,7 +42,8 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
             if transaction_obj:
                 email = transaction_obj.customer_email
                 customer_uid = transaction_obj.customer_uid
-            currency = None
+                currency = transaction_obj.currency
+            
             channel_code = get_client_channel_code(client_obj)
 
             checkout = CheckoutpgManager()
