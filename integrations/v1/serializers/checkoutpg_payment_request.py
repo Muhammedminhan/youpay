@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from core.utils import encrypt_string
 from core.utils import get_app_config
+from integrations.common import mask_name
 from integrations.constants import (CHECKOUTPG_CHANNEL_CONFIGURATIONS,
                                     CHECKOUTPG_HUB_CODE)
 from payments.models import YouPayTransactionData
@@ -25,6 +26,7 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
     channel_code = serializers.SerializerMethodField()
     amount_in_aed = serializers.SerializerMethodField()
     is_mada = serializers.SerializerMethodField()
+    client_code = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -57,10 +59,10 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 
         customer_name = request_data.get('customer_name', '')
         if customer_name == "":
-            transaction_data = data.get('transaction_data')
+            transaction_data = data.get('transaction_data', {})
             customer_name = transaction_data.get("customer_name",
                                                  "Not Provided")
-
+        customer_name = mask_name(customer_name)
         return customer_name
 
     def get_customer_ip_address(self, data):
@@ -118,6 +120,13 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         else:
             amount = str(amount)
         return amount
+
+    def get_client_code(self, data):
+        """
+        method to fetch client code from the api client
+        """
+        client_code = data.get("transaction_obj").api_client.client_code
+        return client_code
 
     def get_is_mada(self, data):
         """
