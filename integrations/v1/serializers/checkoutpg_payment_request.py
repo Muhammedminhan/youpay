@@ -2,7 +2,6 @@ from rest_framework import serializers
 
 from core.utils import encrypt_string
 from core.utils import get_app_config
-from integrations.common import mask_name
 from integrations.constants import (CHECKOUTPG_CHANNEL_CONFIGURATIONS,
                                     CHECKOUTPG_HUB_CODE)
 from payments.models import YouPayTransactionData
@@ -59,10 +58,9 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
 
         customer_name = request_data.get('customer_name', '')
         if customer_name == "":
-            transaction_data = data.get('transaction_data', {})
+            transaction_data = data.get('transaction_data')
             customer_name = transaction_data.get("customer_name",
                                                  "Not Provided")
-        customer_name = mask_name(customer_name)
         return customer_name
 
     def get_customer_ip_address(self, data):
