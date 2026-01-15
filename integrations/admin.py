@@ -83,6 +83,10 @@ class YoupayToPaymentGatewaysDataAdmin(admin.ModelAdmin):
     list_filter = ('request_type', 'created_at')
 
     def transaction_id(self, obj):
+        """
+        Display the transaction id of the related Youpay transaction data in
+        the admin interface.
+        """
         return obj.youpay_payment.transaction_id
 
 
