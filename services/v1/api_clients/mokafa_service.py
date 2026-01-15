@@ -146,21 +146,16 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             validated_data = mokafaa_redemption_serializer.data
 
             points_redemption_data = validated_data
+            transaction_obj = mokafaa_redemption_serializer.transaction_obj
 
-            selected_amount = str(int(
-                mokafaa_redemption_serializer.transaction_obj.redeemed_amount))
-            checkout_amount = str(float(
-                mokafaa_redemption_serializer.transaction_obj.payable_amount))
+            selected_amount = str(int(transaction_obj.redeemed_amount))
+            checkout_amount = str(float(transaction_obj.payable_amount))
             customer_name = request.data.get("customer_name")
-            transaction_order_reference = (
-                mokafaa_redemption_serializer.transaction_obj.order_reference)
+            transaction_order_reference = transaction_obj.order_reference
             points_redemption_data.update(
                 {
-                    "transaction_obj": (
-                        mokafaa_redemption_serializer.transaction_obj),
-                    "referance_id": (
-                        mokafaa_redemption_serializer.transaction_obj.
-                        payment_reference),
+                    "transaction_obj": transaction_obj,
+                    "referance_id": transaction_obj.payment_reference,
                     "one_time_password": validated_data.get('pin_number'),
                     "selected_amount": selected_amount,
                     "checkout_amount": checkout_amount,
@@ -171,24 +166,14 @@ class MokafaaRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "token": validated_data.get('token'),
                     "token_type": validated_data.get('token_type'),
                     "encrypted_id": request.data.get('transaction_id'),
-                    "brand_calculations": (
-                        mokafaa_redemption_serializer.transaction_obj.
-                        brand_calculations),
+                    "brand_calculations": transaction_obj.brand_calculations,
                     "order_reference": transaction_order_reference,
-                    "transaction_id": str(
-                        mokafaa_redemption_serializer.transaction_obj.
-                        transaction_id),
-                    "language_code": (
-                        mokafaa_redemption_serializer.transaction_obj.language
-                    ),
-                    "currency": (
-                        mokafaa_redemption_serializer.transaction_obj.currency
-                    ),
-                    "amount_in_aed": str(
-                        mokafaa_redemption_serializer.transaction_obj.
-                        amount_in_aed),
+                    "transaction_id": str(transaction_obj.transaction_id),
+                    "language_code": transaction_obj.language,
+                    "currency": transaction_obj.currency,
+                    "amount_in_aed": str(transaction_obj.amount_in_aed),
                     "card_number": validated_data.get("card_number"),
-                    "card_expiry": validated_data.get("card_expiry"),
+                    "card_expiry": validated_data.get("card_expiry")
                 }
             )
             mokafaa_service = MokafaServiceManager()

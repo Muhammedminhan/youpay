@@ -43,7 +43,7 @@ from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
 from services.v1.views.utils import (
     reformat_payment_request_data,
     payment_configuration_check,
-    get_country_for_configuration
+    get_country_for_configuration, is_rewards_order_reference
 )
 
 logger = logging.getLogger(__name__)
@@ -146,8 +146,17 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         language = data_formatted.get('language')
 
-                        redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
-                            language, encrypted_transaction_id)
+                        redemption_partner = data_formatted.get(
+                            'redemption_partner')
+
+                        if redemption_partner:
+                            redirect_url = PAYMENT_REDIRECT_URL + "{}/{}/{}".format(
+                                language, redemption_partner,
+                                encrypted_transaction_id
+                            )
+                        else:
+                            redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
+                                language, encrypted_transaction_id)
 
                         response_data = {
                             "status": status.HTTP_201_CREATED,
@@ -349,6 +358,9 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
             "currency": transaction_obj.currency,
             "payment_method": payment_method,
         }
+        if is_rewards_order_reference(transaction_obj.order_reference):
+            verify_body["order_reference"] = str(
+                transaction_obj.order_reference)
         return verify_body
 
     def get_api_client_keys(self, transaction_obj):

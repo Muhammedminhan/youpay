@@ -9,6 +9,8 @@ from core.response_messages import YouPayResponse
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from services.utils import get_client_channel_code
 from services.v1.views.common import YouPayTransactionCRUD, ClientValidator
+from core.utils import decrypt_string
+from core.messages import TRANSACTION_DOESNT_EXIST
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +77,99 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
                 success_dict={'data': response_data})
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class CreatePaymentSession(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        Method for creating payment session
+        """
+        try:
+            transaction_id = request.data.get('transaction_id')
+            is_partial_payment = request.data.get('is_partial_payment', False)
+            is_mada = request.data.get('is_mada', False)
+
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id)
+            )
+
+            if transaction_obj:
+                checkout = CheckoutpgManager()
+
+                response_data, status_code = (checkout.create_payment_session(
+                    transaction_obj, is_mada, is_partial_payment))
+
+                if status_code == checkout.SUCCESS and response_data:
+                    data = self.response_obj.get_success_dict(
+                        code=YouPayResponse.SUCCESS,
+                        success_dict={'data': response_data}
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+                else:
+                    data = self.response_obj.get_400_message(
+                        message="Failed to create payment session"
+                    )
+                    return Response(data.get('errors'),
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+            else:
+                data = self.response_obj.get_404_message(
+                    message=TRANSACTION_DOESNT_EXIST
+                )
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.exception("Error in CreatePaymentSession.post")
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+class SubmitPaymentSession(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        """
+        Method for submitting payment session
+        """
+        try:
+            transaction_id = request.data.get('transaction_id')
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id)
+            )
+
+            if transaction_obj:
+                checkout = CheckoutpgManager()
+                response_data, status_code = checkout.submit_payment_session(
+                    transaction_obj, request.data
+                )
+                if status_code == checkout.SUCCESS and response_data:
+                    data = self.response_obj.get_success_dict(
+                        code=YouPayResponse.SUCCESS,
+                        success_dict={'data': response_data}
+                    )
+                    return Response(data, status=status.HTTP_200_OK)
+
+                if status_code == checkout.PRE_AUTH:
+                    return Response(response_data, status=status.HTTP_200_OK)
+
+                data = self.response_obj.get_400_message(
+                    message="Failed to submit payment session")
+                return Response(data.get('errors'),
+                                status=status.HTTP_400_BAD_REQUEST)
+            else:
+                data = self.response_obj.get_404_message(
+                    message=TRANSACTION_DOESNT_EXIST
+                )
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+        except Exception as e:
+            logger.exception("Error in SubmitPaymentSession.post")
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)

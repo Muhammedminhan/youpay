@@ -85,6 +85,7 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'AmazonPGSavedCard',
     'MokafaaRedeemPointsAPIView',
     'PayPalPayment',
+    'SubmitPaymentSession',
     'NeqatyPointBalanceAPIView'
 ]
 
@@ -129,3 +130,9 @@ PAYBACK_ACTION_EARN = 'Earn'
 FORMAT_PARTIAL_PAYMENTS = "{}_and_card"
 
 MAX_LOGO_SIZE = 4 * 1024 * 1024
+
+REWARDS_TOP_UP_ORDER_PREFIX = 'TOP'
+REWARDS_GIFT_ORDER_PREFIX = 'PMT'
+REWARDS_ORDER_PREFIXES = [REWARDS_TOP_UP_ORDER_PREFIX,
+                          REWARDS_GIFT_ORDER_PREFIX]
+REWARDS_ORDER_TAGS = ["|REW|", "|REWSA|"]

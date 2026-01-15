@@ -10,17 +10,18 @@ from core.constants import (REQUEST_METHOD_POST, PAYMENT_GATEWAY_B2CPAYBACK,
                             REQUEST_METHOD_GET)
 from core.messages import REDIRECT_URL, IS_REDIRECT, IS_SUCCESS
 from core.response_messages import YouPayResponse
-from core.utils import (get_payment_gateway_config, get_app_config,
+from core.utils import (get_app_config,
                         auto_enable_or_disable_point_collection,
-                        decrypt_string, get_channel_code)
+                        decrypt_string, get_channel_code,
+                        get_config_from_payment_configurations)
 from integrations.constants import (
-    B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_COLLECT_POINTS,
+    PAYMENT_REQUEST_COLLECT_POINTS,
     B2CP_EARN_POINTS_API, MOKAFAA_CLIENT_CODE,
     PAYMENT_REQUEST_GENERATE_OTP, B2CP_OTP_GENERATION_API,
     B2CP_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     B2CP_VERIFY_API,
-    PAYMENT_REQUEST_VERIFY, EXPECTED_MOKAFAA_ERRORS)
+    PAYMENT_REQUEST_VERIFY, EXPECTED_MOKAFAA_ERRORS,
+    PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.mokafaa_serializers import (
     MokafaaPaymentRequestSerializer)
@@ -45,8 +46,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
     """
 
     def __init__(self):
-        self.mokafa_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                        B2CPAYBACK_HUB_CODE)
+        self.mokafa_config = None
         self.transaction_id = None
         self.transaction_obj = None
         self.request_data = {}
@@ -113,6 +113,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             request_data = data['request_data']
             self.transaction_obj = request_data.get('transaction_obj')
+            self.mokafa_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_MOKAFAA)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.get_mokafaa_payment_data(request_data)
             mokafaa_phone_number = request_data.get("mobile_number")
@@ -227,6 +229,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             }
 
             self.transaction_obj = transaction_obj
+            self.mokafa_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_MOKAFAA)
             self.transaction_id = str(self.transaction_obj.transaction_id)
 
             logger.info(
@@ -295,8 +299,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
 
                 formatted_data = format_verify_data(
                     request_data, transaction_obj)
-                gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                gateway_obj = get_config_from_payment_configurations(
+                    transaction_obj, PAYMENT_METHOD_MOKAFAA)
 
                 mokafaa_domain = gateway_obj.domain
                 url = (mokafaa_domain + B2CP_VERIFY_API +
@@ -408,6 +412,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
+            self.mokafa_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_MOKAFAA)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             language = self.transaction_obj.language
@@ -506,13 +512,15 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             "handle_mokafaa_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
+        data = {}
         partner_response = response_data.get('partner_response')
         name_on_card = partner_response.get("customer_name", "")
         language = payment_data.language
         is_full_redemption = partner_response.get("is_full_redemption", False)
-        if is_full_redemption is False:
-            redirect_url = partner_response.get('redirect_url')
 
+        if is_full_redemption is False:
+            redirect_url = (partner_response.get('url') or
+                            partner_response.get('action', {}).get('url'))
             if redirect_url:
                 is_success = True
                 is_redirect = True
@@ -533,6 +541,13 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                     'redeemed_mobile_number')
                 self.point_program = PAYMENT_METHOD_MOKAFAA
 
+                data = {
+                    "id": partner_response.get("id"),
+                    "status": partner_response.get("status"),
+                    "type": partner_response.get("type"),
+                    "action": partner_response.get("action")
+                }
+
             else:
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.failure_url,
@@ -541,6 +556,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
                 is_redirect = True
                 message = self.mokafaa_error_response_message(response_data,
                                                               language)
+                if partner_response.get("status") == PAYMENT_DECLINED_STATUS:
+                    message = partner_response.get("decline_reason")
 
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
@@ -609,6 +626,8 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             "mokafaa_response": response_data,
             "is_success": is_success
         }
+        if data and partner_response.get('is_payment_success'):
+            return_response["data"] = data
         return return_response
 
     def mokafaa_error_response_message(self, response_data, language):

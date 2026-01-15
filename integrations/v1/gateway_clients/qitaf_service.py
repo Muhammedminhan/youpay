@@ -12,15 +12,17 @@ from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.utils import (get_payment_gateway_config, get_app_config,
                         decrypt_string,
                         auto_enable_or_disable_point_collection,
-                        get_channel_code)
+                        get_channel_code,
+                        get_config_from_payment_configurations)
 from integrations.constants import (
     QITAF_OTP_GENERATION_API, QITAF_EARN_POINTS_API, QITAF_REDEEM_POINTS_API,
-    QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CP_CACHE_KEY,
-    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
+    QITAF_REVERSE_POINTS_API, QITAF_REWARD_UPDATE_API, B2CPAYBACK_HUB_CODE,
+    PAYMENT_REQUEST_REDEMPTION, PAYMENT_REQUEST_VERIFY,
     QITAF_HEADERS,
     QITAF_VERIFY_API, QITAF_HUB_CODE, PAYMENT_REQUEST_GENERATE_OTP,
     PAYMENT_REQUEST_COLLECT_POINTS,
-    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, EXPECTED_QITAF_ERRORS)
+    CHECKOUT_SAUDI_CURRENCY, QITAF_CACHE_KEY, EXPECTED_QITAF_ERRORS,
+    PAYMENT_DECLINED_STATUS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.qitafpg_serializer import (
     QitafPaymentRequestSerializer
@@ -47,8 +49,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
     """
 
     def __init__(self):
-        self.qitaf_config = get_payment_gateway_config(B2CP_CACHE_KEY,
-                                                       B2CPAYBACK_HUB_CODE)
+        self.qitaf_config = None
         self.transaction_id = None
         self.transaction_obj = None
         self.request_data = {}
@@ -153,6 +154,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             request_data = data['request_data']
             self.transaction_obj = request_data.get('transaction_obj')
+            self.qitaf_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_QITAF)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.get_qitaf_payment_data(request_data)
             qitaf_phone_number = request_data.get("mobile_number")
@@ -226,6 +229,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             request_data = data
 
             self.transaction_obj = request_data.get('transaction_obj')
+            self.qitaf_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_QITAF)
             self.transaction_id = str(self.transaction_obj.transaction_id)
 
             request_data.pop('transaction_obj')
@@ -314,6 +319,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
+            self.qitaf_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_QITAF)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
             language = self.transaction_obj.language
@@ -509,8 +516,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
         is_full_redemption = response_data.get("is_full_redemption", False)
         if is_full_redemption is False:
             # Handle qitaf partial redemption response
-            redirect_url = response_data.get('url')
-
+            redirect_url = (response_data.get('url') or
+                            response_data.get('action', {}).get('url'))
             if redirect_url:
                 is_success = True
                 is_redirect = True
@@ -537,7 +544,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
                 is_success = False
                 is_redirect = True
                 message = self.qitaf_error_response_message(response_data)
-
+                if response_data.get("status") == PAYMENT_DECLINED_STATUS:
+                    message = response_data.get("decline_reason")
                 self.payment_status = PAYMENT_STATUS_DECLINED
         else:
             """Handle qiTaf full redemption response"""
@@ -635,8 +643,8 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
 
                 formatted_data = format_verify_data(
                     request_data, transaction_obj)
-                gateway_obj = get_payment_gateway_config(
-                    B2CP_CACHE_KEY, B2CPAYBACK_HUB_CODE)
+                gateway_obj = get_config_from_payment_configurations(
+                    transaction_obj, PAYMENT_METHOD_QITAF)
 
                 qitaf_domain = gateway_obj.domain
                 url = (qitaf_domain + QITAF_VERIFY_API +

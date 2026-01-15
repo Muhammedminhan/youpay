@@ -71,6 +71,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                      null=True, blank=True,
                                      validators=[DecimalValidator(12, 4)],
                                      help_text="used to store VAT amount")
+    platform_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                     null=True, blank=True,
+                                     validators=[DecimalValidator(12, 4)],
+                                     help_text="used to store platform fee")
     order_history = models.JSONField(null=True, blank=True,
                                      help_text="used to store order history")
     payment_gateway = models.CharField(max_length=20, null=True, blank=True,
@@ -201,6 +205,10 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     minimum_redeemable_points = models.DecimalField(
         null=True, blank=True, decimal_places=4, max_digits=15,
         help_text='Minimum points used for citi rewards point redemption')
+    redemption_partner = models.CharField(
+        max_length=200, null=True, blank=True,
+        help_text="Used to identify the redemption partner in case of add "
+                  "balance")
     amount_conversion_rate = models.DecimalField(
         null=True, blank=True, decimal_places=10, max_digits=12,
         help_text=('Conversion rate received from citi '
@@ -238,6 +246,12 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
                                               DecimalValidator(12, 4)],
                                           help_text="used to store cart "
                                                     "VAT amount")
+    cart_platform_fee = models.DecimalField(decimal_places=4, max_digits=12,
+                                          null=True, blank=True,
+                                          validators=[
+                                                DecimalValidator(12, 4)],
+                                          help_text="used to store cart "
+                                                    "platform fee")
     brand_details = models.JSONField(null=True, blank=True,
                                      help_text="used to store brand details "
                                                "from the ecom side")
@@ -321,7 +335,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         help_text="id related to the order received from client")
     udf1 = models.JSONField(null=True, blank=True,
                             help_text="Store values required for the client")
-
+    additional_reference = models.CharField(max_length=120, null=True,
+                            blank=True, db_index=True, help_text="Reference "
+                            "stored during session creation for future use")
 
 @receiver(post_init, sender=YouPayTransactionData)
 def set_previous_status(sender, instance, **kwargs):
