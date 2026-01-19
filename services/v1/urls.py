@@ -133,7 +133,8 @@ urlpatterns = [
     path('qitaf/verify/', QitafVerify.as_view(), name='QitafVerify'),
 
     # Neqaty Endpoints
-    path('neqaty/point-balance/', NeqatyPointBalanceAPIView.as_view()),
+    path('neqaty/point-balance/', NeqatyPointBalanceAPIView.as_view(),
+         name='NeqatyPointBalanceAPIView'),
     path('neqaty/generate-otp/', NeqatyGenerateOTPAPIView.as_view(),
          name='NeqatyGenerateOTPAPIView'),
     path('neqaty/redeem-points/', NeqatyRedeemPointsAPIView.as_view()),
