@@ -10,8 +10,9 @@ from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from services.v1.views.common import (generate_script_signature,
                                       generate_checkout_signature,
-                                      get_operator_code, YouPayTransactionCRUD)
-from services.constants import TPAY_MERCHANT_TEMPLATE_KEY, TPAY_REDIRECT_URL
+                                      YouPayTransactionCRUD)
+from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
+                                TPAY_REDIRECT_URL, DEFAULT_UAE_OPERATOR_CODE)
 
 logger = logging.getLogger(__name__)
 
@@ -36,13 +37,12 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                 return Response(data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            msisdn = request.data.get("msisdn", "")
             product_catalog = request.data.get("product_catalog")
             redirect_url = TPAY_REDIRECT_URL
             language = transaction_obj.language
             language_code = 1 if language == LANGUAGE_ENGLISH else 2
             order_info = transaction_obj.order_id
-            operator_code = get_operator_code(msisdn)
+            operator_code = DEFAULT_UAE_OPERATOR_CODE
             product_price = format(Decimal(str(
                 transaction_obj.amount)).quantize(Decimal("0.00"),
                 rounding=ROUND_HALF_UP), "f"
@@ -54,7 +54,6 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
             # Checkout signature
             checkout_signature = generate_checkout_signature(
                 TPAY_MERCHANT_TEMPLATE_KEY,
-                msisdn,
                 operator_code,
                 product_catalog,
                 product_price,
@@ -68,7 +67,6 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                 "scriptSignature": script_signature,
                 "checkoutData": {
                     "merchantTemplateKey": TPAY_MERCHANT_TEMPLATE_KEY,
-                    "msisdn": msisdn,
                     "operatorCode": operator_code,
                     "productCatalogName": product_catalog,
                     "productPrice": product_price,

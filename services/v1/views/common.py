@@ -628,14 +628,13 @@ def generate_script_signature():
 
     return epoch_time, f"{TPAY_PUBLIC_KEY}:{digest}"
 
-def generate_checkout_signature(merchant_template_key, msisdn, operator_code,
+def generate_checkout_signature(merchant_template_key, operator_code,
         product_catalog, product_price, language, order_info, redirect_url):
     """
         Generates the checkout signature for TPay One-Time Payment.
     """
     message = (
         merchant_template_key +
-        msisdn +
         operator_code +
         product_catalog +
         str(product_price) +
@@ -651,24 +650,3 @@ def generate_checkout_signature(merchant_template_key, msisdn, operator_code,
     ).hexdigest()
 
     return f"{TPAY_PUBLIC_KEY}:{digest}"
-
-def get_operator_code(msisdn):
-    """
-        Returns the TPay operatorCode (MCC + MNC) based on the UAE MSISDN prefix.
-    """
-    if not msisdn:
-        return "42401"
-
-    if not msisdn.startswith("971"):
-        return "42401"
-
-    prefix = msisdn[3:5]
-
-    if prefix in {"50", "51"}:
-        return "42402"  # Etisalat
-    elif prefix in {"52", "54", "55", "56"}:
-        return "42403"  # Du
-    elif prefix in {"58", "59"}:
-        return "42405"  # Virgin
-    else:
-        return "42401"  # Default UAE
