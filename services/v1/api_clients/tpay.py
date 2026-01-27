@@ -13,7 +13,8 @@ from services.v1.views.common import (generate_script_signature,
                                       generate_checkout_signature,
                                       YouPayTransactionCRUD)
 from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
-                                ETISALAT_OPERATOR_CODE)
+                                ETISALAT_OPERATOR_CODE,
+                                TPAY_PRODUCT_CATALOG_NAME)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                                 status=status.HTTP_400_BAD_REQUEST)
 
             msisdn = request.data.get("msisdn", "")
-            product_catalog = request.data.get("product_catalog")
+            product_catalog = TPAY_PRODUCT_CATALOG_NAME
             redirect_url = get_response_url(transaction_obj, False)
             language = transaction_obj.language
             language_code = 1 if language == LANGUAGE_ENGLISH else 2
