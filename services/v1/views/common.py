@@ -628,13 +628,14 @@ def generate_script_signature():
 
     return epoch_time, f"{TPAY_PUBLIC_KEY}:{digest}"
 
-def generate_checkout_signature(merchant_template_key, operator_code,
+def generate_checkout_signature(merchant_template_key, msisdn, operator_code,
         product_catalog, product_price, language, order_info, redirect_url):
     """
         Generates the checkout signature for TPay One-Time Payment.
     """
     message = (
         merchant_template_key +
+        msisdn +
         operator_code +
         product_catalog +
         str(product_price) +
