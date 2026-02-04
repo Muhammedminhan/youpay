@@ -400,6 +400,7 @@ class NeqatyServiceManager(PaymentHandlers, PaymentRequestView):
             "customer_ip_address": self.transaction_obj.ip,
             "channel_code": get_channel_code(self.transaction_obj),
             "source_payment_method": self.transaction_obj.payment_method,
+            "customer_uid": self.transaction_obj.customer_uid,
         }
         return redeem_payload
 

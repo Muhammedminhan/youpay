@@ -25,6 +25,7 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
     channel_code = serializers.SerializerMethodField()
     amount_in_aed = serializers.SerializerMethodField()
     is_mada = serializers.SerializerMethodField()
+    client_code = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -60,7 +61,6 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
             transaction_data = data.get('transaction_data')
             customer_name = transaction_data.get("customer_name",
                                                  "Not Provided")
-
         return customer_name
 
     def get_customer_ip_address(self, data):
@@ -118,6 +118,13 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         else:
             amount = str(amount)
         return amount
+
+    def get_client_code(self, data):
+        """
+        method to fetch client code from the api client
+        """
+        client_code = data.get("transaction_obj").api_client.client_code
+        return client_code
 
     def get_is_mada(self, data):
         """

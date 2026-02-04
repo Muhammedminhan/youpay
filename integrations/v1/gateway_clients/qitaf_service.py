@@ -309,6 +309,7 @@ class QitafServiceManager(PaymentHandlers, PaymentRequestView):
             "invoice_id": self.transaction_obj.invoice_id,
             "customer_ip_address": self.transaction_obj.ip,
             "channel_code": get_channel_code(self.transaction_obj),
+            "customer_uid": self.transaction_obj.customer_uid
         }
         return redeem_payload
 
