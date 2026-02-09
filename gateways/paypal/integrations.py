@@ -535,9 +535,12 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 status = PAYPAL_CAPTURE_STATUS_COMPLETED
                 response_data_json[
                     'success'] = PAYPAL_CAPTURE_STATUS_COMPLETED
+                udf1 = self.transaction_obj.udf1 or {}
+                udf1.update({"paypal_reference_number": capture.get("id")})
                 youpay_update_data = {
                     "transaction_id": self.transaction_id,
-                    "payment_status": PAYMENT_STATUS_PAID
+                    "payment_status": PAYMENT_STATUS_PAID,
+                    "udf1": udf1
                 }
             else:
                 logger.error(

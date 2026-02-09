@@ -36,7 +36,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                     'payment_Gateway', 'created_at', 'updated_at',)
     readonly_fields = (
         'transaction_id', 'created_at', 'updated_at', 'customer_email',
-        'customer_phone', 'loyalty_level')
+        'customer_phone', 'loyalty_level', 'customer_uid')
     search_fields = ('transaction_id', 'customer_email', 'invoice_id',
                      'payment_reference', 'order_reference')
     list_filter = ('settlement_entity', 'payment_status', 'api_client',
@@ -53,7 +53,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Customer details', {
             'fields': ('customer_name', 'customer_email', 'customer_phone',
-                       'is_guest', 'ip', 'language',
+                       'is_guest', 'ip', 'language', 'customer_uid'
                        )
         }),
         ('Card details', {
@@ -70,7 +70,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('Cart details', {
             'fields': ('cart_amount', 'amount_in_aed', 'cart_currency',
                        'cart_service_fee',
-                       'cart_base_amount', 'cart_VAT_amount', 'brand_details',
+                       'cart_base_amount', 'cart_VAT_amount',
+                       'cart_platform_fee', 'brand_details',
                        'brand_calculations', 'is_offer_applicable'
                        )
         }),
@@ -80,8 +81,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'settlement_entity', 'payment_gateway',
                        'channel_code', 'payment_method', 'payment_scheme',
                        'platform', 'response_summary', 'service_fee',
-                       'base_amount', 'VAT_amount', 'gateway_charge',
-                       'is_payment_verified'
+                       'base_amount', 'VAT_amount', 'platform_fee',
+                       'gateway_charge', 'is_payment_verified'
                        )
         }),
         ('URLs', {

@@ -295,6 +295,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
             "channel_code": CHECKOUTPG_PAYMENT_CONFIGURATIONS.get(
                 transaction_data.get("currency").upper()),
             "client_code": ANB_CLIENT_CODE,
+            "customer_uid": self.transaction_obj.customer_uid
         }
         return redeem_payload
 

@@ -19,7 +19,8 @@ class PaymentRequestDataAdmin(admin.ModelAdmin):
     list_display = ('order_reference', 'api_client', 'amount',
                     'customer_email', 'created_at', 'updated_at',)
     readonly_fields = (
-        'created_at', 'updated_at', 'customer_email', 'customer_phone')
+        'created_at', 'updated_at', 'customer_email', 'customer_phone',
+        'customer_uid')
     search_fields = (
         'api_client__name', 'customer_email', "invoice_id", "order_reference")
     list_filter = ('created_at', 'api_client', 'currency')
