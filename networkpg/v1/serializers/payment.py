@@ -80,7 +80,7 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
         return_dict = {}
         if success:
             return_dict['is_success'] = True
-            return_dict['is_redirect'] = True
+            
             return_dict['platform'] = instance.youpay_transaction.platform.upper()
             return_dict['country_code'] = instance.youpay_transaction.country_code
             return_dict['is_guest'] = instance.youpay_transaction.is_guest
@@ -90,7 +90,7 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
             return_dict['code'] = self.response_obj.PAYMENT_SUCCESS
         else:
             return_dict['is_success'] = False
-            return_dict['is_redirect'] = False
             return_dict['code'] = self.response_obj.PAYMENT_FAILED
+        return_dict['is_redirect'] = True
         return_dict['redirect_url'] = instance.redirect_url
         return return_dict
