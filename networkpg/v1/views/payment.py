@@ -124,18 +124,20 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
             )
 
     def get(self, request, *_args, **_kwargs):
-        order_id = request.query_params.get("order_id")
-        if not order_id:
+        transaction_id = request.query_params.get("transaction_id")
+        decrypted_id = decrypt_string(transaction_id)
+        if not decrypted_id:
             return Response(
-                {"error": "order_id is required"},
+                {"error": "transaction_id is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        network_tx = NetworkTransaction.objects.get(network_order_id=order_id)
-        response = self.client.get_order_status(order_id)
+        network_tx = NetworkTransaction.objects.get(
+            youpay_transaction__transaction_id=decrypted_id)
+        response = self.client.get_order_status(network_tx.network_order_id)
         self.create_youpay_to_payment_gateways_data(
             transaction_obj=network_tx.youpay_transaction,
             transaction_id=network_tx.youpay_transaction.transaction_id,
-            request_data=json.dumps(order_id),
+            request_data=json.dumps(network_tx.network_order_id),
             response_data=json.dumps(response),
             request_method=REQUEST_METHOD_GET,
             request_type=PAYMENT_REQUEST_VERIFY,
