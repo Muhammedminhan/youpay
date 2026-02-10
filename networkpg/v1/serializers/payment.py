@@ -3,6 +3,7 @@ from gateways.common import (_get_payment_reference_number)
 from networkpg.models import NetworkTransaction
 from networkpg.choices import PaymentStatus
 from core.response_messages import YouPayResponse
+from core.utils import get_display_program
 
 
 class PaymentInitiationSerializer(serializers.Serializer):
@@ -80,6 +81,12 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
         if success:
             return_dict['is_success'] = True
             return_dict['is_redirect'] = True
+            return_dict['platform'] = instance.youpay_transaction.platform.upper()
+            return_dict['country_code'] = instance.youpay_transaction.country_code
+            return_dict['is_guest'] = instance.youpay_transaction.is_guest
+            return_dict['program'] = get_display_program(instance.youpay_transaction.api_client)
+            return_dict['retry_count'] = instance.youpay_transaction.retry_count
+            return_dict['payment_method'] = "network_card"
             return_dict['code'] = self.response_obj.PAYMENT_SUCCESS
         else:
             return_dict['is_success'] = False

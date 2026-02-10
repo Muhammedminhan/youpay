@@ -92,7 +92,8 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'MokafaaRedeemPointsAPIView',
     'PayPalPayment',
     'SubmitPaymentSession',
-    'NeqatyPointBalanceAPIView'
+    'NeqatyPointBalanceAPIView',
+    'network-payments'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
