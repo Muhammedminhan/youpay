@@ -1,6 +1,5 @@
 import logging
 import requests
-from core.utils import get_app_config
 from ..choices import OrderAction
 from ..constants import (
     NETWORK_API_KEY,
@@ -9,7 +8,6 @@ from ..constants import (
     get_base_url,
     get_identity_url
 )
-
 
 
 logger = logging.getLogger(__name__)
