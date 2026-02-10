@@ -60,7 +60,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                 "currency": data["currency"],
                 "email": data["customer_email"],
                 "customer_name": data["customer_name"],
-                "payment_reference": data["order_reference"],
+                "payment_reference": data["transaction_id"],
                 "redirect_url": data.get("redirect_url"),
             }
             with transaction.atomic():
