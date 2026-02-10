@@ -1,6 +1,6 @@
 import logging
 import requests
-
+from core.utils import get_app_config
 from ..choices import OrderAction
 from ..constants import (
     NETWORK_API_KEY,
@@ -9,6 +9,8 @@ from ..constants import (
     get_base_url,
     get_identity_url
 )
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -68,12 +70,12 @@ class NetworkPGClient:
             "Accept": "application/vnd.ni-payment.v2+json",
         }
 
-        redirect_url = "https://sandbox.yougotagift.com/shop/en-in/"
         minor_amount = payment_data.get('amount')
         currency = payment_data.get('currency')
         email = payment_data.get('email')
         customer_name = payment_data.get('customer_name')
         payment_reference = payment_data.get('payment_reference')
+        redirect_url = payment_data.get('redirect_url')
         payload = {
             "action": action,
             "amount": {"currencyCode": currency, "value": minor_amount},
@@ -81,19 +83,17 @@ class NetworkPGClient:
             "merchantOrderReference": payment_reference,
             "billingAddress": {
                 "firstName": customer_name,
-                "lastName": "K",
-                "address1": "Test",
                 "city": "Dubai",
                 "countryCode": "AE"
             },
+            "merchantAttributes": {"redirectUrl": redirect_url}
         }
 
-        if redirect_url:
-            payload["merchantAttributes"] = {"redirectUrl": redirect_url}
-
         try:
-            logger.info("Creating Network order for reference: %s", payment_reference)
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
+            logger.info("Creating Network order for reference: %s",
+                        payment_reference)
+            response = requests.post(url, json=payload, headers=headers,
+                                     timeout=30)
             response.raise_for_status()
             return response.json()
         except requests.RequestException as e:

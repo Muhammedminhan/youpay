@@ -6,6 +6,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from core.utils import decrypt_string
+from core.utils import get_app_config
+from services.v1.views.common import add_payment_gateway_info_in_url
+
+from integrations.constants import NETWORK_HUB_CODE
 
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
@@ -55,13 +59,20 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                 youpay_transaction=transaction_obj,
                 status=PaymentStatus.PENDING,
             )
+            app_config = get_app_config()
+            params = '?id=' + transaction_id
+
+            redirect_url = add_payment_gateway_info_in_url(
+                transaction_data=data,
+                app_config=app_config, params=params,
+                code=NETWORK_HUB_CODE)
             payment_data = {
                 "amount": int(float(data["amount"]) * 100),
                 "currency": data["currency"],
                 "email": data["customer_email"],
                 "customer_name": data["customer_name"],
                 "payment_reference": data["transaction_id"],
-                "redirect_url": data.get("redirect_url"),
+                "redirect_url": redirect_url
             }
             with transaction.atomic():
                 response = self.client.create_order(payment_data)
