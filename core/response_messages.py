@@ -176,6 +176,9 @@ class YouPayResponse(object):
     ANB_PAYMENT_FAILED = 10709
     ANB_VERIFICATION_FAILED = 10807
     ANB_VERIFICATION_EXCEPTION = 10808
+    ANB_PHONE_NUMBER_SAVE_FAILED = 10812
+    ANB_PHONE_NUMBER_SAVED = 10813
+    ANB_ALREADY_COLLECTED = 10814
     """AnB related ends """
 
     """PayPal related begins"""
@@ -334,6 +337,10 @@ class YouPayResponse(object):
             self.ANB_PAYMENT_FAILED: "Payment failed",
             self.ANB_VERIFICATION_FAILED: "Verification failed",
             self.ANB_VERIFICATION_EXCEPTION: "Verification failed",
+            self.ANB_PHONE_NUMBER_SAVE_FAILED: "ANB Phone/CIF number failed "
+                                               "to save",
+            self.ANB_PHONE_NUMBER_SAVED: "ANB Phone/CIF number updated",
+            self.ANB_ALREADY_COLLECTED: "ANB Reward collected Already",
 
             self.PAYPAL_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.PAYPAL_VERIFICATION_FAILED: "PayPal verification failed",

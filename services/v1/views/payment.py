@@ -756,6 +756,28 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_MOKAFAA)
 
+        elif program_name == PAYMENT_METHOD_ANB:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.anb_service import (
+                AnbServiceManager)
+            anb_obj = AnbServiceManager()
+
+            response, code = anb_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                earned_points = response.get("partner_response").get(
+                    "earned_points")
+                is_success = True
+
+            message = "Point Collect requested for {}".format(
+                PAYMENT_METHOD_ANB)
+
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.point_program)

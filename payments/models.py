@@ -186,7 +186,7 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
         help_text="Mobile number associated with the collection of points")
     points_collected_cic_number = models.CharField(
         max_length=30, null=True, blank=True,
-        help_text="CIC number associated with the collection of points")
+        help_text="CIC/CIF number associated with the collection of points")
     points_redeemed_mobile_number = models.CharField(
         max_length=20, null=True, blank=True,
         help_text="Mobile number associated with the redemption of points ")

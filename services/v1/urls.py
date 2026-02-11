@@ -21,7 +21,8 @@ from .api_clients.amazonpg import (AmazonPGAuthentication,
                                    AmazonPGVerification, AmazonPGTokenization,
                                    AmazonPGSavedCard)
 from .api_clients.anb_service import (AnbGenerateOTPAPIView,
-                                      AnbRedeemPointsAPIView, AnbVerify)
+                                      AnbRedeemPointsAPIView, AnbVerify,
+                                      UpdateANBPhoneNumber)
 from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiPointRedemptionAPIView,
                                        CitiGenerateOTPAPIView)
@@ -152,7 +153,8 @@ urlpatterns = [
          name='MokafaaRedeemPointsAPIView'),
     path('mokafaa/verify/', MokafaaVerify.as_view(), name='MokafaaVerify'),
 
-    # AnB endpoints
+    # ANB endpoints
+    path('anb/update-phone-number/', UpdateANBPhoneNumber.as_view()),
     path('anb/generate-otp/', AnbGenerateOTPAPIView.as_view(),
          name='AnbGenerateOTPAPIView'),
     path('anb/redeem-points/', AnbRedeemPointsAPIView.as_view(),
