@@ -125,7 +125,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                     logger.error("Failed to initiate Network payment: %s", response)
                     network_tx.status = PaymentStatus.FAILED
                     network_tx.save()
-                    message = self.response_obj.get_error_dict(error_code='1004')
+                    message = self.response_obj.get_error_dict(error_code=1004)
                     return Response(
                         message,
                         status=status.HTTP_400_BAD_REQUEST)
@@ -133,7 +133,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         except Exception as e:
             logger.exception("Internal error during payment initiation %s", e)
             return Response(
-                self.response_obj.get_error_dict(error_code='1004'),
+                self.response_obj.get_error_dict(error_code=1004),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
