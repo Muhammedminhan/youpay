@@ -109,8 +109,6 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                     )
                     network_tx.status = PaymentStatus.STARTED
                     network_tx.save()
-                    # self.update_youpay_transaction_data(
-                    #     self.prepare_data_to_update(network_tx))
 
                     return Response(
                         {
@@ -171,8 +169,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         try:
             serializer = NetworkTransactionSerializer(network_tx)
             response = serializer.save_ni_response(ni_response)
-            # self.update_youpay_transaction_data(
-            #     self.prepare_data_to_update(network_tx, ni_response))
+
             code = response.get('code')
             return Response(
                 self.response_obj.get_success_dict(

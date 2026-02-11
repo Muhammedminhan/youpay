@@ -47,16 +47,6 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
 
         active_payment = payments[0]
         success = False
-        payment_method = active_payment.get('paymentMethod', {})
-        pan = payment_method.get('pan', '')
-
-        self.instance.card_bin = pan[:6] if pan else None
-        self.instance.card_last4 = pan[-4:] if pan else None
-        self.instance.card_scheme = payment_method.get('name')
-        self.instance.card_holder_name = payment_method.get('cardholderName')
-        self.instance.card_expiry_date = payment_method.get('expiry')
-        self.instance.card_issuer_country = payment_method.get('issuingCountry')
-        self.instance.card_type = payment_method.get('cardType')
 
         state = active_payment.get('state')
         if state:
@@ -80,7 +70,7 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
         return_dict = {}
         if success:
             return_dict['is_success'] = True
-            
+
             return_dict['platform'] = instance.youpay_transaction.platform.upper()
             return_dict['country_code'] = instance.youpay_transaction.country_code
             return_dict['is_guest'] = instance.youpay_transaction.is_guest
