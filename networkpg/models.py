@@ -42,7 +42,7 @@ class NetworkTransaction(CustomerProfile):
         blank=True, on_delete=models.CASCADE,
         help_text='Related api Youpay transaction data')
     card_bin = models.CharField(max_length=10, null=True, blank=True)
-    card_last4 = models.CharField(max_length=4, null=True, blank=True)
+    card_last4 = models.CharField(max_length=6, null=True, blank=True)
     card_scheme = models.CharField(max_length=50, null=True, blank=True)
     card_holder_name = models.CharField(max_length=200, null=True, blank=True)
     card_expiry_date = models.CharField(max_length=50, null=True, blank=True)
@@ -74,6 +74,10 @@ class EventNotification(models.Model):
     processed = models.BooleanField(default=False)
     processed_at = models.DateTimeField(null=True, blank=True)
     error_message = models.TextField(null=True, blank=True)
+    event_id = models.CharField(max_length=100, null=True, blank=True)
+    network_transaction = models.ForeignKey(NetworkTransaction,
+                                            on_delete=models.CASCADE,
+                                            null=True, blank=True)
 
     class Meta:
         verbose_name = _("Network Event Notification")

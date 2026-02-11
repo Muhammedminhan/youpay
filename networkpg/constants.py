@@ -17,6 +17,7 @@ NETWORK_API_KEY = config("NETWORK_API_KEY", "")
 NETWORK_OUTLET_ID = config("NETWORK_OUTLET_ID", "")
 NETWORK_TENANT_REALM = config("NETWORK_TENANT_REALM", "ni")
 NETWORK_ENVIRONMENT = config("ENVIRONMENT", "sandbox")
+NI_WEBHOOK_SECRET = config('NI_WEBHOOK_SECRET', default='')
 
 
 def get_base_url():

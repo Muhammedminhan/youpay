@@ -4,5 +4,5 @@ from .views.webhook import NetworkWebhookListener
 
 urlpatterns = [
     path('payments/', NetworkPaymentsApi.as_view(), name='network-payments'),
-    path('webhook/', NetworkWebhookListener.as_view(), name='network-webhook'),
+    path('webhook', NetworkWebhookListener.as_view(), name='network-webhook'),
 ]

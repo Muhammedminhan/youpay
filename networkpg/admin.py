@@ -40,3 +40,4 @@ class EventNotificationAdmin(admin.ModelAdmin):
     search_fields = ('payment_reference', 'event_type')
     readonly_fields = ('created_on', 'processed_at', 'raw_data')
     ordering = ('-created_on',)
+    raw_id_fields = ('network_transaction',)
