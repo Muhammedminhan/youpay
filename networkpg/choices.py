@@ -7,7 +7,7 @@ class PaymentStatus(models.TextChoices):
     Choices for payment status in Network International.
     """
     PENDING = "PENDING", _("Pending")
-    STARTED = "STARTED", _("Started")
+    INITIATED = "INITIATED", _("Initiated")
     AUTHORIZED = "AUTHORIZED", _("Authorized")
     CAPTURED = "CAPTURED", _("Captured")
     VOIDED = "VOIDED", _("Voided")

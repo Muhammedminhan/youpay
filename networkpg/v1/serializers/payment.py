@@ -54,7 +54,7 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
                 "CAPTURED": PaymentStatus.CAPTURED,
                 "AUTHORIZED": PaymentStatus.AUTHORIZED,
                 "FAILED": PaymentStatus.FAILED,
-                "STARTED": PaymentStatus.STARTED,
+                "INITIATED": PaymentStatus.INITIATED,
             }
             if state in status_map:
                 self.instance.status = status_map[state]
