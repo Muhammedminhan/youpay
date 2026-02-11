@@ -110,6 +110,9 @@ class WebhookService:
         elif event_type == 'DECLINED':
             tx.status = PaymentStatus.DECLINED
             tx.is_approved = False
+        elif event_type == 'AUTHORISATION_FAILED':
+            tx.status = PaymentStatus.FAILED
+            tx.is_approved = False
 
         order_data = data.get('order', {})
         payments = order_data.get('_embedded', {}).get('payment', [])
