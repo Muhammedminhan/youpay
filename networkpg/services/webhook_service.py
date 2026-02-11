@@ -23,7 +23,12 @@ class WebhookService:
         event_type = raw_data.get('eventName')
         order_reference = raw_data.get('order', {}).get('reference')
         merchant_order_reference = raw_data.get('order', {}).get('merchantOrderReference')
-
+        notification = EventNotification.objects.create(
+            payment_reference=merchant_order_reference,
+            event_type=event_type,
+            raw_data=raw_data,
+            event_id=raw_data.get('eventId'),
+        )
         try:
             tx = NetworkTransaction.objects.filter(
                 youpay_transaction__transaction_id=merchant_order_reference).first()
@@ -31,13 +36,7 @@ class WebhookService:
                 tx = NetworkTransaction.objects.filter(network_order_id=order_reference).first()
 
             if tx:
-                notification = EventNotification.objects.create(
-                    payment_reference=merchant_order_reference,
-                    event_type=event_type,
-                    raw_data=raw_data,
-                    event_id=raw_data.get('eventId'),
-                    network_transaction=tx
-                )
+                notification.network_transaction = tx
                 WebhookService._update_transaction_status(tx, raw_data)
                 WebhookService._trigger_youpay_update(tx)
                 notification.processed = True
