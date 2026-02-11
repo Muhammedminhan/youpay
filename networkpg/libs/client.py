@@ -98,7 +98,7 @@ class NetworkPGClient:
             logger.error(f"Error creating Network order: {str(e)}")
             if hasattr(e, "response") and e.response is not None:
                 logger.error(f"Response: {e.response.text}")
-            return None
+            return e.response.content.decode("utf-8")
 
     def get_order_status(self, order_id):
         """
