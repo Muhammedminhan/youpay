@@ -107,7 +107,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                     network_tx.network_order_reference = response.get(
                         "referrer"
                     )
-                    network_tx.status = PaymentStatus.STARTED
+                    network_tx.status = PaymentStatus.INITIATED
                     network_tx.save()
 
                     return Response(
@@ -115,7 +115,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                             "payment_url": payment_url,
                             "order_id": order_id,
                             "payment_reference": payment_serializer["payment_reference"].value,
-                            "status": "STARTED",
+                            "status": PaymentStatus.INITIATED,
                         },
                         status=status.HTTP_201_CREATED,
                     )
