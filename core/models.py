@@ -48,6 +48,9 @@ class CustomerProfile(models.Model):
                                                 "outside")
     customer_name = models.CharField(max_length=100, null=True, blank=True,
                                      help_text="To store name")
+    customer_uid = models.CharField(
+        max_length=100, null=True, blank=True,
+        help_text='Unique identifier for the customer')
 
     class Meta:
         abstract = True

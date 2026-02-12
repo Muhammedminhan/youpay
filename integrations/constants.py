@@ -26,6 +26,7 @@ CHECKOUTPG_PAYMENT_VERIFICATION_ENDPOINT = (
     '/gateway/checkout/api/v1/payment/verify/')
 CHECKOUTPG_SAVED_CARD_ENDPOINT = '/gateway/checkout/api/v1/paymenttoken/'
 CHECKOUTPG_SAVED_CARD_ENDPOINT_V2 = '/gateway/checkout/api/v2/payment-token/'
+CHECKOUTPG_SAVED_CARD_ENDPOINT_V3 = '/gateway/checkout/api/v3/payment-token/'
 
 CHECKOUTPG_HUB_CODE = 'PAYMTCPG'
 B2CPAYBACK_HUB_CODE = 'PAYMTB2CPBK'
