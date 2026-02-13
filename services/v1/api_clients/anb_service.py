@@ -256,12 +256,6 @@ class UpdateANBPhoneNumber(APIView, YouPayTransactionCRUD):
             anb_phone_number = request.data.get('anb_phone_number')
             anb_cif_number = request.data.get('anb_cif_number')
 
-            if not (anb_cif_number or anb_phone_number):
-                data = self.response_obj.get_error_dict(
-                    error_code=self.response_obj.ANB_VALIDATION_FAILED
-                )
-                return Response(data, status=status.HTTP_400_BAD_REQUEST)
-
             transaction_obj = self.get_youpay_transaction_data(
                 decrypt_string(transaction_id)
             )
@@ -279,14 +273,25 @@ class UpdateANBPhoneNumber(APIView, YouPayTransactionCRUD):
                     error_code=self.response_obj.ANB_PHONE_NUMBER_SAVE_FAILED)
                 return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
+            if anb_phone_number:
+                transaction_obj.points_collected_mobile_number = anb_phone_number
+                transaction_obj.points_collected_cic_number = None
+            elif anb_cif_number:
+                transaction_obj.points_collected_cic_number = anb_cif_number
+                transaction_obj.points_collected_mobile_number = None
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.ANB_VALIDATION_FAILED
+                )
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+            transaction_obj.save(update_fields=[
+                'points_collected_mobile_number',
+                'points_collected_cic_number'
+            ])
+
             update_data = {
                 'transaction_id': transaction_obj.transaction_id,
-                'points_collected_mobile_number': (
-                    anb_phone_number if anb_phone_number else ""
-                ),
-                'points_collected_cic_number': (
-                    anb_cif_number if anb_cif_number else ""
-                ),
                 'point_program': PAYMENT_METHOD_ANB,
                 'point_collection_enabled': True,
                 'brand_details': brand_details
