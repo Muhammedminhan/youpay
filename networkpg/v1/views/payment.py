@@ -35,6 +35,7 @@ from payments.constants import (
     PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_PENDING,
     PAYMENT_STATUS_REJECTED,
+    PAYMENT_STATUS_FAILED
 )
 
 logger = logging.getLogger(__name__)
@@ -169,6 +170,8 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         try:
             serializer = NetworkTransactionSerializer(network_tx)
             response = serializer.save_ni_response(ni_response)
+            self.update_youpay_transaction_data(
+                self.prepare_data_to_update(network_tx))
 
             code = response.get('code')
             return Response(
@@ -188,7 +191,10 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         if network_tx.status in [PaymentStatus.AUTHORIZED, PaymentStatus.CAPTURED]:
             payment_status = PAYMENT_STATUS_PAID
         elif network_tx.status == PaymentStatus.FAILED:
-            payment_status = PAYMENT_STATUS_REJECTED
+            payment_status = PAYMENT_STATUS_FAILED
+        elif network_tx.status in [PaymentStatus.DECLINED,
+                                   PaymentStatus.THREE_DS_NOT_AUTHENTICATED]:
+            payment_status = PaymentStatus.DECLINED
         data_to_update = {
             'transaction_id': self.decrypted_id,
             "payment_status": payment_status,

@@ -55,6 +55,8 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
                 "AUTHORIZED": PaymentStatus.AUTHORIZED,
                 "FAILED": PaymentStatus.FAILED,
                 "INITIATED": PaymentStatus.INITIATED,
+                "DECLINED": PaymentStatus.DECLINED,
+                "THREE_DS_NOT_AUTHENTICATED": PaymentStatus.DECLINED,
             }
             if state in status_map:
                 self.instance.status = status_map[state]
