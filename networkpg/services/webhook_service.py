@@ -9,6 +9,8 @@ from payments.constants import (
     PAYMENT_STATUS_PENDING,
     PAYMENT_STATUS_REJECTED,
     PAYMENT_METHOD_NETWORK_CARD,
+    PAYMENT_STATUS_DECLINED,
+    PAYMENT_STATUS_FAILED
 )
 from core.constants import PAYMENT_GATEWAY_NETWORK_IN
 logger = logging.getLogger(__name__)
@@ -69,7 +71,9 @@ class WebhookService:
         if tx.status in [PaymentStatus.AUTHORIZED, PaymentStatus.CAPTURED]:
             payment_status = PAYMENT_STATUS_PAID
         elif tx.status == PaymentStatus.FAILED:
-            payment_status = PAYMENT_STATUS_REJECTED
+            payment_status = PAYMENT_STATUS_FAILED
+        elif tx.status in [PaymentStatus.DECLINED, PaymentStatus.THREE_DS_NOT_AUTHENTICATED]:
+            payment_status = PAYMENT_STATUS_DECLINED
 
         data_to_update = {
             'transaction_id': tx.youpay_transaction.transaction_id,
@@ -107,7 +111,7 @@ class WebhookService:
         elif event_type == 'AUTHORISED':
             tx.status = PaymentStatus.AUTHORIZED
             tx.is_approved = True
-        elif event_type == 'DECLINED':
+        elif event_type in ['THREE_DS_NOT_AUTHENTICATED', 'DECLINED']:
             tx.status = PaymentStatus.DECLINED
             tx.is_approved = False
 
