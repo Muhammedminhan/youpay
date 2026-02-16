@@ -105,13 +105,14 @@ class WebhookService:
         if event_type == 'CAPTURED':
             tx.status = PaymentStatus.CAPTURED
             tx.is_approved = True
-        elif event_type in ['FAILED', 'AUTHORISATION_FAILED']:
+        elif event_type in ['FAILED',]:
             tx.status = PaymentStatus.FAILED
             tx.is_approved = False
         elif event_type == 'AUTHORISED':
             tx.status = PaymentStatus.AUTHORIZED
             tx.is_approved = True
-        elif event_type in ['THREE_DS_NOT_AUTHENTICATED', 'DECLINED']:
+        elif event_type in ['THREE_DS_NOT_AUTHENTICATED', 'DECLINED',
+                            'AUTHORISATION_FAILED']:
             tx.status = PaymentStatus.DECLINED
             tx.is_approved = False
 
