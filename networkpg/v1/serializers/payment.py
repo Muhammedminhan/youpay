@@ -86,5 +86,5 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
             return_dict['code'] = self.response_obj.PAYMENT_FAILED
         return_dict['is_redirect'] = True
         return_dict['redirect_url'] = get_redirect_url(instance.redirect_url,
-                                                       transaction_id)
+                                                       transaction_id.hex)
         return return_dict
