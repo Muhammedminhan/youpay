@@ -192,8 +192,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
             payment_status = PAYMENT_STATUS_PAID
         elif network_tx.status == PaymentStatus.FAILED:
             payment_status = PAYMENT_STATUS_FAILED
-        elif network_tx.status in [PaymentStatus.DECLINED,
-                                   PaymentStatus.THREE_DS_NOT_AUTHENTICATED]:
+        elif network_tx.status in [PaymentStatus.DECLINED,]:
             payment_status = PaymentStatus.DECLINED
         data_to_update = {
             'transaction_id': self.decrypted_id,

@@ -72,7 +72,7 @@ class WebhookService:
             payment_status = PAYMENT_STATUS_PAID
         elif tx.status == PaymentStatus.FAILED:
             payment_status = PAYMENT_STATUS_FAILED
-        elif tx.status in [PaymentStatus.DECLINED, PaymentStatus.THREE_DS_NOT_AUTHENTICATED]:
+        elif tx.status in [PaymentStatus.DECLINED]:
             payment_status = PAYMENT_STATUS_DECLINED
 
         data_to_update = {
