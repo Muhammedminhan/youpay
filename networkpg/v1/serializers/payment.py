@@ -3,7 +3,7 @@ from gateways.common import (_get_payment_reference_number)
 from networkpg.models import NetworkTransaction
 from networkpg.choices import PaymentStatus
 from core.response_messages import YouPayResponse
-from core.utils import get_display_program
+from core.utils import get_display_program, get_redirect_url
 
 
 class PaymentInitiationSerializer(serializers.Serializer):
@@ -70,6 +70,7 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
 
     def response_structure(self, instance, success):
         return_dict = {}
+        transaction_id = instance.youpay_transaction.transaction_id
         if success:
             return_dict['is_success'] = True
 
@@ -84,5 +85,6 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
             return_dict['is_success'] = False
             return_dict['code'] = self.response_obj.PAYMENT_FAILED
         return_dict['is_redirect'] = True
-        return_dict['redirect_url'] = instance.redirect_url
+        return_dict['redirect_url'] = get_redirect_url(instance.redirect_url,
+                                                       transaction_id)
         return return_dict
