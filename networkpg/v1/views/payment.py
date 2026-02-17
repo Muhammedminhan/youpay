@@ -34,7 +34,7 @@ from payments.constants import (
     PAYMENT_METHOD_NETWORK_CARD,
     PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_PENDING,
-    PAYMENT_STATUS_REJECTED,
+    PAYMENT_STATUS_DECLINED,
     PAYMENT_STATUS_FAILED
 )
 
@@ -193,7 +193,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         elif network_tx.status == PaymentStatus.FAILED:
             payment_status = PAYMENT_STATUS_FAILED
         elif network_tx.status in [PaymentStatus.DECLINED,]:
-            payment_status = PaymentStatus.DECLINED
+            payment_status = PAYMENT_STATUS_DECLINED
         data_to_update = {
             'transaction_id': self.decrypted_id,
             "payment_status": payment_status,

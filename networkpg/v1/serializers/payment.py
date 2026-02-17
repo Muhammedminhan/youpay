@@ -53,7 +53,7 @@ class NetworkTransactionSerializer(serializers.ModelSerializer):
             status_map = {
                 "CAPTURED": PaymentStatus.CAPTURED,
                 "AUTHORIZED": PaymentStatus.AUTHORIZED,
-                "FAILED": PaymentStatus.FAILED,
+                "FAILED": PaymentStatus.DECLINED,
                 "INITIATED": PaymentStatus.INITIATED,
                 "DECLINED": PaymentStatus.DECLINED,
                 "THREE_DS_NOT_AUTHENTICATED": PaymentStatus.DECLINED,
