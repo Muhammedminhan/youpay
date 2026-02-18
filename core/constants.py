@@ -95,7 +95,7 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'PayPalPayment',
     'SubmitPaymentSession',
     'NeqatyPointBalanceAPIView',
-    'network-payments'
+    'NetworkPayments'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
