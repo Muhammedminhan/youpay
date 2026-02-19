@@ -57,6 +57,11 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         self.decrypted_id = None
 
     def post(self, request, *_args, **_kwargs):
+        """
+        This method decrypts the transaction ID, validates the transaction data,
+        creates a local NetworkTransaction record, and calls the Network International
+        API to create an order and obtain a payment URL for the customer.
+        """
         self.transaction_id = request.data.get("transaction_id")
         self.decrypted_id = decrypt_string(self.transaction_id)
         logger.info(f"Received Network charge calculation request for "
@@ -70,7 +75,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         try:
             payment_serializer = PaymentInitiationSerializer(data=data)
             payment_serializer.is_valid(raise_exception=True)
-            network_tx = NetworkTransaction.objects.create(
+            network_transaction = NetworkTransaction.objects.create(
                 **payment_serializer.validated_data,
                 youpay_transaction=transaction_obj,
                 status=PaymentStatus.PENDING,
@@ -104,12 +109,12 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                     payment_url = response["_links"]["payment"]["href"]
                     order_id = response["reference"]
 
-                    network_tx.network_order_id = order_id
-                    network_tx.network_order_reference = response.get(
+                    network_transaction.network_order_id = order_id
+                    network_transaction.network_order_reference = response.get(
                         "referrer"
                     )
-                    network_tx.status = PaymentStatus.INITIATED
-                    network_tx.save()
+                    network_transaction.status = PaymentStatus.INITIATED
+                    network_transaction.save()
 
                     return Response(
                         {
@@ -122,8 +127,8 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                     )
                 else:
                     logger.error("Failed to initiate Network payment: %s", response)
-                    network_tx.status = PaymentStatus.FAILED
-                    network_tx.save()
+                    network_transaction.status = PaymentStatus.FAILED
+                    network_transaction.save()
                     message = self.response_obj.get_error_dict(error_code=1004)
                     return Response(
                         message,
@@ -137,6 +142,11 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
             )
 
     def get(self, request, *_args, **_kwargs):
+        """
+        Retrieves the status of a payment from Network International using the
+        transaction ID, updates the local transaction record, and returns the
+        payment status.
+        """
         transaction_id = request.query_params.get("transaction_id")
         self.decrypted_id = decrypt_string(transaction_id)
         if not self.decrypted_id:
@@ -144,34 +154,34 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                 {"error": "transaction_id is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        network_tx = NetworkTransaction.objects.get(
+        network_transaction = NetworkTransaction.objects.get(
             youpay_transaction__transaction_id=self.decrypted_id)
-        response = self.client.get_order_status(network_tx.network_order_id)
+        response = self.client.get_order_status(network_transaction.network_order_id)
         self.create_youpay_to_payment_gateways_data(
-            transaction_obj=network_tx.youpay_transaction,
-            transaction_id=network_tx.youpay_transaction.transaction_id,
-            request_data=json.dumps(network_tx.network_order_id),
+            transaction_obj=network_transaction.youpay_transaction,
+            transaction_id=network_transaction.youpay_transaction.transaction_id,
+            request_data=json.dumps(network_transaction.network_order_id),
             response_data=json.dumps(response),
             request_method=REQUEST_METHOD_GET,
             request_type=PAYMENT_REQUEST_VERIFY,
         )
         if response:
-            return self.process_payment_response(response, network_tx)
+            return self.process_payment_response(response, network_transaction)
 
         data = self.response_obj.get_404_message(
                     message="Failed to fetch order details from gateway")
         return Response(data, status=status.HTTP_404_NOT_FOUND)
 
-    def process_payment_response(self, ni_response, network_tx):
+    def process_payment_response(self, ni_response, network_transaction):
         """
         Process the payment response from Network International.
         """
         order_reference = ni_response.get('reference')
         try:
-            serializer = NetworkTransactionSerializer(network_tx)
+            serializer = NetworkTransactionSerializer(network_transaction)
             response = serializer.save_ni_response(ni_response)
             self.update_youpay_transaction_data(
-                self.prepare_data_to_update(network_tx))
+                self.prepare_data_to_update(network_transaction))
 
             code = response.get('code')
             return Response(
@@ -183,32 +193,32 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
             logger.error(
                 f"NetworkTransaction not found for order_id: {order_reference}")
 
-    def prepare_data_to_update(self, network_tx, ni_response=None):
+    def prepare_data_to_update(self, network_transaction, ni_response=None):
         """
         Prepares a dictionary of fields to update the YouPayTransaction table.
         """
         payment_status = PAYMENT_STATUS_PENDING
-        if network_tx.status in [PaymentStatus.AUTHORIZED, PaymentStatus.CAPTURED]:
+        if network_transaction.status in [PaymentStatus.AUTHORIZED, PaymentStatus.CAPTURED]:
             payment_status = PAYMENT_STATUS_PAID
-        elif network_tx.status == PaymentStatus.FAILED:
+        elif network_transaction.status == PaymentStatus.FAILED:
             payment_status = PAYMENT_STATUS_FAILED
-        elif network_tx.status in [PaymentStatus.DECLINED,]:
+        elif network_transaction.status in [PaymentStatus.DECLINED,]:
             payment_status = PAYMENT_STATUS_DECLINED
         data_to_update = {
             'transaction_id': self.decrypted_id,
             "payment_status": payment_status,
-            "payment_reference": network_tx.payment_reference,
+            "payment_reference": network_transaction.payment_reference,
             "payment_method": PAYMENT_METHOD_NETWORK_CARD,
             "payment_gateway": self.payment_gateway,
         }
         if ni_response:
             data_to_update.update({
-                "card_bin": network_tx.card_bin,
-                "card_last4": network_tx.card_last4,
-                "payment_scheme": capfirst(network_tx.card_scheme.lower()),
-                "name_on_card": network_tx.card_holder_name,
-                "card_issuer_country": network_tx.card_issuer_country,
-                "approved": network_tx.is_approved
+                "card_bin": network_transaction.card_bin,
+                "card_last4": network_transaction.card_last4,
+                "payment_scheme": capfirst(network_transaction.card_scheme.lower()),
+                "name_on_card": network_transaction.card_holder_name,
+                "card_issuer_country": network_transaction.card_issuer_country,
+                "approved": network_transaction.is_approved
             })
 
         return data_to_update
