@@ -673,6 +673,7 @@ class MokafaServiceManager(PaymentHandlers, PaymentRequestView):
             "customer_ip_address": self.transaction_obj.ip,
             "channel_code": get_channel_code(self.transaction_obj),
             "client_code": MOKAFAA_CLIENT_CODE,
+            "customer_uid": self.transaction_obj.customer_uid
         }
         return redeem_payload
 

@@ -103,6 +103,7 @@ def reformat_payment_request_data(data):
         data['customer_email'] = customer.get('email')
         data['customer_phone'] = customer.get('phone')
         data['customer_name'] = customer.get('name')
+        data['customer_uid'] = customer.get('customer_uid')
         data['is_guest'] = customer.get('is_guest', False)
 
         data['success_url'] = urls.get('success_url')

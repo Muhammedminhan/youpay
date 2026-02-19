@@ -20,6 +20,12 @@ PAYMENT_REQUEST_LANGUAGE_CHOICES = (
     (LANGUAGE_ARABIC, LANGUAGE_ARABIC),
 )
 
+SAVED_CARD_API_VERSIONS = (
+    ('v1', 'V1'),
+    ('v2', 'V2'),
+    ('v3', 'V3'),
+)
+
 PAYMENT_GATEWAY_TABBYPG = 'tabbypg'
 PAYMENT_GATEWAY_CHECKOUTPG = 'checkoutpg'
 PAYMENT_GATEWAY_B2CPAYBACK = 'b2cpayback'
@@ -85,7 +91,8 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'AmazonPGSavedCard',
     'MokafaaRedeemPointsAPIView',
     'PayPalPayment',
-    'SubmitPaymentSession'
+    'SubmitPaymentSession',
+    'NeqatyPointBalanceAPIView'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
