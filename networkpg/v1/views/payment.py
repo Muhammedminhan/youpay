@@ -154,8 +154,14 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                 {"error": "transaction_id is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        network_transaction = NetworkTransaction.objects.get(
-            youpay_transaction__transaction_id=self.decrypted_id)
+        try:
+            network_transaction = NetworkTransaction.objects.get(
+                youpay_transaction__transaction_id=self.decrypted_id)
+        except NetworkTransaction.DoesNotExist:
+            return Response(
+                {"error": "Network transaction not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
         response = self.client.get_order_status(network_transaction.network_order_id)
         self.create_youpay_to_payment_gateways_data(
             transaction_obj=network_transaction.youpay_transaction,
