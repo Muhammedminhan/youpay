@@ -31,6 +31,7 @@ class Migration(migrations.Migration):
                 ('currency', models.CharField(default='AED', max_length=3)),
                 ('status', models.CharField(choices=[('PENDING', 'Pending'), ('INITIATED', 'Initiated'), ('AUTHORIZED', 'Authorized'), ('CAPTURED', 'Captured'), ('VOIDED', 'Voided'), ('REFUNDED', 'Refunded'), ('FAILED', 'Failed'), ('DECLINED', 'Declined'), ('PURCHASED', 'Purchased')], db_index=True, default='PENDING', max_length=50)),
                 ('is_approved', models.BooleanField(default=False)),
+                ('is_gcc_card', models.BooleanField(default=False)),
                 ('card_bin', models.CharField(blank=True, max_length=10, null=True)),
                 ('card_last4', models.CharField(blank=True, max_length=6, null=True)),
                 ('card_scheme', models.CharField(blank=True, max_length=50, null=True)),

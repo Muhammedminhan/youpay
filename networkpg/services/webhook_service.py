@@ -4,6 +4,7 @@ from networkpg.models import NetworkTransaction, EventNotification
 from services.v1.views.common import YouPayTransactionCRUD
 from networkpg.choices import PaymentStatus
 from django.utils.text import capfirst
+from core.models import Country
 from payments.constants import (
     PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_PENDING,
@@ -90,7 +91,8 @@ class WebhookService:
                 "payment_scheme": capfirst(transaction_obj.card_scheme.lower()) if transaction_obj.card_scheme else None,
                 "name_on_card": transaction_obj.card_holder_name,
                 "card_issuer_country": transaction_obj.card_issuer_country,
-                "approved": transaction_obj.is_approved
+                "approved": transaction_obj.is_approved,
+                "is_gcc_card": transaction_obj.is_gcc_card
             })
 
         crud.update_youpay_transaction_data(data_to_update)
@@ -133,9 +135,19 @@ class WebhookService:
             transaction_obj.card_expiry_date = payment_method.get('expiry')
             transaction_obj.card_issuer_country = payment_method.get('issuingCountry')
             transaction_obj.card_type = payment_method.get('cardType')
+            transaction_obj.is_gcc_card = WebhookService.check_gcc_card(
+                payment_method.get('issuingCountry'))
 
         transaction_obj.save()
 
         logger.info(
             f"Updated NetworkTransaction {transaction_obj.payment_reference} to {transaction_obj.status}"
         )
+
+    @staticmethod
+    def check_gcc_card(country_code):
+        """
+        checking the card is gcc card or not
+        """
+        return Country.objects.filter(
+                    iso_code=country_code, is_gcc=True).exists()

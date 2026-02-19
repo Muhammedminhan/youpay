@@ -48,6 +48,7 @@ class NetworkTransaction(CustomerProfile):
     card_expiry_date = models.CharField(max_length=50, null=True, blank=True)
     card_issuer_country = models.CharField(max_length=50, null=True, blank=True)
     card_type = models.CharField(max_length=50, null=True, blank=True)
+    is_gcc_card = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = _("Network Transaction")
