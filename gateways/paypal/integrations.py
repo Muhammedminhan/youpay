@@ -475,6 +475,10 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 }
                 return return_data, self.PAYPAL_PAYMENT_INCOMPLETE
 
+            logger.error("Paypal order is not approved for transaction {}, "
+                         "order status: {}".format(self.transaction_id,
+                                                   order_status))
+
             redirect_url = get_redirect_url(
                 self.transaction_obj.failure_url,
                 self.transaction_id)
@@ -748,6 +752,8 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
         If CREATED, redirect back to PayPal approval link.
         """
         order_data = self.get_order_details(order_id)
+        blocked_address_country_codes = []
+        blocked_method_country_codes = []
 
         if not order_data:
             logger.error(
@@ -760,15 +766,18 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
             "paypal", {})
         payment_config = get_payment_config(PAYMENT_METHOD_PAYPAL,
                                             PAYPAL_HUB_CODE)
-        blocked_address_country_codes = list(
-            payment_config.address_blocked_countries.values_list("iso_code",
-                                                                 flat=True)
-        )
+        if payment_config:
+            blocked_address_country_codes = list(
+                payment_config.address_blocked_countries.values_list(
+                    "iso_code",
+                    flat=True)
+            )
 
-        blocked_method_country_codes = list(
-            payment_config.method_blocked_countries.values_list("iso_code",
-                                                                flat=True)
-        )
+            blocked_method_country_codes = list(
+                payment_config.method_blocked_countries.values_list(
+                    "iso_code",
+                    flat=True)
+            )
         if status == "APPROVED":
             order_status_code = self.SUCCESS
             issues = {

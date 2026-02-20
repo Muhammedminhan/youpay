@@ -213,6 +213,11 @@ class PaymentConfigurationAdmin(AdminAbstract):
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
                    'payment_gateway',)
 
+    filter_horizontal = (
+        "address_blocked_countries",
+        "method_blocked_countries",
+    )
+
     form = PaymentConfigurationAdminForm
     inlines = [PaymentMethodConfigInline]
 

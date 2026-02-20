@@ -174,7 +174,7 @@ def update_offer_details(client_pk, invoice_id, offer_details):
 
 def get_payment_config(payment_method, payment_gateway_code):
     """
-    Get active payment configuration with prefetched relations
+    Get payment configuration
     """
     try:
         return (
