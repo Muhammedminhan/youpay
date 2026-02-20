@@ -90,7 +90,7 @@ deployment:
           secretProviderClass: "youpay-certs-applepay"
 
   nodeSelector:
-    key: 'karpenter.sh/provisioner-name'
+    key: 'karpenter.sh/nodepool'
     value: 'default'
 
   topologySpreadConstraints:
