@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
     response_obj = YouPayResponse()
+    transaction_obj = None
 
     def get(self, request):
         """
@@ -26,12 +27,13 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
             customer_uid = request.query_params.get('customer_uid', "")
             email = urllib.parse.unquote(raw_email)
             transaction_id = request.query_params.get('transaction_id')
-            transaction_obj = self.get_youpay_transaction_data(
-                decrypt_string(transaction_id)
-            )
+            if transaction_id:
+                self.transaction_obj = self.get_youpay_transaction_data(
+                    decrypt_string(transaction_id)
+                )
             currency = None
             _, client = self.validate_client(request)
-            client_obj = getattr(transaction_obj, "api_client", client)
+            client_obj = getattr(self.transaction_obj, "api_client", client)
             if not client_obj:
                 logger.info(
                     "payment request client validation failed for {0}"
@@ -39,10 +41,10 @@ class SavedCardPayment(APIView, YouPayTransactionCRUD, ClientValidator):
                 data = self.response_obj.get_400_message(
                     message="Client Does Not Exist")
                 return Response(data, status=status.HTTP_400_BAD_REQUEST)
-            if transaction_obj:
-                email = transaction_obj.customer_email
-                customer_uid = transaction_obj.customer_uid
-                currency = transaction_obj.currency
+            if self.transaction_obj:
+                email = self.transaction_obj.customer_email
+                customer_uid = self.transaction_obj.customer_uid
+                currency = self.transaction_obj.currency
             
             channel_code = get_client_channel_code(client_obj)
 
