@@ -535,8 +535,25 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 status = PAYPAL_CAPTURE_STATUS_COMPLETED
                 response_data_json[
                     'success'] = PAYPAL_CAPTURE_STATUS_COMPLETED
+
+                seller_breakdown = capture.get("seller_receivable_breakdown", {})
+                receivable_amount = seller_breakdown.get("receivable_amount", {})
+                exchange_rate = seller_breakdown.get("exchange_rate", {})
+                paypal_amount_usd = receivable_amount.get("value")
+
                 udf1 = self.transaction_obj.udf1 or {}
-                udf1.update({"paypal_reference_number": capture.get("id")})
+                paypal_calculations = udf1.get("paypal_calculations", {})
+
+                paypal_calculations.update({
+                    "paypal_amount_usd": paypal_amount_usd,
+                    "paypal_exchange_rate": exchange_rate
+                })
+
+                udf1.update({
+                    "paypal_reference_number": capture.get("id"),
+                    "paypal_calculations": paypal_calculations
+                })
+
                 youpay_update_data = {
                     "transaction_id": self.transaction_id,
                     "payment_status": PAYMENT_STATUS_PAID,
