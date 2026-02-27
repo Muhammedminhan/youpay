@@ -6,6 +6,8 @@ from django.contrib import messages
 from django.core.serializers.json import DjangoJSONEncoder
 
 from rest_framework import status
+from gateways.paypal.models import PaypalTransaction
+from core.constants import PAYMENT_GATEWAY_PAYPAL
 
 from core.response_messages import YouPayResponse
 from integrations.constants import B2CPAYBACK_HUB_CODE
@@ -203,5 +205,57 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
         response_message = (
             "Syncing qitaf earn failed with error : {}".format(str(e)))
         logger.error(response_message, exc_info=e)
+        modeladmin.message_user(request, response_message,
+                                level=messages.ERROR)
+
+
+def sync_paypal_usd_value(modeladmin, request, queryset):
+    """
+    Function to sync PayPal USD values from PaypalTransaction to
+    YouPayTransactionData
+    """
+    try:
+        synced_count = 0
+        for youpay_txn in queryset:
+            if (youpay_txn.payment_gateway == PAYMENT_GATEWAY_PAYPAL and
+                    youpay_txn.payment_status == PAYMENT_STATUS_PAID):
+                paypal_txn = PaypalTransaction.objects.filter(
+                    youpay_transaction=youpay_txn).first()
+                if paypal_txn:
+                    paypal_amount_usd = (str(paypal_txn.receivable_amount) if
+                                  paypal_txn.receivable_amount else None)
+                    raw_response = paypal_txn.raw_response
+                    try:
+                        paypay_exchange_rate = (
+                            raw_response['purchase_units'][0]['payments']
+                            ['captures'][0]['seller_receivable_breakdown']
+                            ['exchange_rate']
+                        )
+                    except (KeyError, IndexError, TypeError):
+                        paypay_exchange_rate = None
+
+                    paypal_data = {
+                        "paypal_amount_usd": paypal_amount_usd,
+                        "paypal_exchange_rate": paypay_exchange_rate
+                    }
+
+                    youpay_txn.udf1['paypal_calculations'].update(**paypal_data)
+
+                    youpay_txn.save()
+                    synced_count += 1
+
+        if synced_count:
+            modeladmin.message_user(
+                request, f"Successfully synced PayPal data for "
+                         f"{synced_count} transactions.",
+                level=messages.SUCCESS)
+        else:
+            modeladmin.message_user(
+                request, "No matching PayPal transactions found to sync.",
+                level=messages.WARNING)
+
+    except Exception as e:
+        response_message = f"PayPal Sync Failed : {str(e)}"
+        logger.error(response_message, exc_info=True)
         modeladmin.message_user(request, response_message,
                                 level=messages.ERROR)

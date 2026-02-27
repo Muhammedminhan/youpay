@@ -4,7 +4,8 @@ from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
 from payments.adminActions import (archive_transaction_data,
                                    collect_b2c_program_points_for_transaction,
-                                   sync_qitaf_earn_to_purchase_request)
+                                   sync_qitaf_earn_to_purchase_request,
+                                   sync_paypal_usd_value)
 from payments.forms import AnnouncementForm
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification, AdditionalCharge,
@@ -21,13 +22,17 @@ class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
     actions = [archive_transaction_data,
                collect_b2c_program_points_for_transaction,
-               sync_qitaf_earn_to_purchase_request]
+               sync_qitaf_earn_to_purchase_request,
+               sync_paypal_usd_value]
     archive_transaction_data.short_description = (
         "Archive Selected Transaction data")
     collect_b2c_program_points_for_transaction.short_description = (
         "Collect Program Points for the transaction")
     sync_qitaf_earn_to_purchase_request.short_description = (
         "Sync qitaf earn data"
+    )
+    sync_paypal_usd_value.short_description = (
+        "Sync PayPal USD value"
     )
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
