@@ -226,17 +226,17 @@ def sync_paypal_usd_value(modeladmin, request, queryset):
                                   paypal_txn.receivable_amount else None)
                     raw_response = paypal_txn.raw_response
                     try:
-                        paypay_exchange_rate = (
+                        paypal_exchange_rate = (
                             raw_response['purchase_units'][0]['payments']
                             ['captures'][0]['seller_receivable_breakdown']
                             ['exchange_rate']
                         )
                     except (KeyError, IndexError, TypeError):
-                        paypay_exchange_rate = None
+                        paypal_exchange_rate = None
 
                     paypal_data = {
                         "paypal_amount_usd": paypal_amount_usd,
-                        "paypal_exchange_rate": paypay_exchange_rate
+                        "paypal_exchange_rate": paypal_exchange_rate
                     }
 
                     youpay_txn.udf1['paypal_calculations'].update(**paypal_data)
