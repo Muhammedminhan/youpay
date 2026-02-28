@@ -539,19 +539,15 @@ class PaypalManager(PaymentRequestView, PaymentHandlers):
                 seller_breakdown = capture.get("seller_receivable_breakdown", {})
                 receivable_amount = seller_breakdown.get("receivable_amount", {})
                 exchange_rate = seller_breakdown.get("exchange_rate", {})
+
                 paypal_amount_usd = receivable_amount.get("value")
 
                 udf1 = self.transaction_obj.udf1 or {}
-                paypal_calculations = udf1.get("paypal_calculations", {})
-
-                paypal_calculations.update({
-                    "paypal_amount_usd": paypal_amount_usd,
-                    "paypal_exchange_rate": exchange_rate
-                })
 
                 udf1.update({
                     "paypal_reference_number": capture.get("id"),
-                    "paypal_calculations": paypal_calculations
+                    "paypal_amount_usd": paypal_amount_usd,
+                    "paypal_exchange_rate": exchange_rate
                 })
 
                 youpay_update_data = {
