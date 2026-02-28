@@ -233,13 +233,19 @@ def sync_paypal_usd_value(modeladmin, request, queryset):
                         )
                     except (KeyError, IndexError, TypeError):
                         paypal_exchange_rate = None
-
+                    if youpay_txn.udf1:
+                        youpay_txn.udf1.get('paypal_calculations',
+                                            {}).pop('paypal_exchange_rate',
+                                                    None)
+                        youpay_txn.udf1.get('paypal_calculations',
+                                            {}).pop('paypal_amount_usd',
+                                                    None)
                     paypal_data = {
                         "paypal_amount_usd": paypal_amount_usd,
                         "paypal_exchange_rate": paypal_exchange_rate
                     }
 
-                    youpay_txn.udf1['paypal_calculations'].update(**paypal_data)
+                    youpay_txn.udf1.update(**paypal_data)
 
                     youpay_txn.save()
                     synced_count += 1
