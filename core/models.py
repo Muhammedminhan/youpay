@@ -163,6 +163,11 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
         'integrations.PaymentGateway', on_delete=models.CASCADE,
         blank=True, null=True, db_index=True,
         help_text='Payment gateway for the payment method')
+    address_blocked_countries = models.ManyToManyField(
+        'core.Country', blank=True, related_name='address_blocked_countries')
+    method_blocked_countries = models.ManyToManyField('core.Country',
+                                                      blank=True,
+                                                      related_name='method_blocked_countries')
     partial_redemption_allowed = models.BooleanField(
         default=False, db_index=True,
         help_text='Indicates whether the payment method allows partial '
