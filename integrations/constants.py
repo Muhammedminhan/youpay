@@ -260,7 +260,8 @@ EXPECTED_NEQATY_ERRORS = ["MSISDN_NOT_IN_NAQATI", "NOT_HAVE_ENOUGH_POINTS"]
 EXPECTED_MOKAFAA_ERRORS = ["1019", "205", "209"]
 
 PAYMENT_METHOD = {'PAYMTMKF':'mokafaa', 'PAYMTNQTI':'neqaty',
-                  'PMTQTF':'qitaf', 'ADCBTP':'adcb', 'PMTANB': 'anb'}
+                  'PMTQTF':'qitaf', 'ADCBTP':'adcb', 'PMTANB': 'anb',
+                  'PMTHSD': 'hassad'}
 
 ADDITIONAL_PROCESSING_FEE = 'Processing fee'
 ADDITIONAL_PLATFORM_FEE = 'Platform fee'
