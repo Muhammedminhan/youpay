@@ -7,7 +7,7 @@ from django.core.cache import cache
 from integrations.constants import B2CPAYBACK_HUB_CODE
 from payments.constants import (PAYMENT_METHOD_QITAF, PAYMENT_METHOD_ANB,
                                 PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_ADCB,
-                                PAYMENT_METHOD_MOKAFAA)
+                                PAYMENT_METHOD_MOKAFAA, PAYMENT_METHOD_HASSAD)
 from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
                         GUEST_USER_CUSTOM, BETA_USER_ONLY_EARN,
                         BETA_USER_ONLY_BURN)
@@ -235,7 +235,8 @@ class PaymentConfigurationAdmin(AdminAbstract):
                                           PAYMENT_METHOD_ANB,
                                           PAYMENT_METHOD_NEQATY,
                                           PAYMENT_METHOD_MOKAFAA,
-                                          PAYMENT_METHOD_ADCB]:
+                                          PAYMENT_METHOD_ADCB,
+                                          PAYMENT_METHOD_HASSAD]:
             fields = ('payment_method', 'code', 'active',
                       'guest_user_enabled', 'beta_version',
                       'is_second_project_config_enabled',
