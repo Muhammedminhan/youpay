@@ -163,7 +163,7 @@ class HassadVerify(APIView, YouPayTransactionCRUD):
         Returns:
             Response: A formatted response indicating the verification result.
         """
-        anb_service = AnbServiceManager()
+        hassad_service = HassadServiceManager()
         payment_data = {
             'transaction_id': request.query_params.get('id'),
             'redemption_partner': request.query_params.get(
@@ -173,23 +173,24 @@ class HassadVerify(APIView, YouPayTransactionCRUD):
             'cko-session-id': request.query_params.get(
                 'cko-session-id')
         }
-        response, transaction_obj = anb_service.verification(payment_data)
+        response, transaction_obj = hassad_service.verification(payment_data)
         transaction_id = (transaction_obj.transaction_id if transaction_obj
                           else None)
         if response:
-            logger.info("AnbVerify Response {} for transaction id {}".format(
-                response, transaction_id))
+            logger.info(
+                "HassadVerify Response {} for transaction id {}".format(
+                    response, transaction_id))
             if response.get('is_success') and response.get('is_redirect'):
                 logger.info(
-                    "Anb Verification successful, payment status true for"
+                    "Hassad Verification successful, payment status true for"
                     " transaction {}".format(transaction_id))
 
                 code = self.response_obj.B2CPAYBACK_VERIFICATION_SUCCESS
                 response = self.format_b2c_response(response, code)
             else:
                 message = (
-                    "couldnt process Anb Verification for transaction id {}, "
-                    "response : {}".format(transaction_id, response))
+                    "couldnt process Hassad Verification for transaction id "
+                    "{}, response : {}".format(transaction_id, response))
                 logger.error(message)
                 response = self.format_b2c_response(response, None)
             return Response(response, status=status.HTTP_200_OK)
@@ -200,7 +201,7 @@ class HassadVerify(APIView, YouPayTransactionCRUD):
                 message = response_text.get('message', None)
                 response = {'errors': {
                     'code': resp_code, 'message': message}}
-                code = self.response_obj.ANB_VERIFICATION_FAILED
+                code = self.response_obj.HASSAD_VERIFICATION_FAILED
                 logger.error("Verification failed for : {}, reason : {}"
                              .format(transaction_id, response))
                 response = self.format_b2c_response(response, code)
@@ -212,7 +213,7 @@ class HassadVerify(APIView, YouPayTransactionCRUD):
                     'code': "400",
                     'message': "Unable to process verification"}
                 }
-                code = self.response_obj.ANB_VERIFICATION_EXCEPTION
+                code = self.response_obj.HASSAD_VERIFICATION_EXCEPTION
                 response = self.format_b2c_response(response, code)
             return Response(response, status=status.HTTP_400_BAD_REQUEST)
 
@@ -269,11 +270,11 @@ def anb_response_formatter(data, code):
     return data
 
 
-def get_calculated_youpay_transaction_data_with_anb_balance(
+def get_calculated_youpay_transaction_data_with_hassad_balance(
         transaction_obj):
     """
-    To replace the additional_data with the anb balance calculation response
-    from the anb service.
+    The idea is to replace the additional_data with the hassad balance
+    calculation response from the hassad service
 
     Args:
         transaction_obj: Payment transaction object.

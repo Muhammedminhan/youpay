@@ -206,6 +206,8 @@ class YouPayResponse(object):
     HASSAD_INVALID_EXTERNAL_TRANSACTION_ID = 13014
     HASSAD_INVOICE_VALUE_BELOW_MINIMUM = 13015
     HASSAD_INVOICE_VALUE_EXCEEDS_MAXIMUM = 13016
+    HASSAD_VERIFICATION_FAILED = 13017
+    HASSAD_VERIFICATION_EXCEPTION = 13018
     """Hassad related ends """
 
     MESSAGE = {}
@@ -385,6 +387,8 @@ class YouPayResponse(object):
             self.HASSAD_INVOICE_VALUE_EXCEEDS_MAXIMUM: "Invoice value "
                                                        "exceeds the maximum "
                                                        "allowed",
+            self.HASSAD_VERIFICATION_FAILED: "Verification failed",
+            self.HASSAD_VERIFICATION_EXCEPTION: "Verification failed",
         })
 
     def get_400_message(self, message):

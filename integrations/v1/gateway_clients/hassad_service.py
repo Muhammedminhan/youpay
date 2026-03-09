@@ -283,13 +283,21 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             )
 
     def verification(self, request_data):
-        """Mokafaa Verification with b2c"""
+        """
+        Hassad verification with b2c
+
+        Args:
+            request_data (dict):  Contains transaction details.
+        Returns:
+            return_response_data: Processed response.
+            transaction_obj (obj): Payment transaction object.
+        """
         earned_point = None
         payment_scheme = None
 
         request_transaction_id = request_data.get('transaction_id')
         logger.info(
-            "Mokafaa Verification with b2c started for transaction {},"
+            "Hassad Verification with b2c started for transaction {},"
             " data --> {}".format(request_transaction_id, request_data))
 
         if request_transaction_id:
@@ -301,11 +309,11 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 formatted_data = format_verify_data(
                     request_data, transaction_obj)
                 gateway_obj = get_config_from_payment_configurations(
-                    transaction_obj, PAYMENT_METHOD_MOKAFAA)
+                    transaction_obj, PAYMENT_METHOD_HASSAD)
 
-                mokafaa_domain = gateway_obj.domain
-                url = (mokafaa_domain + B2CP_VERIFY_API +
-                       "?&redemption_partner=MOKAFAA")
+                hassad_domain = gateway_obj.domain
+                url = (hassad_domain + B2CP_VERIFY_API +
+                       "?&redemption_partner=HASSAD")
                 headers = {'Content-Type': 'application/json'}
                 formatted_data.pop("transaction_id")
                 response = requests.get(url, params=formatted_data,
@@ -317,7 +325,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                             "status").lower() == PAYMENT_STATUS_PAID):
                     """Redemption verified successfully"""
                     logger.info(
-                        "Mokafaa Verification with b2c completed for "
+                        "Hassad Verification with b2c completed for "
                         "transaction {}".format(transaction_id))
 
                     response_data = response.json()
@@ -367,13 +375,13 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                     request_type=PAYMENT_REQUEST_VERIFY
                 )
 
-                from services.v1.api_clients.mokafa_service import (
-                get_calculated_youpay_transaction_data_with_mokafaa_balance)
+                from services.v1.api_clients.hassad_service import (
+                get_calculated_youpay_transaction_data_with_hassad_balance)
 
-                """update youpay transaction data with Mokafaa balance 
+                """update youpay transaction data with Hassad balance 
                 calculation on successfull payment"""
                 calculated_youpay_transaction_data = (
-                    get_calculated_youpay_transaction_data_with_mokafaa_balance(
+                    get_calculated_youpay_transaction_data_with_hassad_balance(
                         transaction_obj))
 
                 update_data = {
@@ -390,7 +398,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 }
                 update_data.update(calculated_youpay_transaction_data)
 
-                logger.info("Mokafaa Verification with b2c completed for "
+                logger.info("Hassad Verification with b2c completed for "
                             "transaction {}, data to be updating {}".format(
                                 transaction_id, update_data))
                 self.update_youpay_transaction_data(update_data)
@@ -398,11 +406,11 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
 
             except Exception as e:
                 logger.error(
-                    "Verify api call to Mokafaa failed for transaction {}"
-                    "".format(request_transaction_id), exc_info=e)
+                    "Verify api call to Hassad failed for transaction {}"
+                    .format(request_transaction_id), exc_info=e)
                 return None, None
         else:
-            logger.error("Invalid transaction id ({}) received for Mokafaa "
+            logger.error("Invalid transaction id ({}) received for Hassad "
                          "verify api".format(request_transaction_id))
             return None, None
 
