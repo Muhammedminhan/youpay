@@ -1092,8 +1092,8 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse,
                     transaction.transaction_id
                 )
                 self.return_data = self.get_error_dict(
-                        self.PAYMENT_REFUND_NOT_ELIGIBLE
-                    )
+                    self.PAYMENT_REFUND_NOT_ELIGIBLE
+                )
                 return Response(
                     self.return_data.get("errors"),
                     status=status.HTTP_400_BAD_REQUEST
