@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  ECR_REGION: me-central-1
+  ECR_REGION: ap-south-1
 
 jobs:
   cleanup:
