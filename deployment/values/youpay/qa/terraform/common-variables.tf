@@ -4,12 +4,12 @@ variable "global_variables" {
   default = {
     prefix      = "ygg-"
     suffix      = "-tf"
-    region      = "me-central-1"
+    region      = "ap-south-1"
     environment = "qa"
     account     = "ygg"
 
     default_tags = {
-      "Region"      = "UAE"
+      "Region"      = "Mumbai"
       "Environment" = "qa"
       "CreatedBy"   = "Terraform"
       "Account"     = "YGG"

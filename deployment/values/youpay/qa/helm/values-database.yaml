@@ -19,7 +19,7 @@ service:
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: "TCP"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "5432"
       service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
-      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygg-qa-private-me-central-1a, ygg-qa-private-me-central-1b, ygg-qa-private-me-central-1c"
+      service.beta.kubernetes.io/aws-load-balancer-subnets: "ygg-qa-ap-south-1-private-ap-south-1a, ygg-qa-ap-south-1-private-ap-south-1b, ygg-qa-ap-south-1-private-ap-south-1c"
 
 statefulset:
   name: 'youpay-[JIRA_ID]-database-statefulset'
@@ -51,7 +51,7 @@ deployment:
     default:
       name: 'database'
       imagePullPolicy: 'Always'
-      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-database:latest'
+      image: '420360167813.dkr.ecr.ap-south-1.amazonaws.com/qa/ygg/youpay/backend-database:latest'
       command: '[]'
       env:
         - name: 'POSTGRES_PASSWORD_FILE'
@@ -86,7 +86,7 @@ deployment:
 
   initContainers:
     ebs:
-      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/k8s/busybox:latest'
+      - image: '420360167813.dkr.ecr.ap-south-1.amazonaws.com/qa/k8s/busybox:latest'
         volume: 'ygag-youpay-[JIRA_ID]-qa-database-data'
         name: 'init-ebs'
 
