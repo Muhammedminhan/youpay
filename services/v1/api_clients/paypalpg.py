@@ -83,9 +83,21 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
                 "processing_fee_percentage": processing_fee_charge,
                 "processing_fee_vat_percentage": vat_charge,
             }
-            paypal_calculations = {"paypal_calculations": json.loads(
-                json.dumps(response_data, cls=DjangoJSONEncoder))}
-            transaction.udf1 = paypal_calculations
+            # Preserve existing udf1 data and update with new calculations
+            udf1 = transaction.udf1 or {}
+            if not isinstance(udf1, dict):
+                try:
+                    udf1 = json.loads(udf1)
+                except Exception as e:
+                    logger.error(
+                        f"Exception occurred while trying to parse udf1 data"
+                        f" while updating paypal calculations for transaction"
+                        f" {transaction.transaction_id}: {str(e)}")
+                    udf1 = {}
+            udf1["paypal_calculations"] = json.loads(
+                json.dumps(response_data, cls=DjangoJSONEncoder)
+            )
+            transaction.udf1 = udf1
             transaction.save()
             return response_data
         return None
