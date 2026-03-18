@@ -171,6 +171,10 @@ class ConfigViewSet(ViewSet):
                 transaction else None,
                 "cart_platform_fee": transaction.cart_platform_fee if
                 transaction else None,
+                "client_handling_fee": self._get_udf1_handling_fee(
+                    transaction, 'additional_charges'),
+                "cart_client_handling_fee": self._get_udf1_handling_fee(
+                    transaction, 'cart_additional_charges'),
                 "redirect_url": self._get_redirect_url(transaction),
                 "announcements": get_announcements(transaction.platform),
                 "is_guest": transaction.is_guest,
@@ -467,6 +471,19 @@ class ConfigViewSet(ViewSet):
                 return False
         else:
             return True
+
+    @staticmethod
+    def _get_udf1_handling_fee(transaction, key):
+        """
+        Gets the value of 'additional_charges'/'cart_additional_charges'
+        from the udf1 field of the transaction.
+        Handles udf1 being None, empty, or a dict.
+        Returns the value if present, else returns None.
+        """
+        udf1 = getattr(transaction, 'udf1', None)
+        if not udf1 or not isinstance(udf1, dict):
+            return None
+        return udf1.get(key)
 
 
 class ClientStaticFilesAPI(APIView):
