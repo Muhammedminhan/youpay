@@ -157,6 +157,8 @@ class ConfigViewSet(ViewSet):
                 "vat_amount": transaction.VAT_amount if transaction else None,
                 "base_amount": transaction.base_amount if transaction else
                 None,
+                "platform_fee": transaction.platform_fee if transaction else
+                None,
                 "cart_amount": transaction.cart_amount if transaction else
                 None,
                 "cart_currency": transaction.cart_currency if transaction else
@@ -167,6 +169,12 @@ class ConfigViewSet(ViewSet):
                 else None,
                 "cart_base_amount": transaction.cart_base_amount if
                 transaction else None,
+                "cart_platform_fee": transaction.cart_platform_fee if
+                transaction else None,
+                "client_handling_fee": self._get_udf1_handling_fee(
+                    transaction, 'additional_charges'),
+                "cart_client_handling_fee": self._get_udf1_handling_fee(
+                    transaction, 'cart_additional_charges'),
                 "redirect_url": self._get_redirect_url(transaction),
                 "announcements": get_announcements(transaction.platform),
                 "is_guest": transaction.is_guest,
@@ -177,11 +185,15 @@ class ConfigViewSet(ViewSet):
                 "retry_count": transaction.retry_count,
                 "store": country_name,
                 "customer_email": transaction.customer_email,
+                "customer_uid": transaction.customer_uid,
                 "client_code": client.client_code,
+                "saved_card_api_version": client.saved_card_api_version or 'v1',
                 "is_offer_enabled": transaction.is_offer_applicable,
                 "purchase_origin": (transaction.clevertap_items or {}).get(
                     "purchase_origin"),
                 **payment_config_data,
+                "applepay_config": self.get_applepay_config(payment_options,
+                                                            transaction),
             }
         }
 
@@ -459,6 +471,19 @@ class ConfigViewSet(ViewSet):
                 return False
         else:
             return True
+
+    @staticmethod
+    def _get_udf1_handling_fee(transaction, key):
+        """
+        Gets the value of 'additional_charges'/'cart_additional_charges'
+        from the udf1 field of the transaction.
+        Handles udf1 being None, empty, or a dict.
+        Returns the value if present, else returns None.
+        """
+        udf1 = getattr(transaction, 'udf1', None)
+        if not udf1 or not isinstance(udf1, dict):
+            return None
+        return udf1.get(key)
 
 
 class ClientStaticFilesAPI(APIView):

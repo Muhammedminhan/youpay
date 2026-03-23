@@ -25,7 +25,8 @@ from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     PAYMENT_REQUEST_CREATE_SESSION,
                                     PAYMENT_REQUEST_SUBMIT_SESSION,
                                     PAYMENT_DECLINED_STATUS,
-                                    SOFT_DECLINE_RANGE
+                                    SOFT_DECLINE_RANGE,
+                                    CHECKOUTPG_SAVED_CARD_ENDPOINT_V3
                                     )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
@@ -208,6 +209,37 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
 
+    def get_saved_cards_v3(self, email, currency, channel_code=None,
+                           customer_uid=None, client_code=None):
+        """
+        Method for getting saved cards
+        """
+        if self.checkoutpg_config:
+            saved_cards = []
+            try:
+                PARAMS = {'key': self.checkoutpg_config.api_key,
+                          'email': email,
+                          'currency': currency,
+                          'channel_code': channel_code,
+                          'customer_uid': customer_uid,
+                          'client_code': client_code}
+                URL = self.checkoutpg_config.domain + CHECKOUTPG_SAVED_CARD_ENDPOINT_V3
+                saved_cards = requests.get(url=URL, params=PARAMS)
+                if saved_cards:
+                    saved_cards = json.loads(saved_cards.text).get('cards')
+                    for card in saved_cards:
+                        card['key'] = CHECKOUTPG_HUB_CODE
+                return saved_cards
+
+            except Exception as e:
+                logger.error(
+                    "Unable to fetch saved card details for user {0} "
+                    "because, {1}".format(email, str(e)))
+                return None
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, None
+
     def delete_saved_card(self, card_id):
         checkoutpg_config = get_checkoutpg_config()
         if checkoutpg_config:
@@ -236,6 +268,27 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 URL = (
                         self.checkoutpg_config.domain +
                         CHECKOUTPG_SAVED_CARD_ENDPOINT_V2 + "deactivate/?" + query_params)
+                response = requests.delete(url=URL, headers=header)
+                return json.loads(response.text)
+            except Exception as e:
+                logger.error(
+                    "Unable to delete saved card {0} details because, {1}"
+                    .format(email, str(e)))
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, None
+
+    def delete_saved_card_v3(self, email, channel_code, customer_uid=None):
+        checkoutpg_config = get_checkoutpg_config()
+        if checkoutpg_config:
+            try:
+                header = self.get_payment_header()
+                query_params = urlencode(
+                    {"email": email, "channel_code": channel_code,
+                     "customer_uid": customer_uid})
+                URL = (
+                        self.checkoutpg_config.domain +
+                        CHECKOUTPG_SAVED_CARD_ENDPOINT_V3 + "deactivate/?" + query_params)
                 response = requests.delete(url=URL, headers=header)
                 return json.loads(response.text)
             except Exception as e:
@@ -589,6 +642,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             'cko-session-id': data.get('cko_session_id'),
             'channel_code': youpay_transaction.channel_code,
             'invoice_id': youpay_transaction.invoice_id,
+            'client_id': youpay_transaction.api_client.client_code,
         }
         response = requests.get(url, params=params)
         logger.info(
@@ -855,9 +909,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                 if response:
                     response_data = response.json()
-                    response_data.update({
-                        "channel_code": request_data.get("channel_code")
-                    })
+                    response_data.pop('status', None)
                     return response_data, self.SUCCESS
                 logger.error(
                     "Checkout session creation failed for transaction %s: %s",
@@ -881,10 +933,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
+            channel_code = get_channel_code(transaction_obj)
 
             payment_request_data = {
                 "session_data": request_data.get('session_data'),
-                "payment_reference": transaction_obj.additional_reference,
                 "session_id": request_data.get('session_id'),
                 "is_save_user_token": is_save_user_token,
                 "customer_name": request_data.get('customer_name'),
@@ -896,10 +948,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "invoice_id": transaction_obj.invoice_id,
                 "order_id": transaction_obj.order_id,
                 "token_type": TOKEN_TYPE_CARD,
-                "channel_code": transaction_obj.channel_code,
+                "channel_code": channel_code,
                 "client_code": transaction_obj.api_client.client_code,
                 "customer_ip_address": transaction_obj.ip,
-                "is_mada": request_data.get('is_mada', False)
+                "is_mada": request_data.get('is_mada', False),
+                "customer_uid": transaction_obj.customer_uid
             }
 
             try:
@@ -932,7 +985,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         "payment_reference": response_data.get('reference_id'),
                         "payment_method": PAYMENT_OPTION_CARD,
                         "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                        "name_on_card": request_data.get("customer_name")
+                        "name_on_card": request_data.get("customer_name"),
+                        "channel_code": channel_code
                     }
                     response_data.pop('reference_id', None)
 
@@ -980,17 +1034,19 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         is_redirect_flag = decline_category != SOFT_DECLINE_RANGE
         redirect_url = None
+        code = self.PRE_AUTH
 
         if is_redirect_flag:
             redirect_url = ('{}?transaction_id={}'.format(
             transaction_obj.failure_url, transaction_obj.transaction_id))
+            code = self.PAYMENT_FAILED
 
         response = {
             IS_REDIRECT: is_redirect_flag,
             "redirect_url": redirect_url,
             IS_SUCCESS: False,
             "message": decline_reason,
-            "code": self.PRE_AUTH
+            "code": code
         }
 
         return response

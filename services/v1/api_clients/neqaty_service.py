@@ -162,8 +162,7 @@ class NeqatyRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "selected_amount": str(int(
                         transaction_obj.redeemed_amount)),
                     "checkout_amount": str(float(
-                        transaction_obj.payable_amount)),
-                    "checkout_reference": transaction_obj.additional_reference
+                        transaction_obj.payable_amount))
                 }
             )
             neqaty_service = NeqatyServiceManager()
