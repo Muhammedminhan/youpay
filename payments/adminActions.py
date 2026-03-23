@@ -217,13 +217,12 @@ def sync_paypal_usd_value(modeladmin, request, queryset):
     try:
         synced_count = 0
         for youpay_txn in queryset:
-            if (youpay_txn.payment_gateway == PAYMENT_GATEWAY_PAYPAL and
-                    youpay_txn.payment_status == PAYMENT_STATUS_PAID):
+            if youpay_txn.payment_gateway == PAYMENT_GATEWAY_PAYPAL:
                 paypal_txn = PaypalTransaction.objects.filter(
                     youpay_transaction=youpay_txn).first()
                 if paypal_txn:
                     paypal_amount_usd = (str(paypal_txn.receivable_amount) if
-                                  paypal_txn.receivable_amount else None)
+                                         paypal_txn.receivable_amount else None)
                     raw_response = paypal_txn.raw_response
                     try:
                         paypal_exchange_rate = (
@@ -233,6 +232,7 @@ def sync_paypal_usd_value(modeladmin, request, queryset):
                         )
                     except (KeyError, IndexError, TypeError):
                         paypal_exchange_rate = None
+                        continue
                     if youpay_txn.udf1:
                         youpay_txn.udf1.get('paypal_calculations',
                                             {}).pop('paypal_exchange_rate',
