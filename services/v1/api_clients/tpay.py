@@ -4,14 +4,18 @@ from rest_framework import status
 from decimal import Decimal, ROUND_HALF_UP
 import logging
 
-from core.constants import LANGUAGE_ENGLISH
+from core.constants import LANGUAGE_ENGLISH, PAYMENT_GATEWAY_TPAY
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.v1.gateway_clients.utils import get_response_url
+from payments.constants import (PAYMENT_METHOD_TPAY_ETISALAT,
+                                PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
+                                PAYMENT_STATUS_DECLINED)
 from services.v1.views.common import (generate_script_signature,
                                       generate_checkout_signature,
-                                      YouPayTransactionCRUD)
+                                      YouPayTransactionCRUD,
+                                      verify_tpay_response_signature)
 from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
                                 ETISALAT_OPERATOR_CODE,
                                 TPAY_PRODUCT_CATALOG_NAME)
@@ -40,6 +44,15 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                                 status=status.HTTP_400_BAD_REQUEST)
 
             msisdn = request.data.get("msisdn", "")
+
+            self.update_youpay_transaction_data({
+                'transaction_id': decrypted_id,
+                'payment_gateway': PAYMENT_GATEWAY_TPAY,
+                'payment_method': PAYMENT_METHOD_TPAY_ETISALAT,
+                'payment_status': PAYMENT_STATUS_PENDING,
+                'points_redeemed_mobile_number': msisdn,
+            })
+
             product_catalog = TPAY_PRODUCT_CATALOG_NAME
             redirect_url = get_response_url(transaction_obj, False)
             language = transaction_obj.language
@@ -90,3 +103,86 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
             data = self.response_obj.get_400_message(message=str(e))
             return Response(data.get('errors'),
                             status=status.HTTP_400_BAD_REQUEST)
+
+
+class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
+    """
+    API view for verifying a TPay payment redirect.
+    """
+    response_obj = YouPayResponse()
+
+    def get(self, request):
+        try:
+            transaction_id = request.query_params.get("id")
+            decrypted_id = decrypt_string(transaction_id)
+
+            op_status_code = request.query_params.get("operationStatusCode", "")
+            tpay_transaction_id = request.query_params.get("transactionId", "")
+            amount_charged = request.query_params.get("amountCharged", "")
+            operator_code = request.query_params.get("operatorCode", "")
+            msisdn = request.query_params.get("msisdn", "")
+            order_info = request.query_params.get("orderInfo", "")
+            product_catalog = request.query_params.get("productCatalogName", "")
+            language = request.query_params.get("language", "")
+            error_message = request.query_params.get("errorMessage", "")
+            checkout_id = request.query_params.get("checkoutId", "")
+            received_signature = request.query_params.get("signature", "")
+
+            logger.info(f"Verifying TPay payment for Transaction: "
+                        f"{decrypted_id}, TPay ID: {tpay_transaction_id}")
+
+            transaction_obj = self.get_youpay_transaction_data(decrypted_id)
+            if not transaction_obj:
+                return Response(self.response_obj.get_404_message(
+                    TRANSACTION_DOESNT_EXIST), status=status.HTTP_400_BAD_REQUEST)
+
+            # Verify Signature (Security Check)
+            is_valid = verify_tpay_response_signature(
+                op_status_code, tpay_transaction_id, amount_charged, operator_code,
+                msisdn, order_info, product_catalog, language, error_message,
+                checkout_id, received_signature
+            )
+
+            if not is_valid:
+                logger.error(f"TPay Signature mismatch for transaction "
+                             f"{decrypted_id}")
+                return Response({"errors": "Invalid signature"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            payment_data_update = {
+                'transaction_id': decrypted_id,
+                'payment_reference': tpay_transaction_id,
+                'response_summary': error_message
+            }
+
+            # Check Operation Status Code (0 is success)
+            if op_status_code == "0":
+                payment_data_update[
+                    'payment_status'] = PAYMENT_STATUS_PAID
+                payment_data_update['approved'] = True
+                payment_data_update['is_payment_verified'] = True
+                self.update_youpay_transaction_data(payment_data_update)
+
+                return Response(self.response_obj.get_success_dict(
+                    code=self.response_obj.SUCCESS,
+                    success_dict={"status": "success", "transaction_id":
+                        tpay_transaction_id}
+                ), status=status.HTTP_200_OK)
+
+            else:
+                payment_data_update['payment_status'] = PAYMENT_STATUS_DECLINED
+                payment_data_update['approved'] = False
+                self.update_youpay_transaction_data(payment_data_update)
+
+                errors = error_message or (f"Payment failed with status "
+                                           f"{op_status_code}")
+                return Response({
+                    "errors": errors,
+                    "code": op_status_code
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f"Error verifying TPay payment: {str(e)}",
+                         exc_info=True)
+            return Response(self.response_obj.get_400_message(message=str(
+                e)).get('errors'), status=status.HTTP_400_BAD_REQUEST)

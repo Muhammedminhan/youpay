@@ -45,7 +45,7 @@ from .api_clients.qitaf_service import (
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .views.client_registration import (APIClientRegistrationViewSet,
                                         APIClientRegistrationView)
-from .api_clients.tpay import TPayInitializeAPIView
+from .api_clients.tpay import TPayInitializeAPIView, TPayVerifyAPIView
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
                             AdditionalChargeCalculation,
@@ -172,4 +172,5 @@ urlpatterns = [
     # TPay Endpoints
     path('tpay/initialize/', TPayInitializeAPIView.as_view(),
          name='TPayInitialize'),
+    path('tpay/verify/', TPayVerifyAPIView.as_view(), name='TPayVerify'),
 ]

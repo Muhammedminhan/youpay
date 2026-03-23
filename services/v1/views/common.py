@@ -651,3 +651,32 @@ def generate_checkout_signature(merchant_template_key, msisdn, operator_code,
     ).hexdigest()
 
     return f"{TPAY_PUBLIC_KEY}:{digest}"
+
+def verify_tpay_response_signature(op_status, tpay_id, amount, op_code, msisdn,
+                                   order_info, catalog, lang, error,
+                                   checkout_id, received_sig):
+    """
+    Reconstructs the TPay message and validates the HMAC signature.
+    """
+    message = (
+            str(op_status) +
+            str(tpay_id) +
+            str(amount) +
+            str(op_code) +
+            str(msisdn) +
+            str(order_info) +
+            str(catalog) +
+            str(lang) +
+            str(error) +
+            str(checkout_id)
+    )
+
+    digest = hmac.new(
+        TPAY_PRIVATE_KEY.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    expected_signature = f"{TPAY_PUBLIC_KEY}:{digest}"
+
+    return hmac.compare_digest(expected_signature, received_sig)
