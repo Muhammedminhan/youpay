@@ -7,7 +7,9 @@ import logging
 from core.constants import LANGUAGE_ENGLISH, PAYMENT_GATEWAY_TPAY
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string
+from core.utils import decrypt_string, get_redirect_url
+from gateways.common import _get_payment_reference_number
+from integrations.constants import TPAY_HUB_CODE
 from integrations.v1.gateway_clients.utils import get_response_url
 from payments.constants import (PAYMENT_METHOD_TPAY_ETISALAT,
                                 PAYMENT_STATUS_PENDING, PAYMENT_STATUS_PAID,
@@ -44,6 +46,8 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                                 status=status.HTTP_400_BAD_REQUEST)
 
             msisdn = request.data.get("msisdn", "")
+            order_info = _get_payment_reference_number(
+                transaction_obj.order_reference)
 
             self.update_youpay_transaction_data({
                 'transaction_id': decrypted_id,
@@ -51,13 +55,14 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                 'payment_method': PAYMENT_METHOD_TPAY_ETISALAT,
                 'payment_status': PAYMENT_STATUS_PENDING,
                 'points_redeemed_mobile_number': msisdn,
+                'payment_reference': order_info
             })
 
             product_catalog = TPAY_PRODUCT_CATALOG_NAME
-            redirect_url = get_response_url(transaction_obj, False)
+            redirect_url = get_response_url(transaction_obj,
+                is_partial_payment=False, gty_override=TPAY_HUB_CODE)
             language = transaction_obj.language
             language_code = 1 if language == LANGUAGE_ENGLISH else 2
-            order_info = transaction_obj.order_id
             operator_code = ETISALAT_OPERATOR_CODE
             product_price = format(Decimal(str(
                 transaction_obj.amount)).quantize(Decimal("0.00"),
@@ -146,40 +151,64 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
             if not is_valid:
                 logger.error(f"TPay Signature mismatch for transaction "
                              f"{decrypted_id}")
-                return Response({"errors": "Invalid signature"},
-                                status=status.HTTP_400_BAD_REQUEST)
+                redirect_url = get_redirect_url(transaction_obj.failure_url,
+                                                str(decrypted_id))
+                return Response({
+                    "status": 400,
+                    "is_redirect": True,
+                    "is_success": False,
+                    "redirect_url": redirect_url,
+                    "message": "Security verification failed.",
+                }, status=status.HTTP_400_BAD_REQUEST)
 
             payment_data_update = {
                 'transaction_id': decrypted_id,
-                'payment_reference': tpay_transaction_id,
+                'additional_reference': tpay_transaction_id,
                 'response_summary': error_message
             }
 
             # Check Operation Status Code (0 is success)
             if op_status_code == "0":
-                payment_data_update[
-                    'payment_status'] = PAYMENT_STATUS_PAID
+                redirect_url = get_redirect_url(transaction_obj.success_url,
+                                                str(decrypted_id))
+                payment_data_update['payment_status'] = PAYMENT_STATUS_PAID
                 payment_data_update['approved'] = True
                 payment_data_update['is_payment_verified'] = True
                 self.update_youpay_transaction_data(payment_data_update)
 
+                return_data = {
+                    "status": 200,
+                    "is_redirect": True,
+                    "is_success": True,
+                    "redirect_url": redirect_url,
+                    "message": "Payment Successful",
+                }
+
                 return Response(self.response_obj.get_success_dict(
                     code=self.response_obj.SUCCESS,
-                    success_dict={"status": "success", "transaction_id":
-                        tpay_transaction_id}
+                    success_dict=return_data
                 ), status=status.HTTP_200_OK)
 
             else:
-                payment_data_update['payment_status'] = PAYMENT_STATUS_DECLINED
-                payment_data_update['approved'] = False
+                redirect_url = get_redirect_url(transaction_obj.failure_url,
+                                                str(decrypted_id))
+                payment_data_update.update({
+                    'payment_status': PAYMENT_STATUS_DECLINED,
+                    'approved': False,
+                    'is_payment_verified': True
+                })
                 self.update_youpay_transaction_data(payment_data_update)
 
-                errors = error_message or (f"Payment failed with status "
-                                           f"{op_status_code}")
-                return Response({
-                    "errors": errors,
+                return_data = {
+                    "status": 400,
+                    "is_redirect": True,
+                    "is_success": False,
+                    "redirect_url": redirect_url,
+                    "message": error_message or
+                               f"Payment failed with status {op_status_code}",
                     "code": op_status_code
-                }, status=status.HTTP_400_BAD_REQUEST)
+                }
+                return Response(return_data, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             logger.error(f"Error verifying TPay payment: {str(e)}",
