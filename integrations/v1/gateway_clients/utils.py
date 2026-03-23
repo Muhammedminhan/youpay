@@ -496,7 +496,7 @@ def process_calculated_item_details(data):
     return data
 
 
-def get_response_url(transaction_obj, is_partial_payment):
+def get_response_url(transaction_obj, is_partial_payment, gty_override=None):
     """
     Method for generating response URL
     """
@@ -505,7 +505,7 @@ def get_response_url(transaction_obj, is_partial_payment):
     path = app_config.redirect_path
 
     transaction_id = transaction_obj.transaction_id
-    code = CHECKOUTPG_HUB_CODE
+    code = gty_override or CHECKOUTPG_HUB_CODE
 
     query_params = {
         "id": encrypt_string(str(transaction_id)),

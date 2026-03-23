@@ -69,3 +69,5 @@ TPAY_PRIVATE_KEY = "JTm7ZsIvzvHK8thBuzg7"
 TPAY_MERCHANT_TEMPLATE_KEY = "YOUPay"
 ETISALAT_OPERATOR_CODE = "42402"
 TPAY_PRODUCT_CATALOG_NAME = "YouGotaGift"
+TPAY_SUCCESS_CODES = ["PaymentCompletedSuccessfully",
+                      "SucceededAndFailedToContactMerchant"]
