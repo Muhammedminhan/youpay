@@ -10,7 +10,9 @@ from gateways.paypal.models import PaypalTransaction
 from core.constants import PAYMENT_GATEWAY_PAYPAL
 
 from core.response_messages import YouPayResponse
-from integrations.constants import B2CPAYBACK_HUB_CODE
+from integrations.constants import (
+    B2CPAYBACK_HUB_CODE, PAYMENT_REQUEST_TYPE_CAPTURE_ORDER
+)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.neqaty_service import (
     NeqatyServiceManager)
@@ -209,6 +211,21 @@ def sync_qitaf_earn_to_purchase_request(modeladmin, request, queryset):
                                 level=messages.ERROR)
 
 
+def get_paypal_exchange_rate(raw_response):
+    """
+    Function to get PayPal exchange rate from raw response
+    """
+    try:
+        paypal_exchange_rate = (
+            raw_response['purchase_units'][0]['payments']
+            ['captures'][0]['seller_receivable_breakdown']
+            ['exchange_rate']
+        )
+    except (KeyError, IndexError, TypeError):
+        paypal_exchange_rate = None
+    return paypal_exchange_rate
+
+
 def sync_paypal_usd_value(modeladmin, request, queryset):
     """
     Function to sync PayPal USD values from PaypalTransaction to
@@ -225,12 +242,16 @@ def sync_paypal_usd_value(modeladmin, request, queryset):
                                          paypal_txn.receivable_amount else None)
                     raw_response = paypal_txn.raw_response
                     try:
-                        paypal_exchange_rate = (
-                            raw_response['purchase_units'][0]['payments']
-                            ['captures'][0]['seller_receivable_breakdown']
-                            ['exchange_rate']
-                        )
-                    except (KeyError, IndexError, TypeError):
+                        paypal_exchange_rate = get_paypal_exchange_rate(raw_response)
+                        if not paypal_exchange_rate:
+                            raw_response = youpay_txn.youpay_to_payment_gateways_data.filter(
+                                request_type=PAYMENT_REQUEST_TYPE_CAPTURE_ORDER
+                            ).first().payment_response_data
+                            paypal_exchange_rate = get_paypal_exchange_rate(raw_response)
+                    except Exception as e:
+                        logger.error(
+                            f"Error while getting paypal exchange rate for "
+                            f"transaction {youpay_txn.transaction_id}: {str(e)}")
                         paypal_exchange_rate = None
                         continue
                     if youpay_txn.udf1:
