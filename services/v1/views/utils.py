@@ -59,16 +59,30 @@ def reformat_payment_request_data(data):
     """
     data['request_data'] = json.loads(json.dumps(data))
 
-    order = data.get('order')
+    order = data.get('order', {})
     payment = data.get('payment')
-    customer = data.get('customer')
+    customer = data.get('customer', {})
     urls = data.get('urls')
     order_history = data.get('order_history')
     order_items = data.get('order_items')
     data['redemption_partner'] = data.get('redemption_partner')
     udf1 = data.get('udf1')
-    if udf1:
+    corporate_id = customer.get('corporate_id')
+    additional_charges = order.get('additional_charges')
+    cart_additional_charges = order.get('cart_additional_charges')
+    if isinstance(udf1, dict):
+        udf1.update({
+            'corporate_id': corporate_id,
+            'additional_charges': additional_charges,
+            'cart_additional_charges': cart_additional_charges
+        })
         data['udf1'] = udf1
+    else:
+        data['udf1'] = {
+            'corporate_id': corporate_id,
+            'additional_charges': additional_charges,
+            'cart_additional_charges': cart_additional_charges
+        }
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
@@ -103,6 +117,7 @@ def reformat_payment_request_data(data):
         data['customer_email'] = customer.get('email')
         data['customer_phone'] = customer.get('phone')
         data['customer_name'] = customer.get('name')
+        data['customer_uid'] = customer.get('customer_uid')
         data['is_guest'] = customer.get('is_guest', False)
 
         data['success_url'] = urls.get('success_url')

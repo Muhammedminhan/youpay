@@ -45,7 +45,7 @@ deployment:
     default:
       name: 'nginx'
       imagePullPolicy: 'IfNotPresent'
-      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/ygg/youpay/backend-nginx:[BUILD_TAG]'
+      image: '420360167813.dkr.ecr.ap-south-1.amazonaws.com/qa/ygg/youpay/backend-nginx:[BUILD_TAG]'
       command: '["sh", "-c", "sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /ygag/nginx/conf/nginx.conf ; sh /ygag/nginx/entrypoint.sh"]'
       port: 80
       memory:
@@ -85,7 +85,7 @@ deployment:
 
   initContainers:
     app:
-      - image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/k8s/busybox:latest'
+      - image: '420360167813.dkr.ecr.ap-south-1.amazonaws.com/qa/k8s/busybox:latest'
         host: 'youpay-[JIRA_ID]-app'
         name: 'init-app'
         port: 8000

@@ -43,8 +43,9 @@ from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
+from .views.client_registration import (APIClientRegistrationViewSet,
+                                        APIClientRegistrationView)
 from .api_clients.tpay import TPayInitializeAPIView
-from .views.client_registration import APIClientRegistrationViewSet
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
                             AdditionalChargeCalculation,
@@ -56,6 +57,7 @@ router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
     path("", include(router.urls)),
+    path('registration/client/', APIClientRegistrationView.as_view()),
     path('additional-charges/', AdditionalChargeCalculation.as_view()),
     path('payment/', PaymentRequestView.as_view(), name='PaymentRequestView'),
     # For testing purpose
@@ -134,7 +136,8 @@ urlpatterns = [
     path('qitaf/verify/', QitafVerify.as_view(), name='QitafVerify'),
 
     # Neqaty Endpoints
-    path('neqaty/point-balance/', NeqatyPointBalanceAPIView.as_view()),
+    path('neqaty/point-balance/', NeqatyPointBalanceAPIView.as_view(),
+         name='NeqatyPointBalanceAPIView'),
     path('neqaty/generate-otp/', NeqatyGenerateOTPAPIView.as_view(),
          name='NeqatyGenerateOTPAPIView'),
     path('neqaty/redeem-points/', NeqatyRedeemPointsAPIView.as_view()),
