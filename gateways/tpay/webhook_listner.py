@@ -5,9 +5,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from payments.constants import PAYMENT_STATUS_DECLINED, PAYMENT_STATUS_PAID
-from services.constants import (TPAY_PUBLIC_KEY, TPAY_PRIVATE_KEY,
-                                TPAY_SUCCESS_CODES)
+from gateways.tpay.models import TPayWebhookLog
+from services.constants import (TPAY_PUBLIC_KEY, TPAY_PRIVATE_KEY)
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +29,21 @@ class TPayWebhookListener(APIView):
                             status=status.HTTP_401_UNAUTHORIZED)
 
         try:
-            if status_code in TPAY_SUCCESS_CODES:
-                handle_tpay_payment_success(request_data)
-            else:
-                handle_tpay_payment_failure(request_data)
+            TPayWebhookLog.objects.create(
+                action=request_data.get('action'),
+                payment_transaction_status_code=status_code,
+                transaction_id=request_data.get('transactionId'),
+                msisdn=request_data.get('msisdn'),
+                amount=request_data.get('amount'),
+                currency_code=request_data.get('currencyCode'),
+                payment_date=request_data.get('paymentDate'),
+                product_catalog_name=request_data.get('productCatalogName'),
+                product_id=request_data.get('productId'),
+                order_info=order_info,
+                payment_provider_code=request_data.get('paymentProviderCode'),
+                digest=request_data.get('digest'),
+                payload=request_data
+            )
 
             return Response(
                 {"message": "Webhook processed", "status": True},
@@ -72,52 +82,3 @@ class TPayWebhookListener(APIView):
 
         expected_signature = f"{TPAY_PUBLIC_KEY}:{digest}"
         return hmac.compare_digest(expected_signature, data.get('digest', ''))
-
-
-def handle_tpay_payment_success(data):
-    """
-    Logic for successful TPAY payment
-    """
-    from services.v1.views.common import YouPayTransactionCRUD
-    from tabbypgclient.utils import wait_redis_lock
-
-    order_info = data.get('orderInfo')
-    lock_name = f'lock:tpay_webhook:order_{order_info}'
-
-    with (wait_redis_lock(lock_name=lock_name)):
-        crud = YouPayTransactionCRUD()
-        transaction_obj = (
-            crud.get_youpay_transaction_data_with_payment_reference(
-                order_info))
-
-        if transaction_obj and not transaction_obj.is_payment_verified:
-            transaction_obj.payment_status = PAYMENT_STATUS_PAID
-            transaction_obj.additional_reference = data.get('transactionId')
-            transaction_obj.is_payment_verified = True
-            transaction_obj.approved = True
-            transaction_obj.response_summary = data.get(
-                'paymentTransactionStatusCode')
-            transaction_obj.save()
-            logger.info(
-                f"TPAY Transaction {order_info} marked as PAID via Webhook")
-
-
-def handle_tpay_payment_failure(data):
-    """
-    Logic for failed TPAY payment
-    """
-    from services.v1.views.common import YouPayTransactionCRUD
-    order_info = data.get('orderInfo')
-
-    crud = YouPayTransactionCRUD()
-    transaction_obj = (
-        crud.get_youpay_transaction_data_with_payment_reference(order_info))
-
-    if transaction_obj and not transaction_obj.is_payment_verified:
-        transaction_obj.payment_status = PAYMENT_STATUS_DECLINED
-        transaction_obj.response_summary = data.get(
-            'paymentTransactionStatusCode')
-        transaction_obj.approved = False
-        transaction_obj.save()
-        logger.info(f"TPAY Transaction {order_info} marked as DECLINED via "
-                    f"Webhook")

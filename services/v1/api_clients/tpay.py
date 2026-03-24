@@ -9,6 +9,7 @@ from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string, get_redirect_url
 from gateways.common import _get_payment_reference_number
+from gateways.tpay.models import TPayTransaction
 from integrations.constants import TPAY_HUB_CODE
 from integrations.v1.gateway_clients.utils import get_response_url
 from payments.constants import (PAYMENT_METHOD_TPAY_ETISALAT,
@@ -20,7 +21,8 @@ from services.v1.views.common import (generate_script_signature,
                                       verify_tpay_response_signature)
 from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
                                 ETISALAT_OPERATOR_CODE,
-                                TPAY_PRODUCT_CATALOG_NAME)
+                                TPAY_PRODUCT_CATALOG_NAME,
+                                PAYMENT_STATUS_INITIALIZED)
 
 logger = logging.getLogger(__name__)
 
@@ -48,22 +50,34 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
             msisdn = request.data.get("msisdn", "")
             order_info = _get_payment_reference_number(
                 transaction_obj.order_reference)
+            operator_code = ETISALAT_OPERATOR_CODE
+            product_catalog = TPAY_PRODUCT_CATALOG_NAME
+
+            TPayTransaction.objects.update_or_create(
+                payment_reference=order_info,
+                defaults={
+                    'youpay_transaction': transaction_obj,
+                    'msisdn': msisdn,
+                    'status': PAYMENT_STATUS_INITIALIZED,
+                    'amount': transaction_obj.amount,
+                    'currency': transaction_obj.currency,
+                    'operator_code': operator_code,
+                    'product_catalog': product_catalog
+                }
+            )
 
             self.update_youpay_transaction_data({
                 'transaction_id': decrypted_id,
                 'payment_gateway': PAYMENT_GATEWAY_TPAY,
                 'payment_method': PAYMENT_METHOD_TPAY_ETISALAT,
                 'payment_status': PAYMENT_STATUS_PENDING,
-                'points_redeemed_mobile_number': msisdn,
                 'payment_reference': order_info
             })
 
-            product_catalog = TPAY_PRODUCT_CATALOG_NAME
             redirect_url = get_response_url(transaction_obj,
                 is_partial_payment=False, gty_override=TPAY_HUB_CODE)
             language = transaction_obj.language
             language_code = 1 if language == LANGUAGE_ENGLISH else 2
-            operator_code = ETISALAT_OPERATOR_CODE
             product_price = format(Decimal(str(
                 transaction_obj.amount)).quantize(Decimal("0.00"),
                 rounding=ROUND_HALF_UP), "f"
@@ -148,6 +162,14 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                 checkout_id, received_signature
             )
 
+            tpay_tx = TPayTransaction.objects.filter(
+                payment_reference=order_info).first()
+            if tpay_tx:
+                tpay_tx.tpay_transaction_id = tpay_transaction_id
+                tpay_tx.status = op_status_code
+                tpay_tx.raw_response = request.query_params
+                tpay_tx.save()
+
             if not is_valid:
                 logger.error(f"TPay Signature mismatch for transaction "
                              f"{decrypted_id}")
@@ -163,7 +185,6 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
 
             payment_data_update = {
                 'transaction_id': decrypted_id,
-                'additional_reference': tpay_transaction_id,
                 'response_summary': error_message
             }
 
@@ -200,7 +221,7 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                 self.update_youpay_transaction_data(payment_data_update)
 
                 return_data = {
-                    "status": 400,
+                    "status": 200,
                     "is_redirect": True,
                     "is_success": False,
                     "redirect_url": redirect_url,
@@ -208,7 +229,7 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                                f"Payment failed with status {op_status_code}",
                     "code": op_status_code
                 }
-                return Response(return_data, status=status.HTTP_400_BAD_REQUEST)
+                return Response(return_data, status=status.HTTP_200_OK)
 
         except Exception as e:
             logger.error(f"Error verifying TPay payment: {str(e)}",

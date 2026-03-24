@@ -514,7 +514,7 @@ def add_payment_gateway_info_in_url(**kwargs):
 
         frontend_domain = app_config.front_end_domain
         path = app_config.redirect_path
-        params = params + "&gty=" + code
+        params = params + "&gateway=" + code
 
         if platform in [PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID]:
             params = params + "&platform=app"
