@@ -7,7 +7,8 @@ from django.dispatch import receiver
 
 from core.models import AbstractUserBase, AbstractDateTime, CustomerProfile
 from payments.constants import PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED
-from services.constants import TPAY_SUCCESS_CODES, PAYMENT_STATUS_INITIALIZED
+from services.constants import (TPAY_SUCCESS_CODES, PAYMENT_STATUS_INITIALIZED,
+                                TPAY_STATUS_LABELS)
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
@@ -44,13 +45,15 @@ def update_tpay_transaction_from_log(sender, instance, created, **kwargs):
             tpay_tx = TPayTransaction(payment_reference=instance.order_info)
 
         tpay_tx.tpay_transaction_id = instance.transaction_id
-        tpay_tx.status = instance.payment_transaction_status_code
+
+        raw_status = instance.payment_transaction_status_code
+        tpay_tx.status = TPAY_STATUS_LABELS.get(raw_status, raw_status)
+
         tpay_tx.amount = Decimal(instance.amount) if instance.amount else 0
         tpay_tx.currency = instance.currency_code
         tpay_tx.msisdn = instance.msisdn
         tpay_tx.operator_code = instance.payment_provider_code
         tpay_tx.product_catalog = instance.product_catalog_name
-        tpay_tx.raw_response = instance.payload
         tpay_tx.payment_date = instance.payment_date
         tpay_tx.save()
     except Exception as e:

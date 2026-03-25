@@ -76,3 +76,14 @@ TPAY_SUCCESS_CODES = [
     "SucceededAndFailedToContactMerchant"
 ]
 PAYMENT_STATUS_INITIALIZED = 'initialized'
+TPAY_STATUS_LABELS = {
+    "1": "PIN Send Failed",
+    "2": "User Cancelled",
+    "4": "Insufficient Funds",
+    "5": "Limit Exceeded",
+    "11": "Invalid PIN",
+    "16": "PIN Expired",
+    "20": "Invalid Password",
+    "21": "Transaction Pending",
+    "51": "Invalid Digest (Security Error)",
+}

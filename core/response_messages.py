@@ -19,6 +19,7 @@ class YouPayResponse(object):
     10XXX - for AnB
     11XXX - for b2c
     12xxx - for happy credits
+    19xxx - for tpay
     """
 
     """Youpay related begins"""
@@ -193,6 +194,17 @@ class YouPayResponse(object):
     PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED = 18012
     """PayPal related ends"""
 
+    """TPay related begins"""
+    TPAY_CONNECTION_ERROR = 19001
+    TPAY_PAYMENT_SUCCESS = 19002
+    TPAY_INSUFFICIENT_FUNDS = 19003
+    TPAY_LIMIT_EXCEEDED = 19004
+    TPAY_INVALID_PIN_OR_PASSWORD = 19005
+    TPAY_EXPIRED_PIN = 19006
+    TPAY_USER_CANCELLED = 19007
+    TPAY_SIGNATURE_MISMATCH = 19008
+    """TPay related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
@@ -355,6 +367,19 @@ class YouPayResponse(object):
             self.PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED: (
                 "The card linked to your PayPal account is from an unsupported"
                 " country. -(البطاقة المرتبطة بحسابك في باي بال صادرة من دولة غير مدعومة.)"),
+
+            self.TPAY_CONNECTION_ERROR: "TPay service is currently "
+                                        "unavailable. Please try again later.",
+            self.TPAY_PAYMENT_SUCCESS: "Payment completed successfully.",
+            self.TPAY_INSUFFICIENT_FUNDS: "You do not have enough credit to "
+                                          "complete this purchase.",
+            self.TPAY_LIMIT_EXCEEDED: "You have exceeded your daily or "
+                                      "monthly spending limit.",
+            self.TPAY_INVALID_PIN_OR_PASSWORD: "The PIN or Password entered "
+                                               "is incorrect.",
+            self.TPAY_EXPIRED_PIN: "The verification PIN has expired. Please try again.",
+            self.TPAY_USER_CANCELLED: "Transaction was cancelled by the user.",
+            self.TPAY_SIGNATURE_MISMATCH: "TPay Security verification failed.",
         })
 
     def get_400_message(self, message):

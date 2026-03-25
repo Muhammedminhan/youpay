@@ -44,7 +44,8 @@ from payments.serializers.youpay_payments import (
 )
 from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
                                 SOFT_DECLINE_RESPONSE_CODE_STARTSWITH,
-                                TPAY_PUBLIC_KEY, TPAY_PRIVATE_KEY)
+                                TPAY_PUBLIC_KEY, TPAY_PRIVATE_KEY,
+                                TPAY_SUCCESS_CODES)
 from services.models import APIClient, OfferDetails
 
 logger = logging.getLogger(__name__)
@@ -680,3 +681,35 @@ def verify_tpay_response_signature(op_status, tpay_id, amount, op_code, msisdn,
     expected_signature = f"{TPAY_PUBLIC_KEY}:{digest}"
 
     return hmac.compare_digest(expected_signature, received_sig)
+
+def get_custom_error_code(self, op_status):
+    """
+    Maps TPay status codes/titles to YouPay 19XXX codes.
+    Returns (custom_code, is_success)
+    """
+    if op_status in TPAY_SUCCESS_CODES:
+        return self.response_obj.TPAY_PAYMENT_SUCCESS, True
+
+    user_error_map = {
+        "4": self.response_obj.TPAY_INSUFFICIENT_FUNDS,
+        "NotEnoughCredit": self.response_obj.TPAY_INSUFFICIENT_FUNDS,
+
+        "5": self.response_obj.TPAY_LIMIT_EXCEEDED,
+        "LimitExceeded": self.response_obj.TPAY_LIMIT_EXCEEDED,
+
+        "11": self.response_obj.TPAY_INVALID_PIN_OR_PASSWORD,
+        "InvalidPIN": self.response_obj.TPAY_INVALID_PIN_OR_PASSWORD,
+        "20": self.response_obj.TPAY_INVALID_PIN_OR_PASSWORD,
+        "InvalidPassword": self.response_obj.TPAY_INVALID_PIN_OR_PASSWORD,
+
+        "16": self.response_obj.TPAY_EXPIRED_PIN,
+        "ExpiredPinCode": self.response_obj.TPAY_EXPIRED_PIN,
+
+        "2": self.response_obj.TPAY_USER_CANCELLED,
+        "TransactionCancelledByUser": self.response_obj.TPAY_USER_CANCELLED,
+    }
+
+    if op_status in user_error_map:
+        return user_error_map[op_status], False
+
+    return self.response_obj.TPAY_CONNECTION_ERROR, False

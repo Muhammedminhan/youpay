@@ -22,7 +22,8 @@ from services.v1.views.common import (generate_script_signature,
 from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
                                 ETISALAT_OPERATOR_CODE,
                                 TPAY_PRODUCT_CATALOG_NAME,
-                                PAYMENT_STATUS_INITIALIZED)
+                                PAYMENT_STATUS_INITIALIZED,
+                                TPAY_STATUS_LABELS)
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +136,9 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
             transaction_id = request.query_params.get("id")
             decrypted_id = decrypt_string(transaction_id)
 
+            logger.info(f"TPay Verify Redirect received for {decrypted_id} "
+                        f"with params: {request.query_params}")
+
             op_status_code = request.query_params.get("operationStatusCode", "")
             tpay_transaction_id = request.query_params.get("transactionId", "")
             amount_charged = request.query_params.get("amountCharged", "")
@@ -155,6 +159,10 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                 return Response(self.response_obj.get_404_message(
                     TRANSACTION_DOESNT_EXIST), status=status.HTTP_400_BAD_REQUEST)
 
+            if msisdn and len(msisdn) == 9 and msisdn.startswith('5'):
+                msisdn = f"971{msisdn}"
+                logger.info(f"Normalized MSISDN for Signature: {msisdn}")
+
             # Verify Signature (Security Check)
             is_valid = verify_tpay_response_signature(
                 op_status_code, tpay_transaction_id, amount_charged, operator_code,
@@ -165,10 +173,15 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
             tpay_tx = TPayTransaction.objects.filter(
                 payment_reference=order_info).first()
             if tpay_tx:
-                tpay_tx.tpay_transaction_id = tpay_transaction_id
-                tpay_tx.status = op_status_code
+                tpay_tx.tpay_transaction_id = tpay_transaction_id if (
+                    tpay_transaction_id) else None
+                tpay_tx.status = TPAY_STATUS_LABELS.get(op_status_code, op_status_code)
                 tpay_tx.raw_response = request.query_params
                 tpay_tx.save()
+
+            custom_code, is_success = self.get_custom_error_code(
+                op_status_code)
+            custom_message = self.response_obj.MESSAGE.get(custom_code)
 
             if not is_valid:
                 logger.error(f"TPay Signature mismatch for transaction "
@@ -180,7 +193,8 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                     "is_redirect": True,
                     "is_success": False,
                     "redirect_url": redirect_url,
-                    "message": "Security verification failed.",
+                    "message": custom_message,
+                    "code": custom_code
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             payment_data_update = {
@@ -188,8 +202,7 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                 'response_summary': error_message
             }
 
-            # Check Operation Status Code (0 is success)
-            if op_status_code == "0":
+            if is_success:
                 redirect_url = get_redirect_url(transaction_obj.success_url,
                                                 str(decrypted_id))
                 payment_data_update['payment_status'] = PAYMENT_STATUS_PAID
@@ -202,7 +215,7 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                     "is_redirect": True,
                     "is_success": True,
                     "redirect_url": redirect_url,
-                    "message": "Payment Successful",
+                    "message": custom_message,
                 }
 
                 return Response(self.response_obj.get_success_dict(
@@ -222,12 +235,11 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
 
                 return_data = {
                     "status": 200,
+                    "code": custom_code,
                     "is_redirect": True,
                     "is_success": False,
                     "redirect_url": redirect_url,
-                    "message": error_message or
-                               f"Payment failed with status {op_status_code}",
-                    "code": op_status_code
+                    "message": custom_message
                 }
                 return Response(return_data, status=status.HTTP_200_OK)
 
