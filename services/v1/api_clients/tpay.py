@@ -18,7 +18,8 @@ from payments.constants import (PAYMENT_METHOD_TPAY_ETISALAT,
 from services.v1.views.common import (generate_script_signature,
                                       generate_checkout_signature,
                                       YouPayTransactionCRUD,
-                                      verify_tpay_response_signature)
+                                      verify_tpay_response_signature,
+                                      get_custom_error_code)
 from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
                                 ETISALAT_OPERATOR_CODE,
                                 TPAY_PRODUCT_CATALOG_NAME,
@@ -159,10 +160,6 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                 return Response(self.response_obj.get_404_message(
                     TRANSACTION_DOESNT_EXIST), status=status.HTTP_400_BAD_REQUEST)
 
-            if msisdn and len(msisdn) == 9 and msisdn.startswith('5'):
-                msisdn = f"971{msisdn}"
-                logger.info(f"Normalized MSISDN for Signature: {msisdn}")
-
             # Verify Signature (Security Check)
             is_valid = verify_tpay_response_signature(
                 op_status_code, tpay_transaction_id, amount_charged, operator_code,
@@ -179,8 +176,7 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                 tpay_tx.raw_response = request.query_params
                 tpay_tx.save()
 
-            custom_code, is_success = self.get_custom_error_code(
-                op_status_code)
+            custom_code, is_success = get_custom_error_code(op_status_code)
             custom_message = self.response_obj.MESSAGE.get(custom_code)
 
             if not is_valid:
