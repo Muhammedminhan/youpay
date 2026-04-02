@@ -8,7 +8,8 @@ from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
                             PAYBACK_ACTION_EARN, FORMAT_PARTIAL_PAYMENTS,
                             BETA_USER_ENABLED, BETA_USER_ONLY_EARN,
                             BETA_USER_ONLY_BURN, REWARDS_ORDER_PREFIXES,
-                            REWARDS_ORDER_TAGS, REWARDS_TOP_UP_ORDER_PREFIX)
+                            REWARDS_ORDER_TAGS, REWARDS_TOP_UP_ORDER_PREFIX,
+                            GCEC_CLIENT_CODE)
 from core.core_serializers import PaymentConfigurationSerializer
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
@@ -656,3 +657,48 @@ def is_rewards_order_reference(order_reference):
     return (any(order_reference.startswith(prefix) for
                     prefix in REWARDS_ORDER_PREFIXES) and any(
                 tag in order_reference for tag in REWARDS_ORDER_TAGS))
+
+
+def process_total_quantity_eligibility(transaction, client_code,
+                                       response_data):
+    """
+    Processes total quantity eligibility for a transaction.
+
+    Args:
+        transaction: The transaction object containing udf1 and transaction_id
+        client_code: The client code to check eligibility for
+        response_data: The response dictionary to update with total_quantity
+
+    Returns:
+        response_data: The updated response dictionary with total_quantity if eligible
+    """
+    if not is_total_quantity_eligible(client_code):
+        return response_data
+
+    udf1 = getattr(transaction, "udf1", None)
+    if not udf1 or not isinstance(udf1, dict):
+        return response_data
+
+    order_quantity = udf1.get("order_quantity")
+    if order_quantity is not None:
+        logger.info("Total quantity eligibility is true for "
+                    "transaction {} and total quantity is {}"
+                    .format(transaction.transaction_id, order_quantity))
+        response_data["data"]["total_quantity"] = order_quantity
+
+    return response_data
+
+
+def is_total_quantity_eligible(client_code):
+    """
+    Checks if the total quantity eligibility is applicable for the given
+    client code.
+
+    Args:
+        client_code: The client code of the API Client.
+
+    Returns:
+        bool: True if the client code matches GCEC_CLIENT_CODE,
+        False otherwise.
+    """
+    return client_code == GCEC_CLIENT_CODE

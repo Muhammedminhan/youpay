@@ -48,7 +48,8 @@ from services.v1.views.utils import (get_announcements,
                                      get_session_id_from_header,
                                      get_country_for_configuration,
                                      get_client_for_configuration,
-                                     get_payment_methods
+                                     get_payment_methods,
+                                     process_total_quantity_eligibility
                                      )
 
 logger = logging.getLogger(__name__)
@@ -196,6 +197,9 @@ class ConfigViewSet(ViewSet):
                                                             transaction),
             }
         }
+        response_data = process_total_quantity_eligibility(transaction,
+                                                           client.client_code,
+                                                           response_data)
 
         return response_data
 
