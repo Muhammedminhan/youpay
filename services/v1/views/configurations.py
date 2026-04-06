@@ -142,6 +142,8 @@ class ConfigViewSet(ViewSet):
             'mobile_logo': get_mobile_logo_url(client),
             'logo': get_logo_url(client)
         }
+        display_total_quantity = (
+            transaction.api_client.display_total_quantity_in_breakdown)
 
         response_data = {
             "data": {
@@ -195,10 +197,11 @@ class ConfigViewSet(ViewSet):
                 **payment_config_data,
                 "applepay_config": self.get_applepay_config(payment_options,
                                                             transaction),
+                "display_total_quantity": display_total_quantity
             }
         }
         response_data = process_total_quantity_eligibility(transaction,
-                                                           client.client_code,
+                                                           display_total_quantity,
                                                            response_data)
 
         return response_data
