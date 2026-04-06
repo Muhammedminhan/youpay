@@ -658,24 +658,18 @@ def is_rewards_order_reference(order_reference):
                 tag in order_reference for tag in REWARDS_ORDER_TAGS))
 
 
-def process_total_quantity_eligibility(transaction, display_total_quantity,
-                                       response_data):
+def process_total_quantity_eligibility(transaction, response_data):
     """
     Processes total quantity eligibility for a transaction.
 
     Args:
         transaction: The transaction object containing udf1 and transaction_id
-        display_total_quantity: Flag indicating whether to process and
-        display the total quantity
         response_data: The response dictionary to update with total_quantity
 
     Returns:
         response_data: The updated response dictionary with total_quantity
         if eligible
     """
-    if not display_total_quantity:
-        return response_data
-
     udf1 = getattr(transaction, "udf1", None)
     if not udf1 or not isinstance(udf1, dict):
         return response_data

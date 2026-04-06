@@ -200,9 +200,9 @@ class ConfigViewSet(ViewSet):
                 "display_total_quantity": display_total_quantity
             }
         }
-        response_data = process_total_quantity_eligibility(transaction,
-                                                           display_total_quantity,
-                                                           response_data)
+        if display_total_quantity:
+            response_data = process_total_quantity_eligibility(transaction,
+                                                               response_data)
 
         return response_data
 
