@@ -48,7 +48,8 @@ from services.v1.views.utils import (get_announcements,
                                      get_session_id_from_header,
                                      get_country_for_configuration,
                                      get_client_for_configuration,
-                                     get_payment_methods
+                                     get_payment_methods,
+                                     process_total_quantity_eligibility
                                      )
 
 logger = logging.getLogger(__name__)
@@ -141,6 +142,8 @@ class ConfigViewSet(ViewSet):
             'mobile_logo': get_mobile_logo_url(client),
             'logo': get_logo_url(client)
         }
+        display_total_quantity = (
+            transaction.api_client.display_total_quantity_in_breakdown)
 
         response_data = {
             "data": {
@@ -194,8 +197,12 @@ class ConfigViewSet(ViewSet):
                 **payment_config_data,
                 "applepay_config": self.get_applepay_config(payment_options,
                                                             transaction),
+                "display_total_quantity": display_total_quantity
             }
         }
+        if display_total_quantity:
+            response_data = process_total_quantity_eligibility(transaction,
+                                                               response_data)
 
         return response_data
 
