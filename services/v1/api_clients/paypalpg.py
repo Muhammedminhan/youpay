@@ -94,7 +94,7 @@ class PayPalChargeAPIView(APIView, YouPayTransactionCRUD,
                         f" while updating paypal calculations for transaction"
                         f" {transaction.transaction_id}: {str(e)}")
                     udf1 = {}
-            udf1["paypal_calculations"] = json.loads(
+            udf1["additional_fee_calculations"] = json.loads(
                 json.dumps(response_data, cls=DjangoJSONEncoder)
             )
             transaction.udf1 = udf1

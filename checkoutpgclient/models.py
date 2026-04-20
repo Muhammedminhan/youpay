@@ -280,7 +280,7 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                 data_to_update["udf1"] = existing_udf1
             # Update udf1, additional fee details if payment_scheme is Amex
             if (instance.payment_scheme == PAYMENT_SCHEME_AMERICAN_EXPRESS
-                    and "amex_fee_config" not in (
+                    and "additional_fee_calculations" not in (
                             data_to_update.get("udf1") or getattr(
                         transaction_obj, "udf1", {}) or {})
                     and instance.status == PAYMENT_STATUS_PAID
@@ -306,7 +306,7 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                 existing_udf1 = data_to_update.get("udf1") or getattr(
                     transaction_obj, "udf1", {}) or {}
                 existing_udf1.update({
-                    'amex_fee_config': additional_fee_config
+                    'additional_fee_calculations': additional_fee_config
                 })
                 data_to_update["udf1"] = existing_udf1
             return data_to_update

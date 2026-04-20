@@ -724,7 +724,10 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
             "additional_fee": str(additional_fee),
             "additional_fee_vat": str(additional_fee_vat),
             "combined_vat_amount": str(total_vat),
-            "total_amount": str(total_amount)
+            "total_amount": str(total_amount),
+            "processing_fee_percentage": str(additional_fee_obj.percentage),
+            "processing_fee_vat_percentage": str(
+                additional_fee_obj.VAT_percentage)
         }
         logger.info(
             "amex_additional_fee_config for transaction {} is {}".format(
