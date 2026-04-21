@@ -4,14 +4,21 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from payments.constants import MODEL_NAME_TRANSACTIONDATA, CARD_BIN_MAX_LENGTH
+from payments.constants import (MODEL_NAME_TRANSACTIONDATA,
+                                CARD_BIN_MAX_LENGTH,
+                                PAYMENT_SCHEME_AMERICAN_EXPRESS)
 from payments.tasks import (common_update_financial_action_charges)
-from services.v1.views.utils import is_rewards_order_reference
+from services.v1.views.utils import (is_rewards_order_reference,
+                                    get_checkout_amex_additional_fee)
 from .constants import (PAYMENT_STATUS_CHOICES, PAYMENT_STATUS_NONE,
                         PAYMENT_METHOD_CHOICES,
                         PAYMENT_METHOD_CARD, PAYMENT_SCHEME_CHOICES,
                         PAYMENT_SCHEME_NONE,
-                        ALLOWED_STATUS_FOR_YOUPAY_WEBHOOK_UPDATE)
+                        ALLOWED_STATUS_FOR_YOUPAY_WEBHOOK_UPDATE,
+                        PAYMENT_STATUS_PAID)
+from core.utils import get_gateway_additional_fee
+from integrations.constants import (ADDITIONAL_AMEX_CARD_FEE,
+                                    CHECKOUTPG_HUB_CODE)
 
 logger = logging.getLogger(__name__)
 
@@ -269,6 +276,37 @@ def prepare_youpay_transaction_update_data(instance, payment_reference):
                     'auth_code': instance.auth_code,
                     'is_notification': instance.is_notification,
                     'idempotency_key': instance.idempotency_key
+                })
+                data_to_update["udf1"] = existing_udf1
+            # Update udf1, additional fee details if payment_scheme is Amex
+            if (instance.payment_scheme == PAYMENT_SCHEME_AMERICAN_EXPRESS
+                    and "additional_fee_calculations" not in (
+                            data_to_update.get("udf1") or getattr(
+                        transaction_obj, "udf1", {}) or {})
+                    and instance.status == PAYMENT_STATUS_PAID
+            ):
+                logger.info(
+                    "Payment scheme is Amex, calculating additional fee for"
+                    " reference {}".format(instance.payment_reference))
+                additional_fee_obj = get_gateway_additional_fee(
+                    transaction_obj.currency, ADDITIONAL_AMEX_CARD_FEE,
+                    CHECKOUTPG_HUB_CODE, "checkout_card")
+                additional_fee_config = (
+                    get_checkout_amex_additional_fee(
+                        additional_fee_obj, transaction_obj))
+                data_to_update[
+                    "additional_total_amount"] = additional_fee_config.get(
+                    "total_amount")
+                data_to_update[
+                    "additional_processing_fee"] = additional_fee_config.get(
+                    "additional_fee")
+                data_to_update[
+                    "additional_processing_fee_vat"] = additional_fee_config.get(
+                    "additional_fee_vat")
+                existing_udf1 = data_to_update.get("udf1") or getattr(
+                    transaction_obj, "udf1", {}) or {}
+                existing_udf1.update({
+                    'additional_fee_calculations': additional_fee_config
                 })
                 data_to_update["udf1"] = existing_udf1
             return data_to_update

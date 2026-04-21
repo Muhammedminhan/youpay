@@ -11,7 +11,7 @@ from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
 from core.messages import IS_REDIRECT, IS_SUCCESS
 from core.utils import (get_checkoutpg_config,
                         process_checkoutpg_response_verification,
-                        get_channel_code)
+                        get_channel_code, get_gateway_additional_fee)
 from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
@@ -26,7 +26,8 @@ from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     PAYMENT_REQUEST_SUBMIT_SESSION,
                                     PAYMENT_DECLINED_STATUS,
                                     SOFT_DECLINE_RANGE,
-                                    CHECKOUTPG_SAVED_CARD_ENDPOINT_V3
+                                    CHECKOUTPG_SAVED_CARD_ENDPOINT_V3,
+                                    ADDITIONAL_AMEX_CARD_FEE
                                     )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
@@ -51,6 +52,7 @@ from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from .utils import get_response_url
 from services.constants import TOKEN_TYPE_CARD
+from services.v1.views.utils import get_checkout_amex_additional_fee
 
 logger = logging.getLogger(__name__)
 
@@ -302,7 +304,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
     def saved_card_payment(self, data):
 
         transaction_data = data.get('transaction_data')
-
+        request_data = data.get('request_data')
         self.transaction_id = transaction_data.get('transaction_id')
         self.payment_method = PAYMENT_METHOD_SAVED_CARD
         self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
@@ -326,19 +328,30 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                 if checkoutpg_config:
                     payment_data = self.get_checkout_payment_data(data)
+                    transaction_obj = self.get_youpay_transaction_data(
+                        self.transaction_id)
+                    if request_data.get("is_amex_card", False):
+                        additional_fee_obj = get_gateway_additional_fee(
+                            transaction_obj.currency,
+                            ADDITIONAL_AMEX_CARD_FEE,
+                            CHECKOUTPG_HUB_CODE, "checkout_card")
+                        additional_fee_config = (
+                            get_checkout_amex_additional_fee(
+                                additional_fee_obj, transaction_obj))
+                        payment_data["amount"] = additional_fee_config.get(
+                            'total_amount', 0)
                     self.channel_code = payment_data.get('channel_code')
                     log_request_data = copy.deepcopy(payment_data)
                     log_request_data["cvv"] = "***"
                     logger.info(
-                        "Youpay sending savedcard payment data is {}".format(
-                            log_request_data))
+                        "Youpay sending savedcard payment data for "
+                        "transaction id {} is {}".format(
+                            transaction_obj.transaction_id, log_request_data))
                     payment_data_to_send = json.dumps(payment_data)
                     url = (self.checkoutpg_config.domain +
                            CHECKOUTPG_PAYMENT_ENDPOINT)
                     headers = self.get_payment_header()
 
-                    transaction_obj = self.get_youpay_transaction_data(
-                        self.transaction_id)
 
                     response = requests.post(url, data=payment_data_to_send,
                                              headers=headers)
@@ -931,6 +944,19 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         Method for submitting a Checkout payment session
         """
+        amount = str(transaction_obj.amount)
+        is_amex_card = request_data.get('is_amex_card', False)
+        if is_amex_card:
+            logger.info(
+                "Card payment with Amex card, calculating additional fee for "
+                "transaction {}".format(transaction_obj.transaction_id))
+            additional_fee_obj = get_gateway_additional_fee(
+                transaction_obj.currency, ADDITIONAL_AMEX_CARD_FEE,
+                CHECKOUTPG_HUB_CODE, "checkout_card")
+            additional_fee_config = (
+                get_checkout_amex_additional_fee(
+                    additional_fee_obj, transaction_obj))
+            amount = additional_fee_config.get('total_amount', amount)
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
             channel_code = get_channel_code(transaction_obj)
@@ -940,7 +966,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "session_id": request_data.get('session_id'),
                 "is_save_user_token": is_save_user_token,
                 "customer_name": request_data.get('customer_name'),
-                "amount": str(transaction_obj.amount),
+                "amount": amount,
                 "order_reference": transaction_obj.order_reference,
                 "currency": transaction_obj.currency,
                 "customer_email": transaction_obj.customer_email,
@@ -954,7 +980,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "is_mada": request_data.get('is_mada', False),
                 "customer_uid": transaction_obj.customer_uid
             }
-
+            logger.info(
+                "Card payment submit session request data for transaction {} "
+                "is {}".format(
+                    transaction_obj.transaction_id, payment_request_data))
             try:
                 url = self.checkoutpg_config.domain + SUBMIT_SESSION_ENDPOINT
                 headers = self.get_payment_header()

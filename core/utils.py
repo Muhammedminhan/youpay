@@ -268,7 +268,8 @@ def get_gateway_additional_fee(currency, charge_type, payment_gateway,
     except AdditionalChargeConfiguration.DoesNotExist:
         logger.error(
             f"AdditionalChargeConfiguration not found for charge_type: "
-            f"{charge_type}, currency: {currency}")
+            f"{charge_type}, currency: {currency} and payment config:"
+            f" {payment_config}")
     return additional_fee
 
 

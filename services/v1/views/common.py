@@ -34,7 +34,8 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                 PAYMENT_METHOD_ANB,
                                 PAYMENT_METHOD_ANB_AND_CARD,
-                                PAYMENT_METHOD_PAYPAL)
+                                PAYMENT_METHOD_PAYPAL,
+                                PAYMENT_SCHEME_AMERICAN_EXPRESS)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -219,7 +220,19 @@ class YouPayTransactionCRUD(object):
                 payment_gateway=data_dict['payment_gateway'],
                 currency=data_dict['currency'],
                 transaction_id=transaction_id)
-
+        if (data_dict['payment_scheme'] == PAYMENT_SCHEME_AMERICAN_EXPRESS
+                and data_dict['payment_status'] == PAYMENT_STATUS_PAID):
+            # updating additional fee details in case of amex transactions
+            additional_total_amount = data.get(
+                'additional_total_amount', None)
+            additional_processing_fee = data.get(
+                'additional_processing_fee', None)
+            additional_processing_fee_vat = data.get(
+                'additional_processing_fee_vat', None)
+            data_dict['additional_total_amount'] = additional_total_amount
+            data_dict['additional_processing_fee'] = additional_processing_fee
+            data_dict['additional_processing_fee_vat'] = (
+                additional_processing_fee_vat)
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
