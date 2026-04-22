@@ -339,7 +339,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                             get_checkout_amex_additional_fee(
                                 additional_fee_obj, transaction_obj))
                         payment_data["amount"] = additional_fee_config.get(
-                            'total_amount', 0)
+                            'total_amount', payment_data.get("amount", "0"))
                     self.channel_code = payment_data.get('channel_code')
                     log_request_data = copy.deepcopy(payment_data)
                     log_request_data["cvv"] = "***"
@@ -980,10 +980,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "is_mada": request_data.get('is_mada', False),
                 "customer_uid": transaction_obj.customer_uid
             }
-            logger.info(
-                "Card payment submit session request data for transaction {} "
-                "is {}".format(
-                    transaction_obj.transaction_id, payment_request_data))
             try:
                 url = self.checkoutpg_config.domain + SUBMIT_SESSION_ENDPOINT
                 headers = self.get_payment_header()
