@@ -710,6 +710,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         logger.info("APPLE PAY Status update for {} to {} ".format(
             self.transaction_id, payment_stage))
+        # If transaction already in paid state, redirect to success
         if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
             _, response = is_redirect(self.transaction_id,
                                       {"response_code": self.SUCCESS})
