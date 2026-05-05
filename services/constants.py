@@ -40,9 +40,9 @@ APPLEPAY_MERCHANT_IDENTIFIER = "merchant.com.yougotagift.web.test"
 APPLEPAY_DOMAIN_NAME = "youpay-frontend-apple-pay.sit.yougotagift.co"
 APPLEPAY_DISPLAY_NAME = "YouGotAGift"
 
-APPLEPAY_SUPPORTED_NETWORKS = ["visa", "masterCard", "amex"]
+APPLEPAY_SUPPORTED_NETWORKS = ["visa", "masterCard"]
 APPLEPAY_MERCHANT_CAPABILITIES = ["supports3DS"]
-APPLEPAY_LABEL = "Gift Card"
+APPLEPAY_LABEL = "YOUGotaGift"
 
 CLIENT_LOGO_MAX_SIZE = 4194304
 CLIENT_LOGO_MAX_DIMENSION = 60

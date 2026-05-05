@@ -4,13 +4,17 @@ import secrets
 from django.db import models
 
 from core.constants import (
+    PAYMENT_REQUEST_LANGUAGE_CHOICES,
     PURCHASE_PLATFORM_CHOICES,
-    PAYMENT_REQUEST_LANGUAGE_CHOICES)
-from core.models import (AbstractDateTime, AbstractUserBase, CustomerProfile,
-                         Currency)
-from core.validators import (DecimalValidator, MinLengthValidator,
-                             URLValidator, validate_svg_or_image
-                             )
+    SAVED_CARD_API_VERSIONS,
+)
+from core.models import AbstractDateTime, AbstractUserBase, Currency, CustomerProfile
+from core.validators import (
+    DecimalValidator,
+    MinLengthValidator,
+    URLValidator,
+    validate_svg_or_image,
+)
 
 
 # Create your models here.
@@ -68,6 +72,16 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     checkout_channel_code = models.JSONField(
         null=True, blank=True,
         help_text="channel code used by client")
+    saved_card_api_version = models.CharField(
+        max_length=5, choices=SAVED_CARD_API_VERSIONS, default='v1', null=True,
+        help_text='API version to be used for saved card listing')
+    client_package = models.CharField(
+        max_length=100, blank=True, null=True)
+    display_total_quantity_in_breakdown = models.BooleanField(
+        default=False,
+        help_text='Indicates whether to display the number of total quantity '
+                  'in the amount breakdown.'
+    )
 
     def __str__(self):
         return self.name

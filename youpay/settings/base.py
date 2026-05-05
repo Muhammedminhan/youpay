@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'notifications',
     'gateways',
     'gateways.paypal',
+    'networkpg',
 
 
     # 3rd party apps
@@ -246,3 +247,5 @@ CACHES = {
 }
 
 ENVIRONMENT = config('ENVIRONMENT')
+
+ADMIN_USER_NAME = config('ADMIN_USER_NAME', 'youpay-admin@yougotagift.com')

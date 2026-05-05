@@ -92,7 +92,8 @@ class YoupayToPaymentGatewaysData(AbstractDateTime):
         YOUPAY_TRANSACTION_DATA,
         on_delete=models.CASCADE,
         blank=False, null=True,
-        help_text='Payment'
+        help_text='Payment',
+        related_name="youpay_to_payment_gateways_data"
     )
     request_method = models.CharField(
         max_length=10, null=True, blank=True, choices=REQUEST_METHOD_CHOICES,

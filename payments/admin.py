@@ -4,7 +4,8 @@ from core.admin import AdminAbstract
 from integrations.models import YoupayToPaymentGatewaysData
 from payments.adminActions import (archive_transaction_data,
                                    collect_b2c_program_points_for_transaction,
-                                   sync_qitaf_earn_to_purchase_request)
+                                   sync_qitaf_earn_to_purchase_request,
+                                   sync_paypal_usd_value)
 from payments.forms import AnnouncementForm
 from payments.models import (YouPayTransactionData, Announcement,
                              ClientNotification, AdditionalCharge,
@@ -21,13 +22,17 @@ class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
     actions = [archive_transaction_data,
                collect_b2c_program_points_for_transaction,
-               sync_qitaf_earn_to_purchase_request]
+               sync_qitaf_earn_to_purchase_request,
+               sync_paypal_usd_value]
     archive_transaction_data.short_description = (
         "Archive Selected Transaction data")
     collect_b2c_program_points_for_transaction.short_description = (
         "Collect Program Points for the transaction")
     sync_qitaf_earn_to_purchase_request.short_description = (
         "Sync qitaf earn data"
+    )
+    sync_paypal_usd_value.short_description = (
+        "Sync PayPal USD value"
     )
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',
@@ -36,7 +41,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                     'payment_Gateway', 'created_at', 'updated_at',)
     readonly_fields = (
         'transaction_id', 'created_at', 'updated_at', 'customer_email',
-        'customer_phone', 'loyalty_level')
+        'customer_phone', 'loyalty_level', 'customer_uid')
     search_fields = ('transaction_id', 'customer_email', 'invoice_id',
                      'payment_reference', 'order_reference')
     list_filter = ('settlement_entity', 'payment_status', 'api_client',
@@ -53,7 +58,7 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Customer details', {
             'fields': ('customer_name', 'customer_email', 'customer_phone',
-                       'is_guest', 'ip', 'language',
+                       'is_guest', 'ip', 'language', 'customer_uid'
                        )
         }),
         ('Card details', {
@@ -70,7 +75,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
         ('Cart details', {
             'fields': ('cart_amount', 'amount_in_aed', 'cart_currency',
                        'cart_service_fee',
-                       'cart_base_amount', 'cart_VAT_amount', 'brand_details',
+                       'cart_base_amount', 'cart_VAT_amount',
+                       'cart_platform_fee', 'brand_details',
                        'brand_calculations', 'is_offer_applicable'
                        )
         }),
@@ -80,8 +86,8 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
                        'settlement_entity', 'payment_gateway',
                        'channel_code', 'payment_method', 'payment_scheme',
                        'platform', 'response_summary', 'service_fee',
-                       'base_amount', 'VAT_amount', 'gateway_charge',
-                       'is_payment_verified'
+                       'base_amount', 'VAT_amount', 'platform_fee',
+                       'gateway_charge', 'is_payment_verified'
                        )
         }),
         ('URLs', {

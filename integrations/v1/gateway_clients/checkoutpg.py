@@ -11,7 +11,7 @@ from core.constants import (PAYMENT_GATEWAY_CHECKOUTPG, REQUEST_METHOD_POST,
 from core.messages import IS_REDIRECT, IS_SUCCESS
 from core.utils import (get_checkoutpg_config,
                         process_checkoutpg_response_verification,
-                        get_channel_code)
+                        get_channel_code, get_gateway_additional_fee)
 from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT_V2,
                                     CHECKOUTPG_SAVED_CARD_ENDPOINT,
@@ -25,7 +25,9 @@ from integrations.constants import (CHECKOUTPG_CONFIG_ENDPOINT_V2,
                                     PAYMENT_REQUEST_CREATE_SESSION,
                                     PAYMENT_REQUEST_SUBMIT_SESSION,
                                     PAYMENT_DECLINED_STATUS,
-                                    SOFT_DECLINE_RANGE
+                                    SOFT_DECLINE_RANGE,
+                                    CHECKOUTPG_SAVED_CARD_ENDPOINT_V3,
+                                    ADDITIONAL_AMEX_CARD_FEE
                                     )
 from integrations.constants import (
     PAYMENT_REQUEST_TYPE_CARD,
@@ -50,6 +52,7 @@ from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from .utils import get_response_url
 from services.constants import TOKEN_TYPE_CARD
+from services.v1.views.utils import get_checkout_amex_additional_fee
 
 logger = logging.getLogger(__name__)
 
@@ -208,6 +211,37 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
 
+    def get_saved_cards_v3(self, email, currency, channel_code=None,
+                           customer_uid=None, client_code=None):
+        """
+        Method for getting saved cards
+        """
+        if self.checkoutpg_config:
+            saved_cards = []
+            try:
+                PARAMS = {'key': self.checkoutpg_config.api_key,
+                          'email': email,
+                          'currency': currency,
+                          'channel_code': channel_code,
+                          'customer_uid': customer_uid,
+                          'client_code': client_code}
+                URL = self.checkoutpg_config.domain + CHECKOUTPG_SAVED_CARD_ENDPOINT_V3
+                saved_cards = requests.get(url=URL, params=PARAMS)
+                if saved_cards:
+                    saved_cards = json.loads(saved_cards.text).get('cards')
+                    for card in saved_cards:
+                        card['key'] = CHECKOUTPG_HUB_CODE
+                return saved_cards
+
+            except Exception as e:
+                logger.error(
+                    "Unable to fetch saved card details for user {0} "
+                    "because, {1}".format(email, str(e)))
+                return None
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, None
+
     def delete_saved_card(self, card_id):
         checkoutpg_config = get_checkoutpg_config()
         if checkoutpg_config:
@@ -246,10 +280,31 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
             return None, None
 
+    def delete_saved_card_v3(self, email, channel_code, customer_uid=None):
+        checkoutpg_config = get_checkoutpg_config()
+        if checkoutpg_config:
+            try:
+                header = self.get_payment_header()
+                query_params = urlencode(
+                    {"email": email, "channel_code": channel_code,
+                     "customer_uid": customer_uid})
+                URL = (
+                        self.checkoutpg_config.domain +
+                        CHECKOUTPG_SAVED_CARD_ENDPOINT_V3 + "deactivate/?" + query_params)
+                response = requests.delete(url=URL, headers=header)
+                return json.loads(response.text)
+            except Exception as e:
+                logger.error(
+                    "Unable to delete saved card {0} details because, {1}"
+                    .format(email, str(e)))
+        else:
+            logger.error(CHECKOUTPG_CONNECTION_ERROR_MESSAGE)
+            return None, None
+
     def saved_card_payment(self, data):
 
         transaction_data = data.get('transaction_data')
-
+        request_data = data.get('request_data')
         self.transaction_id = transaction_data.get('transaction_id')
         self.payment_method = PAYMENT_METHOD_SAVED_CARD
         self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
@@ -273,19 +328,30 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                 if checkoutpg_config:
                     payment_data = self.get_checkout_payment_data(data)
+                    transaction_obj = self.get_youpay_transaction_data(
+                        self.transaction_id)
+                    if request_data.get("is_amex_card", False):
+                        additional_fee_obj = get_gateway_additional_fee(
+                            transaction_obj.currency,
+                            ADDITIONAL_AMEX_CARD_FEE,
+                            CHECKOUTPG_HUB_CODE, "checkout_card")
+                        additional_fee_config = (
+                            get_checkout_amex_additional_fee(
+                                additional_fee_obj, transaction_obj))
+                        payment_data["amount"] = additional_fee_config.get(
+                            'total_amount', payment_data.get("amount", "0"))
                     self.channel_code = payment_data.get('channel_code')
                     log_request_data = copy.deepcopy(payment_data)
                     log_request_data["cvv"] = "***"
                     logger.info(
-                        "Youpay sending savedcard payment data is {}".format(
-                            log_request_data))
+                        "Youpay sending savedcard payment data for "
+                        "transaction id {} is {}".format(
+                            transaction_obj.transaction_id, log_request_data))
                     payment_data_to_send = json.dumps(payment_data)
                     url = (self.checkoutpg_config.domain +
                            CHECKOUTPG_PAYMENT_ENDPOINT)
                     headers = self.get_payment_header()
 
-                    transaction_obj = self.get_youpay_transaction_data(
-                        self.transaction_id)
 
                     response = requests.post(url, data=payment_data_to_send,
                                              headers=headers)
@@ -589,6 +655,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             'cko-session-id': data.get('cko_session_id'),
             'channel_code': youpay_transaction.channel_code,
             'invoice_id': youpay_transaction.invoice_id,
+            'client_id': youpay_transaction.api_client.client_code,
         }
         response = requests.get(url, params=params)
         logger.info(
@@ -855,9 +922,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                 if response:
                     response_data = response.json()
-                    response_data.update({
-                        "channel_code": request_data.get("channel_code")
-                    })
+                    response_data.pop('status', None)
                     return response_data, self.SUCCESS
                 logger.error(
                     "Checkout session creation failed for transaction %s: %s",
@@ -879,16 +944,29 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         Method for submitting a Checkout payment session
         """
+        amount = str(transaction_obj.amount)
+        is_amex_card = request_data.get('is_amex_card', False)
+        if is_amex_card:
+            logger.info(
+                "Card payment with Amex card, calculating additional fee for "
+                "transaction {}".format(transaction_obj.transaction_id))
+            additional_fee_obj = get_gateway_additional_fee(
+                transaction_obj.currency, ADDITIONAL_AMEX_CARD_FEE,
+                CHECKOUTPG_HUB_CODE, "checkout_card")
+            additional_fee_config = (
+                get_checkout_amex_additional_fee(
+                    additional_fee_obj, transaction_obj))
+            amount = additional_fee_config.get('total_amount', amount)
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
+            channel_code = get_channel_code(transaction_obj)
 
             payment_request_data = {
                 "session_data": request_data.get('session_data'),
-                "payment_reference": transaction_obj.additional_reference,
                 "session_id": request_data.get('session_id'),
                 "is_save_user_token": is_save_user_token,
                 "customer_name": request_data.get('customer_name'),
-                "amount": str(transaction_obj.amount),
+                "amount": amount,
                 "order_reference": transaction_obj.order_reference,
                 "currency": transaction_obj.currency,
                 "customer_email": transaction_obj.customer_email,
@@ -896,12 +974,12 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 "invoice_id": transaction_obj.invoice_id,
                 "order_id": transaction_obj.order_id,
                 "token_type": TOKEN_TYPE_CARD,
-                "channel_code": transaction_obj.channel_code,
+                "channel_code": channel_code,
                 "client_code": transaction_obj.api_client.client_code,
                 "customer_ip_address": transaction_obj.ip,
-                "is_mada": request_data.get('is_mada', False)
+                "is_mada": request_data.get('is_mada', False),
+                "customer_uid": transaction_obj.customer_uid
             }
-
             try:
                 url = self.checkoutpg_config.domain + SUBMIT_SESSION_ENDPOINT
                 headers = self.get_payment_header()
@@ -932,7 +1010,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         "payment_reference": response_data.get('reference_id'),
                         "payment_method": PAYMENT_OPTION_CARD,
                         "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
-                        "name_on_card": request_data.get("customer_name")
+                        "name_on_card": request_data.get("customer_name"),
+                        "channel_code": channel_code
                     }
                     response_data.pop('reference_id', None)
 
@@ -980,17 +1059,19 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         is_redirect_flag = decline_category != SOFT_DECLINE_RANGE
         redirect_url = None
+        code = self.PRE_AUTH
 
         if is_redirect_flag:
             redirect_url = ('{}?transaction_id={}'.format(
             transaction_obj.failure_url, transaction_obj.transaction_id))
+            code = self.PAYMENT_FAILED
 
         response = {
             IS_REDIRECT: is_redirect_flag,
             "redirect_url": redirect_url,
             IS_SUCCESS: False,
             "message": decline_reason,
-            "code": self.PRE_AUTH
+            "code": code
         }
 
         return response

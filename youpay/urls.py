@@ -41,6 +41,7 @@ urlpatterns = [
     path('citirewards/', include('citirewardsclient.urls')),
     path('qitaf/', include('qitafclient.urls')),
     path('gateways/', include('gateways.urls')),
+    path('networkpg/', include('networkpg.urls')),
 ]
 
 urlpatterns += staticfiles_urlpatterns()
