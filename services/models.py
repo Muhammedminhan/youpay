@@ -83,6 +83,13 @@ class APIClient(AbstractDateTime, AbstractUserBase):
                   'in the amount breakdown.'
     )
 
+    font = models.ForeignKey(
+        'core.CheckoutFont', null=True, blank=True,
+        on_delete=models.SET_NULL,
+        help_text='Font configuration for the checkout UI. '
+                  'Defaults to system font if not set.'
+    )
+
     def __str__(self):
         return self.name
 
