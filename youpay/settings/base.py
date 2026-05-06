@@ -170,12 +170,12 @@ REST_FRAMEWORK = {
 LANGUAGE_CODE = 'en-us'
 
 LANGUAGES = (
-    ('en', 'English'),
+    ('en-us', 'English'),
     ('ar', 'Arabic'),
 )
 
-MODELTRANSLATION_DEFAULT_LANGUAGE = 'en'
-MODELTRANSLATION_FALLBACK_LANGUAGES = ('en', 'ar')
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'en-us'
+MODELTRANSLATION_FALLBACK_LANGUAGES = ('en-us', 'ar')
 
 TIME_ZONE = 'Asia/Dubai'
 

@@ -84,7 +84,7 @@ class APIClientForm(forms.ModelForm):
         queryset = CheckoutFont.objects.filter(is_active=True)
         # 'font' represents English (default), 'font_ar' represents Arabic
         field_mapping = {
-            'font_en': 'en',
+            'font_en_us': 'en',
             'font_ar': 'ar'
         }
         for field_name, lang in field_mapping.items():

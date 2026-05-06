@@ -57,6 +57,7 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     color_code = models.CharField(
         max_length=20, blank=True, null=True,
         validators=[MinLengthValidator(4)],
+        default='#F5F5F5',
         help_text='Color code for the client in hex')
     client_code = models.CharField(
         max_length=100, blank=True, null=True, help_text='Client Code')
