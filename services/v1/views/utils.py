@@ -1,6 +1,6 @@
 import json
 import logging
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 
 from django.core.cache import cache
@@ -722,8 +722,8 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
             raw_udf_charge = (transaction_obj.udf1 or {}).get(
                 "additional_charges", "0")
             giftee_fee = round(Decimal(raw_udf_charge), 2)
-        except (ValueError, TypeError):
-            giftee_fee = Decimal(0)
+        except (InvalidOperation, ValueError, TypeError, AttributeError):
+            giftee_fee = Decimal("0")
         total_amount = round(
             transaction_obj.base_amount + transaction_obj.service_fee +
             additional_fee + giftee_fee + total_vat, 2)
