@@ -490,7 +490,8 @@ class ConfigViewSet(ViewSet):
         udf1 = getattr(transaction, 'udf1', None)
         if not udf1 or not isinstance(udf1, dict):
             return None
-        return udf1.get(key)
+        value = udf1.get(key)
+        return None if str(value) in ["0", "0.0", "0.00"] else value
 
 
 class ClientStaticFilesAPI(APIView):

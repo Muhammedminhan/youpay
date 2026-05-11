@@ -946,6 +946,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         amount = str(transaction_obj.amount)
         is_amex_card = request_data.get('is_amex_card', False)
+        additional_vat_percentage = transaction_obj.additional_vat_percentage
         if is_amex_card:
             logger.info(
                 "Card payment with Amex card, calculating additional fee for "
@@ -957,6 +958,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 get_checkout_amex_additional_fee(
                     additional_fee_obj, transaction_obj))
             amount = additional_fee_config.get('total_amount', amount)
+            additional_vat_percentage = additional_fee_obj.VAT_percentage
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
             channel_code = get_channel_code(transaction_obj)
@@ -1011,7 +1013,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         "payment_method": PAYMENT_OPTION_CARD,
                         "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
                         "name_on_card": request_data.get("customer_name"),
-                        "channel_code": channel_code
+                        "channel_code": channel_code,
+                        "additional_vat_percentage": additional_vat_percentage
                     }
                     response_data.pop('reference_id', None)
 
