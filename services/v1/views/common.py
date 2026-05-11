@@ -34,8 +34,7 @@ from payments.constants import (PAYMENT_STATUS_PAID, YOUGOTAGIFT_UAE,
                                 PAYMENT_METHOD_MOKAFAA_AND_CARD,
                                 PAYMENT_METHOD_ANB,
                                 PAYMENT_METHOD_ANB_AND_CARD,
-                                PAYMENT_METHOD_PAYPAL,
-                                PAYMENT_SCHEME_AMERICAN_EXPRESS)
+                                PAYMENT_METHOD_PAYPAL)
 from payments.models import (YouPayTransactionData, AdditionalCharge)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
@@ -193,6 +192,8 @@ class YouPayTransactionCRUD(object):
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
         data_dict['udf1'] = data.get('udf1', None)
+        data_dict['additional_vat_percentage'] = data.get(
+            'additional_vat_percentage', None)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD,
@@ -220,22 +221,6 @@ class YouPayTransactionCRUD(object):
                 payment_gateway=data_dict['payment_gateway'],
                 currency=data_dict['currency'],
                 transaction_id=transaction_id)
-
-        if data_dict['payment_scheme'] == PAYMENT_SCHEME_AMERICAN_EXPRESS:
-            data_dict['additional_vat_percentage'] = data.get(
-                'additional_vat_percentage')
-            if data_dict['payment_status'] == PAYMENT_STATUS_PAID:
-                additional_total_amount = data.get(
-                    'additional_total_amount', None)
-                additional_processing_fee = data.get(
-                    'additional_processing_fee', None)
-                additional_processing_fee_vat = data.get(
-                    'additional_processing_fee_vat', None)
-                data_dict['additional_total_amount'] = additional_total_amount
-                data_dict[
-                    'additional_processing_fee'] = additional_processing_fee
-                data_dict['additional_processing_fee_vat'] = (
-                    additional_processing_fee_vat)
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:

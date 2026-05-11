@@ -946,7 +946,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         amount = str(transaction_obj.amount)
         is_amex_card = request_data.get('is_amex_card', False)
-        additional_vat_percentage = transaction_obj.additional_vat_percentage
+        additional_vat_percentage = None
         if is_amex_card:
             logger.info(
                 "Card payment with Amex card, calculating additional fee for "
