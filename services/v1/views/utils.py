@@ -741,7 +741,10 @@ def additional_fee_for_conversion(transaction_obj, total_amount):
     :param total_amount: Total amount
     :return: Total amount in base currency
     """
-    processing_fee_details = transaction_obj.udf1.get(
+    udf1 = getattr(transaction_obj, "udf1", None)
+    if not udf1 or not isinstance(udf1, dict):
+        return total_amount
+    processing_fee_details = udf1.get(
         "processing_fee_conversion_details", None)
     if processing_fee_details:
         conversion_rate = Decimal(processing_fee_details.get("conversion_rate", 1))
