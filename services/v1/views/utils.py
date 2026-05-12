@@ -1,5 +1,6 @@
 import json
 import logging
+from decimal import Decimal, InvalidOperation
 
 from django.core.cache import cache
 from django.db.models import Q
@@ -72,18 +73,24 @@ def reformat_payment_request_data(data):
     corporate_id = customer.get('corporate_id')
     additional_charges = order.get('additional_charges')
     cart_additional_charges = order.get('cart_additional_charges')
+    processing_fee_conversion_details = order.get(
+        'processing_fee_conversion_details', None)
     if isinstance(udf1, dict):
         udf1.update({
             'corporate_id': corporate_id,
             'additional_charges': additional_charges,
-            'cart_additional_charges': cart_additional_charges
+            'cart_additional_charges': cart_additional_charges,
+            'processing_fee_conversion_details': (
+                processing_fee_conversion_details)
         })
         data['udf1'] = udf1
     else:
         data['udf1'] = {
             'corporate_id': corporate_id,
             'additional_charges': additional_charges,
-            'cart_additional_charges': cart_additional_charges
+            'cart_additional_charges': cart_additional_charges,
+            'processing_fee_conversion_details': (
+                processing_fee_conversion_details)
         }
 
     if order and payment and customer and urls:
@@ -673,6 +680,80 @@ def is_rewards_order_reference(order_reference):
                 tag in order_reference for tag in REWARDS_ORDER_TAGS))
 
 
+
+def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
+    """
+    Calculates the additional fee for Amex card based on the percentage and VAT configured.
+    :param additional_fee_obj:
+    :param transaction_obj:
+    :return: config dict with additional fee and total amount details
+    """
+    amex_additional_fee_config = {}
+    if additional_fee_obj and additional_fee_obj.percentage:
+        amex_perc = Decimal(str(additional_fee_obj.percentage))
+        vat_perc = Decimal(str(additional_fee_obj.VAT_percentage))
+
+        additional_fee = round(transaction_obj.base_amount * (amex_perc / 100), 2)
+        additional_fee_vat = round(additional_fee * (vat_perc / 100), 2)
+        total_vat = round(transaction_obj.VAT_amount + additional_fee_vat, 2)
+
+        try:
+            raw_udf_charge = (transaction_obj.udf1 or {}).get(
+                "additional_charges", "0")
+            giftee_fee = round(Decimal(str(raw_udf_charge)), 2)
+        except (InvalidOperation, ValueError, TypeError, AttributeError):
+            giftee_fee = Decimal("0")
+
+        total_amount = round(
+            transaction_obj.base_amount +
+            transaction_obj.service_fee +
+            additional_fee +
+            giftee_fee +
+            total_vat, 2)
+        total_amount_in_base_currency = additional_fee_for_conversion(
+            transaction_obj, total_amount)
+        amex_additional_fee_config = {
+            "additional_fee": str(additional_fee),
+            "additional_fee_vat": str(additional_fee_vat),
+            "combined_vat_amount": str(total_vat),
+            "total_amount": str(total_amount),
+            "total_amount_in_base_currency": str(total_amount_in_base_currency),
+            "processing_fee_percentage": str(additional_fee_obj.percentage),
+            "processing_fee_vat_percentage": str(
+                additional_fee_obj.VAT_percentage)
+        }
+
+        logger.info(
+            "amex_additional_fee_config for transaction {} is {}".format(
+                transaction_obj.transaction_id, amex_additional_fee_config))
+    else:
+        logger.info(
+            "No additional fee configured for Amex card for transaction {}".format(
+                transaction_obj.transaction_id))
+
+    return amex_additional_fee_config
+
+
+def additional_fee_for_conversion(transaction_obj, total_amount):
+    """
+    Calculate the total amount in base currency
+    :param transaction_obj: Transaction object
+    :param total_amount: Total amount
+    :return: Total amount in base currency
+    """
+    processing_fee_details = transaction_obj.udf1.get(
+        "processing_fee_conversion_details", None)
+    if processing_fee_details:
+        conversion_rate = Decimal(processing_fee_details.get("conversion_rate", 1))
+        if transaction_obj.cart_currency == processing_fee_details.get('source_currency'):
+            total_amount_in_base_currency = round(Decimal(str(total_amount)) / conversion_rate, 2)
+        else:
+            total_amount_in_base_currency = total_amount
+        return total_amount_in_base_currency
+    else:
+        return total_amount
+
+
 def process_total_quantity_eligibility(transaction, response_data):
     """
     Processes total quantity eligibility for a transaction.
@@ -697,43 +778,3 @@ def process_total_quantity_eligibility(transaction, response_data):
         response_data["data"]["total_quantity"] = order_quantity
 
     return response_data
-
-def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
-    """
-    Calculates the additional fee for Amex card based on the percentage and VAT configured.
-    :param additional_fee_obj:
-    :param transaction_obj:
-    :return: config dict with additional fee and total amount details
-    """
-    amex_additional_fee_config = {}
-    if additional_fee_obj and additional_fee_obj.percentage:
-        additional_fee = round(
-            transaction_obj.base_amount * (additional_fee_obj.percentage / 100), 2)
-        logger.info(
-            "Additional fee for Amex card for transaction {} is {}".format(
-                transaction_obj.transaction_id, additional_fee))
-        additional_fee_vat = round(additional_fee * (
-                additional_fee_obj.VAT_percentage / 100), 2)
-        total_vat = round(transaction_obj.VAT_amount + additional_fee_vat, 2)
-        giftee_fee = round((transaction_obj.udf1 or {}).get(
-            "additional_charges") or 0, 2)
-        total_amount = round(
-            transaction_obj.base_amount + transaction_obj.service_fee +
-            additional_fee + giftee_fee + total_vat, 2)
-        amex_additional_fee_config = {
-            "additional_fee": str(additional_fee),
-            "additional_fee_vat": str(additional_fee_vat),
-            "combined_vat_amount": str(total_vat),
-            "total_amount": str(total_amount),
-            "processing_fee_percentage": str(additional_fee_obj.percentage),
-            "processing_fee_vat_percentage": str(
-                additional_fee_obj.VAT_percentage)
-        }
-        logger.info(
-            "amex_additional_fee_config for transaction {} is {}".format(
-                transaction_obj.transaction_id, amex_additional_fee_config))
-    else:
-        logger.info(
-            "No additional fee configured for Amex card for transaction "
-            "{}".format(transaction_obj.transaction_id))
-    return amex_additional_fee_config
