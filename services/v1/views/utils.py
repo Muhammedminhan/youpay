@@ -720,7 +720,16 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
             "total_amount_in_base_currency": str(total_amount_in_base_currency),
             "processing_fee_percentage": str(additional_fee_obj.percentage),
             "processing_fee_vat_percentage": str(
-                additional_fee_obj.VAT_percentage)
+                additional_fee_obj.VAT_percentage),
+            "combined_vat_amount_in_base_currency": str(
+                additional_fee_for_conversion(transaction_obj, total_vat)),
+            "cart_base_amount": transaction_obj.cart_base_amount,
+            "cart_service_fee_in_base_currency": str(
+                additional_fee_for_conversion(transaction_obj,
+                                            transaction_obj.cart_service_fee)),
+            "additional_fee_in_base_currency": str(
+                additional_fee_for_conversion(transaction_obj, additional_fee)),
+
         }
 
         logger.info(

@@ -957,6 +957,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 get_checkout_amex_additional_fee(
                     additional_fee_obj, transaction_obj))
             amount = additional_fee_config.get('total_amount', amount)
+            amount_in_base_currency = additional_fee_config.get(
+                'total_amount_in_base_currency', amount)
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
             channel_code = get_channel_code(transaction_obj)
@@ -1011,7 +1013,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         "payment_method": PAYMENT_OPTION_CARD,
                         "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
                         "name_on_card": request_data.get("customer_name"),
-                        "channel_code": channel_code
+                        "channel_code": channel_code,
+                        "amount": amount,
+                        "is_amex_card": is_amex_card,
+                        "cart_amount": amount_in_base_currency,
+
                     }
                     response_data.pop('reference_id', None)
 
