@@ -72,7 +72,7 @@ deployment:
         hostPath: '/home/ec2-user/ygag-logs/ygag-youpay-production/nginx'
 
   nodeSelector:
-    key: 'karpenter.sh/provisioner-name'
+    key: 'karpenter.sh/nodepool'
     value: 'default'
 
   topologySpreadConstraints:

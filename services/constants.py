@@ -40,7 +40,7 @@ APPLEPAY_MERCHANT_IDENTIFIER = "merchant.com.yougotagift.web.test"
 APPLEPAY_DOMAIN_NAME = "youpay-frontend-apple-pay.sit.yougotagift.co"
 APPLEPAY_DISPLAY_NAME = "YouGotAGift"
 
-APPLEPAY_SUPPORTED_NETWORKS = ["visa", "masterCard", "amex"]
+APPLEPAY_SUPPORTED_NETWORKS = ["visa", "masterCard"]
 APPLEPAY_MERCHANT_CAPABILITIES = ["supports3DS"]
 APPLEPAY_LABEL = "YOUGotaGift"
 

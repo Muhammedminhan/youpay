@@ -41,7 +41,7 @@ deployment:
     default:
       name: 'redis'
       imagePullPolicy: 'IfNotPresent'
-      image: '420360167813.dkr.ecr.me-central-1.amazonaws.com/qa/redis:6.2.4'
+      image: '420360167813.dkr.ecr.ap-south-1.amazonaws.com/qa/redis:6.2.4'
       command: '[]'
       port: 6379
       memory:

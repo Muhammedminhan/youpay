@@ -48,7 +48,8 @@ from services.v1.views.utils import (get_announcements,
                                      get_session_id_from_header,
                                      get_country_for_configuration,
                                      get_client_for_configuration,
-                                     get_payment_methods
+                                     get_payment_methods,
+                                     process_total_quantity_eligibility
                                      )
 
 logger = logging.getLogger(__name__)
@@ -141,6 +142,8 @@ class ConfigViewSet(ViewSet):
             'mobile_logo': get_mobile_logo_url(client),
             'logo': get_logo_url(client)
         }
+        display_total_quantity = (
+            transaction.api_client.display_total_quantity_in_breakdown)
 
         response_data = {
             "data": {
@@ -171,6 +174,10 @@ class ConfigViewSet(ViewSet):
                 transaction else None,
                 "cart_platform_fee": transaction.cart_platform_fee if
                 transaction else None,
+                "client_handling_fee": self._get_udf1_handling_fee(
+                    transaction, 'additional_charges'),
+                "cart_client_handling_fee": self._get_udf1_handling_fee(
+                    transaction, 'cart_additional_charges'),
                 "redirect_url": self._get_redirect_url(transaction),
                 "announcements": get_announcements(transaction.platform),
                 "is_guest": transaction.is_guest,
@@ -190,8 +197,12 @@ class ConfigViewSet(ViewSet):
                 **payment_config_data,
                 "applepay_config": self.get_applepay_config(payment_options,
                                                             transaction),
+                "display_total_quantity": display_total_quantity
             }
         }
+        if display_total_quantity:
+            response_data = process_total_quantity_eligibility(transaction,
+                                                               response_data)
 
         return response_data
 
@@ -467,6 +478,19 @@ class ConfigViewSet(ViewSet):
                 return False
         else:
             return True
+
+    @staticmethod
+    def _get_udf1_handling_fee(transaction, key):
+        """
+        Gets the value of 'additional_charges'/'cart_additional_charges'
+        from the udf1 field of the transaction.
+        Handles udf1 being None, empty, or a dict.
+        Returns the value if present, else returns None.
+        """
+        udf1 = getattr(transaction, 'udf1', None)
+        if not udf1 or not isinstance(udf1, dict):
+            return None
+        return udf1.get(key)
 
 
 class ClientStaticFilesAPI(APIView):

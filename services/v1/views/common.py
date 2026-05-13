@@ -219,7 +219,6 @@ class YouPayTransactionCRUD(object):
                 payment_gateway=data_dict['payment_gateway'],
                 currency=data_dict['currency'],
                 transaction_id=transaction_id)
-
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
