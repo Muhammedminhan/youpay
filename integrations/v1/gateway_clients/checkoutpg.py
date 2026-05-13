@@ -47,7 +47,7 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_OPTION_CARD, PAYMENT_STATUS_DECLINED,
                                 PAYMENT_STATUS_DECLINED_RETRY
                                 )
-from services.v1.views.common import AdditionalChargesUpdation
+from services.v1.views.common import AdditionalChargesUpdation, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from .utils import get_response_url
@@ -777,7 +777,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         logger.info("APPLE PAY Status update for {} to {} ".format(
             self.transaction_id, payment_stage))
-
+        # If transaction already in paid state, redirect to success
+        if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
+            _, response = is_redirect(self.transaction_id,
+                                      {"response_code": self.SUCCESS})
+            return response, self.APPLE_PAY_REDIRECT
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
         logger.info(
