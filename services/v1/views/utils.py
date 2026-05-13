@@ -726,7 +726,7 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
             "cart_base_amount": transaction_obj.cart_base_amount,
             "cart_service_fee_in_base_currency": str(
                 additional_fee_for_conversion(transaction_obj,
-                                            transaction_obj.cart_service_fee)),
+                                            transaction_obj.service_fee)),
             "additional_fee_in_base_currency": str(
                 additional_fee_for_conversion(transaction_obj, additional_fee)),
 
