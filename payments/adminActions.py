@@ -255,10 +255,10 @@ def sync_paypal_usd_value(modeladmin, request, queryset):
                         paypal_exchange_rate = None
                         continue
                     if youpay_txn.udf1:
-                        youpay_txn.udf1.get('paypal_calculations',
+                        youpay_txn.udf1.get('additional_fee_calculations',
                                             {}).pop('paypal_exchange_rate',
                                                     None)
-                        youpay_txn.udf1.get('paypal_calculations',
+                        youpay_txn.udf1.get('additional_fee_calculations',
                                             {}).pop('paypal_amount_usd',
                                                     None)
                     paypal_data = {

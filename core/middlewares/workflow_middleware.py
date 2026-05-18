@@ -155,9 +155,9 @@ class PaymentStatusCheckMiddleware(object):
         """
         if view_name != PAYPAL_PAYMENT_VIEW_NAME:
             if isinstance(transaction_obj.udf1,
-                          dict) and "paypal_calculations" in transaction_obj.udf1:
+                          dict) and "additional_fee_calculations" in transaction_obj.udf1:
                 udf1 = transaction_obj.udf1
-                udf1.pop("paypal_calculations", None)
+                udf1.pop("additional_fee_calculations", None)
                 youpay_obj.update_youpay_transaction_data(
                     {
                         "transaction_id": transaction_obj.transaction_id,
