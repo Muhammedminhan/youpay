@@ -392,7 +392,7 @@ class YouPayResponse(object):
             self.TPAY_TIMEOUT: "The transaction timed out. Please try again.",
             self.TPAY_NOT_ELIGIBLE: "This line type (e.g. Corporate) is not "
                                     "eligible for this service.",
-            self.TPAY_PAYMENT_FAILED: "TPay payment failed. Please try again.",
+            self.TPAY_PAYMENT_FAILED: "Unable to process TPay payment",
         })
 
     def get_400_message(self, message):
