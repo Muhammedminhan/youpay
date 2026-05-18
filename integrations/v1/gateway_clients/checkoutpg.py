@@ -45,13 +45,14 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 CREATE_SESSION_ENDPOINT,
                                 SUBMIT_SESSION_ENDPOINT,
                                 PAYMENT_OPTION_CARD, PAYMENT_STATUS_DECLINED,
-                                PAYMENT_STATUS_DECLINED_RETRY
+                                PAYMENT_STATUS_DECLINED_RETRY,
+                                PAYMENT_METHOD_VISA_CTP
                                 )
 from services.v1.views.common import AdditionalChargesUpdation
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from .utils import get_response_url
-from services.constants import TOKEN_TYPE_CARD
+from services.constants import TOKEN_TYPE_CARD, TOKEN_TYPE_VISACTP
 from services.v1.views.utils import get_checkout_amex_additional_fee
 
 logger = logging.getLogger(__name__)
@@ -401,9 +402,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
     def card_payment(self, data):
         transaction_data = data.get('transaction_data')
+        token_type = data.get('token_type')
 
         self.transaction_id = transaction_data.get('transaction_id')
-        self.payment_method = PAYMENT_METHOD_CARD
+        self.payment_method = PAYMENT_METHOD_VISA_CTP if (token_type ==
+                    TOKEN_TYPE_VISACTP) else PAYMENT_METHOD_CARD
         self.payment_gateway = PAYMENT_GATEWAY_CHECKOUTPG
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')

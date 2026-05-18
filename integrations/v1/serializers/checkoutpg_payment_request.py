@@ -27,6 +27,8 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
     is_mada = serializers.SerializerMethodField()
     client_code = serializers.SerializerMethodField()
     customer_uid = serializers.SerializerMethodField()
+    cryptogram = serializers.SerializerMethodField()
+    eci = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -136,6 +138,18 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         """
         is_mada = data.get('request_data').get("is_mada", False)
         return is_mada
+
+    def get_cryptogram(self, data):
+        """
+            method to fetch cryptogram from the request data
+        """
+        return data.get('request_data').get("cryptogram")
+
+    def get_eci(self, data):
+        """
+            method to fetch eci from the request data
+        """
+        return data.get('request_data').get("eci")
 
 
 class ApplepayPaymentDataSerializer(serializers.ModelSerializer):

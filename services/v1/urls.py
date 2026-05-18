@@ -43,6 +43,7 @@ from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
+from .api_clients.visa_ctp import VisaCTPCreateSession, VisaCTPPayment
 from .views.client_registration import (APIClientRegistrationViewSet,
                                         APIClientRegistrationView)
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
@@ -167,4 +168,9 @@ urlpatterns = [
     path('paypal/payment/', PayPalPaymentAPIView.as_view(),
          name='PayPalPayment'),
     path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
+
+    # VisaCTP Endpoints
+    path('visa-ctp/session/', VisaCTPCreateSession.as_view(),
+    name='VisaCTPCreateSession'),
+    path('visa-ctp/payment/', VisaCTPPayment.as_view(), name='VisaCTPPayment'),
 ]

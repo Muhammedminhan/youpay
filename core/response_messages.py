@@ -19,6 +19,7 @@ class YouPayResponse(object):
     10XXX - for AnB
     11XXX - for b2c
     12xxx - for happy credits
+    22xxx - for Visa Click to Pay
     """
 
     """Youpay related begins"""
@@ -193,6 +194,12 @@ class YouPayResponse(object):
     PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED = 18012
     """PayPal related ends"""
 
+    """Visa Click to Pay related begins"""
+    VISACTP_CONNECTION_ERROR = 22001
+    VISACTP_SESSION_FAILED = 22002
+    VISACTP_CARD_DETAILS_FAILED = 22003
+    """Visa Click to Pay related ends"""
+
     MESSAGE = {}
 
     def __init__(self):
@@ -355,6 +362,10 @@ class YouPayResponse(object):
             self.PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED: (
                 "The card linked to your PayPal account is from an unsupported"
                 " country. -(البطاقة المرتبطة بحسابك في باي بال صادرة من دولة غير مدعومة.)"),
+
+            self.VISACTP_CONNECTION_ERROR: "Visa gateway connection error",
+            self.VISACTP_SESSION_FAILED: "Failed to create Visa payment session",
+            self.VISACTP_CARD_DETAILS_FAILED: "Failed to Fetch payment details",
         })
 
     def get_400_message(self, message):
