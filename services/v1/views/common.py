@@ -709,9 +709,22 @@ def get_custom_error_code(op_status):
 
         "2": response_obj.TPAY_USER_CANCELLED,
         "TransactionCancelledByUser": response_obj.TPAY_USER_CANCELLED,
+
+        "13": response_obj.TPAY_INVALID_USER,
+        "SubscriberDoesNotExist": response_obj.TPAY_INVALID_USER,
+
+        "8": response_obj.TPAY_BLOCKED_USER,
+        "InactiveLine": response_obj.TPAY_BLOCKED_USER,
+
+        "19": response_obj.TPAY_TIMEOUT,
+        "TimeOut": response_obj.TPAY_TIMEOUT,
+
+        "14": response_obj.TPAY_NOT_ELIGIBLE,
+        "CorporateNotEligible": response_obj.TPAY_NOT_ELIGIBLE,
+        "18": response_obj.TPAY_NOT_ELIGIBLE,
     }
 
     if op_status in user_error_map:
         return user_error_map[op_status], False
 
-    return response_obj.TPAY_CONNECTION_ERROR, False
+    return response_obj.TPAY_PAYMENT_FAILED, False

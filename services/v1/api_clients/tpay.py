@@ -170,9 +170,17 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
             tpay_tx = TPayTransaction.objects.filter(
                 payment_reference=order_info).first()
             if tpay_tx:
-                tpay_tx.tpay_transaction_id = tpay_transaction_id if (
-                    tpay_transaction_id) else None
-                tpay_tx.status = TPAY_STATUS_LABELS.get(op_status_code, op_status_code)
+                new_status = TPAY_STATUS_LABELS.get(
+                    op_status_code, op_status_code)
+                has_webhook_status = (tpay_tx.status and tpay_tx.status !=
+                                      PAYMENT_STATUS_INITIALIZED)
+                if not has_webhook_status or op_status_code != "51":
+                    tpay_tx.status = new_status
+                if tpay_transaction_id:
+                    tpay_tx.tpay_transaction_id = tpay_transaction_id
+                if msisdn:
+                    tpay_tx.msisdn = msisdn
+
                 tpay_tx.raw_response = request.query_params
                 tpay_tx.save()
 
@@ -184,12 +192,14 @@ class TPayVerifyAPIView(APIView, YouPayTransactionCRUD):
                              f"{decrypted_id}")
                 redirect_url = get_redirect_url(transaction_obj.failure_url,
                                                 str(decrypted_id))
+                sig_mismatch_msg = self.response_obj.MESSAGE.get(
+                    self.response_obj.TPAY_SIGNATURE_MISMATCH)
                 return Response({
                     "status": 400,
                     "is_redirect": True,
                     "is_success": False,
                     "redirect_url": redirect_url,
-                    "message": custom_message,
+                    "message": sig_mismatch_msg,
                     "code": custom_code
                 }, status=status.HTTP_400_BAD_REQUEST)
 

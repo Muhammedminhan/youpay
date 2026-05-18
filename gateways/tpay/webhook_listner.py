@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 class TPayWebhookListener(APIView):
 
-    def post(self, request):
-        request_data = request.data
+    def get(self, request):
+        request_data = request.query_params
         status_code = request_data.get("paymentTransactionStatusCode")
         order_info = request_data.get("orderInfo")
 
@@ -29,6 +29,8 @@ class TPayWebhookListener(APIView):
                             status=status.HTTP_401_UNAUTHORIZED)
 
         try:
+            payload_dict = dict(request_data)
+
             TPayWebhookLog.objects.create(
                 action=request_data.get('action'),
                 payment_transaction_status_code=status_code,
@@ -42,7 +44,7 @@ class TPayWebhookListener(APIView):
                 order_info=order_info,
                 payment_provider_code=request_data.get('paymentProviderCode'),
                 digest=request_data.get('digest'),
-                payload=request_data
+                payload=payload_dict
             )
 
             return Response(

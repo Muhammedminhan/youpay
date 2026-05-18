@@ -77,6 +77,7 @@ TPAY_SUCCESS_CODES = [
 ]
 PAYMENT_STATUS_INITIALIZED = 'initialized'
 TPAY_STATUS_LABELS = {
+    "0": "Success",
     "1": "PIN Send Failed",
     "2": "User Cancelled",
     "4": "Insufficient Funds",

@@ -203,6 +203,11 @@ class YouPayResponse(object):
     TPAY_EXPIRED_PIN = 19006
     TPAY_USER_CANCELLED = 19007
     TPAY_SIGNATURE_MISMATCH = 19008
+    TPAY_INVALID_USER = 19009
+    TPAY_BLOCKED_USER = 19010
+    TPAY_TIMEOUT = 19011
+    TPAY_NOT_ELIGIBLE = 19012
+    TPAY_PAYMENT_FAILED = 19013
     """TPay related ends"""
 
     MESSAGE = {}
@@ -380,6 +385,14 @@ class YouPayResponse(object):
             self.TPAY_EXPIRED_PIN: "The verification PIN has expired. Please try again.",
             self.TPAY_USER_CANCELLED: "Transaction was cancelled by the user.",
             self.TPAY_SIGNATURE_MISMATCH: "TPay Security verification failed.",
+            self.TPAY_INVALID_USER: "The mobile number entered does not "
+                                    "exist on this network.",
+            self.TPAY_BLOCKED_USER: "Your line has been restricted from "
+                                    "making this purchase. Please contact your operator.",
+            self.TPAY_TIMEOUT: "The transaction timed out. Please try again.",
+            self.TPAY_NOT_ELIGIBLE: "This line type (e.g. Corporate) is not "
+                                    "eligible for this service.",
+            self.TPAY_PAYMENT_FAILED: "TPay payment failed. Please try again.",
         })
 
     def get_400_message(self, message):
