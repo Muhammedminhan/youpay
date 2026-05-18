@@ -343,9 +343,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                                 additional_fee_obj, transaction_obj))
                         payment_data["amount"] = additional_fee_config.get(
                             'total_amount', payment_data.get("amount", "0"))
-                        additional_vat_percentage = (
-                            additional_fee_obj.VAT_percentage if
-                            additional_fee_obj else None)
+                        additional_vat_percentage = additional_fee_config.get(
+                            "processing_fee_vat_percentage")
                     self.channel_code = payment_data.get('channel_code')
                     log_request_data = copy.deepcopy(payment_data)
                     log_request_data["cvv"] = "***"
@@ -973,7 +972,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 get_checkout_amex_additional_fee(
                     additional_fee_obj, transaction_obj))
             amount = additional_fee_config.get('total_amount', amount)
-            additional_vat_percentage = additional_fee_obj.VAT_percentage
+            additional_vat_percentage = additional_fee_config.get(
+                "processing_fee_vat_percentage")
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
             channel_code = get_channel_code(transaction_obj)
