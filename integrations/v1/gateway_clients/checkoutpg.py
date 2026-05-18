@@ -68,6 +68,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_reference = None
         self.channel_code = None
         self.currency = None
+        self.additional_vat_percentage = None
 
     def prepare_data_to_update(self, **kwargs):
 
@@ -82,6 +83,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             "payment_gateway": self.payment_gateway,
             "name_on_card": name_on_card,
             'currency': self.currency,
+            'additional_vat_percentage': self.additional_vat_percentage,
         }
 
         return data_to_update
@@ -330,6 +332,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     payment_data = self.get_checkout_payment_data(data)
                     transaction_obj = self.get_youpay_transaction_data(
                         self.transaction_id)
+                    additional_vat_percentage = None
                     if request_data.get("is_amex_card", False):
                         additional_fee_obj = get_gateway_additional_fee(
                             transaction_obj.currency,
@@ -340,6 +343,9 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                                 additional_fee_obj, transaction_obj))
                         payment_data["amount"] = additional_fee_config.get(
                             'total_amount', payment_data.get("amount", "0"))
+                        additional_vat_percentage = (
+                            additional_fee_obj.VAT_percentage if
+                            additional_fee_obj else None)
                     self.channel_code = payment_data.get('channel_code')
                     log_request_data = copy.deepcopy(payment_data)
                     log_request_data["cvv"] = "***"
@@ -373,6 +379,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     if response:
                         response_data_json = response.json()
+                        payment_data['additional_vat_percentage'] = (
+                            additional_vat_percentage)
                         response_data, response_code = (
                             self.handle_card_payment_response(
                                 response_data_json, payment_data))
@@ -487,6 +495,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             "card payment response handling, checkoutpg response for "
             "transaction {} is {} ".format(
                 self.transaction_id, response_data))
+        self.additional_vat_percentage = payment_data.get(
+            'additional_vat_percentage')
         if response_data.get(
                 'status') == 200 and response_data.get(IS_REDIRECT) is True:
             # 3ds case
@@ -516,6 +526,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     payment_method=self.payment_method,
                     payment_gateway=self.payment_gateway,
                     channel_code=self.channel_code,
+                    additional_vat_percentage=self.additional_vat_percentage,
                 ))
             logger.info("pre auth verification method response data {} for "
                         "transaction {}".format(response_data,
