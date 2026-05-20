@@ -2,7 +2,6 @@ import json
 import logging
 from decimal import Decimal, InvalidOperation
 
-
 from django.core.cache import cache
 from django.db.models import Q
 
@@ -709,13 +708,11 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
     """
     amex_additional_fee_config = {}
     if additional_fee_obj and additional_fee_obj.percentage:
-        additional_fee = round(
-            transaction_obj.base_amount * (additional_fee_obj.percentage / 100), 2)
-        logger.info(
-            "Additional fee for Amex card for transaction {} is {}".format(
-                transaction_obj.transaction_id, additional_fee))
-        additional_fee_vat = round(additional_fee * (
-                additional_fee_obj.VAT_percentage / 100), 2)
+        amex_perc = Decimal(str(additional_fee_obj.percentage))
+        vat_perc = Decimal(str(additional_fee_obj.VAT_percentage))
+
+        additional_fee = round(transaction_obj.base_amount * (amex_perc / 100), 2)
+        additional_fee_vat = round(additional_fee * (vat_perc / 100), 2)
         total_vat = round(transaction_obj.VAT_amount + additional_fee_vat, 2)
 
         try:
@@ -724,6 +721,7 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
             giftee_fee = round(Decimal(raw_udf_charge), 2)
         except (InvalidOperation, ValueError, TypeError, AttributeError):
             giftee_fee = Decimal("0")
+
         total_amount = round(
             transaction_obj.base_amount + transaction_obj.service_fee +
             additional_fee + giftee_fee + total_vat, 2)
@@ -736,11 +734,13 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
             "processing_fee_vat_percentage": str(
                 additional_fee_obj.VAT_percentage)
         }
+
         logger.info(
             "amex_additional_fee_config for transaction {} is {}".format(
                 transaction_obj.transaction_id, amex_additional_fee_config))
     else:
         logger.info(
-            "No additional fee configured for Amex card for transaction "
-            "{}".format(transaction_obj.transaction_id))
+            "No additional fee configured for Amex card for transaction {}".format(
+                transaction_obj.transaction_id))
+
     return amex_additional_fee_config

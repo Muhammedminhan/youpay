@@ -384,6 +384,7 @@ def process_checkoutpg_response_verification(**kwargs):
     channel_code = kwargs.get('channel_code')
     response_code = kwargs.get('response_data', {}).get('response_code')
     payment_scheme = get_payment_scheme(response_data)
+    additional_vat_percentage = kwargs.get('additional_vat_percentage')
 
     reference_from_checkout = response_data.get("reference")
 
@@ -475,7 +476,8 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': is_payment_verified
+            'is_payment_verified': is_payment_verified,
+            'additional_vat_percentage': additional_vat_percentage,
         }
     )
 
