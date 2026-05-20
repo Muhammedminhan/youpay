@@ -21,7 +21,6 @@ class TPayWebhookListener(APIView):
         logger.info(f"TPAY webhook received for order {order_info} with "
                     f"status: {status_code}")
 
-        # Verify Digest (Mandatory for TPay Security)
         if not self.verify_digest(request_data):
             logger.error(f"TPAY Webhook authentication failed for order "
                          f"{order_info}")
@@ -63,6 +62,8 @@ class TPayWebhookListener(APIView):
         """
         Implementation of Digest calculation
         """
+        logger.info(f"TPAY received data: {data}")
+
         message = (
                 str(data.get('action', '')) +
                 str(data.get('paymentTransactionStatusCode', '')) +
@@ -70,11 +71,14 @@ class TPayWebhookListener(APIView):
                 str(data.get('msisdn', '')) +
                 str(data.get('amount', '')) +
                 str(data.get('currencyCode', '')) +
+                str(data.get('paymentDate', '')) +
                 str(data.get('productCatalogName', '')) +
                 str(data.get('productId', '')) +
                 str(data.get('orderInfo', '')) +
                 str(data.get('paymentProviderCode', ''))
         )
+
+        logger.info(f"TPAY generated message: {message}")
 
         digest = hmac.new(
             TPAY_PRIVATE_KEY.encode(),
@@ -83,4 +87,8 @@ class TPayWebhookListener(APIView):
         ).hexdigest()
 
         expected_signature = f"{TPAY_PUBLIC_KEY}:{digest}"
-        return hmac.compare_digest(expected_signature, data.get('digest', ''))
+
+        return hmac.compare_digest(
+            expected_signature,
+            data.get('digest', '')
+        )
