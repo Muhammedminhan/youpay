@@ -1,6 +1,10 @@
+import base64
+import hashlib
+import hmac
 from jwcrypto import jwe, jwk
 import json
 import logging
+from datetime import datetime, timezone
 
 import requests
 
@@ -9,12 +13,12 @@ from core.constants import EXTERNAL_API_REQUEST_TIMEOUT, REQUEST_METHOD_POST, \
 from core.response_messages import YouPayResponse
 from core.utils import get_app_config, get_payment_gateway_config
 from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
-                                    VISACTP_PAYMENT_TYPE, VISACTP_SESSION_API,
+                                    VISACTP_PAYMENT_TYPES, VISACTP_SESSION_API,
                                     VISACTP_ALLOWED_CARDS,
                                     PAYMENT_REQUEST_VISA_SESSION,
                                     VISACTP_CREDENTIALS_API,
                                     PAYMENT_REQUEST_VISA_CREDENTIALS,
-                                    VISACTP_TOKEN_TYPE)
+                                    VISACTP_TOKEN_TYPE, VISACTP_CLIENT_VERSION)
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import \
     YouPayTransactionDataSerializer
@@ -27,6 +31,60 @@ logger = logging.getLogger(__name__)
 class VisaManager(YouPayResponse, PaymentHandlers):
     def __init__(self):
         super(VisaManager, self).__init__()
+
+    def get_header(self, method, resource, payload_string, visa_config):
+        """
+        Generates dynamic HTTP Signatures required for VISA authentication.
+        """
+        merchant_id = visa_config.merchant_id
+        api_key = visa_config.api_key
+        shared_secret = visa_config.api_secret
+
+        host = visa_config.domain.replace("https://",
+                "").replace("http://", "").split('/')[0]
+
+        gmt_date = datetime.now(timezone.utc).strftime('%a, %d %b %Y %H:%M:%S GMT')
+
+        headers = {
+            "Content-Type": "application/json",
+            "host": host,
+            "date": gmt_date,
+            "v-c-merchant-id": merchant_id
+        }
+
+        signature_lines = [
+            f"host: {host}",
+            f"date: {gmt_date}",
+            f"request-target: {method.lower()} {resource}"
+        ]
+
+        if method.upper() == REQUEST_METHOD_POST and payload_string:
+            payload_bytes = payload_string.encode('utf-8')
+            sha256_hash = hashlib.sha256(payload_bytes).digest()
+            digest_base64 = base64.b64encode(sha256_hash).decode('utf-8')
+            digest_value = f"SHA-256={digest_base64}"
+
+            headers["digest"] = digest_value
+            signature_lines.append(f"digest: {digest_value}")
+
+        signature_lines.append(f"v-c-merchant-id: {merchant_id}")
+        signature_string = "\n".join(signature_lines)
+
+        secret_bytes = base64.b64decode(shared_secret)
+        hmac_hash = hmac.new(secret_bytes, signature_string.encode('utf-8'),
+                             hashlib.sha256).digest()
+        signature_base64 = base64.b64encode(hmac_hash).decode('utf-8')
+
+        signed_headers_list = ("host date request-target digest "
+            "v-c-merchant-id" if (method.upper() == REQUEST_METHOD_POST)
+            else "host date request-target v-c-merchant-id")
+
+        headers["signature"] = (
+            f'keyid="{api_key}", algorithm="HmacSHA256", '
+            f'headers="{signed_headers_list}", signature="{signature_base64}"'
+        )
+
+        return headers
 
     def create_visa_session(self, transaction_obj):
         """
@@ -46,20 +104,20 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 logger.error("Visa gateway configuration missing.")
                 return None, self.PAYMENT_FAILED
 
-            auth_token = visa_config.api_key
             allowed_cards = visa_config.validation_json.get('allowed_cards',
                                 VISACTP_ALLOWED_CARDS)
+            client_version = visa_config.validation_json.get('client_version',
+                                VISACTP_CLIENT_VERSION)
+            payment_types = visa_config.validation_json.get('payment_types',
+                                VISACTP_PAYMENT_TYPES)
 
             url = visa_config.domain + VISACTP_SESSION_API
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {auth_token}",
-                "Accept": "application/json"
-            }
+
             request_data = {
                 "targetOrigins": [target_origin],
                 "allowedCardNetworks": allowed_cards,
-                "allowedPaymentTypes": VISACTP_PAYMENT_TYPE,
+                "allowedPaymentTypes": payment_types,
+                "clientVersion": client_version,
                 "data": {
                     "orderInformation": {
                         "amountDetails": {
@@ -67,12 +125,19 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                             "currency": transaction_obj.currency
                         }
                     }
-                }
+                },
+                "country": transaction_obj.country_code,
+                "locale": (transaction_obj.language + "_" +
+                           transaction_obj.country_code)
             }
+
+            payload_string = json.dumps(request_data)
+            headers = self.get_header(REQUEST_METHOD_POST, VISACTP_SESSION_API,
+                        payload_string, visa_config)
 
             response = requests.post(
                 url,
-                data=json.dumps(request_data),
+                data=payload_string,
                 headers=headers,
                 timeout=EXTERNAL_API_REQUEST_TIMEOUT
             )
@@ -80,16 +145,20 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
-                request_data=json.dumps(request_data),
+                request_data=payload_string,
                 response_data=response.text,
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_VISA_SESSION,
             )
 
             if response.status_code in [200, 201]:
-                response_data = response.json()
-                return {'visa_session_token': response_data.get(
-                    'captureContext')}, self.SUCCESS
+                try:
+                    response_data = response.json()
+                    capture_context_token = response_data.get('captureContext')
+                except ValueError:
+                    capture_context_token = response.text.strip()
+
+                return {'visa_session_token': capture_context_token}, self.SUCCESS
 
             logger.error(
                 f"Visa session creation failed. Status: {response.status_code}, "
@@ -110,15 +179,11 @@ class VisaManager(YouPayResponse, PaymentHandlers):
         try:
             visa_config = get_payment_gateway_config(
                 VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
-            auth_token = visa_config.api_key
 
-            visa_url = (visa_config.domain + VISACTP_CREDENTIALS_API + "/" +
-                        visa_transient_token)
-            headers = {
-                "Authorization": f"Bearer {auth_token}",
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            }
+            resource_path = f"{VISACTP_CREDENTIALS_API}/{visa_transient_token}"
+            visa_url = visa_config.domain + resource_path
+            headers = self.get_header(REQUEST_METHOD_GET,
+                        resource_path, None, visa_config)
 
             visa_response = requests.get(visa_url, headers=headers,
                 timeout=EXTERNAL_API_REQUEST_TIMEOUT)
@@ -186,14 +251,10 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
     def decrypt_visa_payload(self, jwe_string, visa_config):
         """
-        Decrypts Visa JWE using RSA Private Key (Stored in api_secret).
-        Returns decrypted JSON dictionary.
+        Decrypts Visa JWE using RSA Private Key.
         """
         try:
-            # The key must be in PEM format (-----BEGIN RSA PRIVATE KEY-----)
             private_key_pem = visa_config.api_secret
-
-            # Create a JWK (JSON Web Key) object from the PEM
             key = jwk.JWK.from_pem(private_key_pem.encode('utf-8'))
 
             jwetoken = jwe.JWE()
@@ -201,7 +262,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             jwetoken.decrypt(key)
 
             decrypted_payload = jwetoken.payload.decode('utf-8')
-
             logger.info("Visa JWE successfully decrypted.")
             return json.loads(decrypted_payload)
 

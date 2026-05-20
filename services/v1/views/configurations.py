@@ -14,13 +14,14 @@ from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
                         decrypt_browser_value, get_display_platform,
-                        get_display_program)
+                        get_display_program, get_payment_gateway_config)
 from integrations.constants import (ADCB_CLIENT_CODE, CHECKOUTPG_HUB_CODE,
                                     QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
                                     ANB_CLIENT_CODE,
                                     ADDITIONAL_PROCESSING_FEE,
-                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE)
+                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE,
+                                    VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -157,6 +158,7 @@ class ConfigViewSet(ViewSet):
                 None,
                 "paypal_config": self.get_paypal_config(payment_options,
                                                         transaction),
+                "visa_ctp_config": self.get_visa_ctp_config(payment_options),
                 "vat_amount": transaction.VAT_amount if transaction else None,
                 "base_amount": transaction.base_amount if transaction else
                 None,
@@ -491,6 +493,26 @@ class ConfigViewSet(ViewSet):
         if not udf1 or not isinstance(udf1, dict):
             return None
         return udf1.get(key)
+
+    def get_visa_ctp_config(self, payment_options):
+        """
+        Helper method to fetch and structure Visa Click to Pay parameters
+        """
+        if not payment_options or not payment_options.get('visa_ctp'):
+            return None
+
+        try:
+            visa_config = get_payment_gateway_config(
+                VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
+            if not visa_config:
+                return None
+
+            return {
+                "merchant_id": visa_config.merchant_id
+            }
+        except Exception as e:
+            logger.error(f"Failed to generate visa_ctp_config block: {str(e)}")
+            return None
 
 
 class ClientStaticFilesAPI(APIView):
