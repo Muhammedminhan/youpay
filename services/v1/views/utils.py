@@ -723,12 +723,8 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
             giftee_fee = Decimal("0")
 
         total_amount = round(
-            transaction_obj.base_amount +
-            transaction_obj.service_fee +
-            additional_fee +
-            giftee_fee +
-            total_vat, 2)
-
+            transaction_obj.base_amount + transaction_obj.service_fee +
+            additional_fee + giftee_fee + total_vat, 2)
         amex_additional_fee_config = {
             "additional_fee": str(additional_fee),
             "additional_fee_vat": str(additional_fee_vat),
