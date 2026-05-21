@@ -15,10 +15,10 @@ job:
       image: '420360167813.dkr.ecr.ap-south-1.amazonaws.com/qa/ygg/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "-c", "/bin/cp -f /vault/secrets/application.env /etc/profile.d/application-env.sh ; sed -i \"s/\\[JIRA_ID\\]/[JIRA_ID]/g\" /etc/profile.d/application-env.sh ; source /etc/profile.d/application-env.sh ; python3.9 manage.py collectstatic --no-input >> /ygag/logs/app.out.collectstatic.log 2>&1"]'
       memory:
-        requests: 1000Mi
+        requests: 400Mi
         limits: 1500Mi
       cpu:
-        requests: 1000m
+        requests: 200m
         limits: 1500m
       volumeMounts:
         - mountPath: '/ygag/logs/'
