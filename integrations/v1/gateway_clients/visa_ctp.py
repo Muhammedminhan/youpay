@@ -86,6 +86,47 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
         return headers
 
+    def _extract_visa_jwt(self, capture_context_token):
+        """
+        Internal helper method to base64 decode the captureContext JWT
+        and safely extract frontend asset distribution paths.
+        """
+        client_library = ""
+        client_library_integrity = ""
+
+        if not capture_context_token:
+            return client_library, client_library_integrity
+
+        try:
+            jwt_parts = capture_context_token.split('.')
+            if len(jwt_parts) >= 2:
+                payload_b64 = jwt_parts[1]
+                payload_b64 += '=' * (-len(
+                    payload_b64) % 4)
+
+                decoded_bytes = base64.b64decode(payload_b64)
+                decoded_payload = json.loads(decoded_bytes.decode('utf-8'))
+
+                ctx_list = decoded_payload.get('ctx', [])
+                if ctx_list and isinstance(ctx_list, list):
+                    first_ctx_item = ctx_list[0]
+                    ctx_data = first_ctx_item.get('data', {}) if isinstance(
+                        first_ctx_item, dict) else {}
+
+                    client_library = ctx_data.get('clientLibrary', '')
+                    client_library_integrity = ctx_data.get(
+                        'clientLibraryIntegrity', '')
+                else:
+                    client_library = decoded_payload.get('clientLibrary', '')
+                    client_library_integrity = decoded_payload.get(
+                        'clientLibraryIntegrity', '')
+
+        except Exception as parse_err:
+            logger.error(
+                f"Failed to extract frontend library strings from JWT: {str(parse_err)}")
+
+        return client_library, client_library_integrity
+
     def create_visa_session(self, transaction_obj):
         """
         Method for creating a Visa Click to Pay session (Capture Context)
@@ -142,11 +183,15 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 timeout=EXTERNAL_API_REQUEST_TIMEOUT
             )
 
+            safe_response_logging_string = json.dumps(
+                {"captureContext": response.text if (
+                            response and response.text) else None}
+            )
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
                 request_data=payload_string,
-                response_data=response.text,
+                response_data=safe_response_logging_string,
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_VISA_SESSION,
             )
@@ -158,7 +203,15 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 except ValueError:
                     capture_context_token = response.text.strip()
 
-                return {'visa_session_token': capture_context_token}, self.SUCCESS
+                client_library, client_library_integrity = (
+                    self._extract_visa_jwt(capture_context_token)
+                )
+
+                return {
+                    'visa_session_token': capture_context_token,
+                    'client_library': client_library,
+                    'client_library_integrity': client_library_integrity
+                }, self.SUCCESS
 
             logger.error(
                 f"Visa session creation failed. Status: {response.status_code}, "
