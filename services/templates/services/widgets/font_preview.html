@@ -112,11 +112,6 @@
             var isItalic = italicSet.indexOf(selectedVal) !== -1;
             var fontStyle = isItalic ? 'italic' : 'normal';
 
-            console.log('--- Font Preview Debug ---');
-            console.log('Selected Value (ID):', selectedVal);
-            console.log('Resolved Font Family:', fontFamily);
-            console.log('Font URL:', fontUrl);
-
             // Inject Custom Font (@font-face) or Google Font (<link>)
             if (fontUrl) {
                 var isDirectFont = /\.(ttf|woff2?|otf)(\?.*)?$/i.test(fontUrl);
@@ -137,7 +132,6 @@
                             }
                         `;
                         document.head.appendChild(style);
-                        console.log('Injected @font-face for:', cleanFamily);
                     }
                     // Apply with fallback
                     fontFamily = `'${fontFamily.replace(/['"]/g, '')}', sans-serif`;
@@ -150,7 +144,6 @@
                         link.rel = 'stylesheet';
                         link.href = fontUrl;
                         document.head.appendChild(link);
-                        console.log('Injected Google Font link:', fontUrl);
                     }
                 }
             }
@@ -173,7 +166,6 @@
                 children[i].style.setProperty('font-family', fontFamily, 'important');
                 children[i].style.setProperty('font-style', fontStyle, 'important');
             }
-            console.log('Applied font-family:', fontFamily);
         }
 
         selectElement.addEventListener('change', updatePreviewFont);

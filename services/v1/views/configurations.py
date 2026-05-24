@@ -571,10 +571,10 @@ def get_client_font_details(client):
     """
     return {
         'font': client.font_en_us.font_family if client.font_en_us else "default",
-        'font_is_italic': client.font.is_italic if client.font else False,
+        'font_is_italic': client.font_en_us.is_italic if client.font_en_us else False,
         'font_ar': client.font_ar.font_family if client.font_ar else "default",
         'font_ar_url': client.font_ar.font_url if client.font_ar else None,
-        'font_url': client.font.font_url if client.font else None,
+        'font_url': client.font_en_us.font_url if client.font_en_us else None,
         'font_ar_is_italic': client.font_ar.is_italic if client.font_ar else False,
     }
 
