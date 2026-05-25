@@ -18,7 +18,8 @@ from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
                                     PAYMENT_REQUEST_VISA_SESSION,
                                     VISACTP_CREDENTIALS_API,
                                     PAYMENT_REQUEST_VISA_CREDENTIALS,
-                                    VISACTP_TOKEN_TYPE, VISACTP_CLIENT_VERSION)
+                                    VISACTP_TOKEN_TYPE, VISACTP_CLIENT_VERSION,
+                                    VISA_BILLING_TYPE_NONE)
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import \
     YouPayTransactionDataSerializer
@@ -171,6 +172,13 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                             "currency": transaction_obj.currency
                         }
                     }
+                },
+                "captureMandate": {
+                    "requestShipping": False,
+                    "requestPhone": False,
+                    "requestEmail": False,
+                    "showConfirmationStep": False,
+                    "billingType": VISA_BILLING_TYPE_NONE
                 },
                 "country": transaction_obj.country_code,
                 "locale": (transaction_obj.language + "_" +
