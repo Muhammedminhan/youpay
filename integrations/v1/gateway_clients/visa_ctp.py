@@ -151,11 +151,16 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                                 VISACTP_CLIENT_VERSION)
             payment_types = visa_config.validation_json.get('payment_types',
                                 VISACTP_PAYMENT_TYPES)
+            origins_list = [target_origin]
+            custom_origins = visa_config.validation_json.get(
+                'allowed_origins', [])
+            if custom_origins:
+                origins_list = origins_list + custom_origins
 
             url = visa_config.domain + VISACTP_SESSION_API
 
             request_data = {
-                "targetOrigins": [target_origin],
+                "targetOrigins": origins_list,
                 "allowedCardNetworks": allowed_cards,
                 "allowedPaymentTypes": payment_types,
                 "clientVersion": client_version,
