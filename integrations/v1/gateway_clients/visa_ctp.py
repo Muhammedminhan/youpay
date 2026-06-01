@@ -243,24 +243,36 @@ class VisaManager(YouPayResponse, PaymentHandlers):
         Visa Payload Fetch -> Decryption -> Checkout.com Payment
         """
         try:
+            logger.info(
+                f"[Visa CTP] Starting payment processing for Transaction: "
+                f"{transaction_obj.transaction_id}. Transient Token Length: "
+                f"{len(visa_transient_token) if visa_transient_token else 0}"
+            )
             visa_config = get_payment_gateway_config(
                 VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
 
             resource_path = f"{VISACTP_CREDENTIALS_API}/{visa_transient_token}"
             visa_url = visa_config.domain + resource_path
-            headers = self.get_header(REQUEST_METHOD_GET,
-                        resource_path, None, visa_config)
 
-            visa_response = requests.get(visa_url, headers=headers,
-                timeout=EXTERNAL_API_REQUEST_TIMEOUT)
+            request_body_data = {
+                "paymentInformation": {
+                    "transientToken": visa_transient_token
+                }
+            }
+            payload_string = json.dumps(request_body_data)
+
+            headers = self.get_header(REQUEST_METHOD_POST,
+                        resource_path, payload_string, visa_config)
+
+            visa_response = requests.post(visa_url, data=payload_string,
+                headers=headers, timeout=EXTERNAL_API_REQUEST_TIMEOUT)
 
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
-                request_data=json.dumps(
-                    {"visa_transient_token": visa_transient_token}),
+                request_data=payload_string,
                 response_data=visa_response.text,
-                request_method=REQUEST_METHOD_GET,
+                request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_VISA_CREDENTIALS,
             )
 
@@ -305,6 +317,12 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 'transaction_obj': transaction_obj,
                 'site_domain': get_app_config().front_end_domain
             }
+
+            logger.info(
+                f"[Visa CTP] Forwarding payment payload to CheckoutPG. "
+                f"Transaction ID: {transaction_obj.transaction_id}, Amount: "
+                f"{transaction_obj.amount} {transaction_obj.currency}"
+            )
 
             checkout = CheckoutpgManager()
             response_data, status_code = checkout.card_payment(payment_payload)
