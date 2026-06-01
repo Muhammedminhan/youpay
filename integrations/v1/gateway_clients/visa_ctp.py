@@ -251,8 +251,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             visa_config = get_payment_gateway_config(
                 VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
 
-            resource_path = f"{VISACTP_CREDENTIALS_API}/{visa_transient_token}"
-            visa_url = visa_config.domain + resource_path
+            visa_url = visa_config.domain + VISACTP_CREDENTIALS_API
 
             request_body_data = {
                 "paymentInformation": {
@@ -262,7 +261,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             payload_string = json.dumps(request_body_data)
 
             headers = self.get_header(REQUEST_METHOD_POST,
-                        resource_path, payload_string, visa_config)
+                        VISACTP_CREDENTIALS_API, payload_string, visa_config)
 
             visa_response = requests.post(visa_url, data=payload_string,
                 headers=headers, timeout=EXTERNAL_API_REQUEST_TIMEOUT)
