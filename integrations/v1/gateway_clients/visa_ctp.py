@@ -248,30 +248,53 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 f"{transaction_obj.transaction_id}. Transient Token Length: "
                 f"{len(visa_transient_token) if visa_transient_token else 0}"
             )
+
+            try:
+                token_parts = visa_transient_token.split('.')
+                if len(token_parts) < 2:
+                    logger.error(
+                        f"[Visa CTP] Invalid JWT split layout for transaction: "
+                        f"{transaction_obj.transaction_id}")
+                    return None, self.VISACTP_CARD_DETAILS_FAILED
+
+                payload_b64 = token_parts[1]
+                payload_b64 += '=' * (-len(payload_b64) % 4)
+                decoded_jwt_payload = json.loads(
+                    base64.b64decode(payload_b64).decode('utf-8'))
+
+                visa_reference_id = decoded_jwt_payload.get('jti')
+
+                if not visa_reference_id:
+                    logger.error(
+                        f"[Visa CTP] Missing 'jti' claim inside token payload "
+                        f"for transaction: {transaction_obj.transaction_id}")
+                    return None, self.VISACTP_CARD_DETAILS_FAILED
+
+            except Exception as token_err:
+                logger.exception(
+                    f"[Visa CTP] Base64 token payload decode exception "
+                    f"failure: {str(token_err)}")
+                return None, self.VISACTP_CARD_DETAILS_FAILED
+
             visa_config = get_payment_gateway_config(
                 VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
 
-            visa_url = visa_config.domain + VISACTP_CREDENTIALS_API
+            resource_path = f"{VISACTP_CREDENTIALS_API}/{visa_reference_id}"
+            visa_url = visa_config.domain + resource_path
 
-            request_body_data = {
-                "paymentInformation": {
-                    "transientToken": visa_transient_token
-                }
-            }
-            payload_string = json.dumps(request_body_data)
+            headers = self.get_header(REQUEST_METHOD_GET,
+                        resource_path, None, visa_config)
 
-            headers = self.get_header(REQUEST_METHOD_POST,
-                        VISACTP_CREDENTIALS_API, payload_string, visa_config)
-
-            visa_response = requests.post(visa_url, data=payload_string,
-                headers=headers, timeout=EXTERNAL_API_REQUEST_TIMEOUT)
+            visa_response = requests.get(visa_url, headers=headers,
+                                timeout=EXTERNAL_API_REQUEST_TIMEOUT)
 
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
-                request_data=payload_string,
+                request_data=json.dumps({
+                    "visa_reference_id": visa_reference_id}),
                 response_data=visa_response.text,
-                request_method=REQUEST_METHOD_POST,
+                request_method=REQUEST_METHOD_GET,
                 request_type=PAYMENT_REQUEST_VISA_CREDENTIALS,
             )
 
@@ -291,7 +314,8 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 return None, self.VISACTP_CARD_DETAILS_FAILED
 
             payment_info = decrypted_data.get('paymentInformation', {})
-            card_data = payment_info.get('card', {})
+            card_data = (payment_info.get('tokenizedCard', {}) or
+                         payment_info.get('card', {}))
 
             visa_request_data = {
                 "source": {
@@ -320,7 +344,8 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             logger.info(
                 f"[Visa CTP] Forwarding payment payload to CheckoutPG. "
                 f"Transaction ID: {transaction_obj.transaction_id}, Amount: "
-                f"{transaction_obj.amount} {transaction_obj.currency}"
+                f"{transaction_obj.amount} {transaction_obj.currency}, "
+                f"Payload: {payment_payload}"
             )
 
             checkout = CheckoutpgManager()
