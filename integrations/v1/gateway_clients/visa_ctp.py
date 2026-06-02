@@ -250,6 +250,9 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             )
 
             try:
+                visa_config = get_payment_gateway_config(
+                    VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
+
                 token_parts = visa_transient_token.split('.')
                 if len(token_parts) < 2:
                     logger.error(
@@ -262,7 +265,12 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 decoded_jwt_payload = json.loads(
                     base64.b64decode(payload_b64).decode('utf-8'))
 
-                visa_reference_id = decoded_jwt_payload.get('jti')
+                logger.info(f"Decoded JWT Payload for Transaction "
+                    f"{transaction_obj.transaction_id}: {decoded_jwt_payload}")
+
+                organization_id = visa_config.merchant_id
+                visa_reference_id = decoded_jwt_payload.get(
+                    'paymentCredentialsReference', {}).get(organization_id)
 
                 if not visa_reference_id:
                     logger.error(
@@ -275,9 +283,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                     f"[Visa CTP] Base64 token payload decode exception "
                     f"failure: {str(token_err)}")
                 return None, self.VISACTP_CARD_DETAILS_FAILED
-
-            visa_config = get_payment_gateway_config(
-                VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
 
             resource_path = f"{VISACTP_CREDENTIALS_API}/{visa_reference_id}"
             visa_url = visa_config.domain + resource_path
