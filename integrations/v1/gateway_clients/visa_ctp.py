@@ -5,6 +5,7 @@ from jwcrypto import jwe, jwk
 import json
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 
 import requests
 
@@ -165,7 +166,11 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 "data": {
                     "orderInformation": {
                         "amountDetails": {
-                            "totalAmount": str(transaction_obj.amount),
+                            "totalAmount": str(
+                                Decimal(transaction_obj.amount).quantize(
+                                    Decimal("0.01")
+                                )
+                            ),
                             "currency": transaction_obj.currency
                         }
                     }
