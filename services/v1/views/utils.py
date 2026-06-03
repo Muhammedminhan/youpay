@@ -447,6 +447,19 @@ def get_payment_methods(transaction, client, country):
                                     CHECKOUTPG_HUB_CODE, transaction)
                                 payment_config_map[
                                     "checkoutpg_config"] = checkout_obj.response_data
+                                additional_fee_obj = get_gateway_additional_fee(
+                                    transaction.currency, ADDITIONAL_AMEX_CARD_FEE,
+                                    CHECKOUTPG_HUB_CODE, "checkout_card")
+                                additional_fee_config = (
+                                    get_checkout_amex_additional_fee(
+                                        additional_fee_obj, transaction))
+                                logger.info(
+                                    "additional_fee for transaction {} amex card "
+                                    "is {}".format(
+                                        transaction.transaction_id,
+                                        additional_fee_config))
+                                payment_config_map["checkoutpg_config"][
+                                    "amex_config"] = additional_fee_config
                         method_specific_config = method.payment_method_config
                         if not method_specific_config:
                             second_project_obj = get_second_project_configuration_data(
