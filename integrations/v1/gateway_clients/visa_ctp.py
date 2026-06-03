@@ -148,8 +148,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
             allowed_cards = visa_config.validation_json.get('allowed_cards',
                                 VISACTP_ALLOWED_CARDS)
-            client_version = visa_config.validation_json.get('client_version',
-                                VISACTP_CLIENT_VERSION)
             payment_types = visa_config.validation_json.get('payment_types',
                                 VISACTP_PAYMENT_TYPES)
             origins_list = [target_origin]
@@ -164,7 +162,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 "targetOrigins": origins_list,
                 "allowedCardNetworks": allowed_cards,
                 "allowedPaymentTypes": payment_types,
-                "clientVersion": client_version,
                 "data": {
                     "orderInformation": {
                         "amountDetails": {
@@ -174,11 +171,14 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                     }
                 },
                 "captureMandate": {
-                    "requestShipping": False,
-                    "requestPhone": False,
-                    "requestEmail": False,
-                    "showConfirmationStep": False,
-                    "billingType": VISA_BILLING_TYPE_NONE
+                    "billingType": VISA_BILLING_TYPE_NONE,
+                    "requestEmail": True,
+                    "requestPhone": True,
+                    "requestShipping": True,
+                    "shipToCountries": [
+                        transaction_obj.country_code
+                    ],
+                    "showAcceptedNetworkIcons": True
                 },
                 "country": transaction_obj.country_code,
                 "locale": (transaction_obj.language + "_" +
@@ -274,8 +274,8 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
                 if not visa_reference_id:
                     logger.error(
-                        f"[Visa CTP] Missing 'jti' claim inside token payload "
-                        f"for transaction: {transaction_obj.transaction_id}")
+                        f"Missing paymentCredentialsReference inside token "
+                        f"payload for transaction: {transaction_obj.transaction_id}")
                     return None, self.VISACTP_CARD_DETAILS_FAILED
 
             except Exception as token_err:
@@ -314,6 +314,10 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
             decrypted_data = self.decrypt_visa_payload(
                 visa_response.text, visa_config)
+            logger.info(
+                "[Visa CTP] Payment Credentials Payload: %s",
+                json.dumps(decrypted_data)
+            )
 
             if not decrypted_data:
                 return None, self.VISACTP_CARD_DETAILS_FAILED
