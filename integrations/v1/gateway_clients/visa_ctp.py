@@ -18,7 +18,7 @@ from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
                                     PAYMENT_REQUEST_VISA_SESSION,
                                     VISACTP_CREDENTIALS_API,
                                     PAYMENT_REQUEST_VISA_CREDENTIALS,
-                                    VISACTP_TOKEN_TYPE, VISACTP_CLIENT_VERSION,
+                                    VISACTP_TOKEN_TYPE,
                                     VISA_BILLING_TYPE_NONE)
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import \
