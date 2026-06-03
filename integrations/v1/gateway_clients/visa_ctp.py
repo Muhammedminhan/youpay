@@ -177,12 +177,9 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 },
                 "captureMandate": {
                     "billingType": VISA_BILLING_TYPE_NONE,
-                    "requestEmail": True,
-                    "requestPhone": True,
-                    "requestShipping": True,
-                    "shipToCountries": [
-                        transaction_obj.country_code
-                    ],
+                    "requestEmail": False,
+                    "requestPhone": False,
+                    "requestShipping": False,
                     "showAcceptedNetworkIcons": True
                 },
                 "country": transaction_obj.country_code,
