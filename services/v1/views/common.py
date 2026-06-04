@@ -658,6 +658,9 @@ def verify_tpay_response_signature(op_status, tpay_id, amount, op_code, msisdn,
                                    checkout_id, received_sig):
     """
     Reconstructs the TPay message and validates the HMAC signature.
+
+    Returns:
+        bool: True if the signature is valid, otherwise False.
     """
     message = (
             str(op_status) +
