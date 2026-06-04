@@ -611,13 +611,14 @@ def generate_tpay_epoch_timespan():
     minutes = (seconds % 3600) // 60
     secs = seconds % 60
 
+    # TPay expects the fractional part in 100-nanosecond ticks (7 digits)
     fraction = f"{microseconds * 10:07d}"
 
     return f"{days}.{hours:02}:{minutes:02}:{secs:02}.{fraction}"
 
 def generate_script_signature():
     """
-        Generates the script signature required to load the TPay checkout script.
+    Generates the script signature required to load the TPay checkout script.
     """
     epoch_time = generate_tpay_epoch_timespan()
 
