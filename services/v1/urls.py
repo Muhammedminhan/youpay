@@ -49,7 +49,7 @@ from .api_clients.tpay import TPayInitializeAPIView, TPayVerifyAPIView
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
                             AdditionalChargeCalculation,
-                            EarnRedemptionPartnerPoints)
+                            EarnRedemptionPartnerPoints, RefundPointsAPIView)
 
 router = DefaultRouter()
 router.register('client', APIClientRegistrationViewSet, basename='client')
@@ -168,6 +168,9 @@ urlpatterns = [
     path('paypal/payment/', PayPalPaymentAPIView.as_view(),
          name='PayPalPayment'),
     path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
+
+    # API for refunding a payment
+    path('refund-payment/', RefundPointsAPIView.as_view(), name='RefundPointsAPI'),
 
     # TPay Endpoints
     path('tpay/initialize/', TPayInitializeAPIView.as_view(),

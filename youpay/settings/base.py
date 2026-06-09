@@ -48,6 +48,7 @@ SITE_SECURE = config('SITE_SECURE', default=True)
 # Application definition
 
 INSTALLED_APPS = [
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -168,6 +169,14 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
+
+LANGUAGES = (
+    ('en-us', 'English'),
+    ('ar', 'Arabic'),
+)
+
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'en-us'
+MODELTRANSLATION_FALLBACK_LANGUAGES = ('en-us', 'ar')
 
 TIME_ZONE = 'Asia/Dubai'
 
