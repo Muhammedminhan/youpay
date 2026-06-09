@@ -8,7 +8,7 @@ from integrations.constants import (PAYMENT_MEDIUM_IOS, PAYMENT_MEDIUM_WEB,
 from integrations.models import PaymentGateway, PaymentConfiguration
 from services.constants import CURRENCY_UAE, CURRENCY_KSA
 from services.models import APIClient
-from core.models import Country
+from core.models import Country, CheckoutFont
 
 class APIClientRegistrationSerializer(serializers.ModelSerializer):
     name = serializers.CharField(max_length=255, required=True)
@@ -50,6 +50,11 @@ class APIClientRequestSerializer(serializers.Serializer):
     product_code = serializers.CharField(max_length=12, required=True)
     allowed_payment_countries = serializers.ListField(required=True,
         child=serializers.CharField())
+    font = serializers.PrimaryKeyRelatedField(
+        queryset=CheckoutFont.objects.filter(is_active=True),
+        required=False,
+        allow_null=True
+    )
 
     def validate_payment_method(self, value):
         for payment_method in value:
