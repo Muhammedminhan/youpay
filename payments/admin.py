@@ -23,10 +23,10 @@ class YoupayToPaymentGatewaysDataInline(admin.TabularInline):
 
 class YouPayTransactionDataAdmin(admin.ModelAdmin):
     actions = [archive_transaction_data,
-        collect_b2c_program_points_for_transaction,
-        sync_qitaf_earn_to_purchase_request,
-        sync_paypal_usd_value,
-        replace_ecmgft_order_id_prefix_for_atwork_transactions]
+               collect_b2c_program_points_for_transaction,
+               sync_qitaf_earn_to_purchase_request,
+               sync_paypal_usd_value,
+               replace_ecmgft_order_id_prefix_for_atwork_transactions]
     archive_transaction_data.short_description = (
         "Archive Selected Transaction data")
     collect_b2c_program_points_for_transaction.short_description = (
@@ -36,6 +36,9 @@ class YouPayTransactionDataAdmin(admin.ModelAdmin):
     )
     sync_paypal_usd_value.short_description = (
         "Sync PayPal USD value"
+    )
+    replace_ecmgft_order_id_prefix_for_atwork_transactions.short_description = (
+        "Replace ECMGFT_ prefix with ATWORK_ in Order ID (no signal)"
     )
 
     list_display = ('transaction_id', 'amount', 'currency', 'customer_email',

@@ -304,9 +304,8 @@ def replace_ecmgft_order_id_prefix_for_atwork_transactions(modeladmin,
         # Filter selected queryset for only those with ECMGFT_ prefix
         ecmgft_queryset = queryset.filter(order_id__startswith="ECMGFT_")
         total_selected = queryset.count()
-        eligible_count = ecmgft_queryset.count()
 
-        if eligible_count == 0:
+        if not ecmgft_queryset.exists():
             modeladmin.message_user(
                 request,
                 "No transactions with 'ECMGFT_' prefix found in the {} "
@@ -334,8 +333,3 @@ def replace_ecmgft_order_id_prefix_for_atwork_transactions(modeladmin,
         response_message = "ECMGFT to ATWORK order_id update failed: {}".format(str(e))
         logger.error(response_message, exc_info=True)
         modeladmin.message_user(request, response_message, level=messages.ERROR)
-
-
-replace_ecmgft_order_id_prefix_for_atwork_transactions.short_description = (
-    "Replace ECMGFT_ prefix with ATWORK_ in Order ID (no signal)"
-)
