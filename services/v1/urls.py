@@ -51,7 +51,7 @@ from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             EarnRedemptionPartnerPoints)
 
 router = DefaultRouter()
-router.register('client', APIClientRegistrationViewSet, basename='client')
+# router.register('client', APIClientRegistrationViewSet, basename='client')
 router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
