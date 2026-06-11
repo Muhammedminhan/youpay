@@ -44,6 +44,8 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
 from payments.models import YouPayTransactionData
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
+from services.v1.auth.client_registration_permission import \
+    APIClientRegistrationPermission
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
@@ -406,6 +408,7 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
     Test API endpoint for encrypting request data
     """
+    permission_classes = [APIClientRegistrationPermission]
 
     def post(self, request):
         data = self.request.data
