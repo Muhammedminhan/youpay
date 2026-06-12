@@ -54,8 +54,7 @@ from services.v1.views.payment_handlers import PaymentHandlers
 from services.v1.views.utils import (
     reformat_payment_request_data,
     payment_configuration_check,
-    get_country_for_configuration, is_rewards_order_reference,
-    get_session_id_from_header
+    get_country_for_configuration, is_rewards_order_reference
 )
 
 logger = logging.getLogger(__name__)
@@ -155,11 +154,6 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                         encrypted_transaction_id = encrypt_string(
                             transaction_response['data'][
                                 'transaction_id'])
-
-                        # request.session[
-                        #     "transaction_id"] = encrypted_transaction_id
-                        #
-                        # request.session.set_expiry(1800)  # 30 minutes
 
                         language = data_formatted.get('language')
 
@@ -437,19 +431,6 @@ class PaymentCancelledView(YouPayTransactionCRUD, APIView, ClientValidator):
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
             if transaction_object:
-                is_valid_client = False
-                validate, client = self.validate_client(request)
-                if validate and client.id == transaction_object.api_client_id:
-                    is_valid_client = True
-
-                if not is_valid_client and transaction_object.api_client.validate_session:
-                    session_id = get_session_id_from_header(request)
-                    if transaction_object.session_id != session_id:
-                        data = self.response_obj.get_error_dict(
-                            error_code=self.response_obj.VALIDATION_FAILED)
-                        return Response(data,
-                                        status=status.HTTP_400_BAD_REQUEST)
-
                 if transaction_object.payment_status in ALLOW_CANCEL_STATUS_LIST:
                     self.update_youpay_transaction_data({
                         'transaction_id': transaction_id,
@@ -502,39 +483,23 @@ class TransactionExpireView(YouPayTransactionCRUD, APIView, ClientValidator,
             transaction_object = self.get_youpay_transaction_data(
                 transaction_id)
 
-            if transaction_object:
-                is_valid_client = False
-                validate, client = self.validate_client(request)
-                if validate and client.id == transaction_object.api_client_id:
-                    is_valid_client = True
+            if transaction_object.payment_status in ALLOW_EXPIRE_STATUS_LIST:
+                self.update_youpay_transaction_data({
+                    'transaction_id': transaction_object.transaction_id,
+                    'payment_status': PAYMENT_STATUS_EXPIRED
+                })
 
-                if not is_valid_client and transaction_object.api_client.validate_session:
-                    session_id = get_session_id_from_header(request)
-                    if transaction_object.session_id != session_id:
-                        return Response(
-                            {"error": "Session expired or invalid"},
-                            status=status.HTTP_400_BAD_REQUEST)
+            logger.info(
+                "Payment status set to expired for transaction_id "
+                ": {}".format(transaction_id))
+            redirect_url = (transaction_object.cancel_url +
+                            '?transaction_id=' + transaction_id)
+            response_data = {"status": status.HTTP_200_OK,
+                             "is_redirect": True,
+                             REDIRECT_URL: redirect_url,
+                             "message": "Successfully expired transaction"}
 
-                if transaction_object.payment_status in ALLOW_EXPIRE_STATUS_LIST:
-                    self.update_youpay_transaction_data({
-                        'transaction_id': transaction_object.transaction_id,
-                        'payment_status': PAYMENT_STATUS_EXPIRED
-                    })
-
-                logger.info(
-                    "Payment status set to expired for transaction_id "
-                    ": {}".format(transaction_id))
-                redirect_url = (transaction_object.cancel_url +
-                                '?transaction_id=' + transaction_id)
-                response_data = {"status": status.HTTP_200_OK,
-                                 "is_redirect": True,
-                                 REDIRECT_URL: redirect_url,
-                                 "message": "Successfully expired transaction"}
-
-                return Response(response_data, status=status.HTTP_200_OK)
-            else:
-                return Response({"error": "Transaction not found or invalid"},
-                                status=status.HTTP_400_BAD_REQUEST)
+            return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             logger.error("Error in transaction expire api ", exc_info=e)
             return Response({"error": str(e), })
