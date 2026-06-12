@@ -97,7 +97,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                                 status=status.HTTP_400_BAD_REQUEST)
             client_pk = client.pk
 
-            decrypted_data = decrypt_payment_data(request.data)
+            decrypted_data = decrypt_payment_data(request.data,
+                                                  client.decrypt_key)
             data_formatted = reformat_payment_request_data(decrypted_data)
 
             if not data_formatted:

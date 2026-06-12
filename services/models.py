@@ -78,6 +78,9 @@ class APIClient(AbstractDateTime, AbstractUserBase):
         help_text='API version to be used for saved card listing')
     client_package = models.CharField(
         max_length=100, blank=True, null=True)
+    decrypt_key = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="key for decrypt payment data")
     display_total_quantity_in_breakdown = models.BooleanField(
         default=False,
         help_text='Indicates whether to display the number of total quantity '
