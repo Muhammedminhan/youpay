@@ -50,7 +50,13 @@ from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             AdditionalChargeCalculation,
                             EarnRedemptionPartnerPoints, RefundPointsAPIView)
 
-router = DefaultRouter()
+
+class SecureRouter(DefaultRouter):
+    """Router that does not expose an API root view"""
+    include_root_view = False
+
+
+router = SecureRouter()
 # router.register('client', APIClientRegistrationViewSet, basename='client')
 router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
