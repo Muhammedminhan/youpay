@@ -68,6 +68,7 @@ class ConfigViewSet(ViewSet):
         self.list_expired_statuses = EXPIRED_STATUS_LIST
 
     def list(self, request):
+        return Response({"message": "this service is not available right now"})
         queryset = PaymentGateway.objects.all()
         serializer = PaymentGatewaySerializer(queryset, many=True)
         return Response(serializer.data)
