@@ -50,7 +50,9 @@ from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             AdditionalChargeCalculation,
                             EarnRedemptionPartnerPoints, RefundPointsAPIView)
 
+
 router = DefaultRouter()
+router.include_root_view = False
 # router.register('client', APIClientRegistrationViewSet, basename='client')
 router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
