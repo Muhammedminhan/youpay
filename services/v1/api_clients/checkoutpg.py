@@ -311,7 +311,7 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
         """
         if not self.verify_hmac_signature(request):
             return Response(
-                {"message": "Unauthorized"},
+                {"errors": {"code": 401, "message": "Unauthorized"}},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
