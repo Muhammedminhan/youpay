@@ -114,7 +114,7 @@ urlpatterns = [
          name='HappyCreditsDebitBalance'),
 
     # ApplePay endpoints
-#     path('applepay/status-update/', ApplePayStatusUpdateAPI.as_view()),
+    path('applepay/status-update/', ApplePayStatusUpdateAPI.as_view()),
 
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
