@@ -51,12 +51,8 @@ from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             EarnRedemptionPartnerPoints, RefundPointsAPIView)
 
 
-class SecureRouter(DefaultRouter):
-    """Router that does not expose an API root view"""
-    include_root_view = False
-
-
-router = SecureRouter()
+router = DefaultRouter()
+router.include_root_view = False
 # router.register('client', APIClientRegistrationViewSet, basename='client')
 router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
@@ -118,7 +114,7 @@ urlpatterns = [
          name='HappyCreditsDebitBalance'),
 
     # ApplePay endpoints
-#     path('applepay/status-update/', ApplePayStatusUpdateAPI.as_view()),
+    path('applepay/status-update/', ApplePayStatusUpdateAPI.as_view()),
 
     # API for getting the client logo and color code
     path('client-static-details/', ClientStaticFilesAPI.as_view()),
