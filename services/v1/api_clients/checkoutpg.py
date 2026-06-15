@@ -309,6 +309,7 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
         """
         Applepay update status API
         """
+        logger.info("ApplePay status update request received.")
         if not self.verify_hmac_signature(request):
             return Response(
                 {"errors": {"code": 401, "message": "Unauthorized"}},
@@ -381,24 +382,22 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
         return data
 
     def verify_hmac_signature(self, request):
-        if not getattr(settings, 'APPLEPAY_HMAC_SECRET', None):
-            logger.error("APPLEPAY_HMAC_SECRET is not configured")
-            return False
-
         received_sig = request.headers.get("X-Signature")
         timestamp = request.headers.get("X-Timestamp")
 
         if not received_sig or not timestamp:
             logger.error(
                 "Missing ApplePay HMAC headers. "
-                "X-Signature=%s X-Timestamp=%s",
+                "signature_present=%s timestamp_present=%s",
                 bool(received_sig),
                 bool(timestamp)
             )
             return False
 
         try:
-            if abs(time.time() - int(timestamp) / 1000) > 300:
+            timestamp_int = int(timestamp)
+
+            if abs(time.time() - timestamp_int / 1000) > 300:
                 logger.error(
                     "ApplePay HMAC timestamp expired. timestamp=%s",
                     timestamp
@@ -408,21 +407,30 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
             payload = request.data.copy()
             payload["timestamp"] = timestamp
 
+            payload_string = json.dumps(
+                payload,
+                separators=(",", ":")
+            )
+
             expected_sig = hmac.new(
                 settings.APPLEPAY_HMAC_SECRET.encode(),
-                json.dumps(
-                    payload,
-                    separators=(",", ":"),
-                    sort_keys=True
-                ).encode(),
+                payload_string.encode(),
                 hashlib.sha256
             ).hexdigest()
 
-            return hmac.compare_digest(received_sig, expected_sig)
+            if not hmac.compare_digest(received_sig, expected_sig):
+                logger.error(
+                    "ApplePay HMAC signature mismatch. "
+                    "transaction_id=%s",
+                    request.data.get("transaction_id")
+                )
+                return False
+            return True
 
         except Exception as e:
             logger.error(
                 "ApplePay HMAC verification failed: %s",
-                str(e)
+                str(e),
+                exc_info=True
             )
             return False
