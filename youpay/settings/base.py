@@ -259,3 +259,4 @@ ENVIRONMENT = config('ENVIRONMENT')
 
 ADMIN_USER_NAME = config('ADMIN_USER_NAME', 'youpay-admin@yougotagift.com')
 APPLEPAY_HMAC_SECRET = config('APPLEPAY_HMAC_SECRET')
+FERNET_KEY = config('FERNET_KEY', '')
