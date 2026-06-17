@@ -397,7 +397,7 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
         try:
             timestamp_int = int(timestamp)
 
-            if abs(time.time() - timestamp_int / 1000) > 300:
+            if abs(time.time() - timestamp_int / 1000) > 120:
                 logger.error(
                     "ApplePay HMAC timestamp expired. timestamp=%s",
                     timestamp
