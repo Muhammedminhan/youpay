@@ -310,7 +310,12 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
         """
         Applepay update status API
         """
-        logger.info("ApplePay status update request received.")
+        logger.info(
+            "ApplePay status update request received. "
+            "transaction_id=%s payment_stage=%s",
+            request.data.get("transaction_id"),
+            request.data.get("payment_stage")
+        )
         if not self.verify_hmac_signature(request):
             return Response(
                 {"errors": {"code": 401, "message": "Unauthorized"}},
@@ -422,8 +427,9 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
             if not hmac.compare_digest(received_sig, expected_sig):
                 logger.error(
                     "ApplePay HMAC signature mismatch. "
-                    "transaction_id=%s",
-                    request.data.get("transaction_id")
+                    "transaction_id=%s, payment_stage=%s",
+                    request.data.get("transaction_id"),
+                    request.data.get("payment_stage")
                 )
                 return False
             return True
