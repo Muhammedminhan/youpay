@@ -1,7 +1,5 @@
-from django.urls import path
-
-from gateways.paypal.webhook_listner import WebhookListner
+from django.urls import include, path
 
 urlpatterns = [
-    path('webhook',WebhookListner.as_view()),
+    path('paypal/', include('gateways.paypal.url')),
 ]
