@@ -4,7 +4,8 @@ import requests
 
 from django.contrib import messages
 from django.core.serializers.json import DjangoJSONEncoder
-
+from django.db.models import Value
+from django.db.models.functions import Replace
 from rest_framework import status
 from gateways.paypal.models import PaypalTransaction
 from core.constants import PAYMENT_GATEWAY_PAYPAL
@@ -286,3 +287,49 @@ def sync_paypal_usd_value(modeladmin, request, queryset):
         logger.error(response_message, exc_info=True)
         modeladmin.message_user(request, response_message,
                                 level=messages.ERROR)
+
+
+def replace_ecmgft_order_id_prefix_for_atwork_transactions(modeladmin,
+                                                           request, queryset):
+    """
+    Admin action to replace 'ECMGFT_' prefix with 'ATWORK_' in order_id field
+    for the selected transactions.
+
+    Uses QuerySet.update() with Django's Replace DB function which executes a
+    direct SQL UPDATE statement. This does NOT trigger post_save signals,
+    so youpay_transaction_data_post_save will not be invoked and no webhooks
+    will be sent to clients.
+    """
+    try:
+        # Filter selected queryset for only those with ECMGFT_ prefix
+        ecmgft_queryset = queryset.filter(order_id__startswith="ECMGFT_")
+        total_selected = queryset.count()
+
+        if not ecmgft_queryset.exists():
+            modeladmin.message_user(
+                request,
+                "No transactions with 'ECMGFT_' prefix found in the {} "
+                "selected records.".format(total_selected),
+                level=messages.WARNING,
+            )
+            return
+
+        # QuerySet.update() does NOT trigger post_save signals -
+        # it performs a direct SQL UPDATE bypassing model.save()
+        updated_count = ecmgft_queryset.update(
+            order_id=Replace("order_id", Value("ECMGFT_"), Value("ATWORK_"))
+        )
+
+        response_message = (
+            "Successfully updated {} out of {} selected transactions: "
+            "replaced 'ECMGFT_' with 'ATWORK_' in order_id.".format(
+                updated_count, total_selected
+            )
+        )
+        logger.info(response_message)
+        modeladmin.message_user(request, response_message, level=messages.SUCCESS)
+
+    except Exception as e:
+        response_message = "ECMGFT to ATWORK order_id update failed: {}".format(str(e))
+        logger.error(response_message, exc_info=True)
+        modeladmin.message_user(request, response_message, level=messages.ERROR)
