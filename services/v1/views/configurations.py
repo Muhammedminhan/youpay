@@ -68,9 +68,14 @@ class ConfigViewSet(ViewSet):
         self.list_expired_statuses = EXPIRED_STATUS_LIST
 
     def list(self, request):
-        queryset = PaymentGateway.objects.all()
-        serializer = PaymentGatewaySerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(
+            {"message": "This service is not available right now."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+        # NOTE commented due to security concerns
+        # queryset = PaymentGateway.objects.all()
+        # serializer = PaymentGatewaySerializer(queryset, many=True)
+        # return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
         """
@@ -140,7 +145,8 @@ class ConfigViewSet(ViewSet):
         api_client = {
             'color': client.color_code,
             'mobile_logo': get_mobile_logo_url(client),
-            'logo': get_logo_url(client)
+            'logo': get_logo_url(client),
+            **get_client_font_details(client)
         }
         display_total_quantity = (
             transaction.api_client.display_total_quantity_in_breakdown)
@@ -520,6 +526,7 @@ class ClientStaticFilesAPI(APIView):
                     'logo': get_logo_url(client),
                     "program": get_display_program(client),
                     "client_code": client.client_code,
+                    **get_client_font_details(client)
                 }
 
                 data = response_obj.get_success_dict(
@@ -561,6 +568,21 @@ def get_mobile_logo_url(client):
         return client.mobile_logo_file.url
     else:
         return None
+
+
+def get_client_font_details(client):
+    """
+    Returns the font details for the API client, supporting both
+    English and Arabic localizations with Google Font URLs.
+    """
+    return {
+        'font': client.font_en_us.font_family if client.font_en_us else "default",
+        'font_is_italic': client.font_en_us.is_italic if client.font_en_us else False,
+        'font_ar': client.font_ar.font_family if client.font_ar else "default",
+        'font_ar_url': client.font_ar.font_url if client.font_ar else None,
+        'font_url': client.font_en_us.font_url if client.font_en_us else None,
+        'font_ar_is_italic': client.font_ar.is_italic if client.font_ar else False,
+    }
 
 
 class UpdateAmounts(APIView):

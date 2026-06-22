@@ -93,7 +93,7 @@ def retry(exception_to_ocheck, tries=4, delay=3, backoff=2, logger=None):
     return deco_retry
 
 
-def decrypt_payment_data(encrypted_data):
+def decrypt_payment_data(encrypted_data, dc_key):
     """
     This method is for decrypt payment data
 
@@ -101,10 +101,12 @@ def decrypt_payment_data(encrypted_data):
     output : decrypted_data - dict
     """
     try:
+        if not dc_key:
+            dc_key = COMMON_ENCRYPTION_KEY
         b64 = encrypted_data
         json_k = ['nonce', 'ciphertext', 'tag']
         jv = {k: b64decode(b64[k]) for k in json_k}
-        cipher = AES.new(COMMON_ENCRYPTION_KEY.encode("utf8"),
+        cipher = AES.new(dc_key.encode("utf8"),
                          AES.MODE_GCM,
                          nonce=jv['nonce'])
         plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
