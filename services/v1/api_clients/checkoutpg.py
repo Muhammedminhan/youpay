@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, IS_SUCCESS
 )
+from payments.constants import PAYMENT_STATUS_PAID
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import get_site_domain, decrypt_string
@@ -411,6 +412,11 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
                 return False
 
             payload = request.data.copy()
+            if payload.get('payment_stage') == PAYMENT_STATUS_PAID:
+                payload = {
+                    'transaction_id': payload.get('transaction_id'),
+                    'payment_stage': payload.get('payment_stage')
+                }
             payload["timestamp"] = timestamp
 
             payload_string = json.dumps(
