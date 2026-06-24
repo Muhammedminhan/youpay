@@ -68,8 +68,10 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         """
         self.transaction_id = request.data.get("transaction_id")
         self.decrypted_id = decrypt_string(self.transaction_id)
-        logger.info(f"Received Network charge calculation request for "
-                    f"Transaction ID: {self.decrypted_id}")
+        logger.info(
+            "Received Network charge calculation request for Transaction ID: %s",
+            self.decrypted_id
+        )
 
         transaction_obj = self.get_youpay_transaction_data(self.decrypted_id)
         if transaction_obj:
@@ -91,12 +93,15 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                 transaction_data=data,
                 app_config=app_config, params=params,
                 code=NETWORK_HUB_CODE)
+            payment_reference = payment_serializer.validated_data.get(
+                'payment_reference'
+            )
             payment_data = {
                 "amount": int(float(data["amount"]) * 100),
                 "currency": data["currency"],
                 "email": data["customer_email"],
                 "customer_name": data["customer_name"],
-                "payment_reference": data["transaction_id"],
+                "payment_reference": payment_reference,
                 "redirect_url": redirect_url
             }
             with transaction.atomic():
@@ -124,7 +129,7 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                         {
                             "payment_url": payment_url,
                             "order_id": order_id,
-                            "payment_reference": payment_serializer["payment_reference"].value,
+                            "payment_reference": payment_reference,
                             "status": PaymentStatus.INITIATED,
                         },
                         status=status.HTTP_201_CREATED,
@@ -159,8 +164,8 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                 status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            network_transaction = NetworkTransaction.objects.get(
-                youpay_transaction__transaction_id=self.decrypted_id)
+            network_transaction = NetworkTransaction.objects.filter(
+                youpay_transaction__transaction_id=self.decrypted_id).first()
             if network_transaction.youpay_transaction.payment_status in [PAYMENT_STATUS_CANCELLED]:
                 _, response = is_redirect(
                     self.decrypted_id, {},

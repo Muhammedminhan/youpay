@@ -1,9 +1,11 @@
 import logging
+
 from django.utils import timezone
+from django.utils.text import capfirst
+
 from networkpg.models import NetworkTransaction, EventNotification
 from services.v1.views.common import YouPayTransactionCRUD
 from networkpg.choices import PaymentStatus
-from django.utils.text import capfirst
 from core.models import Country
 from payments.constants import (
     PAYMENT_STATUS_PAID,
@@ -14,6 +16,7 @@ from payments.constants import (
     PAYMENT_STATUS_FAILED
 )
 from core.constants import PAYMENT_GATEWAY_NETWORK_IN
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,12 +37,14 @@ class WebhookService:
         )
         try:
             transaction_obj = NetworkTransaction.objects.filter(
-                youpay_transaction__transaction_id=merchant_order_reference).first()
+                payment_reference=merchant_order_reference).first()
             if not transaction_obj:
-                transaction_obj = NetworkTransaction.objects.filter(network_order_id=order_reference).first()
+                transaction_obj = NetworkTransaction.objects.filter(
+                    network_order_id=order_reference).first()
 
             if transaction_obj:
-                if transaction_obj.youpay_transaction.payment_status in [PAYMENT_STATUS_CANCELLED]:
+                if transaction_obj.youpay_transaction.payment_status in [
+                    PAYMENT_STATUS_CANCELLED]:
                     return True
                 notification.network_transaction = transaction_obj
                 WebhookService._update_transaction_status(transaction_obj, raw_data)
@@ -127,6 +132,10 @@ class WebhookService:
 
         if payments:
             active_payment = payments[0]
+            auth_response = active_payment.get('authResponse', {})
+            if auth_response:
+                transaction_obj.auth_response_message = auth_response.get(
+                    'resultMessage')
             payment_method = active_payment.get('paymentMethod', {})
             card_number = payment_method.get('pan', '')
 
