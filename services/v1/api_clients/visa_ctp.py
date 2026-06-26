@@ -60,6 +60,10 @@ class VisaCTPPayment(APIView, YouPayTransactionCRUD):
         API to process the actual payment after Visa Click to Pay interaction
         """
         try:
+            logger.info(
+                "VisaCTPPayment request received. Payload: %s",
+                request.data
+            )
             transaction_id = request.data.get('transaction_id')
             visa_transient_token = request.data.get('visa_transient_token')
 
