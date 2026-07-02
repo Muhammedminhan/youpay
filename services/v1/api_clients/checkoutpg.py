@@ -1,3 +1,8 @@
+import hmac
+import hashlib
+import json
+import time
+from django.conf import settings
 import logging
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -8,6 +13,7 @@ from rest_framework.views import APIView
 from core.messages import (
     COMMON_ERROR_MESSAGE_EN, IS_SUCCESS
 )
+from payments.constants import PAYMENT_STATUS_PAID
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
 from core.utils import get_site_domain, decrypt_string
@@ -29,6 +35,7 @@ from services.v1.views.common import (
     YouPayTransactionCRUD,
     ClientValidator
 )
+from youpay.settings.base import APPLEPAY_TIMESTAMP_EXPIRY
 
 logger = logging.getLogger(__name__)
 
@@ -304,6 +311,18 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
         """
         Applepay update status API
         """
+        logger.info(
+            "ApplePay status update request received. "
+            "transaction_id=%s payment_stage=%s",
+            request.data.get("transaction_id"),
+            request.data.get("payment_stage")
+        )
+        if not self.verify_hmac_signature(request):
+            return Response(
+                {"errors": {"code": 401, "message": "Unauthorized"}},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
         try:
             transaction_id = request.data.get('transaction_id')
             transaction_obj = self.get_youpay_transaction_data(
@@ -368,3 +387,63 @@ class ApplePayStatusUpdateAPI(YouPayTransactionCRUD, APIView,
             errors['code'] = code
 
         return data
+
+    def verify_hmac_signature(self, request):
+        received_sig = request.headers.get("X-Signature")
+        timestamp = request.headers.get("X-Timestamp")
+
+        if not received_sig or not timestamp:
+            logger.error(
+                "Missing ApplePay HMAC headers. "
+                "signature_present=%s timestamp_present=%s",
+                bool(received_sig),
+                bool(timestamp)
+            )
+            return False
+
+        try:
+            timestamp_int = int(timestamp)
+
+            if abs(time.time() - timestamp_int / 1000) > APPLEPAY_TIMESTAMP_EXPIRY:
+                logger.error(
+                    "ApplePay HMAC timestamp expired. timestamp=%s",
+                    timestamp
+                )
+                return False
+
+            payload = request.data.copy()
+            if payload.get('payment_stage') == PAYMENT_STATUS_PAID:
+                payload = {
+                    'transaction_id': payload.get('transaction_id'),
+                    'payment_stage': payload.get('payment_stage')
+                }
+            payload["timestamp"] = timestamp
+
+            payload_string = json.dumps(
+                payload,
+                separators=(",", ":")
+            )
+
+            expected_sig = hmac.new(
+                settings.APPLEPAY_HMAC_SECRET.encode(),
+                payload_string.encode(),
+                hashlib.sha256
+            ).hexdigest()
+
+            if not hmac.compare_digest(received_sig, expected_sig):
+                logger.error(
+                    "ApplePay HMAC signature mismatch. "
+                    "transaction_id=%s, payment_stage=%s",
+                    request.data.get("transaction_id"),
+                    request.data.get("payment_stage")
+                )
+                return False
+            return True
+
+        except Exception as e:
+            logger.error(
+                "ApplePay HMAC verification failed: %s",
+                str(e),
+                exc_info=True
+            )
+            return False

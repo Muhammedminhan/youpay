@@ -1,12 +1,12 @@
 import json
 import logging
+from decimal import Decimal
 
 import requests
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from decimal import Decimal, InvalidOperation
 
 from core.constants import PAYBACK_ACTION_EARN, REQUEST_METHOD_POST
 from core.exceptions import PaymentConfigurationFailed
@@ -44,6 +44,8 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
 from payments.models import YouPayTransactionData
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
+from services.v1.auth.client_registration_permission import (
+    APIClientRegistrationPermission)
 from services.v1.serializers.payment_request import (
     PaymentRequestDataSerializer, PaymentVerifyDataSerializer)
 from services.v1.views.common import (YouPayTransactionCRUD, ClientValidator,
@@ -97,7 +99,8 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                                 status=status.HTTP_400_BAD_REQUEST)
             client_pk = client.pk
 
-            decrypted_data = decrypt_payment_data(request.data)
+            decrypted_data = decrypt_payment_data(request.data,
+                                                  client.decrypt_key)
             data_formatted = reformat_payment_request_data(decrypted_data)
 
             if not data_formatted:
@@ -400,6 +403,7 @@ class TestPaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator):
     """
     Test API endpoint for encrypting request data
     """
+    permission_classes = [APIClientRegistrationPermission]
 
     def post(self, request):
         data = self.request.data

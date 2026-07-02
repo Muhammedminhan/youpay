@@ -51,8 +51,10 @@ from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             AdditionalChargeCalculation,
                             EarnRedemptionPartnerPoints, RefundPointsAPIView)
 
+
 router = DefaultRouter()
-router.register('client', APIClientRegistrationViewSet, basename='client')
+router.include_root_view = False
+# router.register('client', APIClientRegistrationViewSet, basename='client')
 router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
@@ -170,7 +172,7 @@ urlpatterns = [
     path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
 
     # API for refunding a payment
-    path('refund-payment/', RefundPointsAPIView.as_view(), name='RefundPointsAPI'),
+#     path('refund-payment/', RefundPointsAPIView.as_view(), name='RefundPointsAPI'),
 
     # TPay Endpoints
     path('tpay/initialize/', TPayInitializeAPIView.as_view(),
