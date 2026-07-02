@@ -1,4 +1,5 @@
 from django.utils.translation import gettext_lazy as _
+from django.conf import settings
 
 PURCHASE_PLATFORM_WEB = 'Web'
 PURCHASE_PLATFORM_MWEB = 'Mweb'
@@ -49,7 +50,7 @@ PAYMENT_GATEWAY_CHOICES = (
 EXTERNAL_API_REQUEST_TIMEOUT = 30
 
 COMMON_ENCRYPTION_KEY = "asfjk@16r32r1234asesaeqwe374SEFT"
-FERNET_KEY = b'kjFz1262SpkPZQ39EOIps3943oHJhC93bAVz8q7gVqo='
+FERNET_KEY = settings.FERNET_KEY
 BROWSER_VALUE_ENCRYPTION_KEY = b'79PYdNTetCmVrbv4qbe5kedKm2hpYJlJTsohtJFyk-4='
 
 REQUEST_METHOD_POST = 'POST'
