@@ -28,7 +28,6 @@ class TPayWebhookLog(AbstractDateTime):
     order_info = models.CharField(max_length=128, db_index=True)
     payment_provider_code = models.CharField(max_length=64, null=True,
                                              blank=True)
-
     digest = models.CharField(max_length=255, null=True, blank=True)
     payload = models.JSONField(null=True, blank=True)
 
