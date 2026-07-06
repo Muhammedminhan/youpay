@@ -7,7 +7,8 @@ import logging
 from core.constants import LANGUAGE_ENGLISH, PAYMENT_GATEWAY_TPAY
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string, get_redirect_url
+from core.utils import decrypt_string, get_redirect_url, \
+    get_payment_gateway_by_code
 from gateways.common import _get_payment_reference_number
 from gateways.tpay.models import TPayTransaction
 from integrations.constants import TPAY_HUB_CODE
@@ -24,7 +25,7 @@ from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
                                 ETISALAT_OPERATOR_CODE,
                                 TPAY_PRODUCT_CATALOG_NAME,
                                 PAYMENT_STATUS_INITIALIZED,
-                                TPAY_STATUS_LABELS)
+                                TPAY_STATUS_LABELS, TPAY_GATEWAY_CODE)
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +50,15 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                 return Response(data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
 
+            gateway_obj = get_payment_gateway_by_code(TPAY_GATEWAY_CODE)
             msisdn = request.data.get("msisdn", "")
             order_info = _get_payment_reference_number(
                 transaction_obj.order_reference)
             operator_code = ETISALAT_OPERATOR_CODE
-            product_catalog = TPAY_PRODUCT_CATALOG_NAME
+            product_catalog = gateway_obj.validation_json.get(
+                "tpay_product_catalog_name", TPAY_PRODUCT_CATALOG_NAME)
+            merchant_template_key = gateway_obj.validation_json.get(
+                "tpay_merchant_template_key", TPAY_MERCHANT_TEMPLATE_KEY)
 
             TPayTransaction.objects.update_or_create(
                 payment_reference=order_info,
@@ -90,7 +95,7 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
 
             # Checkout signature
             checkout_signature = generate_checkout_signature(
-                TPAY_MERCHANT_TEMPLATE_KEY,
+                merchant_template_key,
                 msisdn,
                 operator_code,
                 product_catalog,
@@ -104,7 +109,7 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                 "epochTimeSpan": epoch,
                 "scriptSignature": script_signature,
                 "checkoutData": {
-                    "merchantTemplateKey": TPAY_MERCHANT_TEMPLATE_KEY,
+                    "merchantTemplateKey": merchant_template_key,
                     "msisdn": msisdn,
                     "operatorCode": operator_code,
                     "productCatalogName": product_catalog,
