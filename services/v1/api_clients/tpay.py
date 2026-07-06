@@ -7,8 +7,8 @@ import logging
 from core.constants import LANGUAGE_ENGLISH, PAYMENT_GATEWAY_TPAY
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.utils import decrypt_string, get_redirect_url, \
-    get_payment_gateway_by_code
+from core.utils import (decrypt_string, get_redirect_url,
+                        get_payment_gateway_by_code)
 from gateways.common import _get_payment_reference_number
 from gateways.tpay.models import TPayTransaction
 from integrations.constants import TPAY_HUB_CODE
@@ -25,7 +25,8 @@ from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
                                 ETISALAT_OPERATOR_CODE,
                                 TPAY_PRODUCT_CATALOG_NAME,
                                 PAYMENT_STATUS_INITIALIZED,
-                                TPAY_STATUS_LABELS, TPAY_GATEWAY_CODE)
+                                TPAY_STATUS_LABELS,
+                                TPAY_GATEWAY_CODE)
 
 logger = logging.getLogger(__name__)
 
