@@ -210,7 +210,7 @@ class YouPayTransactionCRUD(object):
                                            PAYMENT_METHOD_ANB,
                                            PAYMENT_METHOD_ANB_AND_CARD,
                                            PAYMENT_METHOD_PAYPAL
-                                           ]:
+                                           ] or data.get('is_amex_card', False):
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
             service_fee = data.get('service_fee', None)
@@ -221,6 +221,7 @@ class YouPayTransactionCRUD(object):
             data_dict['service_fee'] = service_fee
             data_dict['base_amount'] = base_amount
             data_dict['VAT_amount'] = vat_amount
+            data_dict['cart_amount'] = data.get("cart_amount", None)
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
