@@ -32,13 +32,14 @@ from payments.constants import (
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA,
-    EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL
+    EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL,
+    PAYMENT_METHOD_TPAY_ETISALAT
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
                                 APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
-                                APPLEPAY_LABEL)
+                                APPLEPAY_LABEL, COUNTRY_CODE_UAE, CURRENCY_UAE)
 from services.models import PaymentRequestData
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -203,6 +204,8 @@ class ConfigViewSet(ViewSet):
                 **payment_config_data,
                 "applepay_config": self.get_applepay_config(payment_options,
                                                             transaction),
+                "tpay_etisalat_config": self.get_tpay_etisalat_config(
+                    payment_options, transaction),
                 "display_total_quantity": display_total_quantity
             }
         }
@@ -498,6 +501,25 @@ class ConfigViewSet(ViewSet):
             return None
         value = udf1.get(key)
         return None if str(value) in ["0", "0.0", "0.00", "0.000"] else value
+
+    def get_tpay_etisalat_config(self, payment_options, transaction):
+        """
+        Returns tpay_etisalat configuration including min/max limits
+        Only for country 'AE'
+        """
+        tpay_config = {}
+        tpay_enabled = payment_options.get('tpay_etisalat', False)
+
+        if (tpay_enabled and transaction and transaction.country_code ==
+                COUNTRY_CODE_UAE):
+            tpay_config = {
+                "payment_option": PAYMENT_METHOD_TPAY_ETISALAT,
+                "currency": CURRENCY_UAE,
+                "min_limit": 0,
+                "max_limit": 700,
+                "is_active": True
+            }
+        return tpay_config
 
 
 class ClientStaticFilesAPI(APIView):
