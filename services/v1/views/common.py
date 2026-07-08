@@ -21,7 +21,8 @@ from core.messages import (
 )
 from core.models import PaymentConfiguration
 from core.response_messages import YouPayResponse
-from gateways.tpay.constants import TPAY_SUCCESS_CODES
+from gateways.tpay.constants import (TPAY_SUCCESS_CODES, TPAY_PRIVATE_KEY,
+                                     TPAY_PUBLIC_KEY)
 from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
 from integrations.models import AdditionalChargeConfiguration
 from integrations.models import PaymentGateway
