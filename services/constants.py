@@ -1,5 +1,3 @@
-from django.conf import settings
-
 TOKEN_TYPE_SAVED_CARD = 'savedcard'
 TOKEN_TYPE_CARD = 'card'
 TOKEN_TYPE_PAYPAL = 'paypal'
@@ -65,29 +63,3 @@ AMAZONPG_STORE_CURRENCIES = [CURRENCY_UAE,
 CHECKOUTPG_RESPONSE_MESSAGE_NULL_CODE = 2404
 
 BALANCE_CALCULATION_FAILED_CODE = 1501
-
-TPAY_PUBLIC_KEY = settings.TPAY_PUBLIC_KEY
-TPAY_PRIVATE_KEY = settings.TPAY_PRIVATE_KEY
-TPAY_MERCHANT_TEMPLATE_KEY = "YOUPay3"
-ETISALAT_OPERATOR_CODE = "42402"
-TPAY_PRODUCT_CATALOG_NAME = "YouGotaGift"
-TPAY_SUCCESS_CODES = [
-    "0",
-    "100",
-    "PaymentCompletedSuccessfully",
-    "SucceededAndFailedToContactMerchant"
-]
-PAYMENT_STATUS_INITIALIZED = 'initialized'
-TPAY_STATUS_LABELS = {
-    "0": "Success",
-    "1": "PIN Send Failed",
-    "2": "User Cancelled",
-    "4": "Insufficient Funds",
-    "5": "Limit Exceeded",
-    "11": "Invalid PIN",
-    "16": "PIN Expired",
-    "20": "Invalid Password",
-    "21": "Transaction Pending",
-    "51": "Invalid Digest (Security Error)",
-}
-TPAY_GATEWAY_CODE = 'TPAY'
