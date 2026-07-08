@@ -5,8 +5,9 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from gateways.tpay.constants import TPAY_PRIVATE_KEY, TPAY_PUBLIC_KEY
 from gateways.tpay.models import TPayWebhookLog
-from services.constants import (TPAY_PUBLIC_KEY, TPAY_PRIVATE_KEY)
+
 
 logger = logging.getLogger(__name__)
 

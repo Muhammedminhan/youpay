@@ -7,8 +7,8 @@ from django.dispatch import receiver
 
 from core.models import AbstractUserBase, AbstractDateTime, CustomerProfile
 from payments.constants import PAYMENT_STATUS_PAID, PAYMENT_STATUS_DECLINED
-from services.constants import (TPAY_SUCCESS_CODES, PAYMENT_STATUS_INITIALIZED,
-                                TPAY_STATUS_LABELS)
+from gateways.tpay.constants import (TPAY_SUCCESS_CODES, PAYMENT_STATUS_INITIALIZED,
+                                     TPAY_STATUS_LABELS)
 from services.v1.views.common import YouPayTransactionCRUD
 
 logger = logging.getLogger(__name__)
