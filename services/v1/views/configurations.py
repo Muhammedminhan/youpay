@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.exceptions import PaymentConfigurationFailed
-from core.models import PaymentMethodConfig, Country
+from core.models import PaymentMethodConfig, Country, PaymentConfiguration
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
@@ -33,7 +33,7 @@ from payments.constants import (
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA,
     EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL,
-    PAYMENT_METHOD_TPAY_ETISALAT
+    PAYMENT_METHOD_TPAY_ETISALAT, PAYMENT_OPTION_TPAY
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
@@ -504,22 +504,28 @@ class ConfigViewSet(ViewSet):
 
     def get_tpay_etisalat_config(self, payment_options, transaction):
         """
-        Returns tpay_etisalat configuration including min/max limits
+        Returns tpay_etisalat configuration including min/max limits.
         Only for country 'AE'
         """
-        tpay_config = {}
-        tpay_enabled = payment_options.get('tpay_etisalat', False)
+        tpay_enabled = payment_options.get(PAYMENT_OPTION_TPAY, False)
+        if not (tpay_enabled and transaction and
+                transaction.country_code == COUNTRY_CODE_UAE):
+            return {}
 
-        if (tpay_enabled and transaction and transaction.country_code ==
-                COUNTRY_CODE_UAE):
-            tpay_config = {
-                "payment_option": PAYMENT_METHOD_TPAY_ETISALAT,
-                "currency": CURRENCY_UAE,
-                "min_limit": 0,
-                "max_limit": 700,
-                "is_active": True
-            }
-        return tpay_config
+        payment_config = PaymentConfiguration.objects.filter(
+            payment_method=PAYMENT_OPTION_TPAY,
+            active=True
+        ).first()
+
+        method_config = payment_config.payment_method_config or {}
+
+        return {
+            "payment_option": PAYMENT_METHOD_TPAY_ETISALAT,
+            "currency": CURRENCY_UAE,
+            "min_limit": method_config.get("min_limit", 0),
+            "max_limit": method_config.get("max_limit", 700),
+            "is_active": payment_config.active,
+        }
 
 
 class ClientStaticFilesAPI(APIView):
