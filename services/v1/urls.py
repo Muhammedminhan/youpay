@@ -27,6 +27,9 @@ from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiGenerateOTPAPIView)
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
+from .api_clients.hassad_service import (HassadGenerateOTPAPIView,
+                                         HassadRedeemPointsAPIView,
+                                         HassadVerify)
 from .api_clients.mokafa_service import (UpdateMokafaPhoneNumber,
                                          MokafaaGenerateOTPAPIView,
                                          MokafaaRedeemPointsAPIView,
@@ -161,6 +164,13 @@ urlpatterns = [
     path('anb/redeem-points/', AnbRedeemPointsAPIView.as_view(),
          name='AnbRedeemPointsAPIView'),
     path('anb/verify/', AnbVerify.as_view(), name='AnbVerify'),
+
+    # Hassad endpoints
+    path('hassad/generate-otp/', HassadGenerateOTPAPIView.as_view(),
+         name='HassadGenerateOTPAPIView'),
+    path('hassad/redeem-points/', HassadRedeemPointsAPIView.as_view(),
+         name='HassadRedeemPointsAPIView'),
+    path('hassad/verify/', HassadVerify.as_view(), name='HassadVerify'),
 
     # API for updating service fee and VAT for a new payment attempt
     path('update-amounts/', UpdateAmounts.as_view()),
