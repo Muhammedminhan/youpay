@@ -1,4 +1,7 @@
+import hmac
+import hashlib
 import logging
+from datetime import datetime, timezone
 
 from django.db import transaction
 from rest_framework import status
@@ -17,6 +20,7 @@ from core.messages import (
     IS_REDIRECT
 )
 from core.models import PaymentConfiguration
+from core.response_messages import YouPayResponse
 from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
 from integrations.models import AdditionalChargeConfiguration
 from integrations.models import PaymentGateway
@@ -41,7 +45,9 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
-                                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
+                                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH,
+                                TPAY_PUBLIC_KEY, TPAY_PRIVATE_KEY,
+                                TPAY_SUCCESS_CODES)
 from services.models import APIClient, OfferDetails
 
 logger = logging.getLogger(__name__)
@@ -193,6 +199,8 @@ class YouPayTransactionCRUD(object):
         data_dict['gateway_charge'] = data.get('gateway_charge', 0)
         data_dict['brand_calculations'] = data.get('brand_calculations', None)
         data_dict['udf1'] = data.get('udf1', None)
+        data_dict['additional_vat_percentage'] = data.get(
+            'additional_vat_percentage', None)
 
         if data_dict['payment_method'] in [PAYMENT_METHOD_QITAF,
                                            PAYMENT_METHOD_QITAFAND_CARD,
@@ -205,7 +213,7 @@ class YouPayTransactionCRUD(object):
                                            PAYMENT_METHOD_PAYPAL,
                                            PAYMENT_METHOD_HASSAD,
                                            PAYMENT_METHOD_HASSAD_AND_CARD
-                                           ]:
+                                           ] or data.get('is_amex_card', False):
             # updating amount and someother informations for qitaf
             amount = data.get('amount', None)
             service_fee = data.get('service_fee', None)
@@ -216,13 +224,13 @@ class YouPayTransactionCRUD(object):
             data_dict['service_fee'] = service_fee
             data_dict['base_amount'] = base_amount
             data_dict['VAT_amount'] = vat_amount
+            data_dict['cart_amount'] = data.get("cart_amount", None)
 
         if data_dict['payment_status'] in PAYMENT_END_STATUS_LIST:
             data_dict['settlement_entity'] = self.get_settlement_entity(
                 payment_gateway=data_dict['payment_gateway'],
                 currency=data_dict['currency'],
                 transaction_id=transaction_id)
-
         try:
             transaction_obj = self.get_youpay_transaction_data(transaction_id)
             if transaction_obj:
@@ -513,7 +521,7 @@ def add_payment_gateway_info_in_url(**kwargs):
 
         frontend_domain = app_config.front_end_domain
         path = app_config.redirect_path
-        params = params + "&gty=" + code
+        params = params + "&gateway=" + code
 
         if platform in [PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID]:
             params = params + "&platform=app"
@@ -592,3 +600,141 @@ def get_processing_charge(currency, charge_type, payment_gateway,
         return None, None
 
     return additional_charge_obj.percentage, additional_charge_obj.VAT_percentage
+
+def generate_tpay_epoch_timespan():
+    """
+        Generates the current timestamp in TPay-required epoch format.
+    """
+    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    delta = now - epoch
+
+    days = delta.days
+    seconds = delta.seconds
+    microseconds = delta.microseconds
+
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+
+    # TPay expects the fractional part in 100-nanosecond ticks (7 digits)
+    fraction = f"{microseconds * 10:07d}"
+
+    return f"{days}.{hours:02}:{minutes:02}:{secs:02}.{fraction}"
+
+def generate_script_signature():
+    """
+    Generates the script signature required to load the TPay checkout script.
+    """
+    epoch_time = generate_tpay_epoch_timespan()
+
+    digest = hmac.new(
+        TPAY_PRIVATE_KEY.encode(),
+        epoch_time.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    return epoch_time, f"{TPAY_PUBLIC_KEY}:{digest}"
+
+def generate_checkout_signature(merchant_template_key, msisdn, operator_code,
+        product_catalog, product_price, language, order_info, redirect_url):
+    """
+        Generates the checkout signature for TPay One-Time Payment.
+    """
+    message = (
+        merchant_template_key +
+        msisdn +
+        operator_code +
+        product_catalog +
+        str(product_price) +
+        str(language) +
+        order_info +
+        redirect_url
+    )
+
+    digest = hmac.new(
+        TPAY_PRIVATE_KEY.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    return f"{TPAY_PUBLIC_KEY}:{digest}"
+
+def verify_tpay_response_signature(op_status, tpay_id, amount, op_code, msisdn,
+                                   order_info, catalog, lang, error,
+                                   checkout_id, received_sig):
+    """
+    Reconstructs the TPay message and validates the HMAC signature.
+
+    Returns:
+        bool: True if the signature is valid, otherwise False.
+    """
+    message = (
+            str(op_status) +
+            str(tpay_id) +
+            str(amount) +
+            str(op_code) +
+            str(msisdn) +
+            str(order_info) +
+            str(catalog) +
+            str(lang) +
+            str(error) +
+            str(checkout_id)
+    )
+
+    digest = hmac.new(
+        TPAY_PRIVATE_KEY.encode(),
+        message.encode(),
+        hashlib.sha256
+    ).hexdigest()
+
+    expected_signature = f"{TPAY_PUBLIC_KEY}:{digest}"
+
+    return hmac.compare_digest(expected_signature, received_sig)
+
+def get_custom_error_code(op_status):
+    """
+    Maps TPay status codes/titles to YouPay 19XXX codes.
+    Returns (custom_code, is_success)
+    """
+    response_obj = YouPayResponse()
+
+    if op_status in TPAY_SUCCESS_CODES:
+        return response_obj.TPAY_PAYMENT_SUCCESS, True
+
+    user_error_map = {
+        "4": response_obj.TPAY_INSUFFICIENT_FUNDS,
+        "NotEnoughCredit": response_obj.TPAY_INSUFFICIENT_FUNDS,
+
+        "5": response_obj.TPAY_LIMIT_EXCEEDED,
+        "LimitExceeded": response_obj.TPAY_LIMIT_EXCEEDED,
+
+        "11": response_obj.TPAY_INVALID_PIN_OR_PASSWORD,
+        "InvalidPIN": response_obj.TPAY_INVALID_PIN_OR_PASSWORD,
+        "20": response_obj.TPAY_INVALID_PIN_OR_PASSWORD,
+        "InvalidPassword": response_obj.TPAY_INVALID_PIN_OR_PASSWORD,
+
+        "16": response_obj.TPAY_EXPIRED_PIN,
+        "ExpiredPinCode": response_obj.TPAY_EXPIRED_PIN,
+
+        "2": response_obj.TPAY_USER_CANCELLED,
+        "TransactionCancelledByUser": response_obj.TPAY_USER_CANCELLED,
+
+        "13": response_obj.TPAY_INVALID_USER,
+        "SubscriberDoesNotExist": response_obj.TPAY_INVALID_USER,
+
+        "8": response_obj.TPAY_BLOCKED_USER,
+        "InactiveLine": response_obj.TPAY_BLOCKED_USER,
+
+        "19": response_obj.TPAY_TIMEOUT,
+        "TimeOut": response_obj.TPAY_TIMEOUT,
+
+        "14": response_obj.TPAY_NOT_ELIGIBLE,
+        "CorporateNotEligible": response_obj.TPAY_NOT_ELIGIBLE,
+        "18": response_obj.TPAY_NOT_ELIGIBLE,
+    }
+
+    if op_status in user_error_map:
+        return user_error_map[op_status], False
+
+    return response_obj.TPAY_PAYMENT_FAILED, False

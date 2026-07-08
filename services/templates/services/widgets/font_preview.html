@@ -1,0 +1,190 @@
+{% if is_arabic %}
+<div id="font-preview-container-{{ widget_id }}" dir="rtl" style="padding: 24px; border: 1px solid #e0e0e0; border-radius: 16px; background-color: #ffffff; width: 100%; max-width: 500px; box-sizing: border-box; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: right;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 8px; color: #000; font-weight: 600; font-size: 14px; cursor: pointer;">
+            <div style="width: 24px; height: 24px; background: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px;">&gt;</div>
+            العودة
+        </div>
+        <span id="font-name-label-{{ widget_id }}" style="font-size: 11px; color: #888; background: #f5f5f5; padding: 4px 10px; border-radius: 6px;">الخط الافتراضي</span>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <span style="font-weight: 600; font-size: 15px; color: #333;">المبلغ المطلوب دفعه</span>
+        <span style="font-weight: 700; font-size: 16px; color: #000;">100 ر.س</span>
+    </div>
+
+    <h4 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #000;">البطاقات المحفوظة</h4>
+    <div style="border: 1px solid #eee; padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 32px;">
+        <div style="width: 40px; height: 26px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #0033a0; border: 1px solid #ddd;">VISA</div>
+        <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 14px; color: #000;">XXXX - XXXX - XXXX - 4242</div>
+            <div style="font-size: 11px; color: #666;">Aswanth • 04/29</div>
+        </div>
+        <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px; font-size: 12px; color: #ccc;">الرجاء كتابة</div>
+    </div>
+
+    <h4 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #000;">خيارات أخرى للدفع</h4>
+    
+    <div style="border: 1px solid #eee; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-weight: 600; font-size: 14px; color: #000;">بطاقة مدى البنكية</span>
+        <div style="width: 30px; height: 18px; background: #007a33; border-radius: 2px;"></div>
+    </div>
+
+    <div style="border: 1px solid #eee; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-weight: 600; font-size: 14px; color: #000;">بطاقة الائتمان أو الخصم</span>
+        <div style="display: flex; gap: 4px;">
+            <div style="width: 24px; height: 15px; background: #eb001b; border-radius: 2px;"></div>
+            <div style="width: 24px; height: 15px; background: #0033a0; border-radius: 2px;"></div>
+        </div>
+    </div>
+
+    <div style="border: 1px solid #eee; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <span style="font-weight: 600; font-size: 14px; color: #000;">تابي | <span style="font-weight: 400; color: #666;">قسمها على 4 دفعات بدون فوائد</span></span>
+        <div style="width: 40px; height: 18px; background: #31f6bd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #000;">tabby</div>
+    </div>
+
+    <button type="button" style="width: 100%; padding: 16px; background-color: #007bff; color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,123,255,0.2);">ادفع الآن</button>
+</div>
+{% else %}
+<div id="font-preview-container-{{ widget_id }}" style="padding: 24px; border: 1px solid #e0e0e0; border-radius: 16px; background-color: #ffffff; width: 100%; max-width: 500px; box-sizing: border-box; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 8px; color: #000; font-weight: 600; font-size: 14px; cursor: pointer;">
+            <div style="width: 24px; height: 24px; background: #000; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px;">&lt;</div>
+            Back
+        </div>
+        <span id="font-name-label-{{ widget_id }}" style="font-size: 11px; color: #888; background: #f5f5f5; padding: 4px 10px; border-radius: 6px;">System Default</span>
+    </div>
+
+    <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <span style="font-weight: 600; font-size: 15px; color: #333;">Amount to Pay</span>
+        <span style="font-weight: 700; font-size: 16px; color: #000;">SR 100</span>
+    </div>
+
+    <h4 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #000;">Saved Cards</h4>
+    <div style="border: 1px solid #eee; padding: 16px; border-radius: 12px; display: flex; align-items: center; gap: 12px; margin-bottom: 32px;">
+        <div style="width: 40px; height: 26px; background: #f0f0f0; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #0033a0; border: 1px solid #ddd;">VISA</div>
+        <div style="flex: 1;">
+            <div style="font-weight: 700; font-size: 14px; color: #000;">XXXX - XXXX - XXXX - 4242</div>
+            <div style="font-size: 11px; color: #666;">Aswanth • 04/29</div>
+        </div>
+        <div style="background: #f5f5f5; padding: 8px 12px; border-radius: 8px; font-size: 12px; color: #ccc;">Enter CVV</div>
+    </div>
+
+    <h4 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 700; color: #000;">Other Payment Options</h4>
+    
+    <div style="border: 1px solid #eee; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-weight: 600; font-size: 14px; color: #000;">Mada Debit Card</span>
+        <div style="width: 30px; height: 18px; background: #007a33; border-radius: 2px;"></div>
+    </div>
+
+    <div style="border: 1px solid #eee; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span style="font-weight: 600; font-size: 14px; color: #000;">Credit or Debit Card</span>
+        <div style="display: flex; gap: 4px;">
+            <div style="width: 24px; height: 15px; background: #0033a0; border-radius: 2px;"></div>
+            <div style="width: 24px; height: 15px; background: #eb001b; border-radius: 2px;"></div>
+        </div>
+    </div>
+
+    <div style="border: 1px solid #eee; padding: 16px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <span style="font-weight: 600; font-size: 14px; color: #000;">Tabby | <span style="font-weight: 400; color: #666;">4 Interest-Free Payments</span></span>
+        <div style="width: 40px; height: 18px; background: #31f6bd; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #000;">tabby</div>
+    </div>
+
+    <button type="button" style="width: 100%; padding: 16px; background-color: #007bff; color: #fff; border: none; border-radius: 12px; font-weight: 700; font-size: 16px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,123,255,0.2);">Pay Now</button>
+</div>
+{% endif %}
+
+<script>
+(function() {
+    function initFontPreview() {
+        var selectElement = document.getElementById('{{ widget_id }}');
+        var previewContainer = document.getElementById('font-preview-container-{{ widget_id }}');
+        if (!selectElement || !previewContainer) return;
+
+        var fontMap = {{ font_map|safe }};
+        var urlMap = {{ url_map|safe }};
+        var italicSet = {{ italic_set|safe }};
+
+        function updatePreviewFont() {
+            var selectedVal = selectElement.value;
+            var fontFamily = fontMap[selectedVal] || fontMap[''];
+            var fontUrl = urlMap[selectedVal];
+            var isItalic = italicSet.indexOf(selectedVal) !== -1;
+            var fontStyle = isItalic ? 'italic' : 'normal';
+
+            // Inject Custom Font (@font-face) or Google Font (<link>)
+            if (fontUrl) {
+                var isDirectFont = /\.(ttf|woff2?|otf)(\?.*)?$/i.test(fontUrl);
+                
+                if (isDirectFont) {
+                    var styleId = 'custom-font-' + selectedVal;
+                    if (!document.getElementById(styleId)) {
+                        var style = document.createElement('style');
+                        style.id = styleId;
+                        // Clean quotes from name to avoid syntax errors in @font-face
+                        var cleanFamily = fontFamily.replace(/['"]/g, '');
+                        style.innerHTML = `
+                            @font-face {
+                                font-family: '${cleanFamily}';
+                                src: url('${fontUrl}') format('${fontUrl.toLowerCase().includes('.ttf') ? 'truetype' : 'woff2'}');
+                                font-weight: normal;
+                                font-style: normal;
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    // Apply with fallback
+                    fontFamily = `'${fontFamily.replace(/['"]/g, '')}', sans-serif`;
+                } else {
+                    // Google Font Logic
+                    var linkId = 'google-font-' + selectedVal;
+                    if (!document.getElementById(linkId)) {
+                        var link = document.createElement('link');
+                        link.id = linkId;
+                        link.rel = 'stylesheet';
+                        link.href = fontUrl;
+                        document.head.appendChild(link);
+                    }
+                }
+            }
+
+            // Update font name label
+            var selectedText = selectElement.options[selectElement.selectedIndex]
+                ? selectElement.options[selectElement.selectedIndex].text
+                : '{% if is_arabic %}الخط الافتراضي{% else %}System Default{% endif %}';
+            var fontLabel = document.getElementById('font-name-label-{{ widget_id }}');
+            if (fontLabel) {
+                fontLabel.textContent = selectedText;
+            }
+
+            // Apply font to preview container and all children
+            previewContainer.style.setProperty('font-family', fontFamily, 'important');
+            previewContainer.style.setProperty('font-style', fontStyle, 'important');
+
+            var children = previewContainer.querySelectorAll('*');
+            for (var i = 0; i < children.length; i++) {
+                children[i].style.setProperty('font-family', fontFamily, 'important');
+                children[i].style.setProperty('font-style', fontStyle, 'important');
+            }
+        }
+
+        selectElement.addEventListener('change', updatePreviewFont);
+        selectElement.addEventListener('input', updatePreviewFont);
+
+        if (typeof django !== 'undefined' && django.jQuery) {
+            django.jQuery(selectElement).on('change', updatePreviewFont);
+        } else if (typeof jQuery !== 'undefined') {
+            jQuery(selectElement).on('change', updatePreviewFont);
+        }
+
+        updatePreviewFont();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFontPreview);
+    } else {
+        initFontPreview();
+    }
+})();
+</script>
+

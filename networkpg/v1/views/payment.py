@@ -8,7 +8,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from core.utils import decrypt_string
 from core.utils import get_app_config
-from services.v1.views.common import add_payment_gateway_info_in_url
+from services.v1.views.common import (
+    add_payment_gateway_info_in_url,
+    is_redirect
+)
 
 from integrations.constants import NETWORK_HUB_CODE
 
@@ -35,7 +38,8 @@ from payments.constants import (
     PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_PENDING,
     PAYMENT_STATUS_DECLINED,
-    PAYMENT_STATUS_FAILED
+    PAYMENT_STATUS_FAILED,
+    PAYMENT_STATUS_CANCELLED
 )
 
 logger = logging.getLogger(__name__)
@@ -157,6 +161,14 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         try:
             network_transaction = NetworkTransaction.objects.get(
                 youpay_transaction__transaction_id=self.decrypted_id)
+            if network_transaction.youpay_transaction.payment_status in [PAYMENT_STATUS_CANCELLED]:
+                _, response = is_redirect(
+                    self.decrypted_id, {},
+                )
+                return Response(
+                    response,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         except NetworkTransaction.DoesNotExist:
             return Response(
                 {"error": "Network transaction not found"},

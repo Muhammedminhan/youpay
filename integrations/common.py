@@ -2,6 +2,7 @@ import logging
 
 import requests
 
+from core.models import PaymentConfiguration
 from payments.constants import (PAYMENT_METHOD_NEQATY,
                                 PAYMENT_METHOD_NEQATY_AND_CARD)
 from services.models import APIClient
@@ -169,3 +170,28 @@ def update_offer_details(client_pk, invoice_id, offer_details):
     except Exception as e:
         logger.error(
             "Getting offer details failed with error {}".format(str(e)))
+
+
+def get_payment_config(payment_method, payment_gateway_code):
+    """
+    Get payment configuration
+    """
+    try:
+        return (
+            PaymentConfiguration.objects.get(
+                payment_method=payment_method,
+                payment_gateway__code=payment_gateway_code,
+            )
+        )
+    except PaymentConfiguration.DoesNotExist:
+        logger.error(
+            "Payment configuration not found for method=%s gateway=%s",
+            payment_method, payment_gateway_code
+        )
+        return None
+    except PaymentConfiguration.MultipleObjectsReturned:
+        logger.error(
+            "Multiple payment configurations found for method=%s gateway=%s",
+            payment_method, payment_gateway_code
+        )
+        return None

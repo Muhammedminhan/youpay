@@ -48,6 +48,7 @@ SITE_SECURE = config('SITE_SECURE', default=True)
 # Application definition
 
 INSTALLED_APPS = [
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -72,6 +73,7 @@ INSTALLED_APPS = [
     'gateways',
     'gateways.paypal',
     'networkpg',
+    'gateways.tpay',
 
 
     # 3rd party apps
@@ -168,6 +170,14 @@ REST_FRAMEWORK = {
 
 LANGUAGE_CODE = 'en-us'
 
+LANGUAGES = (
+    ('en-us', 'English'),
+    ('ar', 'Arabic'),
+)
+
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'en-us'
+MODELTRANSLATION_FALLBACK_LANGUAGES = ('en-us', 'ar')
+
 TIME_ZONE = 'Asia/Dubai'
 
 USE_I18N = True
@@ -249,3 +259,8 @@ CACHES = {
 ENVIRONMENT = config('ENVIRONMENT')
 
 ADMIN_USER_NAME = config('ADMIN_USER_NAME', 'youpay-admin@yougotagift.com')
+APPLEPAY_HMAC_SECRET = config('APPLEPAY_HMAC_SECRET')
+FERNET_KEY = config('FERNET_KEY', '')
+APPLEPAY_TIMESTAMP_EXPIRY = 120
+TPAY_PUBLIC_KEY = config('TPAY_PUBLIC_KEY', '')
+TPAY_PRIVATE_KEY = config('TPAY_PRIVATE_KEY', '')

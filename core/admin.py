@@ -12,7 +12,7 @@ from .constants import (GUEST_USER_ENABLE, GUEST_USER_DISABLE,
                         GUEST_USER_CUSTOM, BETA_USER_ONLY_EARN,
                         BETA_USER_ONLY_BURN)
 from .models import (AppConfig, Currency, Country, PaymentConfiguration,
-                     PaymentMethodConfig, BetaUser)
+                     PaymentMethodConfig, BetaUser, CheckoutFont)
 from .utils import invalidate_cached_payment_method_config
 
 admin.site.site_header = 'YouPay Administration'
@@ -213,6 +213,11 @@ class PaymentConfigurationAdmin(AdminAbstract):
     list_filter = ('payment_method', 'active', 'guest_user_enabled',
                    'payment_gateway',)
 
+    filter_horizontal = (
+        "address_blocked_countries",
+        "method_blocked_countries",
+    )
+
     form = PaymentConfigurationAdminForm
     inlines = [PaymentMethodConfigInline]
 
@@ -225,6 +230,8 @@ class PaymentConfigurationAdmin(AdminAbstract):
                   'guest_user_enabled', 'beta_version',
                   'is_second_project_config_enabled',
                   'payment_method_config',
+                  'address_blocked_countries',
+                  'method_blocked_countries',
                   'partial_redemption_allowed',
                   'burn_full_redemption_enabled', 'earn_enabled',
                   'earn_on_partial_redemption',
@@ -240,6 +247,8 @@ class PaymentConfigurationAdmin(AdminAbstract):
             fields = ('payment_method', 'code', 'active',
                       'guest_user_enabled', 'beta_version',
                       'is_second_project_config_enabled',
+                      'address_blocked_countries',
+                      'method_blocked_countries',
                       'payment_method_config',
                       'payment_gateway', 'created_at', 'updated_at',
                       'created_by', 'modified_by')
@@ -260,9 +269,19 @@ class BetaUserAdmin(AdminAbstract):
     readonly_fields = ('created_at', 'updated_at')
 
 
+class CheckoutFontAdmin(AdminAbstract):
+    list_display = ('name', 'font_family', 'is_italic', 'is_active',
+                    'created_at', 'updated_at')
+    list_filter = ('is_active', 'is_italic')
+    search_fields = ('name', 'font_family')
+    list_editable = ('is_active',)
+    readonly_fields = ('created_at', 'updated_at')
+
+
 admin.site.register(AppConfig, AppConfigAdmin)
 admin.site.register(Currency, CurrencyAdmin)
 admin.site.register(Country, CountryAdmin)
 admin.site.register(PaymentMethodConfig, PaymentMethodConfigAdmin)
 admin.site.register(PaymentConfiguration, PaymentConfigurationAdmin)
 admin.site.register(BetaUser, BetaUserAdmin)
+admin.site.register(CheckoutFont, CheckoutFontAdmin)

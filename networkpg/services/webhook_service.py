@@ -8,7 +8,7 @@ from core.models import Country
 from payments.constants import (
     PAYMENT_STATUS_PAID,
     PAYMENT_STATUS_PENDING,
-    PAYMENT_STATUS_REJECTED,
+    PAYMENT_STATUS_CANCELLED,
     PAYMENT_METHOD_NETWORK_CARD,
     PAYMENT_STATUS_DECLINED,
     PAYMENT_STATUS_FAILED
@@ -39,6 +39,8 @@ class WebhookService:
                 transaction_obj = NetworkTransaction.objects.filter(network_order_id=order_reference).first()
 
             if transaction_obj:
+                if transaction_obj.youpay_transaction.payment_status in [PAYMENT_STATUS_CANCELLED]:
+                    return True
                 notification.network_transaction = transaction_obj
                 WebhookService._update_transaction_status(transaction_obj, raw_data)
                 WebhookService._trigger_youpay_update(transaction_obj)

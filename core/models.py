@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.constants import GUEST_USER_OPTIONS, BETA_USER_OPTIONS, \
-    BETA_USER_DISABLED
+    BETA_USER_DISABLED, PAYMENT_REQUEST_LANGUAGE_CHOICES
 from payments.constants import (PAYMENT_OPTION_CHOICES)
 
 # Create your models here.
@@ -163,6 +163,11 @@ class PaymentConfiguration(AbstractDateTime, AbstractUserBase):
         'integrations.PaymentGateway', on_delete=models.CASCADE,
         blank=True, null=True, db_index=True,
         help_text='Payment gateway for the payment method')
+    address_blocked_countries = models.ManyToManyField(
+        'core.Country', blank=True, related_name='address_blocked_countries')
+    method_blocked_countries = models.ManyToManyField('core.Country',
+                                                      blank=True,
+                                                      related_name='method_blocked_countries')
     partial_redemption_allowed = models.BooleanField(
         default=False, db_index=True,
         help_text='Indicates whether the payment method allows partial '
@@ -229,3 +234,35 @@ class BetaUser(AbstractDateTime, AbstractUserBase):
     beta_user_email = models.EmailField(
         max_length=255, unique=True,
         help_text="To store beta user email from")
+
+
+class CheckoutFont(AbstractDateTime):
+    """
+    Database-driven font configuration for checkout UI theming.
+    Admins can add new fonts via Django Admin without code deployment.
+    """
+    name = models.CharField(
+        max_length=100, unique=True,
+        help_text='Display name (e.g., Roboto, Inter, Montserrat Italic)')
+    font_family = models.CharField(
+        max_length=255,
+        help_text="CSS font-family value (e.g., 'Roboto', sans-serif)")
+    is_italic = models.BooleanField(
+        default=False,
+        help_text='Whether this font variant is italic')
+    is_active = models.BooleanField(
+        default=True,
+        help_text='Only active fonts appear in the APIClient dropdown')
+    language = models.CharField(choices=PAYMENT_REQUEST_LANGUAGE_CHOICES,
+                                max_length=15,
+                                help_text="to identify the language")
+    font_url = models.URLField(
+        max_length=500, null=True, blank=True,
+        help_text="Font URL. Can be a Google Fonts link or a local path (e.g., /static/fonts/mona-sans/Mona-Sans-ExtraBold.ttf)")
+
+    class Meta:
+        verbose_name = 'Checkout Font'
+        verbose_name_plural = 'Checkout Fonts'
+
+    def __str__(self):
+        return self.name

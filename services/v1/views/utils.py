@@ -1,5 +1,6 @@
 import json
 import logging
+from decimal import Decimal, InvalidOperation
 
 from django.core.cache import cache
 from django.db.models import Q
@@ -13,11 +14,13 @@ from core.core_serializers import PaymentConfigurationSerializer
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, BetaUser
-from core.utils import get_cached_payment_method_config, \
-    get_configuration_data
+from core.utils import (get_cached_payment_method_config,
+                        get_configuration_data,
+                        get_gateway_additional_fee)
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
-    AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE, PAYPAL_HUB_CODE
+    AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE, PAYPAL_HUB_CODE,
+    ADDITIONAL_AMEX_CARD_FEE
 )
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_INITIATED,
@@ -59,16 +62,36 @@ def reformat_payment_request_data(data):
     """
     data['request_data'] = json.loads(json.dumps(data))
 
-    order = data.get('order')
+    order = data.get('order', {})
     payment = data.get('payment')
-    customer = data.get('customer')
+    customer = data.get('customer', {})
     urls = data.get('urls')
     order_history = data.get('order_history')
     order_items = data.get('order_items')
     data['redemption_partner'] = data.get('redemption_partner')
     udf1 = data.get('udf1')
-    if udf1:
+    corporate_id = customer.get('corporate_id')
+    additional_charges = order.get('additional_charges')
+    cart_additional_charges = order.get('cart_additional_charges')
+    processing_fee_conversion_details = order.get(
+        'processing_fee_conversion_details', None)
+    if isinstance(udf1, dict):
+        udf1.update({
+            'corporate_id': corporate_id,
+            'additional_charges': additional_charges,
+            'cart_additional_charges': cart_additional_charges,
+            'processing_fee_conversion_details': (
+                processing_fee_conversion_details)
+        })
         data['udf1'] = udf1
+    else:
+        data['udf1'] = {
+            'corporate_id': corporate_id,
+            'additional_charges': additional_charges,
+            'cart_additional_charges': cart_additional_charges,
+            'processing_fee_conversion_details': (
+                processing_fee_conversion_details)
+        }
 
     if order and payment and customer and urls:
         data['amount'] = order.get('amount')
@@ -399,6 +422,19 @@ def get_payment_methods(transaction, client, country):
                             CHECKOUTPG_HUB_CODE, transaction)
                         payment_config_map[
                             "checkoutpg_config"] = checkout_obj.response_data
+                        additional_fee_obj = get_gateway_additional_fee(
+                            transaction.currency, ADDITIONAL_AMEX_CARD_FEE,
+                            CHECKOUTPG_HUB_CODE, "checkout_card")
+                        additional_fee_config = (
+                            get_checkout_amex_additional_fee(
+                                additional_fee_obj, transaction))
+                        logger.info(
+                            "additional_fee for transaction {} amex card "
+                            "is {}".format(
+                                transaction.transaction_id,
+                                additional_fee_config))
+                        payment_config_map["checkoutpg_config"][
+                            "amex_config"] = additional_fee_config
 
                 else:
                     if method.is_second_project_config_enabled:
@@ -411,6 +447,19 @@ def get_payment_methods(transaction, client, country):
                                     CHECKOUTPG_HUB_CODE, transaction)
                                 payment_config_map[
                                     "checkoutpg_config"] = checkout_obj.response_data
+                                additional_fee_obj = get_gateway_additional_fee(
+                                    transaction.currency, ADDITIONAL_AMEX_CARD_FEE,
+                                    CHECKOUTPG_HUB_CODE, "checkout_card")
+                                additional_fee_config = (
+                                    get_checkout_amex_additional_fee(
+                                        additional_fee_obj, transaction))
+                                logger.info(
+                                    "additional_fee for transaction {} amex card "
+                                    "is {}".format(
+                                        transaction.transaction_id,
+                                        additional_fee_config))
+                                payment_config_map["checkoutpg_config"][
+                                    "amex_config"] = additional_fee_config
                         method_specific_config = method.payment_method_config
                         if not method_specific_config:
                             second_project_obj = get_second_project_configuration_data(
@@ -642,3 +691,115 @@ def is_rewards_order_reference(order_reference):
     return (any(order_reference.startswith(prefix) for
                     prefix in REWARDS_ORDER_PREFIXES) and any(
                 tag in order_reference for tag in REWARDS_ORDER_TAGS))
+
+
+
+def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
+    """
+    Calculates the additional fee for Amex card based on the percentage and VAT configured.
+    :param additional_fee_obj:
+    :param transaction_obj:
+    :return: config dict with additional fee and total amount details
+    """
+    amex_additional_fee_config = {}
+    if additional_fee_obj and additional_fee_obj.percentage:
+        amex_perc = Decimal(str(additional_fee_obj.percentage))
+        vat_perc = Decimal(str(additional_fee_obj.VAT_percentage))
+
+        additional_fee = round(transaction_obj.base_amount * (amex_perc / 100), 2)
+        additional_fee_vat = round(additional_fee * (vat_perc / 100), 2)
+        total_vat = round(transaction_obj.VAT_amount + additional_fee_vat, 2)
+
+        try:
+            raw_udf_charge = (transaction_obj.udf1 or {}).get(
+                "additional_charges", "0")
+            giftee_fee = round(Decimal(str(raw_udf_charge)), 2)
+        except (InvalidOperation, ValueError, TypeError, AttributeError):
+            giftee_fee = Decimal("0")
+
+        total_amount = round(
+            transaction_obj.base_amount +
+            transaction_obj.service_fee +
+            additional_fee +
+            giftee_fee +
+            total_vat, 2)
+        total_amount_in_base_currency = additional_fee_for_conversion(
+            transaction_obj, total_amount)
+        amex_additional_fee_config = {
+            "additional_fee": str(additional_fee),
+            "additional_fee_vat": str(additional_fee_vat),
+            "combined_vat_amount": str(total_vat),
+            "total_amount": str(total_amount),
+            "total_amount_in_base_currency": str(total_amount_in_base_currency),
+            "processing_fee_percentage": str(additional_fee_obj.percentage),
+            "processing_fee_vat_percentage": str(
+                additional_fee_obj.VAT_percentage),
+            "combined_vat_amount_in_base_currency": str(
+                additional_fee_for_conversion(transaction_obj, total_vat)),
+            "cart_base_amount": transaction_obj.cart_base_amount,
+            "cart_service_fee_in_base_currency": str(
+                additional_fee_for_conversion(transaction_obj,
+                                            transaction_obj.service_fee)),
+            "additional_fee_in_base_currency": str(
+                additional_fee_for_conversion(transaction_obj, additional_fee)),
+
+        }
+
+        logger.info(
+            "amex_additional_fee_config for transaction {} is {}".format(
+                transaction_obj.transaction_id, amex_additional_fee_config))
+    else:
+        logger.info(
+            "No additional fee configured for Amex card for transaction {}".format(
+                transaction_obj.transaction_id))
+
+    return amex_additional_fee_config
+
+
+def additional_fee_for_conversion(transaction_obj, total_amount):
+    """
+    Calculate the total amount in base currency
+    :param transaction_obj: Transaction object
+    :param total_amount: Total amount
+    :return: Total amount in base currency
+    """
+    udf1 = getattr(transaction_obj, "udf1", None)
+    if not udf1 or not isinstance(udf1, dict):
+        return total_amount
+    processing_fee_details = udf1.get(
+        "processing_fee_conversion_details", None)
+    if processing_fee_details:
+        conversion_rate = Decimal(processing_fee_details.get("conversion_rate", 1))
+        if transaction_obj.cart_currency == processing_fee_details.get('source_currency'):
+            total_amount_in_base_currency = round(Decimal(str(total_amount)) / conversion_rate, 2)
+        else:
+            total_amount_in_base_currency = total_amount
+        return total_amount_in_base_currency
+    else:
+        return total_amount
+
+
+def process_total_quantity_eligibility(transaction, response_data):
+    """
+    Processes total quantity eligibility for a transaction.
+
+    Args:
+        transaction: The transaction object containing udf1 and transaction_id
+        response_data: The response dictionary to update with total_quantity
+
+    Returns:
+        response_data: The updated response dictionary with total_quantity
+        if eligible
+    """
+    udf1 = getattr(transaction, "udf1", None)
+    if not udf1 or not isinstance(udf1, dict):
+        return response_data
+
+    order_quantity = udf1.get("order_quantity")
+    if order_quantity is not None:
+        logger.info("Total quantity eligibility is true for "
+                    "transaction {} and total quantity is {}"
+                    .format(transaction.transaction_id, order_quantity))
+        response_data["data"]["total_quantity"] = order_quantity
+
+    return response_data

@@ -19,6 +19,7 @@ class YouPayResponse(object):
     10XXX - for AnB
     11XXX - for b2c
     12xxx - for happy credits
+    19xxx - for tpay
     """
 
     """Youpay related begins"""
@@ -45,6 +46,8 @@ class YouPayResponse(object):
     OTP_EXPIRED = 1017
     INSUFFICIENT_BALANCE = 1018
     OTP_STILL_VALID = 1019
+    PAYMENT_REFUND_FAILED = 1020
+    PAYMENT_REFUND_NOT_ELIGIBLE = 1021
 
     """Youpay related ends"""
 
@@ -187,8 +190,27 @@ class YouPayResponse(object):
     PAYPAL_INSUFFICIENT_FUNDS = 18006
     PAYPAL_INVALID_REQUEST = 18007
     PAYPAL_NOT_SUPPORTED = 18008
-    PAYAPL_PAYMENT_INCOMPLETE = 18009
+    PAYPAL_PAYMENT_INCOMPLETE = 18009
+    PAYPAL_ACCOUNT_UNVERIFIED = 18010
+    PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED = 18011
+    PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED = 18012
     """PayPal related ends"""
+
+    """TPay related begins"""
+    TPAY_CONNECTION_ERROR = 19001
+    TPAY_PAYMENT_SUCCESS = 19002
+    TPAY_INSUFFICIENT_FUNDS = 19003
+    TPAY_LIMIT_EXCEEDED = 19004
+    TPAY_INVALID_PIN_OR_PASSWORD = 19005
+    TPAY_EXPIRED_PIN = 19006
+    TPAY_USER_CANCELLED = 19007
+    TPAY_SIGNATURE_MISMATCH = 19008
+    TPAY_INVALID_USER = 19009
+    TPAY_BLOCKED_USER = 19010
+    TPAY_TIMEOUT = 19011
+    TPAY_NOT_ELIGIBLE = 19012
+    TPAY_PAYMENT_FAILED = 19013
+    """TPay related ends"""
 
     """Hassad related begins"""
     HASSAD_CONNECTION_ERROR = 13002
@@ -231,6 +253,8 @@ class YouPayResponse(object):
                 "Failed to calculate the point program balance. Please try "
                 "again with another payment option.",
             self.CHARGE_CALCULATION_FAILED: "PayPal charge calculation failed",
+            self.PAYMENT_REFUND_FAILED: "Failed to process points reversal",
+            self.PAYMENT_REFUND_NOT_ELIGIBLE: "Transaction not eligible for refund",
 
             self.CHECKOUTPG_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.CHECKOUTPG_RESPONSE_FAILED: GATEWAY_ERROR_OCCURRED,
@@ -362,7 +386,37 @@ class YouPayResponse(object):
             self.PAYPAL_INSUFFICIENT_FUNDS: "PayPal insufficient funds",
             self.PAYPAL_INVALID_REQUEST: "PayPal invalid request",
             self.PAYPAL_NOT_SUPPORTED: "PayPal not supported",
-            self.PAYAPL_PAYMENT_INCOMPLETE: "PayPal payment incomplete",
+            self.PAYPAL_PAYMENT_INCOMPLETE: "PayPal payment incomplete",
+            self.PAYPAL_ACCOUNT_UNVERIFIED: (
+                "Please verify your PayPal account to complete the transaction. "
+                "-(يرجى التحقق من حسابك في باي بال لإتمام المعاملة.)"),
+            self.PAYPAL_ACCOUNT_COUNTRY_NOT_SUPPORTED: (
+                "PayPal account country is not supported for this transaction. "
+                "-(بلد حساب باي بال غير مدعوم لهذه المعاملة.)"),
+            self.PAYPAL_CARD_ISSUER_COUNTRY_NOT_SUPPORTED: (
+                "The card linked to your PayPal account is from an unsupported"
+                " country. -(البطاقة المرتبطة بحسابك في باي بال صادرة من دولة غير مدعومة.)"),
+
+            self.TPAY_CONNECTION_ERROR: "TPay service is currently "
+                                        "unavailable. Please try again later.",
+            self.TPAY_PAYMENT_SUCCESS: "Payment completed successfully.",
+            self.TPAY_INSUFFICIENT_FUNDS: "You do not have enough credit to "
+                                          "complete this purchase.",
+            self.TPAY_LIMIT_EXCEEDED: "You have exceeded your daily or "
+                                      "monthly spending limit.",
+            self.TPAY_INVALID_PIN_OR_PASSWORD: "The PIN or Password entered "
+                                               "is incorrect.",
+            self.TPAY_EXPIRED_PIN: "The verification PIN has expired. Please try again.",
+            self.TPAY_USER_CANCELLED: "Transaction was cancelled by the user.",
+            self.TPAY_SIGNATURE_MISMATCH: "TPay Security verification failed.",
+            self.TPAY_INVALID_USER: "The mobile number entered does not "
+                                    "exist on this network.",
+            self.TPAY_BLOCKED_USER: "Your line has been restricted from "
+                                    "making this purchase. Please contact your operator.",
+            self.TPAY_TIMEOUT: "The transaction timed out. Please try again.",
+            self.TPAY_NOT_ELIGIBLE: "This line type (e.g. Corporate) is not "
+                                    "eligible for this service.",
+            self.TPAY_PAYMENT_FAILED: "Unable to process TPay payment",
 
             self.HASSAD_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.HASSAD_INVALID_DATA: "Invalid data in client request",
