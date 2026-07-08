@@ -21,12 +21,12 @@ from services.v1.views.common import (generate_script_signature,
                                       YouPayTransactionCRUD,
                                       verify_tpay_response_signature,
                                       get_custom_error_code)
-from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
-                                ETISALAT_OPERATOR_CODE,
-                                TPAY_PRODUCT_CATALOG_NAME,
-                                PAYMENT_STATUS_INITIALIZED,
-                                TPAY_STATUS_LABELS,
-                                TPAY_GATEWAY_CODE)
+from gateways.tpay.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
+                                     ETISALAT_OPERATOR_CODE,
+                                     TPAY_PRODUCT_CATALOG_NAME,
+                                     PAYMENT_STATUS_INITIALIZED,
+                                     TPAY_STATUS_LABELS,
+                                     TPAY_GATEWAY_CODE)
 
 logger = logging.getLogger(__name__)
 

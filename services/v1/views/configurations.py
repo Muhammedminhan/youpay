@@ -15,6 +15,7 @@ from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
                         decrypt_browser_value, get_display_platform,
                         get_display_program)
+from gateways.tpay.constants import COUNTRY_CODE_UAE
 from integrations.constants import (ADCB_CLIENT_CODE, CHECKOUTPG_HUB_CODE,
                                     QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
@@ -39,7 +40,7 @@ from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
                                 APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
-                                APPLEPAY_LABEL, COUNTRY_CODE_UAE, CURRENCY_UAE)
+                                APPLEPAY_LABEL, CURRENCY_UAE)
 from services.models import PaymentRequestData
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
