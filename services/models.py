@@ -57,6 +57,7 @@ class APIClient(AbstractDateTime, AbstractUserBase):
     color_code = models.CharField(
         max_length=20, blank=True, null=True,
         validators=[MinLengthValidator(4)],
+        default='#F5F5F5',
         help_text='Color code for the client in hex')
     client_code = models.CharField(
         max_length=100, blank=True, null=True, help_text='Client Code')
@@ -77,10 +78,20 @@ class APIClient(AbstractDateTime, AbstractUserBase):
         help_text='API version to be used for saved card listing')
     client_package = models.CharField(
         max_length=100, blank=True, null=True)
+    decrypt_key = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="key for decrypt payment data")
     display_total_quantity_in_breakdown = models.BooleanField(
         default=False,
         help_text='Indicates whether to display the number of total quantity '
                   'in the amount breakdown.'
+    )
+
+    font = models.ForeignKey(
+        'core.CheckoutFont', null=True, blank=True,
+        on_delete=models.SET_NULL,
+        help_text='Font configuration for the checkout UI. '
+                  'Defaults to system font if not set.'
     )
 
     def __str__(self):
