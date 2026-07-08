@@ -736,7 +736,7 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
                 additional_fee_obj.VAT_percentage),
             "combined_vat_amount_in_base_currency": str(
                 additional_fee_for_conversion(transaction_obj, total_vat)),
-            "cart_base_amount": transaction_obj.cart_base_amount,
+            "cart_base_amount": str(round(transaction_obj.cart_base_amount, 2)),
             "cart_service_fee_in_base_currency": str(
                 additional_fee_for_conversion(transaction_obj,
                                             transaction_obj.service_fee)),
