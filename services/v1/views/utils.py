@@ -16,7 +16,8 @@ from core.messages import PAYMENT_REQUEST_KEYS_ERROR
 from core.models import Country, BetaUser
 from core.utils import (get_cached_payment_method_config,
                         get_configuration_data,
-                        get_gateway_additional_fee)
+                        get_gateway_additional_fee,
+                        round_decimal)
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE, PAYPAL_HUB_CODE,
@@ -75,6 +76,11 @@ def reformat_payment_request_data(data):
     cart_additional_charges = order.get('cart_additional_charges')
     processing_fee_conversion_details = order.get(
         'processing_fee_conversion_details', None)
+    # if processing_fee_conversion_details:
+    #     conversion_rate = processing_fee_conversion_details.get(
+    #         "conversion_rate")
+    #     processing_fee_conversion_details["conversion_rate"] = str(
+    #         round_decimal(conversion_rate, "0.000"))
     if isinstance(udf1, dict):
         udf1.update({
             'corporate_id': corporate_id,
@@ -693,7 +699,6 @@ def is_rewards_order_reference(order_reference):
                 tag in order_reference for tag in REWARDS_ORDER_TAGS))
 
 
-
 def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
     """
     Calculates the additional fee for Amex card based on the percentage and VAT configured.
@@ -702,7 +707,10 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
     :return: config dict with additional fee and total amount details
     """
     amex_additional_fee_config = {}
-    if additional_fee_obj and additional_fee_obj.percentage:
+    if (additional_fee_obj
+            and additional_fee_obj.percentage
+            and additional_fee_obj.clients.filter(
+                pk=transaction_obj.api_client.pk).exists()):
         amex_perc = Decimal(str(additional_fee_obj.percentage))
         vat_perc = Decimal(str(additional_fee_obj.VAT_percentage))
 
