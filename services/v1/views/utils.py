@@ -693,7 +693,6 @@ def is_rewards_order_reference(order_reference):
                 tag in order_reference for tag in REWARDS_ORDER_TAGS))
 
 
-
 def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
     """
     Calculates the additional fee for Amex card based on the percentage and VAT configured.
@@ -702,7 +701,10 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
     :return: config dict with additional fee and total amount details
     """
     amex_additional_fee_config = {}
-    if additional_fee_obj and additional_fee_obj.percentage:
+    if (additional_fee_obj
+            and additional_fee_obj.percentage
+            and additional_fee_obj.clients.filter(
+                pk=transaction_obj.api_client.pk).exists()):
         amex_perc = Decimal(str(additional_fee_obj.percentage))
         vat_perc = Decimal(str(additional_fee_obj.VAT_percentage))
 
