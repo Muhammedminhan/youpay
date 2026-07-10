@@ -20,7 +20,7 @@ from core.utils import (get_cached_payment_method_config,
 from integrations.constants import (
     CHECKOUTPG_HUB_CODE, B2CPAYBACK_HUB_CODE, TABBYPG_HUB_CODE,
     AMAZONPG_HUB_CODE, HAPPYCREDITS_HUB_CODE, PAYPAL_HUB_CODE,
-    ADDITIONAL_AMEX_CARD_FEE
+    ADDITIONAL_AMEX_CARD_FEE, B2CPAYBACK_KSA_HUB_CODE
 )
 from integrations.models import PaymentGateway
 from payments.constants import (PAYMENT_STATUS_INITIATED,
@@ -44,7 +44,8 @@ from payments.constants import (PAYMENT_STATUS_INITIATED,
                                 PAYMENT_METHOD_PAYPAL, PAYMENT_OPTION_PAYPAL,
                                 PAYMENT_METHOD_NEQATY, PAYMENT_METHOD_MOKAFAA,
                                 PAYMENT_METHOD_ANB, PAYMENT_OPTION_ANB,
-                                PAYMENT_OPTION_CHECKOUT_PAYPAL)
+                                PAYMENT_OPTION_CHECKOUT_PAYPAL,
+                                PAYMENT_METHOD_HASSAD, PAYMENT_OPTION_HASSAD)
 from payments.models import Announcement
 from services.constants import (YOUPAY_SESSION_KEY, TABBYPG_STORE_CURRENCIES,
                                 ADCBPG_STORE_CURRENCIES,
@@ -569,7 +570,8 @@ def get_payment_option_constant(payment_gateway, payment_method):
          PAYMENT_METHOD_NEQATY): PAYMENT_METHOD_NEQATY,
         (B2CPAYBACK_HUB_CODE,
          PAYMENT_METHOD_MOKAFAA): PAYMENT_METHOD_MOKAFAA,
-        (B2CPAYBACK_HUB_CODE, PAYMENT_METHOD_ANB): PAYMENT_OPTION_ANB,
+        (B2CPAYBACK_KSA_HUB_CODE, PAYMENT_METHOD_ANB): PAYMENT_OPTION_ANB,
+        (B2CPAYBACK_KSA_HUB_CODE, PAYMENT_METHOD_HASSAD): PAYMENT_OPTION_HASSAD,
 
         (TABBYPG_HUB_CODE,
          PAYMENT_METHOD_TABBYPG): PAYMENT_OPTION_TABBYPG,
@@ -638,7 +640,8 @@ def update_payment_method_config(transaction, config, payment_config_data,
     if config.payment_method.beta_version == BETA_USER_ENABLED:
         is_enabled = check_is_user_beta_enabled(transaction)
 
-    if config.payment_method.payment_gateway.code == B2CPAYBACK_HUB_CODE:
+    if config.payment_method.payment_gateway.code in [
+        B2CPAYBACK_HUB_CODE, B2CPAYBACK_KSA_HUB_CODE]:
 
         if config.payment_method.beta_version == BETA_USER_ONLY_EARN:
             is_beta_user = check_is_user_beta_enabled(transaction)
