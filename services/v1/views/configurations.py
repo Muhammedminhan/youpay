@@ -21,7 +21,8 @@ from integrations.constants import (ADCB_CLIENT_CODE, CHECKOUTPG_HUB_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
                                     ANB_CLIENT_CODE,
                                     ADDITIONAL_PROCESSING_FEE,
-                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE)
+                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE,
+                                    HASSAD_CLIENT_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -34,7 +35,7 @@ from payments.constants import (
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA,
     EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL,
-    PAYMENT_METHOD_TPAY_ETISALAT, PAYMENT_OPTION_TPAY
+    PAYMENT_METHOD_TPAY_ETISALAT, PAYMENT_OPTION_TPAY, PAYMENT_OPTION_HASSAD
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
@@ -394,9 +395,10 @@ class ConfigViewSet(ViewSet):
         neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
         mokafa_enabled = payment_option.get(PAYMENT_OPTION_MOKAFA, False)
         anb_enabled = payment_option.get(PAYMENT_OPTION_ANB, False)
+        hassad_enabled = payment_option.get(PAYMENT_OPTION_HASSAD, False)
         config_dict = {}
         if True in [adcb_enabled, qitaf_enabled, neqaty_enabled,
-                    mokafa_enabled, anb_enabled]:
+                    mokafa_enabled, anb_enabled, hassad_enabled]:
             b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
                                                 transaction)
             config_list = (b2c_config.response_data.get("results") if
@@ -450,6 +452,17 @@ class ConfigViewSet(ViewSet):
                                                       ANB_CLIENT_CODE)
                 anb_config.update(**this__config_data)
                 config_dict['anb_config'] = anb_config
+
+            if hassad_enabled:
+                this_config_data = payment_config_data.get(
+                    PAYMENT_OPTION_HASSAD, {}
+                )
+                hassad_config = self.get_each_b2c_config(
+                    config_list,
+                    HASSAD_CLIENT_CODE
+                )
+                hassad_config.update(**this_config_data)
+                config_dict["hassad_config"] = hassad_config
         return config_dict
 
     @staticmethod
