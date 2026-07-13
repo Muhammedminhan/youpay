@@ -12,7 +12,8 @@ from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.hassad_service import HassadServiceManager
-from integrations.v1.serializers.hassad_serializer import HassadPaymentRequestSerializer
+from integrations.v1.serializers.hassad_serializer import \
+    HassadRedemptionSerializer
 from payments.constants import PAYMENT_METHOD_HASSAD
 from services.v1.serializers.payment_request import OTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
@@ -80,7 +81,7 @@ class HassadRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
 
     def post(self, request):
         """
-        request for handling anb points redemption api
+        request for handling hassad points redemption api
         1.full redemption
         2.partial redemption
 
@@ -94,14 +95,14 @@ class HassadRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
             request_data = copy.deepcopy(request.data)
             if request_data.get("cvv"):
                 request_data["cvv"] = "***"
-            logger.info("AnbRedeemPointsAPIView triggered for request "
+            logger.info("HassadRedeemPointsAPIView triggered for request "
                         "data: {}".format(request_data))
-            anb_redemption_serializer = HassadPaymentRequestSerializer(
+            hassad_redemption_serializer = HassadRedemptionSerializer(
                 data=request.data, context={'request': request})
-            anb_redemption_serializer.is_valid(raise_exception=True)
-            validated_data = anb_redemption_serializer.data
+            hassad_redemption_serializer.is_valid(raise_exception=True)
+            validated_data = hassad_redemption_serializer.data
             points_redemption_data = validated_data
-            transaction_obj = anb_redemption_serializer.transaction_obj
+            transaction_obj = hassad_redemption_serializer.transaction_obj
             selected_amount = str(int(transaction_obj.redeemed_amount))
             checkout_amount = str(float(transaction_obj.payable_amount))
             customer_name = request.data.get("customer_name")
@@ -130,10 +131,10 @@ class HassadRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "card_expiry": validated_data.get("card_expiry")
                 }
             )
-            anb_service = HassadServiceManager()
-            response_data, code = anb_service.redeem_points(
+            hassad_service = HassadServiceManager()
+            response_data, code = hassad_service.redeem_points(
                 points_redemption_data)
-            if response_data and code == anb_service.SUCCESS:
+            if response_data and code == hassad_service.SUCCESS:
                 formatted_res = hassad_response_formatter(response_data, code)
                 data = self.response_obj.get_success_dict(
                     code=code,
@@ -309,22 +310,22 @@ class UpdateHassadPhoneNumber(APIView, YouPayTransactionCRUD):
 
 def hassad_response_formatter(data, code):
     """
-    AnB Response format method
+    Hassad Response format method
     Args:
-        data (dict): The response data from the AnB service.
+        data (dict): The response data from the Hassad service.
         code (int): The response status code.
     Returns:
         dict: The formatted response with a message, code, and success status.
     """
-    anb_response = data.get('anb_response')
+    hassad_response = data.get('hassad_response')
     errors = data.get('errors')
     is_success = data.get(IS_SUCCESS)
-    if anb_response:
-        message = anb_response.get("reason")
+    if hassad_response:
+        message = hassad_response.get("reason")
         data['code'] = code
         data['reason'], data['message'] = message, message
         data[IS_SUCCESS] = is_success
-        data.pop('anb_response', None)
+        data.pop('hassad_response', None)
     if errors:
         errors['message'] = COMMON_ERROR_MESSAGE_EN
         errors['code'] = code
