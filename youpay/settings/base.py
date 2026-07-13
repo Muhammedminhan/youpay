@@ -235,7 +235,7 @@ sentry_sdk.init(
     # django.contrib.auth) you may enable sending PII data.
     send_default_pii=False,
 
-    traces_sample_rate=0,  # Capture 100% of transactions for tracing
+    traces_sample_rate=None,  # Capture 100% of transactions for tracing
     profiles_sample_rate=0  # Profile 100% of sampled transactions
 
 )

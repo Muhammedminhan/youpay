@@ -21,6 +21,8 @@ from core.messages import (
 )
 from core.models import PaymentConfiguration
 from core.response_messages import YouPayResponse
+from gateways.tpay.constants import (TPAY_SUCCESS_CODES, TPAY_PRIVATE_KEY,
+                                     TPAY_PUBLIC_KEY)
 from integrations.constants import CHECKOUTPG_SUCCESS_RESPONSE_CODE
 from integrations.models import AdditionalChargeConfiguration
 from integrations.models import PaymentGateway
@@ -44,9 +46,7 @@ from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
 from services.constants import (CURRENCY_UAE, CURRENCY_KSA,
-                                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH,
-                                TPAY_PUBLIC_KEY, TPAY_PRIVATE_KEY,
-                                TPAY_SUCCESS_CODES)
+                                SOFT_DECLINE_RESPONSE_CODE_STARTSWITH)
 from services.models import APIClient, OfferDetails
 
 logger = logging.getLogger(__name__)

@@ -21,12 +21,12 @@ from services.v1.views.common import (generate_script_signature,
                                       YouPayTransactionCRUD,
                                       verify_tpay_response_signature,
                                       get_custom_error_code)
-from services.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
-                                ETISALAT_OPERATOR_CODE,
-                                TPAY_PRODUCT_CATALOG_NAME,
-                                PAYMENT_STATUS_INITIALIZED,
-                                TPAY_STATUS_LABELS,
-                                TPAY_GATEWAY_CODE)
+from gateways.tpay.constants import (TPAY_MERCHANT_TEMPLATE_KEY,
+                                     ETISALAT_OPERATOR_CODE,
+                                     TPAY_PRODUCT_CATALOG_NAME,
+                                     PAYMENT_STATUS_INITIALIZED,
+                                     TPAY_STATUS_LABELS,
+                                     TPAY_GATEWAY_CODE)
 
 logger = logging.getLogger(__name__)
 
@@ -86,10 +86,14 @@ class TPayInitializeAPIView(APIView, YouPayTransactionCRUD):
                 is_partial_payment=False, gty_override=TPAY_HUB_CODE)
             language = transaction_obj.language
             language_code = 1 if language == LANGUAGE_ENGLISH else 2
-            product_price = format(Decimal(str(
-                transaction_obj.amount)).quantize(Decimal("0.00"),
-                rounding=ROUND_HALF_UP), "f"
-            )
+
+            amount_val = Decimal(str(transaction_obj.amount))
+            if amount_val % 1 == 0:
+                product_price = str(int(amount_val))
+            else:
+                product_price = format(amount_val.quantize(Decimal("0.00"),
+                    rounding=ROUND_HALF_UP), "f"
+                )
 
             # Script signature
             epoch, script_signature = generate_script_signature()

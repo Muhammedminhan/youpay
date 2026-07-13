@@ -9,12 +9,14 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.exceptions import PaymentConfigurationFailed
-from core.models import PaymentMethodConfig, Country, Currency
+from core.models import (
+    PaymentMethodConfig, Country, PaymentConfiguration, Currency)
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
                         decrypt_browser_value, get_display_platform,
                         get_display_program)
+from gateways.tpay.constants import COUNTRY_CODE_UAE
 from integrations.constants import (ADCB_CLIENT_CODE, CHECKOUTPG_HUB_CODE,
                                     QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
@@ -32,13 +34,14 @@ from payments.constants import (
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA,
-    EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL
+    EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL,
+    PAYMENT_METHOD_TPAY_ETISALAT, PAYMENT_OPTION_TPAY
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
                                 APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
-                                APPLEPAY_LABEL)
+                                APPLEPAY_LABEL, CURRENCY_UAE)
 from services.models import PaymentRequestData
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -243,6 +246,8 @@ class ConfigViewSet(ViewSet):
                 **payment_config_data,
                 "applepay_config": self.get_applepay_config(payment_options,
                                                             transaction),
+                "tpay_etisalat_config": self.get_tpay_etisalat_config(
+                    payment_options, transaction),
                 "display_total_quantity": display_total_quantity
             }
         }
@@ -538,6 +543,31 @@ class ConfigViewSet(ViewSet):
             return None
         value = udf1.get(key)
         return None if str(value) in ["0", "0.0", "0.00", "0.000"] else value
+
+    def get_tpay_etisalat_config(self, payment_options, transaction):
+        """
+        Returns tpay_etisalat configuration including min/max limits.
+        Only for country 'AE'
+        """
+        tpay_enabled = payment_options.get(PAYMENT_OPTION_TPAY, False)
+        if not (tpay_enabled and transaction and
+                transaction.country_code == COUNTRY_CODE_UAE):
+            return {}
+
+        payment_config = PaymentConfiguration.objects.filter(
+            payment_method=PAYMENT_OPTION_TPAY,
+            active=True
+        ).first()
+
+        method_config = payment_config.payment_method_config or {}
+
+        return {
+            "payment_option": PAYMENT_METHOD_TPAY_ETISALAT,
+            "currency": CURRENCY_UAE,
+            "min_limit": method_config.get("min_limit", 0),
+            "max_limit": method_config.get("max_limit", 700),
+            "is_active": payment_config.active,
+        }
 
 
 class ClientStaticFilesAPI(APIView):
