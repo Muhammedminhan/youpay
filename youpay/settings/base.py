@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'gateways',
     'gateways.paypal',
     'networkpg',
+    'gateways.tpay',
 
 
     # 3rd party apps
@@ -234,7 +235,7 @@ sentry_sdk.init(
     # django.contrib.auth) you may enable sending PII data.
     send_default_pii=False,
 
-    traces_sample_rate=0,  # Capture 100% of transactions for tracing
+    traces_sample_rate=None,  # Capture 100% of transactions for tracing
     profiles_sample_rate=0  # Profile 100% of sampled transactions
 
 )
@@ -261,3 +262,5 @@ ADMIN_USER_NAME = config('ADMIN_USER_NAME', 'youpay-admin@yougotagift.com')
 APPLEPAY_HMAC_SECRET = config('APPLEPAY_HMAC_SECRET')
 FERNET_KEY = config('FERNET_KEY', '')
 APPLEPAY_TIMESTAMP_EXPIRY = 120
+TPAY_PUBLIC_KEY = config('TPAY_PUBLIC_KEY', '')
+TPAY_PRIVATE_KEY = config('TPAY_PRIVATE_KEY', '')
