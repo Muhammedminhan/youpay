@@ -10,6 +10,7 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
+from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.anb_service import AnbServiceManager
 from integrations.v1.gateway_clients.hassad_service import HassadServiceManager
 from integrations.v1.serializers.anb_serializer import AnbRedemptionSerializer
@@ -262,11 +263,25 @@ class UpdateHassadPhoneNumber(APIView, YouPayTransactionCRUD):
                 )
                 return Response(data, status=status.HTTP_404_NOT_FOUND)
 
+            is_updated, brand_details = update_brand_details(transaction_obj)
+            if not is_updated:
+                logger.error("Failed to update brand details for "
+                    "transaction_id=%s", transaction_obj.transaction_id)
+
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.HASSAD_PHONE_NUMBER_SAVE_FAILED
+                )
+                return Response(
+                    data,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             update_data = {
                 "transaction_id": transaction_obj.transaction_id,
                 "points_collected_mobile_number": mobile_number,
                 "point_program": PAYMENT_METHOD_HASSAD,
                 "point_collection_enabled": True,
+                "brand_details": brand_details,
             }
 
             hassad_service = HassadServiceManager()
@@ -281,7 +296,7 @@ class UpdateHassadPhoneNumber(APIView, YouPayTransactionCRUD):
                 return Response(data, status=status.HTTP_200_OK)
 
             data = self.response_obj.get_error_dict(
-                error_code=self.response_obj.UNKNOWN_ERR
+                error_code=self.response_obj.HASSAD_PHONE_NUMBER_SAVE_FAILED
             )
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
 

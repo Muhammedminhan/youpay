@@ -222,7 +222,7 @@ class YouPayResponse(object):
     HASSAD_USER_NOT_ENROLLED = 13008
     HASSAD_INVALID_OR_EXPIRED_OTP = 13009
     HASSAD_REDEMPTION_FAILED = 13010
-    HASSAD_INVALID_POS_CLIENT_ID = 13011
+    HASSAD_PHONE_NUMBER_SAVE_FAILED = 13011
     HASSAD_INTEGRATION_ERROR = 13012
     HASSAD_INVALID_OFFER_NUMBER = 13013
     HASSAD_INVALID_EXTERNAL_TRANSACTION_ID = 13014
@@ -430,7 +430,7 @@ class YouPayResponse(object):
                                            "the program",
             self.HASSAD_INVALID_OR_EXPIRED_OTP: "Invalid or expired OTP",
             self.HASSAD_REDEMPTION_FAILED: "Redemption request failed",
-            self.HASSAD_INVALID_POS_CLIENT_ID: "Invalid POS client ID",
+            self.HASSAD_PHONE_NUMBER_SAVE_FAILED: "Failed to update Hassad phone number",
             self.HASSAD_INTEGRATION_ERROR: "Integration error with external "
                                            "service",
             self.HASSAD_INVALID_OFFER_NUMBER: "Invalid offer number provided",
