@@ -166,6 +166,7 @@ urlpatterns = [
     path('anb/verify/', AnbVerify.as_view(), name='AnbVerify'),
 
     # Hassad endpoints
+    path('hassad/update-phone-number/', UpdateHassadPhoneNumber.as_view()),
     path('hassad/generate-otp/', HassadGenerateOTPAPIView.as_view(),
          name='HassadGenerateOTPAPIView'),
     path('hassad/redeem-points/', HassadRedeemPointsAPIView.as_view(),

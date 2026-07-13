@@ -84,13 +84,13 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
 
     def update_points_collected_mobile_number(self, data):
         """
-        To update mokafa phone number
+        To update Hassad phone number
         """
         try:
             return self.update_youpay_transaction_data(data)
         except Exception as e:
             error = ("Exception in updating points_collected_mobile_number "
-                     "for mokafa: {}").format(e)
+                     "for hassad: {}").format(e)
             logger.error(error)
             return False
 
