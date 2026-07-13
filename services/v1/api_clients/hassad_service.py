@@ -11,9 +11,8 @@ from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
 from core.response_messages import YouPayResponse
 from core.utils import decrypt_string
 from integrations.common import update_brand_details
-from integrations.v1.gateway_clients.anb_service import AnbServiceManager
 from integrations.v1.gateway_clients.hassad_service import HassadServiceManager
-from integrations.v1.serializers.anb_serializer import AnbRedemptionSerializer
+from integrations.v1.serializers.hassad_serializer import HassadPaymentRequestSerializer
 from payments.constants import PAYMENT_METHOD_HASSAD
 from services.v1.serializers.payment_request import OTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
@@ -97,7 +96,7 @@ class HassadRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                 request_data["cvv"] = "***"
             logger.info("AnbRedeemPointsAPIView triggered for request "
                         "data: {}".format(request_data))
-            anb_redemption_serializer = AnbRedemptionSerializer(
+            anb_redemption_serializer = HassadPaymentRequestSerializer(
                 data=request.data, context={'request': request})
             anb_redemption_serializer.is_valid(raise_exception=True)
             validated_data = anb_redemption_serializer.data
@@ -131,7 +130,7 @@ class HassadRedeemPointsAPIView(APIView, YouPayTransactionCRUD):
                     "card_expiry": validated_data.get("card_expiry")
                 }
             )
-            anb_service = AnbServiceManager()
+            anb_service = HassadServiceManager()
             response_data, code = anb_service.redeem_points(
                 points_redemption_data)
             if response_data and code == anb_service.SUCCESS:

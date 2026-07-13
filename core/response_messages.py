@@ -230,6 +230,8 @@ class YouPayResponse(object):
     HASSAD_INVOICE_VALUE_EXCEEDS_MAXIMUM = 13016
     HASSAD_VERIFICATION_FAILED = 13017
     HASSAD_VERIFICATION_EXCEPTION = 13018
+    HASSAD_ALREADY_COLLECTED = 13019
+    HASSAD_PAYMENT_FAILED = 12709
     """Hassad related ends """
 
     MESSAGE = {}
@@ -443,6 +445,8 @@ class YouPayResponse(object):
                                                        "allowed",
             self.HASSAD_VERIFICATION_FAILED: "Verification failed",
             self.HASSAD_VERIFICATION_EXCEPTION: "Verification failed",
+            self.HASSAD_ALREADY_COLLECTED: "HASSAD Reward Already Collected",
+            self.HASSAD_PAYMENT_FAILED: "HASSAD Payment Failed",
         })
 
     def get_400_message(self, message):

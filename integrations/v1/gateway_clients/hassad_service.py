@@ -16,23 +16,21 @@ from core.utils import (get_app_config,
                         get_config_from_payment_configurations)
 from integrations.constants import (
     PAYMENT_REQUEST_COLLECT_POINTS,
-    B2CP_EARN_POINTS_API, MOKAFAA_CLIENT_CODE,
+    B2CP_EARN_POINTS_API,
     PAYMENT_REQUEST_GENERATE_OTP, B2CP_OTP_GENERATION_API,
     B2CP_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     B2CP_VERIFY_API,
-    PAYMENT_REQUEST_VERIFY, EXPECTED_MOKAFAA_ERRORS,
+    PAYMENT_REQUEST_VERIFY,
     PAYMENT_DECLINED_STATUS, HASSAD_CLIENT_CODE)
 from integrations.v1.gateway_clients.utils import format_verify_data
-from integrations.v1.serializers.hassad_serializer import \
-    HassadPaymentRequestSerializer
-from integrations.v1.serializers.mokafaa_serializers import (
-    MokafaaPaymentRequestSerializer)
-from payments.constants import (PAYMENT_METHOD_MOKAFAA, LANGUAGE_CODE_AR,
+from integrations.v1.serializers.hassad_serializer import (
+    HassadPaymentRequestSerializer)
+from payments.constants import (PAYMENT_METHOD_HASSAD, LANGUAGE_CODE_AR,
                                 PAYMENT_STATUS_PAID,
                                 PAYMENT_STATUS_DECLINED_RETRY,
-                                PAYMENT_METHOD_MOKAFAA_AND_CARD,
+                                PAYMENT_METHOD_HASSAD_AND_CARD,
                                 PAYMENT_STATUS_PENDING,
-                                PAYMENT_STATUS_DECLINED, PAYMENT_METHOD_HASSAD)
+                                PAYMENT_STATUS_DECLINED)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
 from services.v1.views.common import add_payment_gateway_info_in_url
@@ -185,7 +183,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
 
     def collect_points(self, transaction_obj):
         """
-        calls mokafa points collecting api
+        calls hassad points collecting api
         """
         try:
             response_obj = YouPayResponse()
@@ -196,28 +194,25 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                     "for ({}), rewarded point {}".format(
                         transaction_obj.transaction_id,
                         transaction_obj.earned_point))
-                return None, response_obj.MOKAFA_ALREADY_COLLECTED
+                return None, response_obj.HASSAD_ALREADY_COLLECTED
 
             if transaction_obj.payment_method in [
-                PAYMENT_METHOD_MOKAFAA, PAYMENT_METHOD_MOKAFAA_AND_CARD
+                PAYMENT_METHOD_HASSAD, PAYMENT_METHOD_HASSAD_AND_CARD
             ]:
                 paid_amount = transaction_obj.payable_amount
             else:
                 paid_amount = transaction_obj.amount
 
             request_data = {
-                "mobile_number": (
-                    transaction_obj.points_collected_mobile_number),
-                "cic_number": transaction_obj.points_collected_cic_number,
+                "mobile_number": transaction_obj.points_collected_mobile_number,
                 "customer_email": transaction_obj.customer_email,
                 "customer_name": transaction_obj.customer_name,
                 "invoice_id": transaction_obj.invoice_id,
                 "gateway_reference": transaction_obj.payment_reference,
                 "currency": transaction_obj.currency,
-                "client_code": MOKAFAA_CLIENT_CODE,
+                "client_code": HASSAD_CLIENT_CODE,
                 "amount": str(paid_amount),
                 "platform": transaction_obj.platform,
-
                 "item_details_list": transaction_obj.brand_details.get(
                     "item_set", None),
                 "brand_calculations": transaction_obj.brand_calculations,
@@ -230,12 +225,12 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             }
 
             self.transaction_obj = transaction_obj
-            self.mokafa_config = get_config_from_payment_configurations(
-                self.transaction_obj, PAYMENT_METHOD_MOKAFAA)
+            self.hassad_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_HASSAD)
             self.transaction_id = str(self.transaction_obj.transaction_id)
 
             logger.info(
-                "Youpay sending request data to mokafa point collection api "
+                "Youpay sending request data to hassad point collection api "
                 "is {}".format(request_data))
 
             request_data['transaction_id'] = self.transaction_id
@@ -243,35 +238,35 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
 
             payload = json.dumps(request_data)
 
-            url = self.mokafa_config.domain + B2CP_EARN_POINTS_API
+            url = self.hassad_config.domain + B2CP_EARN_POINTS_API
             headers = self.get_payment_header()
             response = requests.post(url, data=payload, headers=headers)
-            logger.info("Response from mokafa point collection api {}"
+            logger.info("Response from hassad point collection api {}"
                         "".format(response))
             if response.status_code == status.HTTP_200_OK:
                 response_data = response.json()
                 self.response_data = response_data
-                logger.info("mokafa point collection api response: {}".format(
+                logger.info("hassad point collection api response: {}".format(
                     response_data))
                 return response_data, self.SUCCESS
             elif hasattr(response, 'text'):
                 self.response_data = json.loads(response.text)
-                logger.error("Error in mokafa point collection api, {}"
+                logger.error("Error in hassad point collection api, {}"
                              "".format(response.text))
                 self.response_data = response.json()
                 return {"error": response.text,
                         "partner_response": response.json()
-                        }, self.MOKAFA_CONNECTION_ERROR
+                        }, self.HASSAD_CONNECTION_ERROR
             else:
-                msg = ("unable to get response from b2c_payback-mokafa for "
+                msg = ("unable to get response from b2c_payback-hassad for "
                        "point collection")
                 logger.error(msg)
-                return {"errors": msg}, self.MOKAFA_CONNECTION_ERROR
+                return {"errors": msg}, self.HASSAD_CONNECTION_ERROR
 
         except Exception as e:
-            logger.error("Exception in mokafa point collection api: "
+            logger.error("Exception in hassad point collection api: "
                          "{}".format(e), exc_info=True)
-            return None, self.MOKAFA_CONNECTION_ERROR
+            return None, self.HASSAD_CONNECTION_ERROR
         finally:
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=self.transaction_obj,
@@ -346,7 +341,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                         "card_issuer_country")
                     payment_scheme = response_data.get("payment_scheme")
 
-                    self.handle_mokafaa_collection(transaction_obj)
+                    self.handle_hassad_collection(transaction_obj)
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -416,32 +411,31 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
 
     def redeem_points(self, data):
         """
-        calls mokafaa points redeem api
+        calls hassad points redeem api
         """
         try:
             self.request_data = data
             self.transaction_obj = self.request_data.get('transaction_obj')
-            self.mokafa_config = get_config_from_payment_configurations(
-                self.transaction_obj, PAYMENT_METHOD_MOKAFAA)
+            self.hassad_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_HASSAD)
             self.transaction_id = self.transaction_obj.transaction_id
             payload = self.request_data
-            language = self.transaction_obj.language
 
             serializer = YouPayTransactionDataSerializer(self.transaction_obj)
             transaction_data = serializer.data
             payload.update(self.prepare_redeem_payload(transaction_data))
             payload.pop('transaction_obj')
-            self.payment_method = (PAYMENT_METHOD_MOKAFAA_AND_CARD
+            self.payment_method = (PAYMENT_METHOD_HASSAD_AND_CARD
                                    if float(self.request_data.get(
                                         'checkout_amount')) > 0 else
-                                   PAYMENT_METHOD_MOKAFAA)
+                                   PAYMENT_METHOD_HASSAD)
             payload.update({"source_payment_method": self.payment_method})
 
             verify_response, verify_status = self.verify_transaction(
-                transaction_data, payment_method=PAYMENT_METHOD_MOKAFAA)
+                transaction_data, payment_method=PAYMENT_METHOD_HASSAD)
             if not verify_response:
                 msg = (
-                    "Youpay Mokafaa transaction verification failed for"
+                    "Youpay Hassad transaction verification failed for"
                     " transaction id {} response is : {} ".format(
                         self.transaction_id, verify_response))
                 logger.error(msg)
@@ -451,7 +445,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             is_verified = verify_response.get('is_verified', False)
             if not is_verified and verify_response:
                 msg = (
-                    "Youpay Mokafaa transaction verification failed for"
+                    "Youpay Hassad transaction verification failed for"
                     " transaction id {} response is : {} ".format(
                         self.transaction_id, verify_response))
                 logger.error(msg)
@@ -459,11 +453,11 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 return (verify_response,
                         self.CLIENT_TRANSACTION_VERIFICATION_FAILED)
 
-            url = self.mokafa_config.domain + B2CP_REDEEM_POINTS_API
+            url = self.hassad_config.domain + B2CP_REDEEM_POINTS_API
             headers = self.get_payment_header()
 
             logger.info(
-                "Youpay sending request data to mokafaa redeem point api is {}"
+                "Youpay sending request data to hassad redeem point api is {}"
                 " headers {} ".format(payload, headers))
 
             response = requests.post(url, data=json.dumps(payload),
@@ -472,34 +466,34 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             if response.status_code == status.HTTP_200_OK:
                 response_data = response.json()
                 self.response_data = response_data
-                logger.info("mokafaa redeem point api response: {}".format(
+                logger.info("hassad redeem point api response: {}".format(
                     response_data))
-                response_data = self.handle_mokafaa_response(
-                    response_data, self.transaction_obj, self.request_data)
+                response_data = self.handle_hassad_response(
+                    response_data, self.transaction_obj)
                 return response_data, self.SUCCESS
             elif response.status_code == 400:
                 response_data = response.json()
                 self.response_data = response_data
-                response_data = self.handle_mokafaa_response(
-                    response_data, self.transaction_obj, self.request_data)
-                logger.info("mokafaa redeem point api response: {} for {}"
+                response_data = self.handle_hassad_response(
+                    response_data, self.transaction_obj)
+                logger.info("Hassad redeem point api response: {} for {}"
                             "".format(response_data, self.transaction_id))
                 return response_data, self.PAYMENT_FAILED
             elif response.status_code == 403:
-                msg = "Mokafaa Forbidden, or partial redemption not supported"
+                msg = "Hassad Forbidden, or partial redemption not supported"
                 logger.error("{}, {}".format(msg, response.text))
-                return {"errors": msg}, self.MOKAFA_NOT_SUPPORTED
+                return {"errors": msg}, self.HASSAD_REQUEST_NOT_ACCEPTED
             else:
-                logger.error("Error in mokafaa redeem point api, {}"
+                logger.error("Error in hassad redeem point api, {}"
                              "".format(response.text))
-                msg = self.MESSAGE.get(self.MOKAFA_CONNECTION_ERROR)
-                return {"errors": msg}, self.MOKAFA_CONNECTION_ERROR
+                msg = self.MESSAGE.get(self.HASSAD_CONNECTION_ERROR)
+                return {"errors": msg}, self.HASSAD_CONNECTION_ERROR
 
         except Exception as e:
-            error = "Exception in mokafaa redeem point api: {}".format(e)
-            logger.error("Exception in mokafaa redeem point api: "
+            error = "Exception in hassad redeem point api: {}".format(e)
+            logger.error("Exception in hassad redeem point api: "
                          "{}".format(e), exc_info=True)
-            return {"errors": error}, self.MOKAFA_CONNECTION_ERROR
+            return {"errors": error}, self.HASSAD_CONNECTION_ERROR
 
         finally:
             if self.request_data.get("cvv"):
@@ -513,12 +507,11 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 request_type=PAYMENT_REQUEST_REDEMPTION,
             )
 
-    def handle_mokafaa_response(self, response_data, payment_data,
-                                request_data):
+    def handle_hassad_response(self, response_data, payment_data):
         message = "API request completed successfully"
-        youpay_update_data = {}
+
         logger.info(
-            "handle_mokafaa_response data {}".format(response_data))
+            "handle_hassad_response data {}".format(response_data))
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
         data = {}
@@ -537,7 +530,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 self.point_collection_enabled = (
                     auto_enable_or_disable_point_collection(
                         Q(
-                            payment_method=PAYMENT_METHOD_MOKAFAA,
+                            payment_method=PAYMENT_METHOD_HASSAD,
                             active=True,
                             earn_on_partial_redemption=True
                         ))
@@ -548,7 +541,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 self.payable_amount = partner_response.get('checkout_amount')
                 self.points_redeemed_mobile_number = partner_response.get(
                     'redeemed_mobile_number')
-                self.point_program = PAYMENT_METHOD_MOKAFAA
+                self.point_program = PAYMENT_METHOD_HASSAD
 
                 data = {
                     "id": partner_response.get("id"),
@@ -563,8 +556,8 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                     payment_data.transaction_id))
                 is_success = False
                 is_redirect = True
-                message = self.mokafaa_error_response_message(response_data,
-                                                              language)
+                message = self.hassad_error_response_message(
+                    response_data, language)
                 if partner_response.get("status") == PAYMENT_DECLINED_STATUS:
                     message = partner_response.get("decline_reason")
 
@@ -589,7 +582,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
 
                 self.points_redeemed_mobile_number = partner_response.get(
                     'redeemed_mobile_number')
-                self.point_program = PAYMENT_METHOD_MOKAFAA
+                self.point_program = PAYMENT_METHOD_HASSAD
 
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
@@ -597,8 +590,8 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             else:
                 self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
                 is_redirect = False
-                message = self.mokafaa_error_response_message(response_data,
-                                                              language)
+                message = self.hassad_error_response_message(
+                    response_data, language)
 
         youpay_update_data = {
             **update_data,
@@ -632,19 +625,19 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             "message": message if message else "Payment Failed",
             REDIRECT_URL: redirect_url,
             IS_REDIRECT: is_redirect,
-            "mokafaa_response": response_data,
+            "hassad_response": response_data,
             "is_success": is_success
         }
         if data and partner_response.get('is_payment_success'):
             return_response["data"] = data
         return return_response
 
-    def mokafaa_error_response_message(self, response_data, language):
+    def hassad_error_response_message(self, response_data, language):
         message = ""
         try:
             code = response_data.get("code")
             partner_response = response_data.get('partner_response')
-            if code == self.MOKAFAA_PAYMENT_FAILED:
+            if code == self.HASSAD_PAYMENT_FAILED:
                 message = partner_response.get("checkout_response_data",
                                                {}).get("response_summary", "")
             elif language == LANGUAGE_CODE_AR:
@@ -663,39 +656,38 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
 
     def prepare_redeem_payload(self, transaction_data):
         """
-        prepares payload for Mokafaa redeem api
+        prepares payload for Hassad redeem api
         """
         payment_reference = ''
         if transaction_data.get("payment_reference"):
             payment_reference = ("&redemption_reference_id=" +
                                  transaction_data.get("payment_reference"))
         params = ('?id=' + self.request_data.get("encrypted_id") +
-                  payment_reference + "&redemption_partner=MOKAFAA")
+                  payment_reference + "&redemption_partner=HASSAD")
         redeem_payload = {
             "response_url": add_payment_gateway_info_in_url(
                 transaction_data=transaction_data,
                 app_config=get_app_config(),
                 params=params,
-                code=MOKAFAA_CLIENT_CODE,
+                code=HASSAD_CLIENT_CODE,
             ),
             "invoice_id": self.transaction_obj.invoice_id,
             "customer_ip_address": self.transaction_obj.ip,
             "channel_code": get_channel_code(self.transaction_obj),
-            "client_code": MOKAFAA_CLIENT_CODE,
+            "client_code": HASSAD_CLIENT_CODE,
             "customer_uid": self.transaction_obj.customer_uid
         }
         return redeem_payload
 
     @staticmethod
-    def handle_mokafaa_collection(transaction_obj):
+    def handle_hassad_collection(transaction_obj):
         """
-        Updating program, mobile number etc on Mokafaa Verification
+        Updating program, mobile number... on Hassad Verification
         """
         if transaction_obj.point_collection_enabled:
-            if (transaction_obj.point_program != PAYMENT_METHOD_MOKAFAA or
+            if (transaction_obj.point_program != PAYMENT_METHOD_HASSAD or
                     not transaction_obj.points_collected_mobile_number):
                 transaction_obj.points_collected_mobile_number = (
                     transaction_obj.points_redeemed_mobile_number)
-                transaction_obj.point_program = (
-                    PAYMENT_METHOD_MOKAFAA)
+                transaction_obj.point_program = PAYMENT_METHOD_HASSAD
                 transaction_obj.save()
