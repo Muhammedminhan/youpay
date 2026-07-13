@@ -18,7 +18,7 @@ from core.utils import (decrypt_payment_data,
                         get_cached_payment_method_config)
 from integrations.common import update_offer_details
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
-                                    MOKAFAA_CLIENT_CODE)
+                                    MOKAFAA_CLIENT_CODE, ANB_CLIENT_CODE)
 from integrations.v1.gateway_clients.utils import calculate_balance
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
@@ -873,6 +873,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             client_code = NEQATY_CLIENT_CODE
         elif program_name == PAYMENT_METHOD_MOKAFAA:
             client_code = MOKAFAA_CLIENT_CODE
+        elif program_name == PAYMENT_METHOD_ANB:
+            client_code = ANB_CLIENT_CODE
         else:
             client_code = QITAF_CLIENT_CODE
         return client_code
