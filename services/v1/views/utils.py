@@ -13,7 +13,7 @@ from core.constants import (PURCHASE_PLATFORM_ANDROID, PURCHASE_PLATFORM_IOS,
 from core.core_serializers import PaymentConfigurationSerializer
 from core.exceptions import PaymentConfigurationFailed
 from core.messages import PAYMENT_REQUEST_KEYS_ERROR
-from core.models import Country, BetaUser
+from core.models import Country, BetaUser, Currency
 from core.utils import (get_cached_payment_method_config,
                         get_configuration_data,
                         get_gateway_additional_fee)
@@ -770,10 +770,12 @@ def additional_fee_for_conversion(transaction_obj, total_amount):
         return total_amount
     processing_fee_details = udf1.get(
         "processing_fee_conversion_details", None)
+    currency_obj = Currency.objects.get(iso_code=transaction_obj.cart_currency)
     if processing_fee_details:
         conversion_rate = Decimal(processing_fee_details.get("conversion_rate", 1))
         if transaction_obj.cart_currency == processing_fee_details.get('source_currency'):
-            total_amount_in_base_currency = round(Decimal(str(total_amount)) / conversion_rate, 2)
+            total_amount_in_base_currency = round(
+                Decimal(str(total_amount)) / conversion_rate, currency_obj.decimal_notation)
         else:
             total_amount_in_base_currency = total_amount
         return total_amount_in_base_currency
