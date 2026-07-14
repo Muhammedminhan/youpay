@@ -16,7 +16,6 @@ from core.messages import (
 from payments.constants import PAYMENT_STATUS_PAID
 from core.messages import TRANSACTION_DOESNT_EXIST
 from core.response_messages import YouPayResponse
-from core.common.security.authentication import HMACAuthentication
 from core.utils import get_site_domain, decrypt_string
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from integrations.v1.serializers.checkoutpg_payment_request import (
