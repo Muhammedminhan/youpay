@@ -89,7 +89,6 @@ class HMACAuthentication(BaseAuthentication):
         try:
             body = json.loads(request.body.decode())
 
-            # sort_keys=True is important
             return json.dumps(
                 body,
                 separators=(",", ":"),
@@ -97,7 +96,7 @@ class HMACAuthentication(BaseAuthentication):
             )
 
         except Exception:
-            return request.body.decode()
+            return request.body.decode(errors="replace")
 
     def sign(self, canonical_request, request):
         """

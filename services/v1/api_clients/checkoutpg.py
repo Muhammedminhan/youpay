@@ -42,7 +42,6 @@ logger = logging.getLogger(__name__)
 
 
 class SavedCardPayment(APIView, YouPayTransactionCRUD):
-    authentication_classes = [HMACAuthentication]
     response_obj = YouPayResponse()
 
     def get(self, request):

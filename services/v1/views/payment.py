@@ -1031,7 +1031,8 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse,
     """
     authentication_classes = [HMACAuthentication]
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.validate, self.client = None, None
 
     def hmac_secret(self, request):
