@@ -157,14 +157,15 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 })
                 return response_data, self.SUCCESS
 
-            self.response_data = response.json()
-            logger.error("Error in Hassad otp, {} for transaction id {}"
-                         .format(self.response_data,
-                                 self.transaction_id))
+            try:
+                response_data = response.json()
+            except ValueError:
+                response_data = {"response": response.text}
 
-            error_code = self.response_data.get('code')
-            return ({"error": response.json()},
-                    error_code)
+            self.response_data = response_data
+            logger.error("Error in Hassad otp, {} for transaction id "
+                "{}".format(self.response_data, self.transaction_id))
+            return {"error": response_data}, response_data.get("code")
         except Exception as e:
             error = ("Exception in Hassad generate otp api: {} for "
                      "transaction id {}").format(e, self.transaction_id)
@@ -315,9 +316,9 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                                         headers=headers)
 
                 return_response_data = {}
-                if response.status_code == status.HTTP_200_OK and (
-                        response.json().get(
-                            "status").lower() == PAYMENT_STATUS_PAID):
+                if (response.status_code == status.HTTP_200_OK and
+                    (response.json().get("status") or "").lower() ==
+                        PAYMENT_STATUS_PAID):
                     """Redemption verified successfully"""
                     logger.info(
                         "Hassad Verification with b2c completed for "
@@ -515,7 +516,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
         is_success, is_redirect, redirect_url = False, False, None
         update_data = {}
         data = {}
-        partner_response = response_data.get('partner_response')
+        partner_response = response_data.get('partner_response') or {}
         name_on_card = partner_response.get("customer_name", "")
         language = payment_data.language
         is_full_redemption = partner_response.get("is_full_redemption", False)
