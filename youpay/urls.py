@@ -31,6 +31,7 @@ def trigger_error(request):
 urlpatterns = [
     path('alonzo-mckinney/admin/control-panel/', admin.site.urls),
     path('services/', include('services.urls')),
+    path('dashboard/', include('dashboard.urls')),
     path('health/', HealthCheck.as_view(), name='health'),
     path('sentry-debug/', trigger_error),
     path('checkoutpg/', include('checkoutpgclient.urls')),

@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+{% load humanize %}<!doctype html>
 <html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
@@ -13,6 +13,7 @@
     :root {
       --bg: #f5f7f9; --panel: #ffffff; --ink: #0e0f0c; --muted: #545454;
       --line: #d9dfe4; --accent: #b800c4; --accent-soft: #fbe3f4;
+      --good: #12b76a; --warn: #f79009; --bad: #e74848; --bar: #f0c9ec;
       --radius: 12px;
       --font-body: 'Mona Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       --font-head: 'Bricolage Grotesque', 'Mona Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -20,89 +21,216 @@
     :root[data-theme="dark"] {
       --bg: #1a0b1c; --panel: #25122a; --ink: #f3e9f4; --muted: #b79cb8;
       --line: #3a2440; --accent: #e05bec; --accent-soft: #3a1740;
+      --good: #32d583; --warn: #fdb022; --bad: #f97066; --bar: #4a2350;
     }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) {
         --bg: #1a0b1c; --panel: #25122a; --ink: #f3e9f4; --muted: #b79cb8;
         --line: #3a2440; --accent: #e05bec; --accent-soft: #3a1740;
+        --good: #32d583; --warn: #fdb022; --bad: #f97066; --bar: #4a2350;
       }
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
-      font: 15px/1.6 var(--font-body);
-      display: flex; flex-direction: column;
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 14px/1.5 var(--font-body);
     }
-    header.top {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 18px 28px; border-bottom: 3px solid var(--accent);
-    }
-    header.top .brand { font-family: var(--font-head); font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
-    header.top .brand b { color: var(--accent); font-weight: 800; }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
+    header.top { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; margin-bottom: 22px; padding-bottom: 16px; border-bottom: 3px solid var(--accent); }
+    h1 b { color: var(--accent); font-weight: 800; }
+    h1 { font-family: var(--font-head); font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+    h1 span { color: var(--muted); font-weight: 500; font-size: 15px; }
+    h2 { font-family: var(--font-head); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 28px 0 12px; }
+    form.filter { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+    form.filter label { display: flex; flex-direction: column; font-size: 11px; color: var(--muted); gap: 4px; }
+    form.filter input { padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); }
+    form.filter button { padding: 8px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer; font-weight: 600; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 14px; }
+    .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+    .kpi .label { font-size: 12px; color: var(--muted); }
+    .kpi .value { font-family: var(--font-head); font-size: 27px; font-weight: 700; margin-top: 6px; letter-spacing: -.02em; }
+    .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .kpi .value.good { color: var(--good); } .kpi .value.warn { color: var(--warn); } .kpi .value.bad { color: var(--bad); }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; }
+    .trend { display: flex; align-items: flex-end; gap: 3px; height: 160px; overflow-x: auto; padding-top: 8px; }
+    .trend .col { flex: 1 0 6px; min-width: 6px; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; }
+    .trend .col .fill { background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; transition: opacity .15s; }
+    .trend .col:hover .fill { opacity: .7; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); font-weight: 600; }
+    td.num, th.num { text-align: right; }
+    .barcell { position: relative; min-width: 120px; }
+    .barcell .track { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 10px; z-index: 1; }
+    .barcell .bg { position: absolute; left: 0; top: 4px; bottom: 4px; background: var(--bar); border-radius: 6px; opacity: .5; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+    .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+    .empty { color: var(--muted); padding: 24px; text-align: center; }
+    .muted { color: var(--muted); }
     .theme-toggle { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
-    .admin-link { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 8px 14px; font-weight: 700; font-size: 13px; text-decoration: none; }
-    .admin-link:hover { background: var(--accent); color: #fff; }
-    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
-    .hero { max-width: 640px; width: 100%; text-align: center; }
-    .hero h1 { font-family: var(--font-head); font-size: 34px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 12px; }
-    .hero p { color: var(--muted); font-size: 16px; margin: 0 auto 32px; max-width: 460px; }
-    .cards { display: grid; grid-template-columns: 1fr; gap: 16px; }
-    .card {
-      background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-      padding: 24px; text-align: left; display: flex; align-items: center; gap: 18px;
-      text-decoration: none; color: inherit; transition: border-color .15s, transform .15s;
-    }
-    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .card .icon {
-      flex: 0 0 auto; width: 52px; height: 52px; border-radius: var(--radius);
-      background: var(--accent-soft); color: var(--accent);
-      display: flex; align-items: center; justify-content: center; font-size: 26px;
-    }
-    .card .body { flex: 1; }
-    .card .body .t { font-family: var(--font-head); font-size: 17px; font-weight: 700; }
-    .card .body .d { color: var(--muted); font-size: 14px; }
-    .card .cta {
-      flex: 0 0 auto; background: var(--accent); color: #fff; font-weight: 700;
-      border-radius: 999px; padding: 10px 22px; font-size: 14px;
-    }
-    footer { text-align: center; padding: 18px; color: var(--muted); font-size: 12px; }
   </style>
 </head>
 <body>
+<div class="wrap">
   <header class="top">
-    <div class="brand"><b>YOU</b>Pay Dashboard</div>
-    <div style="display:flex; gap:10px; align-items:center;">
-      <a class="admin-link" href="{% url 'admin:index' %}">&#8592; Admin</a>
+    <h1><b>YOU</b>Pay Dashboard <span>· {{ start|date:"M j, Y" }} – {{ end|date:"M j, Y" }}</span></h1>
+    <div style="display:flex; gap:10px; align-items:flex-end;">
+      <form class="filter" method="get">
+        <label>From<input type="date" name="start" value="{{ start|date:'Y-m-d' }}"></label>
+        <label>To<input type="date" name="end" value="{{ end|date:'Y-m-d' }}"></label>
+        <button type="submit">Apply</button>
+      </form>
       <button class="theme-toggle" type="button" onclick="var r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');">◐</button>
     </div>
   </header>
 
-  <main>
-    <div class="hero">
-      <h1>Welcome{% if user.first_name %}, {{ user.first_name }}{% endif %}</h1>
-      <p>Your central place to keep an eye on YOUPay. Pick a section below to get started.</p>
+  <div class="kpis">
+    <div class="kpi">
+      <div class="label">Transactions</div>
+      <div class="value">{{ totals.total_count|intcomma }}</div>
+      <div class="sub">in selected range</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Volume (AED)</div>
+      <div class="value">{{ totals.total_volume|default:0|floatformat:0|intcomma }}</div>
+      <div class="sub">paid: {{ totals.paid_volume|default:0|floatformat:0|intcomma }}</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Success rate</div>
+      <div class="value good">{{ success_rate }}%</div>
+      <div class="sub">{{ totals.paid_count|intcomma }} paid</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Avg amount (AED)</div>
+      <div class="value">{{ totals.avg_amount|default:0|floatformat:2|intcomma }}</div>
+      <div class="sub">per transaction</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Fraud</div>
+      <div class="value bad">{{ totals.fraud_count|intcomma }}</div>
+      <div class="sub">{{ fraud_rate }}% of total</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Flagged</div>
+      <div class="value warn">{{ totals.flagged_count|intcomma }}</div>
+      <div class="sub">{{ flagged_rate }}% of total</div>
+    </div>
+  </div>
 
-      <div class="cards">
-        <a class="card" href="{% url 'dashboard:monitoring' %}">
-          <span class="icon">&#128200;</span>
-          <span class="body">
-            <span class="t">Monitoring Dashboard</span>
-            <span class="d">Transactions, volume, gateways, clients, countries &amp; status trends.</span>
-          </span>
-          <span class="cta">Open &rarr;</span>
-        </a>
-        <a class="card" href="{% url 'dashboard:failures' %}">
-          <span class="icon">&#9888;&#65039;</span>
-          <span class="body">
-            <span class="t">Failure Reasons</span>
-            <span class="d">Gateway failures ranked by volume &mdash; which errors to fix first.</span>
-          </span>
-          <span class="cta">Open &rarr;</span>
-        </a>
+  <h2>Daily transactions</h2>
+  <div class="panel">
+    {% if totals.total_count %}
+      <div class="trend">
+        {% for d in trend %}
+          <div class="col" title="{{ d.day|date:'M j' }} · {{ d.count|intcomma }} txns · {{ d.volume|default:0|floatformat:0|intcomma }} AED">
+            <div class="fill" style="height: {{ d.bar }}%;"></div>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="muted" style="display:flex;justify-content:space-between;margin-top:8px;font-size:12px;">
+        <span>{{ start|date:"M j" }}</span><span>{{ end|date:"M j" }}</span>
+      </div>
+    {% else %}
+      <div class="empty">No transactions in this range.</div>
+    {% endif %}
+  </div>
+
+  <h2>By payment gateway</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Gateway</th><th class="num">Txns</th><th class="num">Volume (AED)</th><th class="num">Success</th><th class="barcell">Share</th></tr></thead>
+      <tbody>
+        {% for row in by_gateway %}
+          <tr>
+            <td>{{ row.payment_gateway|default:"—" }}</td>
+            <td class="num">{{ row.count|intcomma }}</td>
+            <td class="num">{{ row.volume|default:0|floatformat:0|intcomma }}</td>
+            <td class="num">{{ row.success_rate }}%</td>
+            <td class="barcell"><div class="bg" style="width: {{ row.bar }}%;"></div></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty">No data.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <h2>Top clients</h2>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Client</th><th class="num">Txns</th><th class="num">Volume</th><th class="barcell">Share</th></tr></thead>
+          <tbody>
+            {% for row in by_client %}
+              <tr>
+                <td>{{ row.api_client__name|default:"—" }}</td>
+                <td class="num">{{ row.count|intcomma }}</td>
+                <td class="num">{{ row.volume|default:0|floatformat:0|intcomma }}</td>
+                <td class="barcell"><div class="bg" style="width: {{ row.bar }}%;"></div></td>
+              </tr>
+            {% empty %}<tr><td colspan="4" class="empty">No data.</td></tr>{% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
-  </main>
+    <div>
+      <h2>Top countries</h2>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Country</th><th class="num">Txns</th><th class="num">Volume</th><th class="barcell">Share</th></tr></thead>
+          <tbody>
+            {% for row in by_country %}
+              <tr>
+                <td>{{ row.country_code|default:"—" }}</td>
+                <td class="num">{{ row.count|intcomma }}</td>
+                <td class="num">{{ row.volume|default:0|floatformat:0|intcomma }}</td>
+                <td class="barcell"><div class="bg" style="width: {{ row.bar }}%;"></div></td>
+              </tr>
+            {% empty %}<tr><td colspan="4" class="empty">No data.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
-  <footer>YOUPay &middot; internal dashboard</footer>
+  <div class="grid2">
+    <div>
+      <h2>Payment methods</h2>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Method</th><th class="num">Txns</th><th class="barcell">Share</th></tr></thead>
+          <tbody>
+            {% for row in by_method %}
+              <tr>
+                <td>{{ row.payment_method|default:"—" }}</td>
+                <td class="num">{{ row.count|intcomma }}</td>
+                <td class="barcell"><div class="bg" style="width: {{ row.bar }}%;"></div></td>
+              </tr>
+            {% empty %}<tr><td colspan="3" class="empty">No data.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h2>Status distribution</h2>
+      <div class="panel">
+        <table>
+          <thead><tr><th>Status</th><th class="num">Txns</th><th class="barcell">Share</th></tr></thead>
+          <tbody>
+            {% for row in by_status %}
+              <tr>
+                <td><span class="pill">{{ row.payment_status|default:"—" }}</span></td>
+                <td class="num">{{ row.count|intcomma }}</td>
+                <td class="barcell"><div class="bg" style="width: {{ row.bar }}%;"></div></td>
+              </tr>
+            {% empty %}<tr><td colspan="3" class="empty">No data.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
