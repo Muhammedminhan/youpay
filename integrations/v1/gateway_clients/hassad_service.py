@@ -21,7 +21,7 @@ from integrations.constants import (
     B2CP_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     B2CP_VERIFY_API,
     PAYMENT_REQUEST_VERIFY,
-    PAYMENT_DECLINED_STATUS, HASSAD_CLIENT_CODE)
+    PAYMENT_DECLINED_STATUS, HASSAD_CLIENT_CODE, HASSAD_NOT_ACCEPTED_CODE)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.hassad_serializer import (
     HassadPaymentRequestSerializer)
@@ -163,6 +163,12 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 response_data = {"response": response.text}
 
             self.response_data = response_data
+            error_code = self.response_data.get('code')
+            if error_code == HASSAD_NOT_ACCEPTED_CODE:
+                logger.info("OTP generation rejected error in Hassad, {}"
+                            .format(self.response_data))
+                return {"error": response.json()}, self.HASSAD_TRY_AFTER_SOMETIME
+
             logger.error("Error in Hassad otp, {} for transaction id "
                 "{}".format(self.response_data, self.transaction_id))
             return {"error": response_data}, response_data.get("code")
