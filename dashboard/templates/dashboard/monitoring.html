@@ -69,6 +69,16 @@
     @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
     .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
     .empty { color: var(--muted); padding: 24px; text-align: center; }
+    /* Payment scheme — ranked horizontal bar chart (single series, one hue) */
+    .schemechart { display: flex; flex-direction: column; gap: 10px; }
+    .srow { display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: center; }
+    .srow .sname { font-size: 13px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .strack { position: relative; height: 24px; }
+    .sfill { height: 100%; background: var(--accent); border-radius: 4px; min-width: 2px; display: flex; align-items: center; }
+    .srow:hover .sfill { opacity: .82; }
+    .sfill .slab { color: #fff; font-size: 12px; font-weight: 700; padding: 0 8px; white-space: nowrap; }
+    .sfill .slab.outside { color: var(--ink); position: absolute; left: calc(var(--w) + 8px); }
+    @media (max-width: 640px) { .srow { grid-template-columns: 88px 1fr; } }
     .muted { color: var(--muted); }
     .theme-toggle { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
   </style>
@@ -232,6 +242,30 @@
         </table>
       </div>
     </div>
+  </div>
+
+  <h2>Payment scheme</h2>
+  <div class="panel">
+    {% if by_scheme %}
+      <div class="schemechart">
+        {% for row in by_scheme %}
+          <div class="srow">
+            <div class="sname" title="{{ row.scheme }}">{{ row.scheme }}</div>
+            <div class="strack" title="{{ row.scheme }} — {{ row.count|intcomma }} txns">
+              <div class="sfill" style="width: {{ row.bar }}%; --w: {{ row.bar }}%;">
+                {% if row.bar >= 16 %}
+                  <span class="slab">{{ row.count|intcomma }}</span>
+                {% else %}
+                  <span class="slab outside">{{ row.count|intcomma }}</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">No transactions in this range.</div>
+    {% endif %}
   </div>
 </div>
 </body>
