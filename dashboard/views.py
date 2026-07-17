@@ -1,5 +1,4 @@
 import datetime
-import re
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import (Avg, Count, DecimalField, F, Q, Sum)
