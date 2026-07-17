@@ -165,9 +165,6 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ],
     'COERCE_DECIMAL_TO_STRING': False,
-    "DEFAULT_THROTTLE_RATES": {
-        "saved_card_payment": "10/m",
-    },
 }
 
 # Internationalization
