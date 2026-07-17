@@ -69,6 +69,13 @@
     @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
     .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
     .empty { color: var(--muted); padding: 24px; text-align: center; }
+    /* Alert banner — payment methods not converting */
+    .alert { display: flex; gap: 12px; align-items: flex-start; margin-top: 18px; padding: 14px 16px; border-radius: var(--radius); background: color-mix(in srgb, var(--bad) 12%, var(--panel)); border: 1px solid var(--bad); }
+    .alert-icon { font-size: 20px; line-height: 1.2; }
+    .alert-title { font-family: var(--font-head); font-weight: 700; color: var(--bad); font-size: 14px; }
+    .alert-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .alert-chip { font-size: 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; }
+    .alert-chip b { color: var(--bad); font-weight: 700; }
     /* Payment scheme — ranked horizontal bar chart (single series, one hue) */
     .schemechart { display: flex; flex-direction: column; gap: 10px; }
     .srow { display: grid; grid-template-columns: 130px 1fr; gap: 12px; align-items: center; }
@@ -129,6 +136,20 @@
       <div class="sub">{{ flagged_rate }}% of total</div>
     </div>
   </div>
+
+  {% if unpaid_method_alerts %}
+  <div class="alert">
+    <div class="alert-icon">&#9888;&#65039;</div>
+    <div class="alert-body">
+      <div class="alert-title">{{ unpaid_method_alerts|length }} payment method{{ unpaid_method_alerts|pluralize }} with no paid transactions in this range</div>
+      <div class="alert-list">
+        {% for a in unpaid_method_alerts %}
+          <span class="alert-chip">{{ a.method }} <b>{{ a.total|intcomma }} attempt{{ a.total|pluralize }}, 0 paid</b></span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <h2>Daily transactions</h2>
   <div class="panel">

@@ -195,6 +195,17 @@ class MonitoringView(TemplateView):
 
         by_scheme = _scheme_breakdown(qs)
 
+        # Alert: payment methods that were attempted but have zero paid txns
+        # in the selected range (a method that is not converting at all).
+        method_conversion = qs.values('payment_method').annotate(
+            total=Count('id'), paid=Count('id', filter=PAID)).order_by('-total')
+        unpaid_method_alerts = [
+            {'method': r['payment_method'], 'total': r['total']}
+            for r in method_conversion
+            if r['paid'] == 0 and r['total'] > 0
+            and (r['payment_method'] or '').strip().lower() not in ('', 'none')
+        ]
+
         context.update({
             'start': start,
             'end': end,
@@ -209,6 +220,7 @@ class MonitoringView(TemplateView):
             'by_method': by_method,
             'by_status': by_status,
             'by_scheme': by_scheme,
+            'unpaid_method_alerts': unpaid_method_alerts,
         })
         return context
 
