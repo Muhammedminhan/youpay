@@ -82,6 +82,34 @@ def _with_bar(rows, key='count'):
     return rows
 
 
+# Canonicalise the free-text payment_scheme values (Visa/VISA, Amex/American
+# Express, etc.) into clean labels for the chart.
+_SCHEME_ALIASES = {
+    'visa': 'Visa',
+    'mastercard': 'Mastercard',
+    'mada': 'mada',
+    'amex': 'Amex', 'american express': 'Amex',
+    'paypal': 'PayPal',
+}
+
+
+def _normalize_scheme(value):
+    if not value or not value.strip() or value.strip().lower() == 'none':
+        return 'None / unknown'
+    return _SCHEME_ALIASES.get(value.strip().lower(), value.strip())
+
+
+def _scheme_breakdown(qs):
+    """Aggregate payment_scheme with case/alias normalisation, ranked desc."""
+    merged = {}
+    for row in qs.values('payment_scheme').annotate(count=Count('id')):
+        merged[_normalize_scheme(row['payment_scheme'])] = \
+            merged.get(_normalize_scheme(row['payment_scheme']), 0) + row['count']
+    rows = [{'scheme': k, 'count': v} for k, v in merged.items()]
+    rows.sort(key=lambda r: r['count'], reverse=True)
+    return _with_bar(rows)
+
+
 @method_decorator(staff_member_required, name='dispatch')
 class DashboardView(TemplateView):
     """Landing page for the dashboard section."""
@@ -165,6 +193,8 @@ class MonitoringView(TemplateView):
             qs.values('payment_status').annotate(
                 count=Count('id')).order_by('-count'))
 
+        by_scheme = _scheme_breakdown(qs)
+
         context.update({
             'start': start,
             'end': end,
@@ -178,6 +208,7 @@ class MonitoringView(TemplateView):
             'by_country': by_country,
             'by_method': by_method,
             'by_status': by_status,
+            'by_scheme': by_scheme,
         })
         return context
 
