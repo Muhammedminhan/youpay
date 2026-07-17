@@ -1,0 +1,108 @@
+{% load static %}<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YOUPay Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,300..800;1,300..800&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap">
+  <style>
+    /* Theme derived from yougotagift.com — brand magenta #b800c4,
+       Mona Sans body / Bricolage Grotesque headings, 12px radius. */
+    :root {
+      --bg: #f5f7f9; --panel: #ffffff; --ink: #0e0f0c; --muted: #545454;
+      --line: #d9dfe4; --accent: #b800c4; --accent-soft: #fbe3f4;
+      --radius: 12px;
+      --font-body: 'Mona Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-head: 'Bricolage Grotesque', 'Mona Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    :root[data-theme="dark"] {
+      --bg: #1a0b1c; --panel: #25122a; --ink: #f3e9f4; --muted: #b79cb8;
+      --line: #3a2440; --accent: #e05bec; --accent-soft: #3a1740;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #1a0b1c; --panel: #25122a; --ink: #f3e9f4; --muted: #b79cb8;
+        --line: #3a2440; --accent: #e05bec; --accent-soft: #3a1740;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink);
+      font: 15px/1.6 var(--font-body);
+      display: flex; flex-direction: column;
+    }
+    header.top {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 28px; border-bottom: 3px solid var(--accent);
+    }
+    header.top .brand { font-family: var(--font-head); font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+    header.top .brand b { color: var(--accent); font-weight: 800; }
+    .theme-toggle { border: 1px solid var(--line); background: var(--panel); color: var(--muted); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+    .admin-link { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 8px 14px; font-weight: 700; font-size: 13px; text-decoration: none; }
+    .admin-link:hover { background: var(--accent); color: #fff; }
+    main { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+    .hero { max-width: 640px; width: 100%; text-align: center; }
+    .hero h1 { font-family: var(--font-head); font-size: 34px; font-weight: 800; letter-spacing: -.02em; margin: 0 0 12px; }
+    .hero p { color: var(--muted); font-size: 16px; margin: 0 auto 32px; max-width: 460px; }
+    .cards { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .card {
+      background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 24px; text-align: left; display: flex; align-items: center; gap: 18px;
+      text-decoration: none; color: inherit; transition: border-color .15s, transform .15s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card .icon {
+      flex: 0 0 auto; width: 52px; height: 52px; border-radius: var(--radius);
+      background: var(--accent-soft); color: var(--accent);
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+    }
+    .card .body { flex: 1; }
+    .card .body .t { font-family: var(--font-head); font-size: 17px; font-weight: 700; }
+    .card .body .d { color: var(--muted); font-size: 14px; }
+    .card .cta {
+      flex: 0 0 auto; background: var(--accent); color: #fff; font-weight: 700;
+      border-radius: 999px; padding: 10px 22px; font-size: 14px;
+    }
+    footer { text-align: center; padding: 18px; color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><b>YOU</b>Pay Dashboard</div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <a class="admin-link" href="{% url 'admin:index' %}">&#8592; Admin</a>
+      <button class="theme-toggle" type="button" onclick="var r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark');">◐</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <h1>Welcome{% if user.first_name %}, {{ user.first_name }}{% endif %}</h1>
+      <p>Your central place to keep an eye on YOUPay. Pick a section below to get started.</p>
+
+      <div class="cards">
+        <a class="card" href="{% url 'dashboard:monitoring' %}">
+          <span class="icon">&#128200;</span>
+          <span class="body">
+            <span class="t">Monitoring Dashboard</span>
+            <span class="d">Transactions, volume, gateways, clients, countries &amp; status trends.</span>
+          </span>
+          <span class="cta">Open &rarr;</span>
+        </a>
+        <a class="card" href="{% url 'dashboard:failures' %}">
+          <span class="icon">&#9888;&#65039;</span>
+          <span class="body">
+            <span class="t">Failure Reasons</span>
+            <span class="d">Gateway failures ranked by volume &mdash; which errors to fix first.</span>
+          </span>
+          <span class="cta">Open &rarr;</span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer>YOUPay &middot; internal dashboard</footer>
+</body>
+</html>
