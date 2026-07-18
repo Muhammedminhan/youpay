@@ -1,5 +1,4 @@
 import datetime
-import re
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import (Avg, Count, DecimalField, F, Q, Sum)
@@ -195,6 +194,17 @@ class MonitoringView(TemplateView):
 
         by_scheme = _scheme_breakdown(qs)
 
+        # Alert: payment methods that were attempted but have zero paid txns
+        # in the selected range (a method that is not converting at all).
+        method_conversion = qs.values('payment_method').annotate(
+            total=Count('id'), paid=Count('id', filter=PAID)).order_by('-total')
+        unpaid_method_alerts = [
+            {'method': r['payment_method'], 'total': r['total']}
+            for r in method_conversion
+            if r['paid'] == 0 and r['total'] > 0
+            and (r['payment_method'] or '').strip().lower() not in ('', 'none')
+        ]
+
         context.update({
             'start': start,
             'end': end,
@@ -209,6 +219,7 @@ class MonitoringView(TemplateView):
             'by_method': by_method,
             'by_status': by_status,
             'by_scheme': by_scheme,
+            'unpaid_method_alerts': unpaid_method_alerts,
         })
         return context
 
@@ -279,5 +290,99 @@ class FailuresView(TemplateView):
             'failure_rate': _pct(total_failures, total_txns),
             'gateways': gateways,
             'categories': categories,
+        })
+        return context
+
+
+# Response-summary signature for transactions blocked by the risk engine.
+RISK_BLOCK_REGEX = r'risk|fraud|suspected|security'
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class RiskEngineView(TemplateView):
+    """Monitor risk-engine signals: flagged, fraud and risk-blocked txns."""
+    template_name = 'dashboard/risk_engine.html'
+
+    def get_range(self):
+        today = timezone.localdate()
+        end = _parse_date(self.request.GET.get('end')) or today
+        start = _parse_date(self.request.GET.get('start'))
+        if not start:
+            start = end - datetime.timedelta(days=DEFAULT_RANGE_DAYS - 1)
+        if start > end:
+            start, end = end, start
+        return start, end
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        start, end = self.get_range()
+
+        qs = YouPayTransactionData.objects.filter(
+            created_at__date__gte=start, created_at__date__lte=end)
+
+        risk_q = Q(response_summary__iregex=RISK_BLOCK_REGEX)
+        totals = qs.aggregate(
+            total_count=Count('id'),
+            flagged_count=Count('id', filter=Q(is_flagged=True)),
+            fraud_count=Count('id', filter=Q(is_fraud=True)),
+            blocked_count=Count('id', filter=risk_q),
+        )
+        total_count = totals['total_count'] or 0
+
+        # Daily trend of flagged transactions, gap-filled.
+        trend_map = {
+            row['day']: row['count'] for row in
+            qs.filter(is_flagged=True).annotate(day=TruncDate('created_at'))
+            .values('day').annotate(count=Count('id')).order_by('day')
+        }
+        trend = []
+        day = start
+        while day <= end:
+            trend.append({'day': day, 'count': trend_map.get(day, 0)})
+            day += datetime.timedelta(days=1)
+        trend = _with_bar(trend, key='count')
+
+        # Risk by gateway (flagged / fraud / blocked, with flagged rate).
+        by_gateway = list(qs.values('payment_gateway').annotate(
+            total=Count('id'),
+            flagged=Count('id', filter=Q(is_flagged=True)),
+            fraud=Count('id', filter=Q(is_fraud=True)),
+            blocked=Count('id', filter=risk_q)).order_by('-flagged'))
+        for row in by_gateway:
+            row['flagged_rate'] = _pct(row['flagged'], row['total'])
+        by_gateway = _with_bar(by_gateway, key='flagged')
+
+        # Risk by country (top by flagged).
+        by_country = _with_bar(list(qs.values('country_code').annotate(
+            flagged=Count('id', filter=Q(is_flagged=True)),
+            fraud=Count('id', filter=Q(is_fraud=True))
+        ).order_by('-flagged')[:TOP_N]), key='flagged')
+
+        # Top risk-block reasons (from response_summary).
+        top_reasons = _with_bar(list(
+            qs.filter(risk_q).exclude(response_summary__isnull=True)
+            .exclude(response_summary='')
+            .values('response_summary').annotate(count=Count('id'))
+            .order_by('-count')[:TOP_N]))
+
+        # Most recent flagged / fraud transactions.
+        recent = list(qs.filter(Q(is_flagged=True) | Q(is_fraud=True))
+                      .order_by('-created_at')
+                      .values('transaction_id', 'created_at', 'amount',
+                              'currency', 'payment_gateway', 'country_code',
+                              'payment_status', 'is_fraud', 'is_flagged')[:15])
+
+        context.update({
+            'start': start,
+            'end': end,
+            'totals': totals,
+            'flagged_rate': _pct(totals['flagged_count'], total_count),
+            'fraud_rate': _pct(totals['fraud_count'], total_count),
+            'blocked_rate': _pct(totals['blocked_count'], total_count),
+            'trend': trend,
+            'by_gateway': by_gateway,
+            'by_country': by_country,
+            'top_reasons': top_reasons,
+            'recent': recent,
         })
         return context
