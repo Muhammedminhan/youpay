@@ -794,17 +794,23 @@ class CheckoutAmexFeeCalculator:
     def _calculate_fee(self):
         amex_percentage = Decimal(str(self.fee_config.percentage))
         vat_percentage = Decimal(str(self.fee_config.VAT_percentage))
+        currency = Currency.objects.get(
+            iso_code=self.transaction.currency
+        )
 
         additional_fee = round(
-            self.transaction.base_amount * amex_percentage / 100, 2
+            self.transaction.base_amount * amex_percentage / 100,
+            currency.decimal_notation,
         )
 
         additional_fee_vat = round(
-            additional_fee * vat_percentage / 100, 2
+            additional_fee * vat_percentage / 100,
+            currency.decimal_notation,
         )
 
         combined_vat = round(
-            self.transaction.VAT_amount + additional_fee_vat, 2
+            self.transaction.VAT_amount + additional_fee_vat,
+            currency.decimal_notation,
         )
 
         giftee_fee = Decimal(
