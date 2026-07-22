@@ -794,30 +794,32 @@ class CheckoutAmexFeeCalculator:
     def _calculate_fee(self):
         amex_percentage = Decimal(str(self.fee_config.percentage))
         vat_percentage = Decimal(str(self.fee_config.VAT_percentage))
+        currency = Currency.objects.get(
+            iso_code=self.transaction.currency
+        ).decimal_notation
 
-        additional_fee = round(
-            self.transaction.base_amount * amex_percentage / 100, 2
+        additional_fee = (
+            self.transaction.base_amount * amex_percentage / 100
         )
 
-        additional_fee_vat = round(
-            additional_fee * vat_percentage / 100, 2
+        additional_fee_vat = (
+            additional_fee * vat_percentage / 100
         )
 
-        combined_vat = round(
-            self.transaction.VAT_amount + additional_fee_vat, 2
+        combined_vat = (
+            self.transaction.VAT_amount + additional_fee_vat
         )
 
         giftee_fee = Decimal(
             str(self.udf.get("additional_charges") or 0)
         )
 
-        total_amount = round(
+        total_amount = (
             self.transaction.base_amount
             + self.transaction.service_fee
             + additional_fee
             + giftee_fee
-            + combined_vat,
-            2,
+            + combined_vat
         )
 
         return {
@@ -826,6 +828,7 @@ class CheckoutAmexFeeCalculator:
             "combined_vat": combined_vat,
             "giftee_fee": giftee_fee,
             "total_amount": total_amount,
+            "currency": currency
         }
 
     def _calculate_conversion(self, fee_details):
@@ -869,12 +872,17 @@ class CheckoutAmexFeeCalculator:
 
     def _build_response(self, fee, conversion):
         currency = conversion["currency"]
+        txn_currency = fee["currency"]
 
         return {
-            "additional_fee": str(fee["additional_fee"]),
-            "additional_fee_vat": str(fee["additional_fee_vat"]),
-            "combined_vat_amount": str(fee["combined_vat"]),
-            "total_amount": str(fee["total_amount"]),
+            "additional_fee": str(round(fee["additional_fee"],
+                                        txn_currency)),
+            "additional_fee_vat": str(round(fee["additional_fee_vat"],
+                                            txn_currency)),
+            "combined_vat_amount": str(round(fee["combined_vat"],
+                                             txn_currency)),
+            "total_amount": str(round(fee["total_amount"],
+                                      txn_currency)),
             "processing_fee_percentage": str(self.fee_config.percentage),
             "processing_fee_vat_percentage": str(self.fee_config.VAT_percentage),
             "cart_base_amount": str(
