@@ -712,7 +712,7 @@ def get_checkout_amex_additional_fee(additional_fee_obj, transaction_obj):
     return amex_additional_fee_config
 
 
-def additional_fee_for_conversion(transaction_obj, amount):
+def additional_fee_for_conversion(transaction_obj, amount, currency=None):
     """
     Calculate the total amount in base currency
     :param transaction_obj: Transaction object
@@ -725,10 +725,6 @@ def additional_fee_for_conversion(transaction_obj, amount):
 
     if not processing_fee_details:
         return amount
-
-    currency = Currency.objects.get(
-        iso_code=transaction_obj.cart_currency
-    )
 
     conversion_rate = Decimal(
         str(processing_fee_details.get("conversion_rate", 1))
@@ -743,7 +739,10 @@ def additional_fee_for_conversion(transaction_obj, amount):
         else amount * conversion_rate
     )
 
-    return round(converted_amount, currency.decimal_notation)
+    if currency:
+        return round(converted_amount, currency.decimal_notation)
+
+    return converted_amount
 
 
 def process_total_quantity_eligibility(transaction, response_data):
@@ -850,9 +849,19 @@ class CheckoutAmexFeeCalculator:
             fee_details["additional_fee_vat"],
         )
 
-        combined_vat_base = (
-            self.transaction.cart_VAT_amount
-            + additional_fee_vat_base
+        # NOTE cart_VAT_amount is already rounded by the cart service after currency conversion.
+        # Using it for further calculations may introduce a small precision difference.
+        # combined_vat_base = (
+        #     self.transaction.cart_VAT_amount
+        #     + additional_fee_vat_base
+        # )
+
+        txn_currency_denom = fee_details["currency"]
+        combined_vat = round(fee_details["combined_vat"], txn_currency_denom)
+        combined_vat_base = additional_fee_for_conversion(
+            self.transaction,
+            combined_vat,
+            currency
         )
 
         total_amount_base = (
@@ -898,7 +907,10 @@ class CheckoutAmexFeeCalculator:
                 )
             ),
             "additional_fee_in_base_currency": str(
-                conversion["additional_fee_base"]
+                round(
+                    conversion["additional_fee_base"],
+                    currency.decimal_notation
+                )
             ),
             "combined_vat_amount_in_base_currency": str(
                 round(
