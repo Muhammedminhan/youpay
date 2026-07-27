@@ -448,7 +448,8 @@ class YouPayResponse(object):
             self.HASSAD_VERIFICATION_EXCEPTION: "Verification failed",
             self.HASSAD_ALREADY_COLLECTED: "HASSAD Reward Already Collected",
             self.HASSAD_PAYMENT_FAILED: "HASSAD Payment Failed",
-            self.HASSAD_TRY_AFTER_SOMETIME: "Please try again after 1 minute",
+            self.HASSAD_TRY_AFTER_SOMETIME: ("Please try again after 2 "
+                "minutes. -(يرجى المحاولة مرة أخرى بعد دقيقتين.)"),
         })
 
     def get_400_message(self, message):
