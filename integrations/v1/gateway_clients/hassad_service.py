@@ -167,7 +167,7 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             if error_code == HASSAD_NOT_ACCEPTED_CODE:
                 logger.info("OTP generation rejected error in Hassad, {}"
                             .format(self.response_data))
-                return {"error": response.json()}, self.HASSAD_TRY_AFTER_SOMETIME
+                return None, self.HASSAD_TRY_AFTER_SOMETIME
 
             logger.error("Error in Hassad otp, {} for transaction id "
                 "{}".format(self.response_data, self.transaction_id))
@@ -595,8 +595,11 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                     payment_data.success_url, payment_data.transaction_id))
                 is_success, is_redirect = True, True
             else:
-                self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
-                is_redirect = False
+                self.payment_status = PAYMENT_STATUS_DECLINED
+                is_redirect = True
+                redirect_url = ('{}?transaction_id={}'.format(
+                    payment_data.failure_url,
+                    payment_data.transaction_id))
                 message = self.hassad_error_response_message(
                     response_data, language)
 
