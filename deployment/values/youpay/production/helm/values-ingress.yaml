@@ -7,13 +7,13 @@ ingress:
   annotations:
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/backend-protocol: 'HTTP'
-    alb.ingress.kubernetes.io/certificate-arn: '[CERTIFICATE_ARN]'
+    alb.ingress.kubernetes.io/certificate-arn: 'arn:aws:acm:ap-south-1:844294577846:certificate/98ef16a4-89d2-44df-aa19-a57992aa56a7'
     alb.ingress.kubernetes.io/group.name: 'default'
     alb.ingress.kubernetes.io/healthcheck-path: '/health/'
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/scheme: 'internet-facing'
     alb.ingress.kubernetes.io/tags: 'Name=ygag-production-default-alb-eks-tf, Platform=EKS, Environment=production'
-    alb.ingress.kubernetes.io/wafv2-acl-arn: '[WAF_ARN]'
+    alb.ingress.kubernetes.io/wafv2-acl-arn: 'arn:aws:wafv2:ap-south-1:844294577846:regional/webacl/AWSRegionalWAF2/a691c813-d84e-4501-966b-5e2b45240118'
     alb.ingress.kubernetes.io/target-type: 'ip'
     alb.ingress.kubernetes.io/subnets: 'ygag-production-default-public-ap-south-1a-tf, ygag-production-default-public-ap-south-1b-tf, ygag-production-default-public-ap-south-1c-tf'
     alb.ingress.kubernetes.io/ssl-policy: 'ELBSecurityPolicy-TLS-1-2-2017-01'
@@ -21,7 +21,7 @@ ingress:
     kubernetes.io/ingress.class: 'alb'
 
   rules:
-    - host: '[DOMAIN]'
+    - host: 'app.youpay.yougotagift.com'
       http:
         paths:
           - backend:
