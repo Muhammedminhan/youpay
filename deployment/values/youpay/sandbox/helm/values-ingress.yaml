@@ -17,7 +17,7 @@ ingress:
     alb.ingress.kubernetes.io/target-type: 'ip'
     alb.ingress.kubernetes.io/subnets: 'ygag-sandbox-default-public-ap-south-1a-tf, ygag-sandbox-default-public-ap-south-1b-tf, ygag-sandbox-default-public-ap-south-1c-tf'
     alb.ingress.kubernetes.io/ssl-policy: 'ELBSecurityPolicy-TLS-1-2-2017-01'
-    alb.ingress.kubernetes.io/load-balancer-attributes: 'access_logs.s3.enabled=true,access_logs.s3.bucket=[ALB_ACCESS_LOG_BUCKET],access_logs.s3.prefix=default-public,idle_timeout.timeout_seconds=120'
+    alb.ingress.kubernetes.io/load-balancer-attributes: 'access_logs.s3.enabled=true,access_logs.s3.bucket=ygag-sandbox-ap-south-1-alb-logs-tf,access_logs.s3.prefix=default-public,idle_timeout.timeout_seconds=120'
     kubernetes.io/ingress.class: 'alb'
 
   rules:
