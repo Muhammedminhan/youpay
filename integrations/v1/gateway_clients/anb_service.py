@@ -3,6 +3,7 @@ import json
 import logging
 
 import requests
+from django.db.models import Q
 from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_B2CPAYBACK, REQUEST_METHOD_POST,
@@ -11,7 +12,8 @@ from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
 from core.response_messages import YouPayResponse
 from core.utils import (get_app_config,
                         decrypt_string,
-                        get_config_from_payment_configurations)
+                        get_config_from_payment_configurations,
+                        auto_enable_or_disable_point_collection)
 from integrations.constants import (ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
                                     PAYMENT_REQUEST_GENERATE_OTP,
                                     CHECKOUTPG_PAYMENT_CONFIGURATIONS,
@@ -65,6 +67,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         self.points_redeemed_mobile_number = None
         self.points_redeemed_cif_number = None
         self.point_program = None
+        self.point_collection_enabled = False
         self.brand_calculations = None
 
     def get_payment_header(self):
@@ -365,6 +368,14 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 is_success = True
                 is_redirect = True
                 self.payment_status = PAYMENT_STATUS_PENDING
+                self.point_collection_enabled = (
+                    auto_enable_or_disable_point_collection(
+                        Q(
+                            payment_method=PAYMENT_METHOD_ANB,
+                            active=True,
+                            earn_on_partial_redemption=True
+                        ))
+                )
                 self.redeemed_amount = partner_response.get('redeemed_amount')
                 self.redeemed_point = partner_response.get(
                     'redeemedTouchPoints')
@@ -435,6 +446,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 "service_fee": self.service_fee,
                 "base_amount": self.base_amount,
                 "VAT_amount": self.VAT_amount,
+                "point_collection_enabled": self.point_collection_enabled,
                 "response_summary": response_data.get('reason'),
                 "name_on_card": name_on_card,
                 "points_redeemed_mobile_number": (
@@ -512,6 +524,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
                     payment_scheme = response_data.get("payment_scheme")
+
+                    self.handle_anb_collection(transaction_obj)
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -682,3 +696,16 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 request_method=REQUEST_METHOD_POST,
                 request_type=PAYMENT_REQUEST_COLLECT_POINTS,
             )
+
+    @staticmethod
+    def handle_anb_collection(transaction_obj):
+        """
+        Update ANB point collection details after successful verification.
+        """
+        if transaction_obj.point_collection_enabled:
+            if (transaction_obj.point_program != PAYMENT_METHOD_ANB or
+                    not transaction_obj.points_collected_mobile_number):
+                transaction_obj.points_collected_mobile_number = (
+                    transaction_obj.points_redeemed_mobile_number)
+                transaction_obj.point_program = PAYMENT_METHOD_ANB
+                transaction_obj.save()
