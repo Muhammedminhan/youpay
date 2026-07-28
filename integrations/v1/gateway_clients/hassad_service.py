@@ -21,7 +21,8 @@ from integrations.constants import (
     B2CP_REDEEM_POINTS_API, PAYMENT_REQUEST_REDEMPTION,
     B2CP_VERIFY_API,
     PAYMENT_REQUEST_VERIFY,
-    PAYMENT_DECLINED_STATUS, HASSAD_CLIENT_CODE, HASSAD_NOT_ACCEPTED_CODE)
+    PAYMENT_DECLINED_STATUS, HASSAD_CLIENT_CODE, HASSAD_NOT_ACCEPTED_CODE,
+    HASSAD_INVALID_OTP_CODE)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.hassad_serializer import (
     HassadPaymentRequestSerializer)
@@ -594,6 +595,11 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                 redirect_url = ('{}?transaction_id={}'.format(
                     payment_data.success_url, payment_data.transaction_id))
                 is_success, is_redirect = True, True
+            elif response_data.get('code') == HASSAD_INVALID_OTP_CODE:
+                self.payment_status = PAYMENT_STATUS_DECLINED_RETRY
+                is_redirect = False
+                message = self.hassad_error_response_message(
+                    response_data, language)
             else:
                 self.payment_status = PAYMENT_STATUS_DECLINED
                 is_redirect = True

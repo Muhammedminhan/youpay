@@ -99,7 +99,7 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'SubmitPaymentSession',
     'NeqatyPointBalanceAPIView',
     'NetworkPayments',
-    'HassadGenerateOTPAPIView'
+    'HassadRedeemPointsAPIView'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
