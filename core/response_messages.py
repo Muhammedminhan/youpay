@@ -246,7 +246,7 @@ class YouPayResponse(object):
             self.DATA_CORRUPTED: "Data corrupted",
             self.SUCCESS: "API request completed successfully",
             self.PAYMENT_SUCCESS: "Transaction success",
-            self.PAYMENT_FAILED: "Payment failed",
+            self.PAYMENT_FAILED: "Payment failed. -(فشلت عملية الدفع.)",
             self.BRAND_DETAILS_MISSING: "Brand details missing",
             self.OTP_ERROR: "Invalid OTP",
             self.OTP_EXPIRED: "OTP is expired",
