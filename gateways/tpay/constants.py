@@ -8,6 +8,7 @@ TPAY_PRODUCT_CATALOG_NAME = "YouGotaGift"
 TPAY_SUCCESS_CODES = [
     "0",
     "100",
+    "Success",
     "PaymentCompletedSuccessfully",
     "SucceededAndFailedToContactMerchant"
 ]
