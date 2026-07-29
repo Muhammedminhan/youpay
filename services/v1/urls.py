@@ -172,7 +172,8 @@ urlpatterns = [
     path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
 
     # API for refunding a payment
-#     path('refund-payment/', RefundPointsAPIView.as_view(), name='RefundPointsAPI'),
+    path('refund-payment/', RefundPointsAPIView.as_view(),
+         name='RefundPointsAPI'),
 
     # TPay Endpoints
     path('tpay/initialize/', TPayInitializeAPIView.as_view(),
