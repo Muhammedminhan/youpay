@@ -816,9 +816,9 @@ class CheckoutAmexFeeCalculator:
         total_amount = (
             self.transaction.base_amount
             + self.transaction.service_fee
-            + additional_fee
+            + round(additional_fee, currency)
             + giftee_fee
-            + combined_vat
+            + round(combined_vat, currency)
         )
 
         return {
