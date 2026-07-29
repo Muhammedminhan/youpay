@@ -270,14 +270,25 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 logger.info(f"Decoded JWT Payload for Transaction "
                     f"{transaction_obj.transaction_id}: {decoded_jwt_payload}")
 
-                organization_id = visa_config.merchant_id
-                visa_reference_id = decoded_jwt_payload.get(
-                    'paymentCredentialsReference', {}).get(organization_id)
+                payment_refs = decoded_jwt_payload.get(
+                    "paymentCredentialsReference", {})
+
+                portfolio_id = visa_config.validation_json.get("portfolio_id")
+                visa_reference_id = payment_refs.get(portfolio_id)
+
+                logger.info(
+                    "[Visa CTP] Portfolio ID: %s, Payment Reference: %s",
+                    portfolio_id,
+                    visa_reference_id
+                )
 
                 if not visa_reference_id:
                     logger.error(
-                        f"Missing paymentCredentialsReference inside token "
-                        f"payload for transaction: {transaction_obj.transaction_id}")
+                        "[Visa CTP] paymentCredentialsReference not found for portfolio '%s'. "
+                        "Available keys: %s",
+                        portfolio_id,
+                        list(payment_refs.keys())
+                    )
                     return None, self.VISACTP_CARD_DETAILS_FAILED
 
             except Exception as token_err:
@@ -292,15 +303,34 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             headers = self.get_header(REQUEST_METHOD_GET,
                         resource_path, None, visa_config)
 
+            logger.info(
+                "[Visa CTP] Fetch Payment Credentials\n"
+                "URL=%s\n"
+                "Reference=%s\n"
+                "Headers=%s",
+                visa_url,
+                visa_reference_id,
+                headers
+            )
             visa_response = requests.get(visa_url, headers=headers,
                                 timeout=EXTERNAL_API_REQUEST_TIMEOUT)
+            logger.info(
+                "[Visa CTP] Credentials Response\n"
+                "Status=%s\n"
+                "Body=%s",
+                visa_response.status_code,
+                visa_response.text
+            )
 
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
                 request_data=json.dumps({
                     "visa_reference_id": visa_reference_id}),
-                response_data=visa_response.text,
+                response_data=json.dumps({
+                    "status": visa_response.status_code,
+                    "body": visa_response.text
+                }),
                 request_method=REQUEST_METHOD_GET,
                 request_type=PAYMENT_REQUEST_VISA_CREDENTIALS,
             )
@@ -373,7 +403,15 @@ class VisaManager(YouPayResponse, PaymentHandlers):
         Decrypts Visa JWE using RSA Private Key.
         """
         try:
-            private_key_pem = visa_config.api_secret
+            private_key_pem = visa_config.validation_json.get(
+                "encryption_private_key"
+            )
+            if not private_key_pem:
+                logger.error(
+                    "[Visa CTP] encryption_private_key not configured."
+                )
+                return None
+
             key = jwk.JWK.from_pem(private_key_pem.encode('utf-8'))
 
             jwetoken = jwe.JWE()
