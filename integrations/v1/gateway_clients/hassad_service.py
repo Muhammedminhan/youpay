@@ -365,8 +365,11 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
                     card_bin = ""
                     card_issuer_country = ""
                     response_data = response.json()
-                    return_response_data["message"] = response_data.get(
-                        "response_summary", "Payment Failed")
+                    response_obj = YouPayResponse()
+                    return_response_data["message"] = (
+                            response_data.get("response_summary") or
+                            response_obj.MESSAGE[response_obj.PAYMENT_FAILED]
+                    )
 
                 return_response_data["payment_status"] = payment_status
                 self.create_youpay_to_payment_gateways_data(
