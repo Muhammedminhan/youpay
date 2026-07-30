@@ -34,13 +34,19 @@ class VisaManager(YouPayResponse, PaymentHandlers):
     def __init__(self):
         super(VisaManager, self).__init__()
 
-    def get_header(self, method, resource, payload_string, visa_config):
+    def get_header(self, method, resource, payload_string, visa_config,
+                   credentials_override=None):
         """
         Generates dynamic HTTP Signatures required for VISA authentication.
         """
-        merchant_id = visa_config.merchant_id
-        api_key = visa_config.api_key
-        shared_secret = visa_config.api_secret
+        if credentials_override:
+            merchant_id = credentials_override.get("merchant_id")
+            api_key = credentials_override.get("api_key")
+            shared_secret = credentials_override.get("shared_secret")
+        else:
+            merchant_id = visa_config.merchant_id
+            api_key = visa_config.api_key
+            shared_secret = visa_config.api_secret
 
         host = visa_config.domain.replace("https://",
                 "").replace("http://", "").split('/')[0]
@@ -299,18 +305,22 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
             resource_path = f"{VISACTP_CREDENTIALS_API}/{visa_reference_id}"
             visa_url = visa_config.domain + resource_path
+            credentials_override = visa_config.validation_json.get(
+                "credentials_api"
+            )
 
             headers = self.get_header(REQUEST_METHOD_GET,
-                        resource_path, None, visa_config)
+                resource_path, None, visa_config,
+                credentials_override=credentials_override)
 
             logger.info(
                 "[Visa CTP] Fetch Payment Credentials\n"
                 "URL=%s\n"
                 "Reference=%s\n"
-                "Headers=%s",
+                "Merchant=%s",
                 visa_url,
                 visa_reference_id,
-                headers
+                headers.get("v-c-merchant-id")
             )
             visa_response = requests.get(visa_url, headers=headers,
                                 timeout=EXTERNAL_API_REQUEST_TIMEOUT)
@@ -412,6 +422,12 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 )
                 return None
 
+            logger.info(
+                "[Visa CTP] Private Key Length=%s, Parts Count: %s, "
+                "Starts With: %s", len(private_key_pem),
+                len(jwe_string.split(".")), private_key_pem[:30]
+            )
+
             key = jwk.JWK.from_pem(private_key_pem.encode('utf-8'))
 
             jwetoken = jwe.JWE()
@@ -419,8 +435,18 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             jwetoken.decrypt(key)
 
             decrypted_payload = jwetoken.payload.decode('utf-8')
-            logger.info("Visa JWE successfully decrypted.")
-            return json.loads(decrypted_payload)
+
+            logger.info(
+                "[Visa CTP] Decrypted Payload: %s",
+                decrypted_payload
+            )
+            decrypted_json = json.loads(decrypted_payload)
+            logger.info(
+                "[Visa CTP] Decrypted JSON Keys: %s",
+                list(decrypted_json.keys())
+            )
+
+            return decrypted_json
 
         except Exception as e:
             logger.error(f"JWE Decryption Failed: {str(e)}")
