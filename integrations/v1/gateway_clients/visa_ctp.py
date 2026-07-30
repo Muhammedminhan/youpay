@@ -39,6 +39,11 @@ class VisaManager(YouPayResponse, PaymentHandlers):
         """
         Generates dynamic HTTP Signatures required for VISA authentication.
         """
+        logger.info(
+            "[Visa CTP] get_header() received credentials_override=%s",
+            credentials_override is not None
+        )
+
         if credentials_override:
             merchant_id = credentials_override.get("merchant_id")
             api_key = credentials_override.get("api_key")
@@ -47,6 +52,12 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             merchant_id = visa_config.merchant_id
             api_key = visa_config.api_key
             shared_secret = visa_config.api_secret
+
+        logger.info(
+            "[Visa CTP] Using Merchant=%s | Override=%s",
+            merchant_id,
+            bool(credentials_override)
+        )
 
         host = visa_config.domain.replace("https://",
                 "").replace("http://", "").split('/')[0]
@@ -90,6 +101,11 @@ class VisaManager(YouPayResponse, PaymentHandlers):
         headers["signature"] = (
             f'keyid="{api_key}", algorithm="HmacSHA256", '
             f'headers="{signed_headers_list}", signature="{signature_base64}"'
+        )
+
+        logger.info(
+            "[Visa CTP] Generated Header Merchant=%s",
+            headers.get("v-c-merchant-id")
         )
 
         return headers
@@ -308,27 +324,30 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             credentials_override = visa_config.validation_json.get(
                 "credentials_api"
             )
+            logger.info(
+                "[Visa CTP] validation_json type=%s, has_credentials_api=%s",
+                type(visa_config.validation_json).__name__,
+                "credentials_api" in visa_config.validation_json
+            )
+            logger.info(
+                "[Visa CTP] credentials_override=%s",
+                credentials_override
+            )
 
             headers = self.get_header(REQUEST_METHOD_GET,
                 resource_path, None, visa_config,
                 credentials_override=credentials_override)
 
             logger.info(
-                "[Visa CTP] Fetch Payment Credentials\n"
-                "URL=%s\n"
-                "Reference=%s\n"
-                "Merchant=%s",
-                visa_url,
-                visa_reference_id,
-                headers.get("v-c-merchant-id")
+                "[Visa CTP] Fetch Payment Credentials | URL=%s | "
+                "Reference=%s | Merchant=%s", visa_url,
+                visa_reference_id, headers.get("v-c-merchant-id")
             )
             visa_response = requests.get(visa_url, headers=headers,
                                 timeout=EXTERNAL_API_REQUEST_TIMEOUT)
             logger.info(
-                "[Visa CTP] Credentials Response\n"
-                "Status=%s\n"
-                "Body=%s",
-                visa_response.status_code,
+                "[Visa CTP] Credentials Response "
+                "Status=%s | Body=%s", visa_response.status_code,
                 visa_response.text
             )
 
