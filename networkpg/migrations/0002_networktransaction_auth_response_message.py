@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='networktransaction',
             name='auth_response_message',
-            field=models.CharField(blank=True, help_text='Auth response message from Network International', max_length=100, null=True),
+            field=models.CharField(blank=True, help_text='Auth response message from Network International', max_length=500, null=True),
         ),
     ]

@@ -50,7 +50,7 @@ class NetworkTransaction(CustomerProfile):
     card_type = models.CharField(max_length=50, null=True, blank=True)
     is_gcc_card = models.BooleanField(default=False)
     auth_response_message = models.CharField(
-        max_length=100, null=True, blank=True,
+        max_length=500, null=True, blank=True,
         help_text=_("Auth response message from Network International")
     )
 

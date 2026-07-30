@@ -28,7 +28,8 @@ class WebhookService:
         """
         event_type = raw_data.get('eventName')
         order_reference = raw_data.get('order', {}).get('reference')
-        merchant_order_reference = raw_data.get('order', {}).get('merchantOrderReference')
+        merchant_order_reference = raw_data.get(
+            'order', {}).get('merchantOrderReference')
         notification = EventNotification.objects.create(
             payment_reference=merchant_order_reference,
             event_type=event_type,
@@ -47,7 +48,8 @@ class WebhookService:
                     PAYMENT_STATUS_CANCELLED]:
                     return True
                 notification.network_transaction = transaction_obj
-                WebhookService._update_transaction_status(transaction_obj, raw_data)
+                WebhookService._update_transaction_status(transaction_obj,
+                                                          raw_data)
                 WebhookService._trigger_youpay_update(transaction_obj)
                 notification.processed = True
                 notification.processed_at = timezone.now()
@@ -55,7 +57,8 @@ class WebhookService:
                 return True
             else:
                 logger.warning(
-                    f"No transaction found for webhook: {merchant_order_reference} / {order_reference}"
+                    "No transaction found for webhook: %s / %s",
+                    merchant_order_reference, order_reference
                 )
                 notification.error_message = "Transaction record not found"
                 notification.save()
@@ -95,7 +98,9 @@ class WebhookService:
             data_to_update.update({
                 "card_bin": transaction_obj.card_bin,
                 "card_last4": transaction_obj.card_last4,
-                "payment_scheme": capfirst(transaction_obj.card_scheme.lower()) if transaction_obj.card_scheme else None,
+                "payment_scheme": capfirst(
+                    transaction_obj.card_scheme.lower()
+                ) if transaction_obj.card_scheme else None,
                 "name_on_card": transaction_obj.card_holder_name,
                 "card_issuer_country": transaction_obj.card_issuer_country,
                 "approved": transaction_obj.is_approved,
@@ -152,7 +157,8 @@ class WebhookService:
         transaction_obj.save()
 
         logger.info(
-            f"Updated NetworkTransaction {transaction_obj.payment_reference} to {transaction_obj.status}"
+            "Updated NetworkTransaction %s to %s",
+            transaction_obj.payment_reference, transaction_obj.status
         )
 
     @staticmethod
