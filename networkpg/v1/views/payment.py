@@ -61,12 +61,15 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
         self.decrypted_id = None
 
     def post(self, request, *_args, **_kwargs):
+        return self.initiate_payment(request.data.get("transaction_id"))
+
+    def initiate_payment(self, transaction_id):
         """
         This method decrypts the transaction ID, validates the transaction data,
         creates a local NetworkTransaction record, and calls the Network International
         API to create an order and obtain a payment URL for the customer.
         """
-        self.transaction_id = request.data.get("transaction_id")
+        self.transaction_id = transaction_id
         self.decrypted_id = decrypt_string(self.transaction_id)
         logger.info(
             "Received Network charge calculation request for Transaction ID: %s",
