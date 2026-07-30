@@ -177,7 +177,8 @@ class NetworkPaymentsApi(APIView, PaymentHandlers):
                     response,
                     status=status.HTTP_400_BAD_REQUEST
                 )
-        except NetworkTransaction.DoesNotExist:
+        except Exception as e:
+            logger.error("Internal error during payment status retrieval %s", e)
             return Response(
                 {"error": "Network transaction not found"},
                 status=status.HTTP_404_NOT_FOUND

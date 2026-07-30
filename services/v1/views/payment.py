@@ -166,7 +166,7 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
                             networkpg = NetworkPaymentsApi()
                             response = networkpg.initiate_payment(
                                     encrypted_transaction_id)
-                            redirect_url = response.data.get('payment_url')
+                            redirect_url = response.data.get('payment_url', '')
                         else:
                             if redemption_partner:
                                 redirect_url = PAYMENT_REDIRECT_URL + "{}/{}/{}".format(
