@@ -9,7 +9,8 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.exceptions import PaymentConfigurationFailed
-from core.models import PaymentMethodConfig, Country, PaymentConfiguration
+from core.models import (
+    PaymentMethodConfig, Country, PaymentConfiguration, Currency)
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
@@ -139,6 +140,62 @@ class ConfigViewSet(ViewSet):
         except Exception as e:
             return self._exception_response(e)
 
+    def get_cart_fee_breakdowns(self, transaction):
+        """
+        Get cart fee breakdowns
+        """
+        if not transaction:
+            return {}
+        notation = Currency.objects.get(iso_code=transaction.cart_currency
+                                        ).decimal_notation
+        return {
+            "cart_service_fee": (
+                round(transaction.cart_service_fee, notation)
+                if transaction.cart_service_fee else None
+            ),
+            "cart_vat_amount": (
+                round(transaction.cart_VAT_amount, notation)
+                if transaction.cart_VAT_amount else None
+            ),
+            "cart_base_amount": (
+                round(transaction.cart_base_amount, notation)
+                if transaction.cart_base_amount else None
+            ),
+            "cart_platform_fee": (
+                round(transaction.cart_platform_fee, notation)
+                if transaction.cart_platform_fee else None
+            ),
+            "cart_amount": round(transaction.cart_amount or 0, notation)
+        }
+
+    def get_payment_fee_breakdowns(self, transaction):
+        """
+        Get payment fee breakdowns
+        """
+        if not transaction:
+            return {}
+        notation = Currency.objects.get(iso_code=transaction.currency
+                                        ).decimal_notation
+        return {
+            "amount": round(transaction.amount or 0, notation),
+            "service_fee": (
+                round(transaction.service_fee, notation)
+                if transaction.service_fee else None
+            ),
+            "vat_amount": (
+                round(transaction.VAT_amount, notation)
+                if transaction.VAT_amount else None
+            ),
+            "base_amount": (
+                round(transaction.base_amount, notation)
+                if transaction.base_amount else None
+            ),
+            "platform_fee": (
+                round(transaction.platform_fee, notation)
+                if transaction.platform_fee else None
+            )
+        }
+
     def retrieve_response(self, **kwargs):
         transaction = kwargs.get('transaction')
         payment_options = kwargs.get('payment_options')
@@ -159,31 +216,15 @@ class ConfigViewSet(ViewSet):
             "data": {
                 "api_client": api_client,
                 "payment_options": payment_options,
-                "amount": transaction.amount if transaction else None,
                 "currency": transaction.currency if transaction else None,
                 "country_code": transaction.country_code if transaction else
                 None,
-                "service_fee": transaction.service_fee if transaction else
-                None,
                 "paypal_config": self.get_paypal_config(payment_options,
                                                         transaction),
-                "vat_amount": transaction.VAT_amount if transaction else None,
-                "base_amount": transaction.base_amount if transaction else
-                None,
-                "platform_fee": transaction.platform_fee if transaction else
-                None,
-                "cart_amount": transaction.cart_amount if transaction else
-                None,
+                **self.get_payment_fee_breakdowns(transaction),
+                **self.get_cart_fee_breakdowns(transaction),
                 "cart_currency": transaction.cart_currency if transaction else
                 None,
-                "cart_service_fee": transaction.cart_service_fee if
-                transaction else None,
-                "cart_vat_amount": transaction.cart_VAT_amount if transaction
-                else None,
-                "cart_base_amount": transaction.cart_base_amount if
-                transaction else None,
-                "cart_platform_fee": transaction.cart_platform_fee if
-                transaction else None,
                 "client_handling_fee": self._get_udf1_handling_fee(
                     transaction, 'additional_charges'),
                 "cart_client_handling_fee": self._get_udf1_handling_fee(

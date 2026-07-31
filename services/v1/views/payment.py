@@ -57,6 +57,7 @@ from services.v1.views.utils import (
     payment_configuration_check,
     get_country_for_configuration, is_rewards_order_reference
 )
+from core.common.security.authentication import HMACAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -1057,11 +1058,19 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse,
     """
     API to refund redeemed points
     """
+    authentication_classes = [HMACAuthentication]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.validate, self.client = None, None
+
+    def hmac_secret(self, request):
+        self.validate, self.client = self.validate_client(request)
+        return self.client.api_secret
 
     def post(self, request):
         try:
-            validate, client = self.validate_client(request)
-            if not validate:
+            if not self.validate:
                 logger.info("Refund request client validation failed")
                 self.return_data = self.get_400_message(
                     message="Client Does Not Exist"
@@ -1100,7 +1109,7 @@ class RefundPointsAPIView(APIView, ClientValidator, YouPayResponse,
             try:
                 transaction = YouPayTransactionData.objects.get(
                     invoice_id=order_id,
-                    api_client=client,
+                    api_client=self.client,
                     payment_status=PAYMENT_STATUS_PAID,
                     currency=currency,
                     amount=Decimal(refund_amount),

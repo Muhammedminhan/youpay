@@ -74,9 +74,11 @@ INSTALLED_APPS = [
     'gateways.paypal',
     'networkpg',
     'gateways.tpay',
+    'dashboard',
 
 
     # 3rd party apps
+    'django.contrib.humanize',
     'rest_framework',
     'django_extensions',
     "corsheaders",
@@ -103,7 +105,7 @@ ROOT_URLCONF = 'youpay.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -212,6 +214,10 @@ YOUPAY_SECRET_KEY = config('YOUPAY_SECRET_KEY', '')
 YOUPAY_PUBLIC_KEY = config('YOUPAY_PUBLIC_KEY', '')
 TABBYPG_API_KEY = config('TABBYPG_API_KEY', '')
 
+# Apple Pay HMAC replay window, in seconds. A request whose signed timestamp is
+# older than this is rejected (see services/v1/api_clients/checkoutpg.py).
+APPLEPAY_TIMESTAMP_EXPIRY = config('APPLEPAY_TIMESTAMP_EXPIRY', 300, cast=int)
+
 BROKER_URL = config('CELERY_BROKER_URL', 'redis://localhost:6379/2')
 
 # REDIS configurations
@@ -235,7 +241,7 @@ sentry_sdk.init(
     # django.contrib.auth) you may enable sending PII data.
     send_default_pii=False,
 
-    traces_sample_rate=0,  # Capture 100% of transactions for tracing
+    traces_sample_rate=None,  # Capture 100% of transactions for tracing
     profiles_sample_rate=0  # Profile 100% of sampled transactions
 
 )
