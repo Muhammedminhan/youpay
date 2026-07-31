@@ -655,22 +655,33 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
         message = ""
         try:
             code = response_data.get("code")
-            partner_response = response_data.get('partner_response')
+            partner_response = response_data.get("partner_response") or {}
+
             if code == self.HASSAD_PAYMENT_FAILED:
-                message = partner_response.get("checkout_response_data",
-                                               {}).get("response_summary", "")
+                message = (
+                        partner_response.get("checkout_response_data", {})
+                        .get("response_summary")
+                        or self.MESSAGE.get(code)
+                )
             elif language == LANGUAGE_CODE_AR:
-                message = partner_response.get("response_text_ar")
-            elif partner_response.get("response_text"):
-                message = partner_response.get("response_text")
+                message = (
+                        partner_response.get("response_text_ar")
+                        or partner_response.get("response_text")
+                        or self.MESSAGE.get(code)
+                )
             else:
-                message = self.MESSAGE.get(code)
+                message = (
+                        partner_response.get("response_text")
+                        or self.MESSAGE.get(code)
+                )
         except Exception as e:
             logger.error(
-                "{} Exception occurred on {}, err {} ".format(
-                    self.class_name, inspect.currentframe().f_code.co_name,
-                    e))
-
+                "{} Exception occurred on {}, err {}".format(
+                    self.class_name,
+                    inspect.currentframe().f_code.co_name,
+                    e
+                )
+            )
         return message
 
     def prepare_redeem_payload(self, transaction_data):
