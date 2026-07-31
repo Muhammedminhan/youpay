@@ -139,9 +139,11 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             url = self.hassad_config.domain + B2CP_OTP_GENERATION_API
             headers = self.get_payment_header()
             logger.info(
-                "Youpay sending request data to Hassad generate otp api {}"
-                "is {} for transaction id {} with header {}".format(
-                    url, payload, self.transaction_id, headers))
+                "Youpay sending request data to Hassad generate otp api {} "
+                "is {} for transaction id {}".format(
+                    url, payload, self.transaction_id
+                )
+            )
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
 
@@ -468,9 +470,8 @@ class HassadServiceManager(PaymentHandlers, PaymentRequestView):
             headers = self.get_payment_header()
 
             logger.info(
-                "Youpay sending request data to hassad redeem point api is {}"
-                " headers {} ".format(payload, headers))
-
+                "Youpay sending request data to hassad redeem point api "
+                "is {}".format(payload))
             response = requests.post(url, data=json.dumps(payload),
                                      headers=headers)
 
