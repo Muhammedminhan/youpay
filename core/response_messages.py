@@ -212,6 +212,29 @@ class YouPayResponse(object):
     TPAY_PAYMENT_FAILED = 19013
     """TPay related ends"""
 
+    """Hassad related begins"""
+    HASSAD_CONNECTION_ERROR = 13002
+    HASSAD_INVALID_DATA = 13003
+    HASSAD_INTERNAL_SYSTEM_ERROR = 13004
+    HASSAD_GENERAL_ERROR = 13005
+    HASSAD_RESOURCE_NOT_FOUND = 13006
+    HASSAD_REQUEST_NOT_ACCEPTED = 13007
+    HASSAD_USER_NOT_ENROLLED = 13008
+    HASSAD_INVALID_OR_EXPIRED_OTP = 13009
+    HASSAD_REDEMPTION_FAILED = 13010
+    HASSAD_PHONE_NUMBER_SAVE_FAILED = 13011
+    HASSAD_INTEGRATION_ERROR = 13012
+    HASSAD_INVALID_OFFER_NUMBER = 13013
+    HASSAD_INVALID_EXTERNAL_TRANSACTION_ID = 13014
+    HASSAD_INVOICE_VALUE_BELOW_MINIMUM = 13015
+    HASSAD_INVOICE_VALUE_EXCEEDS_MAXIMUM = 13016
+    HASSAD_VERIFICATION_FAILED = 13017
+    HASSAD_VERIFICATION_EXCEPTION = 13018
+    HASSAD_ALREADY_COLLECTED = 13019
+    HASSAD_PAYMENT_FAILED = 12709
+    HASSAD_TRY_AFTER_SOMETIME = 13020
+    """Hassad related ends """
+
     MESSAGE = {}
 
     def __init__(self):
@@ -223,7 +246,7 @@ class YouPayResponse(object):
             self.DATA_CORRUPTED: "Data corrupted",
             self.SUCCESS: "API request completed successfully",
             self.PAYMENT_SUCCESS: "Transaction success",
-            self.PAYMENT_FAILED: "Payment failed",
+            self.PAYMENT_FAILED: "Payment failed. -(فشلت عملية الدفع.)",
             self.BRAND_DETAILS_MISSING: "Brand details missing",
             self.OTP_ERROR: "Invalid OTP",
             self.OTP_EXPIRED: "OTP is expired",
@@ -397,6 +420,36 @@ class YouPayResponse(object):
             self.TPAY_NOT_ELIGIBLE: "This line type (e.g. Corporate) is not "
                                     "eligible for this service.",
             self.TPAY_PAYMENT_FAILED: "Unable to process TPay payment",
+
+            self.HASSAD_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
+            self.HASSAD_INVALID_DATA: "Invalid data in client request",
+            self.HASSAD_INTERNAL_SYSTEM_ERROR: "Internal system error "
+                                               "occurred",
+            self.HASSAD_GENERAL_ERROR: "General error occurred while "
+                                       "processing request",
+            self.HASSAD_RESOURCE_NOT_FOUND: "Resource not found",
+            self.HASSAD_REQUEST_NOT_ACCEPTED: "Request not accepted",
+            self.HASSAD_USER_NOT_ENROLLED: "User account is not enrolled in "
+                                           "the program",
+            self.HASSAD_INVALID_OR_EXPIRED_OTP: "Invalid or expired OTP",
+            self.HASSAD_REDEMPTION_FAILED: "Redemption request failed",
+            self.HASSAD_PHONE_NUMBER_SAVE_FAILED: "Failed to update Hassad phone number",
+            self.HASSAD_INTEGRATION_ERROR: "Integration error with external "
+                                           "service",
+            self.HASSAD_INVALID_OFFER_NUMBER: "Invalid offer number provided",
+            self.HASSAD_INVALID_EXTERNAL_TRANSACTION_ID: "Invalid external "
+                                                         "transaction ID",
+            self.HASSAD_INVOICE_VALUE_BELOW_MINIMUM: "Invoice value is below "
+                                                     "the minimum allowed",
+            self.HASSAD_INVOICE_VALUE_EXCEEDS_MAXIMUM: "Invoice value "
+                                                       "exceeds the maximum "
+                                                       "allowed",
+            self.HASSAD_VERIFICATION_FAILED: "Verification failed",
+            self.HASSAD_VERIFICATION_EXCEPTION: "Verification failed",
+            self.HASSAD_ALREADY_COLLECTED: "HASSAD Reward Already Collected",
+            self.HASSAD_PAYMENT_FAILED: "HASSAD Payment Failed",
+            self.HASSAD_TRY_AFTER_SOMETIME: ("Please try again after 2 "
+                "minutes. -(يرجى المحاولة مرة أخرى بعد دقيقتين.)"),
         })
 
     def get_400_message(self, message):

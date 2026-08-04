@@ -98,7 +98,8 @@ CHECK_PAYMENT_STATUS_CLASSES = [
     'PayPalPayment',
     'SubmitPaymentSession',
     'NeqatyPointBalanceAPIView',
-    'NetworkPayments'
+    'NetworkPayments',
+    'HassadRedeemPointsAPIView'
 ]
 
 VERIFY_PAYMENT_CLASSES = [
@@ -110,7 +111,8 @@ VERIFY_PAYMENT_CLASSES = [
     'QitafVerify',
     'NeqatyVerify',
     'MokafaaVerify',
-    'TPayVerify'
+    'TPayVerify',
+    'HassadVerify'
 ]
 
 QITAF_REWARD_POINT_MIN_AMT = 10

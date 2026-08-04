@@ -22,7 +22,8 @@ from integrations.common import update_offer_details
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
                                     MOKAFAA_CLIENT_CODE,
                                     B2C_REVERSE_REDEMPTION_API,
-                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
+                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
+                                    HASSAD_CLIENT_CODE)
 from integrations.v1.gateway_clients.utils import calculate_balance
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
@@ -40,7 +41,7 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_ANB_AND_CARD,
                                 PAYMENT_STATUS_REVERSED,
                                 REFUND_STATUS_COMPLETED, REFUND_TYPE_POINTS,
-                                PAYMENT_STATUS_REFUNDED)
+                                PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_HASSAD)
 from payments.models import YouPayTransactionData
 from services.models import PaymentRequestData
 from services.utils import get_payment_redirect_url
@@ -770,6 +771,32 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_MOKAFAA)
 
+        elif program_name == PAYMENT_METHOD_HASSAD:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.hassad_service import (
+                HassadServiceManager
+            )
+
+            hassad_obj = HassadServiceManager()
+            response, code = hassad_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                earned_points = response.get("partner_response").get(
+                    "earned_points")
+                calculated_item_details = response.get(
+                    "partner_response", {}).get(
+                    "calculated_item_details")
+                is_success = True
+
+            message = "Point Collect requested for {}".format(
+                PAYMENT_METHOD_HASSAD)
+
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.point_program)
@@ -865,6 +892,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             client_code = NEQATY_CLIENT_CODE
         elif program_name == PAYMENT_METHOD_MOKAFAA:
             client_code = MOKAFAA_CLIENT_CODE
+        elif program_name == PAYMENT_METHOD_HASSAD:
+            client_code = HASSAD_CLIENT_CODE
         else:
             client_code = QITAF_CLIENT_CODE
         return client_code
