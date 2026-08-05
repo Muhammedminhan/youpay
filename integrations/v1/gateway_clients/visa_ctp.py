@@ -19,12 +19,12 @@ from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
                                     PAYMENT_REQUEST_VISA_SESSION,
                                     VISACTP_CREDENTIALS_API,
                                     PAYMENT_REQUEST_VISA_CREDENTIALS,
-                                    VISACTP_TOKEN_TYPE,
                                     VISA_BILLING_TYPE_NONE)
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
+from payments.constants import PAYMENT_METHOD_VISA_CTP
 from payments.serializers.youpay_payments import \
     YouPayTransactionDataSerializer
-from services.constants import TOKEN_TYPE_VISACTP
+from services.constants import TOKEN_TYPE_VISACTP, TOKEN_TYPE_CARD
 from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
@@ -388,14 +388,9 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                          payment_info.get('card', {}))
 
             visa_request_data = {
-                "source": {
-                    "type": VISACTP_TOKEN_TYPE,
-                    "token": card_data.get('number'),
-                    "expiry_month": card_data.get('expirationMonth'),
-                    "expiry_year": card_data.get('expirationYear'),
-                    "cryptogram": card_data.get('cryptogram'),
-                    "eci": card_data.get('eci')
-                },
+                "number": card_data.get('number'),
+                "expiry_month": card_data.get('expirationMonth'),
+                "expiry_year": card_data.get('expirationYear'),
                 "customer_name": transaction_obj.customer_name,
                 "is_mada": False,
                 "is_save_user_token": False
