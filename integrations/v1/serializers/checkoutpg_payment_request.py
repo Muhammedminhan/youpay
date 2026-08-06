@@ -29,6 +29,9 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
     customer_uid = serializers.SerializerMethodField()
     cryptogram = serializers.SerializerMethodField()
     eci = serializers.SerializerMethodField()
+    number = serializers.SerializerMethodField()
+    expiry_month = serializers.SerializerMethodField()
+    expiry_year = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -150,6 +153,15 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
             method to fetch eci from the request data
         """
         return data.get('request_data').get("eci")
+
+    def get_number(self, data):
+        return data.get("request_data").get("number")
+
+    def get_expiry_month(self, data):
+        return data.get("request_data").get("expiry_month")
+
+    def get_expiry_year(self, data):
+        return data.get("request_data").get("expiry_year")
 
 
 class ApplepayPaymentDataSerializer(serializers.ModelSerializer):
