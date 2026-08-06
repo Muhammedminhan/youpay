@@ -17,7 +17,11 @@ from core.validators import (
 )
 
 
-# Create your models here.
+class PaymentFlow(models.TextChoices):
+    YOUPAY = "YOUPAY", "YouPay Hosted Page"
+    DIRECT_GATEWAY = "DIRECT_GATEWAY", "Direct Gateway Page"
+
+
 class APIClient(AbstractDateTime, AbstractUserBase):
     name = models.CharField(
         null=False, blank=True, max_length=100,
@@ -63,6 +67,12 @@ class APIClient(AbstractDateTime, AbstractUserBase):
         max_length=100, blank=True, null=True, help_text='Client Code')
     payment_gateway = models.ManyToManyField(
         'integrations.PaymentGateway', blank=True)
+    payment_flow = models.CharField(
+        choices=PaymentFlow.choices,
+        default=PaymentFlow.YOUPAY,
+        max_length=20,
+        null=True,
+        help_text='Denotes the payment flow to be used by the API Client.')
     validate_session = models.BooleanField(
         default=False,
         help_text='Denotes whether the API Client session validation is'

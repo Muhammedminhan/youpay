@@ -44,7 +44,8 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_HASSAD,
                                 PAYMENT_METHOD_HASSAD_AND_CARD)
 from payments.models import YouPayTransactionData
-from services.models import PaymentRequestData
+from networkpg.v1.views.payment import NetworkPaymentsApi
+from services.models import PaymentRequestData, PaymentFlow
 from services.utils import get_payment_redirect_url
 from services.v1.auth.client_registration_permission import (
     APIClientRegistrationPermission)
@@ -163,15 +164,20 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         redemption_partner = data_formatted.get(
                             'redemption_partner')
-
-                        if redemption_partner:
-                            redirect_url = PAYMENT_REDIRECT_URL + "{}/{}/{}".format(
-                                language, redemption_partner,
-                                encrypted_transaction_id
-                            )
+                        if client.payment_flow == PaymentFlow.DIRECT_GATEWAY:
+                            networkpg = NetworkPaymentsApi()
+                            response = networkpg.initiate_payment(
+                                    encrypted_transaction_id)
+                            redirect_url = response.data.get('payment_url', '')
                         else:
-                            redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
-                                language, encrypted_transaction_id)
+                            if redemption_partner:
+                                redirect_url = PAYMENT_REDIRECT_URL + "{}/{}/{}".format(
+                                    language, redemption_partner,
+                                    encrypted_transaction_id
+                                )
+                            else:
+                                redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
+                                    language, encrypted_transaction_id)
 
                         response_data = {
                             "status": status.HTTP_201_CREATED,
