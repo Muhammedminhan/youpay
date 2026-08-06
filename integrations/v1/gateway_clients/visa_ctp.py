@@ -424,7 +424,10 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
     def decrypt_visa_payload(self, jwe_string, visa_config):
         """
-        Decrypts Visa JWE using RSA Private Key.
+        Decrypts Visa Payment Credentials response.
+        Supports both:
+          1. JWE -> JSON
+          2. JWE -> Signed JWT -> JSON
         """
         try:
             private_key_pem = visa_config.validation_json.get(
@@ -436,32 +439,39 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 )
                 return None
 
-            logger.info(
-                "[Visa CTP] Private Key Length=%s, Parts Count: %s, "
-                "Starts With: %s", len(private_key_pem),
-                len(jwe_string.split(".")), private_key_pem[:30]
+            key = jwk.JWK.from_pem(private_key_pem.encode("utf-8"))
+
+            jwe_token = jwe.JWE()
+            jwe_token.deserialize(jwe_string)
+            jwe_token.decrypt(key)
+
+            decrypted_payload = jwe_token.payload.decode("utf-8")
+
+            if decrypted_payload.strip().startswith("{"):
+                return json.loads(decrypted_payload)
+
+            jwt_parts = decrypted_payload.split(".")
+
+            if len(jwt_parts) == 3:
+                payload = jwt_parts[1]
+                payload += "=" * (-len(payload) % 4)
+                decoded_payload = json.loads(
+                    base64.urlsafe_b64decode(payload).decode("utf-8")
+                )
+                logger.info(
+                    "[Visa CTP] Successfully decoded JWT payload. Keys=%s",
+                    list(decoded_payload.keys())
+                )
+                return decoded_payload
+
+            logger.error(
+                "[Visa CTP] Unknown decrypted payload format."
             )
-
-            key = jwk.JWK.from_pem(private_key_pem.encode('utf-8'))
-
-            jwetoken = jwe.JWE()
-            jwetoken.deserialize(jwe_string)
-            jwetoken.decrypt(key)
-
-            decrypted_payload = jwetoken.payload.decode('utf-8')
-
-            logger.info(
-                "[Visa CTP] Decrypted Payload: %s",
-                decrypted_payload
-            )
-            decrypted_json = json.loads(decrypted_payload)
-            logger.info(
-                "[Visa CTP] Decrypted JSON Keys: %s",
-                list(decrypted_json.keys())
-            )
-
-            return decrypted_json
+            return None
 
         except Exception as e:
-            logger.error(f"JWE Decryption Failed: {str(e)}")
+            logger.exception(
+                "[Visa CTP] Failed to decrypt Payment Credentials: %s",
+                str(e)
+            )
             return None
