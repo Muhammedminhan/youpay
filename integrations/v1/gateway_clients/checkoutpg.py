@@ -411,8 +411,6 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_status = transaction_data.get('payment_status')
         self.payment_reference = transaction_data.get('payment_reference')
         self.currency = transaction_data.get('currency')
-        
-        name_on_card = ""
 
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
@@ -425,12 +423,22 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 checkoutpg_config = get_checkoutpg_config()
                 if checkoutpg_config:
                     payment_data = self.get_checkout_payment_data(data)
-                    name_on_card = payment_data.get('customer_name')
                     self.channel_code = payment_data.get('channel_code')
+
+                    masked_payment_data = copy.deepcopy(payment_data)
+                    if masked_payment_data.get("number"):
+                        card_number = masked_payment_data["number"]
+                        masked_payment_data["number"] = ("*" * max(len(
+                            card_number) - 4, 0)) + card_number[-4:]
+
                     logger.info(
-                        "Youpay sending payment data is {}".format(
-                            payment_data))
+                        "YouPay sending payment data is %s",
+                        masked_payment_data
+                    )
+
                     payment_data_to_send = json.dumps(payment_data)
+                    payment_data_to_store = json.dumps(masked_payment_data)
+
                     url = (self.checkoutpg_config.domain +
                            CHECKOUTPG_PAYMENT_ENDPOINT)
                     headers = self.get_payment_header()
@@ -440,12 +448,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     response = requests.post(url, data=payment_data_to_send,
                                              headers=headers)
-                    # storing Youpay to payment gateway request and response data
+
                     self.create_youpay_to_payment_gateways_data(
                         transaction_obj=transaction_obj,
-                        transaction_id=data.get('transaction_data').get(
-                            'transaction_id'),
-                        request_data=payment_data_to_send,
+                        transaction_id=self.transaction_id,
+                        request_data=payment_data_to_store,
                         response_data=response.text,
                         request_method=REQUEST_METHOD_POST,
                         request_type=PAYMENT_REQUEST_TYPE_CARD,
