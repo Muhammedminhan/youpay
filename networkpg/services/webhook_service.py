@@ -1,9 +1,11 @@
 import logging
+
 from django.utils import timezone
+from django.utils.text import capfirst
+
 from networkpg.models import NetworkTransaction, EventNotification
 from services.v1.views.common import YouPayTransactionCRUD
 from networkpg.choices import PaymentStatus
-from django.utils.text import capfirst
 from core.models import Country
 from payments.constants import (
     PAYMENT_STATUS_PAID,
@@ -14,6 +16,7 @@ from payments.constants import (
     PAYMENT_STATUS_FAILED
 )
 from core.constants import PAYMENT_GATEWAY_NETWORK_IN
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,7 +28,8 @@ class WebhookService:
         """
         event_type = raw_data.get('eventName')
         order_reference = raw_data.get('order', {}).get('reference')
-        merchant_order_reference = raw_data.get('order', {}).get('merchantOrderReference')
+        merchant_order_reference = raw_data.get(
+            'order', {}).get('merchantOrderReference')
         notification = EventNotification.objects.create(
             payment_reference=merchant_order_reference,
             event_type=event_type,
@@ -34,15 +38,18 @@ class WebhookService:
         )
         try:
             transaction_obj = NetworkTransaction.objects.filter(
-                youpay_transaction__transaction_id=merchant_order_reference).first()
+                payment_reference=merchant_order_reference).first()
             if not transaction_obj:
-                transaction_obj = NetworkTransaction.objects.filter(network_order_id=order_reference).first()
+                transaction_obj = NetworkTransaction.objects.filter(
+                    network_order_id=order_reference).first()
 
             if transaction_obj:
-                if transaction_obj.youpay_transaction.payment_status in [PAYMENT_STATUS_CANCELLED]:
+                if transaction_obj.youpay_transaction.payment_status in [
+                    PAYMENT_STATUS_CANCELLED]:
                     return True
                 notification.network_transaction = transaction_obj
-                WebhookService._update_transaction_status(transaction_obj, raw_data)
+                WebhookService._update_transaction_status(transaction_obj,
+                                                          raw_data)
                 WebhookService._trigger_youpay_update(transaction_obj)
                 notification.processed = True
                 notification.processed_at = timezone.now()
@@ -50,7 +57,8 @@ class WebhookService:
                 return True
             else:
                 logger.warning(
-                    f"No transaction found for webhook: {merchant_order_reference} / {order_reference}"
+                    "No transaction found for webhook: %s / %s",
+                    merchant_order_reference, order_reference
                 )
                 notification.error_message = "Transaction record not found"
                 notification.save()
@@ -90,7 +98,9 @@ class WebhookService:
             data_to_update.update({
                 "card_bin": transaction_obj.card_bin,
                 "card_last4": transaction_obj.card_last4,
-                "payment_scheme": capfirst(transaction_obj.card_scheme.lower()) if transaction_obj.card_scheme else None,
+                "payment_scheme": capfirst(
+                    transaction_obj.card_scheme.lower()
+                ) if transaction_obj.card_scheme else None,
                 "name_on_card": transaction_obj.card_holder_name,
                 "card_issuer_country": transaction_obj.card_issuer_country,
                 "approved": transaction_obj.is_approved,
@@ -127,6 +137,10 @@ class WebhookService:
 
         if payments:
             active_payment = payments[0]
+            auth_response = active_payment.get('authResponse', {})
+            if auth_response:
+                transaction_obj.auth_response_message = auth_response.get(
+                    'resultMessage')
             payment_method = active_payment.get('paymentMethod', {})
             card_number = payment_method.get('pan', '')
 
@@ -143,7 +157,8 @@ class WebhookService:
         transaction_obj.save()
 
         logger.info(
-            f"Updated NetworkTransaction {transaction_obj.payment_reference} to {transaction_obj.status}"
+            "Updated NetworkTransaction %s to %s",
+            transaction_obj.payment_reference, transaction_obj.status
         )
 
     @staticmethod

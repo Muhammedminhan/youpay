@@ -47,7 +47,7 @@ from payments.constants import (PAYMENT_STATUS_AUTHORIZED,
                                 PAYMENT_OPTION_CARD, PAYMENT_STATUS_DECLINED,
                                 PAYMENT_STATUS_DECLINED_RETRY
                                 )
-from services.v1.views.common import AdditionalChargesUpdation
+from services.v1.views.common import AdditionalChargesUpdation, is_redirect
 from services.v1.views.payment import PaymentRequestView
 from services.v1.views.payment_handlers import PaymentHandlers
 from .utils import get_response_url
@@ -68,6 +68,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         self.payment_reference = None
         self.channel_code = None
         self.currency = None
+        self.additional_vat_percentage = None
 
     def prepare_data_to_update(self, **kwargs):
 
@@ -82,6 +83,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             "payment_gateway": self.payment_gateway,
             "name_on_card": name_on_card,
             'currency': self.currency,
+            'additional_vat_percentage': self.additional_vat_percentage,
         }
 
         return data_to_update
@@ -330,6 +332,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     payment_data = self.get_checkout_payment_data(data)
                     transaction_obj = self.get_youpay_transaction_data(
                         self.transaction_id)
+                    additional_vat_percentage = None
                     if request_data.get("is_amex_card", False):
                         additional_fee_obj = get_gateway_additional_fee(
                             transaction_obj.currency,
@@ -340,6 +343,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                                 additional_fee_obj, transaction_obj))
                         payment_data["amount"] = additional_fee_config.get(
                             'total_amount', payment_data.get("amount", "0"))
+                        additional_vat_percentage = additional_fee_config.get(
+                            "processing_fee_vat_percentage")
                     self.channel_code = payment_data.get('channel_code')
                     log_request_data = copy.deepcopy(payment_data)
                     log_request_data["cvv"] = "***"
@@ -373,6 +378,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
                     if response:
                         response_data_json = response.json()
+                        payment_data['additional_vat_percentage'] = (
+                            additional_vat_percentage)
                         response_data, response_code = (
                             self.handle_card_payment_response(
                                 response_data_json, payment_data))
@@ -487,6 +494,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
             "card payment response handling, checkoutpg response for "
             "transaction {} is {} ".format(
                 self.transaction_id, response_data))
+        self.additional_vat_percentage = payment_data.get(
+            'additional_vat_percentage')
         if response_data.get(
                 'status') == 200 and response_data.get(IS_REDIRECT) is True:
             # 3ds case
@@ -516,6 +525,7 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     payment_method=self.payment_method,
                     payment_gateway=self.payment_gateway,
                     channel_code=self.channel_code,
+                    additional_vat_percentage=self.additional_vat_percentage,
                 ))
             logger.info("pre auth verification method response data {} for "
                         "transaction {}".format(response_data,
@@ -777,7 +787,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
 
         logger.info("APPLE PAY Status update for {} to {} ".format(
             self.transaction_id, payment_stage))
-
+        # If transaction already in paid state, redirect to success
+        if self.transaction_obj.payment_status == PAYMENT_STATUS_PAID:
+            _, response = is_redirect(self.transaction_id,
+                                      {"response_code": self.SUCCESS})
+            return response, self.APPLE_PAY_REDIRECT
         verify_response, verify_status = self.verify_transaction(
             transaction_data)
         logger.info(
@@ -946,6 +960,8 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
         """
         amount = str(transaction_obj.amount)
         is_amex_card = request_data.get('is_amex_card', False)
+        amount_in_base_currency = None
+        additional_vat_percentage = None
         if is_amex_card:
             logger.info(
                 "Card payment with Amex card, calculating additional fee for "
@@ -957,6 +973,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                 get_checkout_amex_additional_fee(
                     additional_fee_obj, transaction_obj))
             amount = additional_fee_config.get('total_amount', amount)
+            amount_in_base_currency = additional_fee_config.get(
+                'total_amount_in_base_currency', amount)
+            additional_vat_percentage = additional_fee_config.get(
+                "processing_fee_vat_percentage")
         if self.checkoutpg_config:
             is_save_user_token = request_data.get('is_save_user_token', False)
             channel_code = get_channel_code(transaction_obj)
@@ -1011,7 +1031,11 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                         "payment_method": PAYMENT_OPTION_CARD,
                         "payment_gateway": PAYMENT_GATEWAY_CHECKOUTPG,
                         "name_on_card": request_data.get("customer_name"),
-                        "channel_code": channel_code
+                        "channel_code": channel_code,
+                        "amount": amount,
+                        "is_amex_card": is_amex_card,
+                        "cart_amount": amount_in_base_currency,
+                        "additional_vat_percentage": additional_vat_percentage
                     }
                     response_data.pop('reference_id', None)
 

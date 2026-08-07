@@ -93,7 +93,7 @@ def retry(exception_to_ocheck, tries=4, delay=3, backoff=2, logger=None):
     return deco_retry
 
 
-def decrypt_payment_data(encrypted_data):
+def decrypt_payment_data(encrypted_data, dc_key):
     """
     This method is for decrypt payment data
 
@@ -101,10 +101,12 @@ def decrypt_payment_data(encrypted_data):
     output : decrypted_data - dict
     """
     try:
+        if not dc_key:
+            dc_key = COMMON_ENCRYPTION_KEY
         b64 = encrypted_data
         json_k = ['nonce', 'ciphertext', 'tag']
         jv = {k: b64decode(b64[k]) for k in json_k}
-        cipher = AES.new(COMMON_ENCRYPTION_KEY.encode("utf8"),
+        cipher = AES.new(dc_key.encode("utf8"),
                          AES.MODE_GCM,
                          nonce=jv['nonce'])
         plaintext = cipher.decrypt_and_verify(jv['ciphertext'], jv['tag'])
@@ -384,6 +386,7 @@ def process_checkoutpg_response_verification(**kwargs):
     channel_code = kwargs.get('channel_code')
     response_code = kwargs.get('response_data', {}).get('response_code')
     payment_scheme = get_payment_scheme(response_data)
+    additional_vat_percentage = kwargs.get('additional_vat_percentage')
 
     reference_from_checkout = response_data.get("reference")
 
@@ -475,7 +478,8 @@ def process_checkoutpg_response_verification(**kwargs):
             'payment_method': payment_method,
             'payment_gateway': payment_gateway,
             'channel_code': channel_code,
-            'is_payment_verified': is_payment_verified
+            'is_payment_verified': is_payment_verified,
+            'additional_vat_percentage': additional_vat_percentage,
         }
     )
 

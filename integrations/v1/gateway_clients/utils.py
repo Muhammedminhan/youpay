@@ -496,7 +496,7 @@ def process_calculated_item_details(data):
     return data
 
 
-def get_response_url(transaction_obj, is_partial_payment):
+def get_response_url(transaction_obj, is_partial_payment, gty_override=None):
     """
     Method for generating response URL
     """
@@ -505,11 +505,11 @@ def get_response_url(transaction_obj, is_partial_payment):
     path = app_config.redirect_path
 
     transaction_id = transaction_obj.transaction_id
-    code = CHECKOUTPG_HUB_CODE
+    code = gty_override or CHECKOUTPG_HUB_CODE
 
     query_params = {
         "id": encrypt_string(str(transaction_id)),
-        "gty": code,
+        "gateway": code,
     }
 
     if transaction_obj.platform in [PURCHASE_PLATFORM_IOS, PURCHASE_PLATFORM_ANDROID]:
@@ -526,11 +526,11 @@ def get_response_url(transaction_obj, is_partial_payment):
         query_params.update({
             "redemption_reference_id": transaction_obj.payment_reference,
             "redemption_partner": redemption_partner.upper(),
-            "gty": gty
+            "gateway": gty
         })
 
         if redemption_partner == PAYMENT_METHOD_QITAF:
-            query_params["gty"] = QITAF_HUB_CODE
+            query_params["gateway"] = QITAF_HUB_CODE
 
     query_string = urlencode(query_params)
     url = "{}/{}/{}?{}".format(

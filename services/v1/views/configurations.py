@@ -9,18 +9,22 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from core.exceptions import PaymentConfigurationFailed
-from core.models import PaymentMethodConfig, Country
+from core.models import (
+    PaymentMethodConfig, Country, PaymentConfiguration, Currency)
 from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
                         decrypt_browser_value, get_display_platform,
                         get_display_program)
+from gateways.tpay.constants import COUNTRY_CODE_UAE
 from integrations.constants import (ADCB_CLIENT_CODE, CHECKOUTPG_HUB_CODE,
                                     QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
                                     ANB_CLIENT_CODE,
                                     ADDITIONAL_PROCESSING_FEE,
-                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE)
+                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE,
+                                    HASSAD_CLIENT_CODE,
+                                    B2CPAYBACK_KSA_HUB_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -32,13 +36,14 @@ from payments.constants import (
     PAYMENT_OPTION_TABBYPG, PAYMENT_OPTION_CHECKOUT_CARD,
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA,
-    EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL
+    EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL,
+    PAYMENT_METHOD_TPAY_ETISALAT, PAYMENT_OPTION_TPAY, PAYMENT_OPTION_HASSAD
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
                                 APPLEPAY_SUPPORTED_NETWORKS,
                                 APPLEPAY_MERCHANT_CAPABILITIES,
-                                APPLEPAY_LABEL)
+                                APPLEPAY_LABEL, CURRENCY_UAE)
 from services.models import PaymentRequestData
 from services.v1.serializers.client_registrattion import (
     PaymentGatewaySerializer
@@ -68,9 +73,14 @@ class ConfigViewSet(ViewSet):
         self.list_expired_statuses = EXPIRED_STATUS_LIST
 
     def list(self, request):
-        queryset = PaymentGateway.objects.all()
-        serializer = PaymentGatewaySerializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response(
+            {"message": "This service is not available right now."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+        # NOTE commented due to security concerns
+        # queryset = PaymentGateway.objects.all()
+        # serializer = PaymentGatewaySerializer(queryset, many=True)
+        # return Response(serializer.data)
 
     def retrieve(self, request, pk=None):
         """
@@ -130,6 +140,62 @@ class ConfigViewSet(ViewSet):
         except Exception as e:
             return self._exception_response(e)
 
+    def get_cart_fee_breakdowns(self, transaction):
+        """
+        Get cart fee breakdowns
+        """
+        if not transaction:
+            return {}
+        notation = Currency.objects.get(iso_code=transaction.cart_currency
+                                        ).decimal_notation
+        return {
+            "cart_service_fee": (
+                round(transaction.cart_service_fee, notation)
+                if transaction.cart_service_fee else None
+            ),
+            "cart_vat_amount": (
+                round(transaction.cart_VAT_amount, notation)
+                if transaction.cart_VAT_amount else None
+            ),
+            "cart_base_amount": (
+                round(transaction.cart_base_amount, notation)
+                if transaction.cart_base_amount else None
+            ),
+            "cart_platform_fee": (
+                round(transaction.cart_platform_fee, notation)
+                if transaction.cart_platform_fee else None
+            ),
+            "cart_amount": round(transaction.cart_amount or 0, notation)
+        }
+
+    def get_payment_fee_breakdowns(self, transaction):
+        """
+        Get payment fee breakdowns
+        """
+        if not transaction:
+            return {}
+        notation = Currency.objects.get(iso_code=transaction.currency
+                                        ).decimal_notation
+        return {
+            "amount": round(transaction.amount or 0, notation),
+            "service_fee": (
+                round(transaction.service_fee, notation)
+                if transaction.service_fee else None
+            ),
+            "vat_amount": (
+                round(transaction.VAT_amount, notation)
+                if transaction.VAT_amount else None
+            ),
+            "base_amount": (
+                round(transaction.base_amount, notation)
+                if transaction.base_amount else None
+            ),
+            "platform_fee": (
+                round(transaction.platform_fee, notation)
+                if transaction.platform_fee else None
+            )
+        }
+
     def retrieve_response(self, **kwargs):
         transaction = kwargs.get('transaction')
         payment_options = kwargs.get('payment_options')
@@ -140,7 +206,8 @@ class ConfigViewSet(ViewSet):
         api_client = {
             'color': client.color_code,
             'mobile_logo': get_mobile_logo_url(client),
-            'logo': get_logo_url(client)
+            'logo': get_logo_url(client),
+            **get_client_font_details(client)
         }
         display_total_quantity = (
             transaction.api_client.display_total_quantity_in_breakdown)
@@ -149,31 +216,15 @@ class ConfigViewSet(ViewSet):
             "data": {
                 "api_client": api_client,
                 "payment_options": payment_options,
-                "amount": transaction.amount if transaction else None,
                 "currency": transaction.currency if transaction else None,
                 "country_code": transaction.country_code if transaction else
                 None,
-                "service_fee": transaction.service_fee if transaction else
-                None,
                 "paypal_config": self.get_paypal_config(payment_options,
                                                         transaction),
-                "vat_amount": transaction.VAT_amount if transaction else None,
-                "base_amount": transaction.base_amount if transaction else
-                None,
-                "platform_fee": transaction.platform_fee if transaction else
-                None,
-                "cart_amount": transaction.cart_amount if transaction else
-                None,
+                **self.get_payment_fee_breakdowns(transaction),
+                **self.get_cart_fee_breakdowns(transaction),
                 "cart_currency": transaction.cart_currency if transaction else
                 None,
-                "cart_service_fee": transaction.cart_service_fee if
-                transaction else None,
-                "cart_vat_amount": transaction.cart_VAT_amount if transaction
-                else None,
-                "cart_base_amount": transaction.cart_base_amount if
-                transaction else None,
-                "cart_platform_fee": transaction.cart_platform_fee if
-                transaction else None,
                 "client_handling_fee": self._get_udf1_handling_fee(
                     transaction, 'additional_charges'),
                 "cart_client_handling_fee": self._get_udf1_handling_fee(
@@ -197,6 +248,8 @@ class ConfigViewSet(ViewSet):
                 **payment_config_data,
                 "applepay_config": self.get_applepay_config(payment_options,
                                                             transaction),
+                "tpay_etisalat_config": self.get_tpay_etisalat_config(
+                    payment_options, transaction),
                 "display_total_quantity": display_total_quantity
             }
         }
@@ -384,11 +437,16 @@ class ConfigViewSet(ViewSet):
         neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
         mokafa_enabled = payment_option.get(PAYMENT_OPTION_MOKAFA, False)
         anb_enabled = payment_option.get(PAYMENT_OPTION_ANB, False)
+        hassad_enabled = payment_option.get(PAYMENT_OPTION_HASSAD, False)
         config_dict = {}
         if True in [adcb_enabled, qitaf_enabled, neqaty_enabled,
-                    mokafa_enabled, anb_enabled]:
-            b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
-                                                transaction)
+                    mokafa_enabled, anb_enabled, hassad_enabled]:
+            if anb_enabled or hassad_enabled:
+                b2c_config = get_configuration_data(
+                    B2CPAYBACK_KSA_HUB_CODE, transaction)
+            else:
+                b2c_config = get_configuration_data(
+                    B2CPAYBACK_HUB_CODE, transaction)
             config_list = (b2c_config.response_data.get("results") if
                            b2c_config else {})
             if adcb_enabled:
@@ -440,6 +498,17 @@ class ConfigViewSet(ViewSet):
                                                       ANB_CLIENT_CODE)
                 anb_config.update(**this__config_data)
                 config_dict['anb_config'] = anb_config
+
+            if hassad_enabled:
+                this_config_data = payment_config_data.get(
+                    PAYMENT_OPTION_HASSAD, {}
+                )
+                hassad_config = self.get_each_b2c_config(
+                    config_list,
+                    HASSAD_CLIENT_CODE
+                )
+                hassad_config.update(**this_config_data)
+                config_dict["hassad_config"] = hassad_config
         return config_dict
 
     @staticmethod
@@ -490,7 +559,33 @@ class ConfigViewSet(ViewSet):
         udf1 = getattr(transaction, 'udf1', None)
         if not udf1 or not isinstance(udf1, dict):
             return None
-        return udf1.get(key)
+        value = udf1.get(key)
+        return None if str(value) in ["0", "0.0", "0.00", "0.000"] else value
+
+    def get_tpay_etisalat_config(self, payment_options, transaction):
+        """
+        Returns tpay_etisalat configuration including min/max limits.
+        Only for country 'AE'
+        """
+        tpay_enabled = payment_options.get(PAYMENT_OPTION_TPAY, False)
+        if not (tpay_enabled and transaction and
+                transaction.country_code == COUNTRY_CODE_UAE):
+            return {}
+
+        payment_config = PaymentConfiguration.objects.filter(
+            payment_method=PAYMENT_OPTION_TPAY,
+            active=True
+        ).first()
+
+        method_config = payment_config.payment_method_config or {}
+
+        return {
+            "payment_option": PAYMENT_METHOD_TPAY_ETISALAT,
+            "currency": CURRENCY_UAE,
+            "min_limit": method_config.get("min_limit", 0),
+            "max_limit": method_config.get("max_limit", 700),
+            "is_active": payment_config.active,
+        }
 
 
 class ClientStaticFilesAPI(APIView):
@@ -519,6 +614,7 @@ class ClientStaticFilesAPI(APIView):
                     'logo': get_logo_url(client),
                     "program": get_display_program(client),
                     "client_code": client.client_code,
+                    **get_client_font_details(client)
                 }
 
                 data = response_obj.get_success_dict(
@@ -560,6 +656,21 @@ def get_mobile_logo_url(client):
         return client.mobile_logo_file.url
     else:
         return None
+
+
+def get_client_font_details(client):
+    """
+    Returns the font details for the API client, supporting both
+    English and Arabic localizations with Google Font URLs.
+    """
+    return {
+        'font': client.font_en_us.font_family if client.font_en_us else "default",
+        'font_is_italic': client.font_en_us.is_italic if client.font_en_us else False,
+        'font_ar': client.font_ar.font_family if client.font_ar else "default",
+        'font_ar_url': client.font_ar.font_url if client.font_ar else None,
+        'font_url': client.font_en_us.font_url if client.font_en_us else None,
+        'font_ar_is_italic': client.font_ar.is_italic if client.font_ar else False,
+    }
 
 
 class UpdateAmounts(APIView):
