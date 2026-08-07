@@ -25,6 +25,13 @@ on:
         options:
         - sandbox
         - production
+      branch:
+        description: 'Branch'
+        type: string
+      prod_hotfix_branch:
+        description: 'Deploy Production with hot-fix branch'
+        default: false
+        type: boolean
 
 
 jobs:
@@ -35,4 +42,6 @@ jobs:
       application_name: ${{ inputs.application_name }}
       rebuild_req: ${{ inputs.rebuild_req }}
       environment: ${{ inputs.environment }}
+      branch: ${{ inputs.branch }}
+      prod_hotfix_branch: ${{ inputs.prod_hotfix_branch }}
     secrets: inherit
