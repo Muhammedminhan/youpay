@@ -27,6 +27,9 @@ from .api_clients.citi_service import (CitiPointBalanceAPIView,
                                        CitiGenerateOTPAPIView)
 from .api_clients.happy_credits import (HappyCreditsCreditBalance,
                                         HappyCreditsDebitBalance)
+from .api_clients.hassad_service import (HassadGenerateOTPAPIView,
+                                         HassadRedeemPointsAPIView,
+                                         HassadVerify, UpdateHassadPhoneNumber)
 from .api_clients.mokafa_service import (UpdateMokafaPhoneNumber,
                                          MokafaaGenerateOTPAPIView,
                                          MokafaaRedeemPointsAPIView,
@@ -46,13 +49,16 @@ from .api_clients.tabbypg import CreateSession, TabbyPGVerification
 from .api_clients.visa_ctp import VisaCTPCreateSession, VisaCTPPayment
 from .views.client_registration import (APIClientRegistrationViewSet,
                                         APIClientRegistrationView)
+from .api_clients.tpay import TPayInitializeAPIView, TPayVerifyAPIView
 from .views.payment import (PaymentRequestView, TestPaymentRequestView,
                             PaymentCancelledView, TransactionExpireView,
                             AdditionalChargeCalculation,
-                            EarnRedemptionPartnerPoints)
+                            EarnRedemptionPartnerPoints, RefundPointsAPIView)
+
 
 router = DefaultRouter()
-router.register('client', APIClientRegistrationViewSet, basename='client')
+router.include_root_view = False
+# router.register('client', APIClientRegistrationViewSet, basename='client')
 router.register('youpay_configuration', ConfigViewSet, basename='conf')
 
 urlpatterns = [
@@ -160,6 +166,14 @@ urlpatterns = [
          name='AnbRedeemPointsAPIView'),
     path('anb/verify/', AnbVerify.as_view(), name='AnbVerify'),
 
+    # Hassad endpoints
+    path('hassad/update-phone-number/', UpdateHassadPhoneNumber.as_view()),
+    path('hassad/generate-otp/', HassadGenerateOTPAPIView.as_view(),
+         name='HassadGenerateOTPAPIView'),
+    path('hassad/redeem-points/', HassadRedeemPointsAPIView.as_view(),
+         name='HassadRedeemPointsAPIView'),
+    path('hassad/verify/', HassadVerify.as_view(), name='HassadVerify'),
+
     # API for updating service fee and VAT for a new payment attempt
     path('update-amounts/', UpdateAmounts.as_view()),
 
@@ -168,6 +182,15 @@ urlpatterns = [
     path('paypal/payment/', PayPalPaymentAPIView.as_view(),
          name='PayPalPayment'),
     path('paypal/verify/', PayPalVerifyAPIView.as_view(), name='PayPalVerify'),
+
+    # API for refunding a payment
+    path('refund-payment/', RefundPointsAPIView.as_view(),
+         name='RefundPointsAPI'),
+
+    # TPay Endpoints
+    path('tpay/initialize/', TPayInitializeAPIView.as_view(),
+         name='TPayInitialize'),
+    path('tpay/verify/', TPayVerifyAPIView.as_view(), name='TPayVerify'),
 
     # VisaCTP Endpoints
     path('visa-ctp/session/', VisaCTPCreateSession.as_view(),

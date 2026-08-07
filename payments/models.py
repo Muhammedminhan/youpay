@@ -83,6 +83,9 @@ class YouPayTransactionData(AbstractDateTime, CustomerProfile):
     payment_status = models.CharField(
         max_length=20, null=True, blank=True, db_index=True,
         choices=YOUPAY_TRANSACTION_PAYMENT_STATUS_CHOICES)
+    refund_reason = models.CharField(
+        max_length=255, null=True, blank=True, help_text="Reason for payment refund"
+    )
     session_id = models.CharField(max_length=500, null=True, blank=True)
     channel_code = models.CharField(
         max_length=120, null=True, blank=True,

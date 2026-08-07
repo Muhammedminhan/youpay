@@ -9,6 +9,7 @@ from integrations.constants import (PAYMENT_REQUEST_TYPE_NONE,
                                     PAYMENT_REQUEST_TYPE_CHOICES,
                                     ADDITIONAL_CHARGE_TYPE_CHOICES)
 from services.constants import (PAYMENT_OPTION_NAME_CHOICES)
+from services.models import APIClient
 
 YOUPAY_TRANSACTION_DATA = 'payments.YouPayTransactionData'
 
@@ -154,6 +155,8 @@ class AdditionalChargeConfiguration(AbstractDateTime, AbstractUserBase):
     is_active = models.BooleanField(
         default=False, help_text='Denotes whether the configuration '
                                  'is active or not.')
+
+    clients = models.ManyToManyField(APIClient, null=True, blank=True,)
 
     def __str__(self):
         return str(self.payment_option)

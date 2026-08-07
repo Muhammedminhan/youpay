@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from gateways.common import (_get_payment_reference_number)
+
+from gateways.common import (unique_token_generator)
 from networkpg.models import NetworkTransaction
 from networkpg.choices import PaymentStatus
 from core.response_messages import YouPayResponse
@@ -17,10 +18,20 @@ class PaymentInitiationSerializer(serializers.Serializer):
     redirect_url = serializers.URLField(required=False, allow_null=True)
 
     def validate(self, attrs):
-        attrs["payment_reference"] = _get_payment_reference_number(
-            attrs["order_reference"]
+        invoice_id = self.initial_data.get("invoice_id")
+        attrs["payment_reference"] = (
+            self._generate_ni_payment_order_reference(invoice_id)
         )
         return attrs
+
+    def _generate_ni_payment_order_reference(self, invoice_id):
+        """
+        Generates a unique order reference for Network International.
+        """
+        return (
+            f"Gift-Invoice-{invoice_id}-"
+            f"{unique_token_generator(4)}"
+        )
 
 
 class PaymentResponseSerializer(serializers.Serializer):
