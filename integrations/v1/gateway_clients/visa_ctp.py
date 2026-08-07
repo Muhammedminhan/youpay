@@ -9,8 +9,8 @@ from decimal import Decimal
 
 import requests
 
-from core.constants import EXTERNAL_API_REQUEST_TIMEOUT, REQUEST_METHOD_POST, \
-    REQUEST_METHOD_GET
+from core.constants import (EXTERNAL_API_REQUEST_TIMEOUT,
+                            REQUEST_METHOD_POST, REQUEST_METHOD_GET)
 from core.response_messages import YouPayResponse
 from core.utils import get_app_config, get_payment_gateway_config
 from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
@@ -21,10 +21,9 @@ from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
                                     PAYMENT_REQUEST_VISA_CREDENTIALS,
                                     VISA_BILLING_TYPE_NONE)
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
-from payments.constants import PAYMENT_METHOD_VISA_CTP
-from payments.serializers.youpay_payments import \
-    YouPayTransactionDataSerializer
-from services.constants import TOKEN_TYPE_VISACTP, TOKEN_TYPE_CARD
+from payments.serializers.youpay_payments import (
+    YouPayTransactionDataSerializer)
+from services.constants import TOKEN_TYPE_VISACTP
 from services.v1.views.payment_handlers import PaymentHandlers
 
 logger = logging.getLogger(__name__)
@@ -39,11 +38,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
         """
         Generates dynamic HTTP Signatures required for VISA authentication.
         """
-        logger.info(
-            "[Visa CTP] get_header() received credentials_override=%s",
-            credentials_override is not None
-        )
-
         if credentials_override:
             merchant_id = credentials_override.get("merchant_id")
             api_key = credentials_override.get("api_key")
@@ -52,12 +46,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             merchant_id = visa_config.merchant_id
             api_key = visa_config.api_key
             shared_secret = visa_config.api_secret
-
-        logger.info(
-            "[Visa CTP] Using Merchant=%s | Override=%s",
-            merchant_id,
-            bool(credentials_override)
-        )
 
         host = visa_config.domain.replace("https://",
                 "").replace("http://", "").split('/')[0]
@@ -103,11 +91,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             f'headers="{signed_headers_list}", signature="{signature_base64}"'
         )
 
-        logger.info(
-            "[Visa CTP] Generated Header Merchant=%s",
-            headers.get("v-c-merchant-id")
-        )
-
         return headers
 
     def _extract_visa_jwt(self, capture_context_token):
@@ -147,7 +130,8 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
         except Exception as parse_err:
             logger.error(
-                f"Failed to extract frontend library strings from JWT: {str(parse_err)}")
+                f"Failed to extract frontend library strings from JWT: "
+                f"{str(parse_err)}")
 
         return client_library, client_library_integrity
 
@@ -258,7 +242,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             return None, self.VISACTP_SESSION_FAILED
 
         except Exception as e:
-            logger.exception(f"Exception in Visa session creation: {str(e)}")
+            logger.error(f"Exception in Visa session creation: {str(e)}")
             return None, self.VISACTP_CONNECTION_ERROR
 
     def process_visa_payment(self, transaction_obj, visa_transient_token):
@@ -269,7 +253,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
         try:
             logger.info(
                 f"[Visa CTP] Starting payment processing for Transaction: "
-                f"{transaction_obj.transaction_id}. Transient Token Length: "
+                f"{transaction_obj.transaction_id}. TransientToken Length: "
                 f"{len(visa_transient_token) if visa_transient_token else 0}"
             )
 
@@ -289,20 +273,11 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 decoded_jwt_payload = json.loads(
                     base64.b64decode(payload_b64).decode('utf-8'))
 
-                logger.info(f"Decoded JWT Payload for Transaction "
-                    f"{transaction_obj.transaction_id}: {decoded_jwt_payload}")
-
                 payment_refs = decoded_jwt_payload.get(
                     "paymentCredentialsReference", {})
 
                 portfolio_id = visa_config.validation_json.get("portfolio_id")
                 visa_reference_id = payment_refs.get(portfolio_id)
-
-                logger.info(
-                    "[Visa CTP] Portfolio ID: %s, Payment Reference: %s",
-                    portfolio_id,
-                    visa_reference_id
-                )
 
                 if not visa_reference_id:
                     logger.error(
@@ -314,7 +289,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                     return None, self.VISACTP_CARD_DETAILS_FAILED
 
             except Exception as token_err:
-                logger.exception(
+                logger.error(
                     f"[Visa CTP] Base64 token payload decode exception "
                     f"failure: {str(token_err)}")
                 return None, self.VISACTP_CARD_DETAILS_FAILED
@@ -324,31 +299,17 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             credentials_override = visa_config.validation_json.get(
                 "credentials_api"
             )
-            logger.info(
-                "[Visa CTP] validation_json type=%s, has_credentials_api=%s",
-                type(visa_config.validation_json).__name__,
-                "credentials_api" in visa_config.validation_json
-            )
-            logger.info(
-                "[Visa CTP] credentials_override=%s",
-                credentials_override
-            )
 
             headers = self.get_header(REQUEST_METHOD_GET,
                 resource_path, None, visa_config,
                 credentials_override=credentials_override)
 
-            logger.info(
-                "[Visa CTP] Fetch Payment Credentials | URL=%s | "
-                "Reference=%s | Merchant=%s", visa_url,
-                visa_reference_id, headers.get("v-c-merchant-id")
-            )
             visa_response = requests.get(visa_url, headers=headers,
                                 timeout=EXTERNAL_API_REQUEST_TIMEOUT)
             logger.info(
-                "[Visa CTP] Credentials Response "
-                "Status=%s | Body=%s", visa_response.status_code,
-                visa_response.text
+                "[Visa CTP] Payment credentials response received. "
+                "Reference=%s, Status=%s", visa_reference_id,
+                visa_response.status_code,
             )
 
             self.create_youpay_to_payment_gateways_data(
@@ -375,10 +336,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
 
             decrypted_data = self.decrypt_visa_payload(
                 visa_response.text, visa_config)
-            logger.info(
-                "[Visa CTP] Payment Credentials Payload: %s",
-                json.dumps(decrypted_data)
-            )
 
             if not decrypted_data:
                 return None, self.VISACTP_CARD_DETAILS_FAILED
@@ -406,20 +363,13 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 'site_domain': get_app_config().front_end_domain
             }
 
-            logger.info(
-                f"[Visa CTP] Forwarding payment payload to CheckoutPG. "
-                f"Transaction ID: {transaction_obj.transaction_id}, Amount: "
-                f"{transaction_obj.amount} {transaction_obj.currency}, "
-                f"Payload: {payment_payload}"
-            )
-
             checkout = CheckoutpgManager()
             response_data, status_code = checkout.card_payment(payment_payload)
 
             return response_data, status_code
 
         except Exception as e:
-            logger.exception(f"Exception in process_visa_payment: {str(e)}")
+            logger.error(f"Exception in process_visa_payment: {str(e)}")
             return None, self.VISACTP_CONNECTION_ERROR
 
     def decrypt_visa_payload(self, jwe_string, visa_config):
@@ -458,10 +408,6 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 decoded_payload = json.loads(
                     base64.urlsafe_b64decode(payload).decode("utf-8")
                 )
-                logger.info(
-                    "[Visa CTP] Successfully decoded JWT payload. Keys=%s",
-                    list(decoded_payload.keys())
-                )
                 return decoded_payload
 
             logger.error(
@@ -470,7 +416,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             return None
 
         except Exception as e:
-            logger.exception(
+            logger.error(
                 "[Visa CTP] Failed to decrypt Payment Credentials: %s",
                 str(e)
             )
