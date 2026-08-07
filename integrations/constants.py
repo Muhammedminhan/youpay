@@ -38,6 +38,7 @@ APPLE_PAY_HUB_CODE = ''  # TODO: Add Apple Pay code
 QITAF_HUB_CODE = 'PAYMTQTF'
 PAYPAL_HUB_CODE = 'PAYPAL'
 NETWORK_HUB_CODE = 'PAYMTNTI'
+TPAY_HUB_CODE = 'PAYMTPAY'
 
 CHECKOUT_VERIFY_URL = 'services/checkout/verify/'
 
@@ -229,6 +230,9 @@ REDEMPTION_PARTNER_MOKAFAA = "MOKAFAA"
 # AnB related constants
 ANB_CLIENT_CODE = 'PMTANB'
 
+# Hassad related constants
+HASSAD_CLIENT_CODE = 'PMTHSD'
+
 # B2c_payback related common constants
 B2CP_EARN_POINTS_API = "/payback/api/v1/touchpoint/earn-points/"
 B2CP_OTP_GENERATION_API = "/payback/api/v1/touchpoint/generate-otp/"
@@ -262,7 +266,8 @@ EXPECTED_NEQATY_ERRORS = ["MSISDN_NOT_IN_NAQATI", "NOT_HAVE_ENOUGH_POINTS"]
 EXPECTED_MOKAFAA_ERRORS = ["1019", "205", "209"]
 
 PAYMENT_METHOD = {'PAYMTMKF':'mokafaa', 'PAYMTNQTI':'neqaty',
-                  'PMTQTF':'qitaf', 'ADCBTP':'adcb', 'PMTANB': 'anb'}
+                  'PMTQTF':'qitaf', 'ADCBTP':'adcb', 'PMTANB': 'anb',
+                  'PMTHSD': 'hassad'}
 
 ADDITIONAL_PROCESSING_FEE = 'Processing fee'
 ADDITIONAL_PLATFORM_FEE = 'Platform fee'
@@ -279,6 +284,9 @@ ADDITIONAL_CHARGE_TYPE_CHOICES = (
 PAYMENT_PLATFORM_APP = "app"
 PAYMENT_DECLINED_STATUS = "Declined"
 SOFT_DECLINE_RANGE = 20000
+
+HASSAD_NOT_ACCEPTED_CODE = "7"
+HASSAD_INVALID_OTP_CODE = "12"
 
 VISACTP_CLIENT_CODE = "PMTVISACTP"
 VISACTP_PAYMENT_TYPES = ["CLICKTOPAY"]

@@ -30,7 +30,7 @@ class APIClientRegistrationViewSet(ViewSet):
     API endpoint that allows clients to view, create, update and delete
     and store response
     """
-
+    permission_classes = [APIClientRegistrationPermission]
     serializer_class = APIClientRegistrationSerializer
 
     def list(self, request):

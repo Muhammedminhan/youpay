@@ -7,7 +7,10 @@ from services.models import (APIClient, PaymentRequestData, ConfigurationData,
 from services.tasks import sync_configuration_data
 
 
-class APIClientAdmin(AdminAbstract):
+from modeltranslation.admin import TranslationAdmin
+
+
+class APIClientAdmin(TranslationAdmin, AdminAbstract):
     form = APIClientForm
     list_display = ('name', 'client_domain', 'api_key', 'is_active',
                     'webhook_url', 'client_code', 'created_at', 'updated_at')
