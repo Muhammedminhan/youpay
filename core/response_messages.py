@@ -387,7 +387,7 @@ class YouPayResponse(object):
             self.ANB_PHONE_NUMBER_SAVE_FAILED: "ANB Phone/CIF number failed "
                                                "to save",
             self.ANB_PHONE_NUMBER_SAVED: "ANB Phone/CIF number updated",
-            self.ANB_ALREADY_COLLECTED: "ANB Reward collected Already",
+            self.ANB_ALREADY_COLLECTED: "ANB reward already collected",
 
             self.PAYPAL_CONNECTION_ERROR: GATEWAY_ERROR_OCCURRED,
             self.PAYPAL_VERIFICATION_FAILED: "PayPal verification failed",

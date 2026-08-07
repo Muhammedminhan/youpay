@@ -285,16 +285,13 @@ class UpdateANBPhoneNumber(APIView, YouPayTransactionCRUD):
                 )
                 return Response(data, status=status.HTTP_400_BAD_REQUEST)
 
-            transaction_obj.save(update_fields=[
-                'points_collected_mobile_number',
-                'points_collected_cic_number'
-            ])
-
             update_data = {
                 'transaction_id': transaction_obj.transaction_id,
                 'point_program': PAYMENT_METHOD_ANB,
                 'point_collection_enabled': True,
-                'brand_details': brand_details
+                'brand_details': brand_details,
+                'points_collected_mobile_number': anb_phone_number,
+                'points_collected_cic_number': anb_cif_number,
             }
 
             result = self.update_youpay_transaction_data(update_data)
