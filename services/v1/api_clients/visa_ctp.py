@@ -84,11 +84,9 @@ class VisaCTPPayment(APIView, YouPayTransactionCRUD):
                     )
                     return Response(data, status=status.HTTP_200_OK)
 
-                # Handle 3DS Pre-Auth Redirect
                 if status_code == self.response_obj.PRE_AUTH:
                     return Response(response_data, status=status.HTTP_200_OK)
 
-                # Standard Error Response
                 error_data = self.response_obj.get_error_dict(
                     error_code=status_code)
                 return Response(error_data.get('errors'),
