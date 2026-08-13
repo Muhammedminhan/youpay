@@ -195,8 +195,8 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                         },
                         "billTo": {
                             "email": transaction_obj.customer_email
-                        }
-                    }
+                        },
+                    },
                 },
                 "captureMandate": {
                     "billingType": VISA_BILLING_TYPE_NONE,
