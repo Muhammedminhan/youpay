@@ -10,7 +10,8 @@ from decimal import Decimal
 import requests
 
 from core.constants import (EXTERNAL_API_REQUEST_TIMEOUT,
-                            REQUEST_METHOD_POST, REQUEST_METHOD_GET)
+                            REQUEST_METHOD_POST, REQUEST_METHOD_GET,
+                            LANGUAGE_ARABIC)
 from core.response_messages import YouPayResponse
 from core.utils import get_app_config, get_payment_gateway_config
 from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
@@ -19,7 +20,9 @@ from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
                                     PAYMENT_REQUEST_VISA_SESSION,
                                     VISACTP_CREDENTIALS_API,
                                     PAYMENT_REQUEST_VISA_CREDENTIALS,
-                                    VISA_BILLING_TYPE_NONE)
+                                    VISA_BILLING_TYPE_NONE,
+                                    VISACTP_SUPPORTED_ARABIC_COUNTRIES,
+                                    VISACTP_DEFAULT_ARABIC_LOCALE)
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
@@ -157,6 +160,17 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                                 VISACTP_ALLOWED_CARDS)
             payment_types = visa_config.validation_json.get('payment_types',
                                 VISACTP_PAYMENT_TYPES)
+            language = transaction_obj.language
+            country = transaction_obj.country_code
+
+            if language == LANGUAGE_ARABIC:
+                if country in VISACTP_SUPPORTED_ARABIC_COUNTRIES:
+                    locale = f"ar_{country}"
+                else:
+                    locale = VISACTP_DEFAULT_ARABIC_LOCALE
+            else:
+                locale = f"{language}_{country}"
+
             origins_list = [target_origin]
             custom_origins = visa_config.validation_json.get(
                 'allowed_origins', [])
@@ -178,6 +192,9 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                                 )
                             ),
                             "currency": transaction_obj.currency
+                        },
+                        "billTo": {
+                            "email": transaction_obj.customer_email
                         }
                     }
                 },
@@ -189,8 +206,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                     "showAcceptedNetworkIcons": True
                 },
                 "country": transaction_obj.country_code,
-                "locale": (transaction_obj.language + "_" +
-                           transaction_obj.country_code)
+                "locale": locale
             }
 
             payload_string = json.dumps(request_data)
