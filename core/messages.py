@@ -32,3 +32,6 @@ ADCB_CARD_PAYMENT_ERROR = ("Error in adcb card payment: the checkout amount "
 BALANCE_CALCULATION_FAILED_ARABIC_MESSAGE = "فشل في حساب رصيد برنامج النقاط. حاول تدفع بطريقة دفع مختلفة."
 
 MAX_RETRY_ARABIC_MESSAGE = "وصلت الحد الأعلى للمحاولات"
+
+ORDER_PLACED_ANOTHER_TAB_MESSAGE = "Order placed in another tab."
+CHECKOUT_APPROVED_RESPONSE = "Approved"
