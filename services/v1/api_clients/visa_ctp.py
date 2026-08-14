@@ -77,15 +77,13 @@ class VisaCTPPayment(APIView, YouPayTransactionCRUD):
                     transaction_obj, visa_transient_token
                 )
 
-                if status_code == self.response_obj.SUCCESS:
+                if (status_code == self.response_obj.SUCCESS or
+                        status_code == self.response_obj.PRE_AUTH):
                     data = self.response_obj.get_success_dict(
                         code=self.response_obj.SUCCESS,
-                        success_dict={'data': response_data}
+                        success_dict={"data": response_data},
                     )
                     return Response(data, status=status.HTTP_200_OK)
-
-                if status_code == self.response_obj.PRE_AUTH:
-                    return Response(response_data, status=status.HTTP_200_OK)
 
                 error_data = self.response_obj.get_error_dict(
                     error_code=status_code)
