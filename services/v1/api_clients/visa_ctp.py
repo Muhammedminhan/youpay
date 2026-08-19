@@ -90,8 +90,10 @@ class VisaCTPPayment(APIView, YouPayTransactionCRUD):
                 return Response(error_data.get('errors'),
                                 status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({"error": "Transaction not found"},
-                            status=status.HTTP_404_NOT_FOUND)
+            data = self.response_obj.get_404_message(
+                message="Transaction not found"
+            )
+            return Response(data, status=status.HTTP_404_NOT_FOUND)
 
         except Exception as e:
             logger.error(f"Error in VisaCTPPayment: {str(e)}")

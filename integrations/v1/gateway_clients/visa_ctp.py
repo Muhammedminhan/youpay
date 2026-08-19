@@ -220,10 +220,14 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 timeout=EXTERNAL_API_REQUEST_TIMEOUT
             )
 
-            safe_response_logging_string = json.dumps(
-                {"captureContext": response.text if (
-                            response and response.text) else None}
-            )
+            capture_context = response.text if response else None
+            safe_response_logging_string = json.dumps({
+                "status": response.status_code,
+                "captureContext":
+                    capture_context[:20] + "..."
+                    if capture_context else None
+            })
+
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
@@ -328,15 +332,20 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 visa_response.status_code,
             )
 
+            safe_response_logging_string = json.dumps({
+                "status": visa_response.status_code,
+                "body": (
+                    visa_response.text[:20] + "..."
+                    if visa_response.text else None
+                )
+            })
+
             self.create_youpay_to_payment_gateways_data(
                 transaction_obj=transaction_obj,
                 transaction_id=transaction_obj.transaction_id,
                 request_data=json.dumps({
                     "visa_reference_id": visa_reference_id}),
-                response_data=json.dumps({
-                    "status": visa_response.status_code,
-                    "body": visa_response.text
-                }),
+                response_data=safe_response_logging_string,
                 request_method=REQUEST_METHOD_GET,
                 request_type=PAYMENT_REQUEST_VISA_CREDENTIALS,
             )
