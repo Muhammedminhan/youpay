@@ -194,6 +194,6 @@ urlpatterns = [
 
     # VisaCTP Endpoints
     path('visa-ctp/session/', VisaCTPCreateSession.as_view(),
-    name='VisaCTPCreateSession'),
+         name='VisaCTPCreateSession'),
     path('visa-ctp/payment/', VisaCTPPayment.as_view(), name='VisaCTPPayment'),
 ]

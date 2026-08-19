@@ -460,7 +460,7 @@ class YouPayResponse(object):
 
             self.VISACTP_CONNECTION_ERROR: "Visa gateway connection error",
             self.VISACTP_SESSION_FAILED: "Failed to create Visa payment session",
-            self.VISACTP_CARD_DETAILS_FAILED: "Failed to Fetch payment details",
+            self.VISACTP_CARD_DETAILS_FAILED: "Failed to fetch payment details",
         })
 
     def get_400_message(self, message):
