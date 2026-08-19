@@ -6,6 +6,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from functools import wraps
 from os import urandom
 from time import sleep
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 import redis
 import requests
@@ -368,7 +369,14 @@ def get_redirect_url(url, transaction_id):
     """
     Method for return redirect urls
     """
-    return url + '?transaction_id=' + transaction_id
+    parsed = urlparse(url)
+
+    query = dict(parse_qsl(parsed.query))
+    query.update({'transaction_id': transaction_id})
+
+    return urlunparse(
+        parsed._replace(query=urlencode(query))
+    )
 
 
 def process_checkoutpg_response_verification(**kwargs):
