@@ -56,6 +56,8 @@ deployment:
           mountPath: "/vault/secrets"
         - name: youpay-certs-applepay-volume
           mountPath: "/ygag/certs/applepay/sandbox"
+        - name: youpay-certs-visa-ctp-volume
+          mountPath: "/ygag/certs/visa-ctp"
 
   volumes:
     - name: 'ygag-youpay-[JIRA_ID]-qa-worker-logs'
@@ -73,6 +75,12 @@ deployment:
         readOnly: true
         volumeAttributes:
           secretProviderClass: "youpay-certs-applepay"
+    - name: youpay-certs-visa-ctp-volume
+      csi:
+        driver: secrets-store.csi.k8s.io
+        readOnly: true
+        volumeAttributes:
+          secretProviderClass: "youpay-certs-visa-ctp"
 
   initContainers:
     database:
