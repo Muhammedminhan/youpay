@@ -23,7 +23,7 @@ from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
                                     MOKAFAA_CLIENT_CODE,
                                     B2C_REVERSE_REDEMPTION_API,
                                     PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
-                                    HASSAD_CLIENT_CODE)
+                                    HASSAD_CLIENT_CODE, ANB_CLIENT_CODE)
 from integrations.v1.gateway_clients.utils import calculate_balance
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
@@ -805,6 +805,28 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             message = "Point Collect requested for {}".format(
                 PAYMENT_METHOD_HASSAD)
 
+        elif program_name == PAYMENT_METHOD_ANB:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.anb_service import (
+                AnbServiceManager)
+            anb_obj = AnbServiceManager()
+
+            response, code = anb_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                earned_points = response.get("partner_response").get(
+                    "earned_points")
+                is_success = True
+
+            message = "Point Collect requested for {}".format(
+                PAYMENT_METHOD_ANB)
+
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.point_program)
@@ -902,6 +924,8 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             client_code = MOKAFAA_CLIENT_CODE
         elif program_name == PAYMENT_METHOD_HASSAD:
             client_code = HASSAD_CLIENT_CODE
+        elif program_name == PAYMENT_METHOD_ANB:
+            client_code = ANB_CLIENT_CODE
         else:
             client_code = QITAF_CLIENT_CODE
         return client_code

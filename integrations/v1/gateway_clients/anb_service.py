@@ -3,21 +3,26 @@ import json
 import logging
 
 import requests
+from django.db.models import Q
 from rest_framework import status
 
 from core.constants import (PAYMENT_GATEWAY_B2CPAYBACK, REQUEST_METHOD_POST,
                             REQUEST_METHOD_GET)
 from core.messages import IS_REDIRECT, REDIRECT_URL, IS_SUCCESS
+from core.response_messages import YouPayResponse
 from core.utils import (get_app_config,
                         decrypt_string,
-                        get_config_from_payment_configurations)
+                        get_config_from_payment_configurations,
+                        auto_enable_or_disable_point_collection)
 from integrations.constants import (ANB_CLIENT_CODE, B2CP_OTP_GENERATION_API,
                                     PAYMENT_REQUEST_GENERATE_OTP,
                                     CHECKOUTPG_PAYMENT_CONFIGURATIONS,
                                     B2CP_REDEEM_POINTS_API,
                                     PAYMENT_REQUEST_REDEMPTION,
                                     B2CP_VERIFY_API, PAYMENT_REQUEST_VERIFY,
-                                    PAYMENT_DECLINED_STATUS)
+                                    PAYMENT_DECLINED_STATUS,
+                                    B2CP_EARN_POINTS_API,
+                                    PAYMENT_REQUEST_COLLECT_POINTS)
 from integrations.v1.gateway_clients.utils import format_verify_data
 from integrations.v1.serializers.anb_serializer import (
     AnbPaymentRequestSerializer)
@@ -62,6 +67,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
         self.points_redeemed_mobile_number = None
         self.points_redeemed_cif_number = None
         self.point_program = None
+        self.point_collection_enabled = False
         self.brand_calculations = None
 
     def get_payment_header(self):
@@ -362,6 +368,14 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 is_success = True
                 is_redirect = True
                 self.payment_status = PAYMENT_STATUS_PENDING
+                self.point_collection_enabled = (
+                    auto_enable_or_disable_point_collection(
+                        Q(
+                            payment_method=PAYMENT_METHOD_ANB,
+                            active=True,
+                            earn_on_partial_redemption=True
+                        ))
+                )
                 self.redeemed_amount = partner_response.get('redeemed_amount')
                 self.redeemed_point = partner_response.get(
                     'redeemedTouchPoints')
@@ -432,6 +446,7 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                 "service_fee": self.service_fee,
                 "base_amount": self.base_amount,
                 "VAT_amount": self.VAT_amount,
+                "point_collection_enabled": self.point_collection_enabled,
                 "response_summary": response_data.get('reason'),
                 "name_on_card": name_on_card,
                 "points_redeemed_mobile_number": (
@@ -509,6 +524,8 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
                     card_issuer_country = response_data.get(
                         "card_issuer_country")
                     payment_scheme = response_data.get("payment_scheme")
+
+                    self.handle_anb_collection(transaction_obj)
                 else:
                     """Redemption failed"""
                     payment_status = PAYMENT_STATUS_DECLINED
@@ -570,3 +587,125 @@ class AnbServiceManager(PaymentHandlers, PaymentRequestView):
             logger.error("Invalid transaction id ({}) received for Anb "
                          "verify api".format(request_transaction_id))
             return None, None
+
+    def collect_points(self, transaction_obj):
+        """
+        Calls ANB points collecting API
+        """
+        try:
+            response_obj = YouPayResponse()
+
+            if transaction_obj.earned_point:
+                logger.info(
+                    "Reward already collected for (%s), earned point %s",
+                    transaction_obj.transaction_id,
+                    transaction_obj.earned_point
+                )
+                return None, response_obj.ANB_ALREADY_COLLECTED
+
+            if transaction_obj.payment_method in [
+                PAYMENT_METHOD_ANB, PAYMENT_METHOD_ANB_AND_CARD
+            ]:
+                paid_amount = transaction_obj.payable_amount
+            else:
+                paid_amount = transaction_obj.amount
+
+            mobile_number = transaction_obj.points_collected_mobile_number
+            cif_number = transaction_obj.points_collected_cic_number
+
+            request_data = {
+                "mobile_number": mobile_number,
+                "customer_number": cif_number,
+                "customer_email": transaction_obj.customer_email,
+                "customer_name": transaction_obj.customer_name,
+                "invoice_id": transaction_obj.invoice_id,
+                "gateway_reference": transaction_obj.payment_reference,
+                "currency": transaction_obj.currency,
+                "client_code": ANB_CLIENT_CODE,
+                "amount": str(paid_amount),
+                "platform": transaction_obj.platform,
+                "item_details_list": transaction_obj.brand_details.get(
+                    "item_set", None),
+                "brand_calculations": transaction_obj.brand_calculations,
+                "language_code": transaction_obj.language,
+                "redeemed_amount": (
+                    str(transaction_obj.redeemed_amount) if
+                    transaction_obj.redeemed_amount else 0),
+                "apiclient": transaction_obj.api_client.name,
+                "source_payment_method": transaction_obj.payment_method
+            }
+
+            self.transaction_obj = transaction_obj
+            self.transaction_id = str(transaction_obj.transaction_id)
+            request_data['transaction_id'] = self.transaction_id
+            self.request_data = request_data
+            self.anb_config = get_config_from_payment_configurations(
+                self.transaction_obj, PAYMENT_METHOD_ANB)
+
+            logger.info(
+                "Sending request data to ANB point collection API: %s",
+                request_data
+            )
+
+            payload = json.dumps(request_data)
+
+            url = self.anb_config.domain + B2CP_EARN_POINTS_API
+            headers = self.get_payment_header()
+
+            response = requests.post(url, data=payload, headers=headers)
+
+            logger.info("Response from ANB point collection API %s", response)
+
+            if response.status_code == status.HTTP_200_OK:
+                response_data = response.json()
+                self.response_data = response_data
+                logger.info("ANB point collection API response: %s",
+                            response_data)
+                return response_data, self.SUCCESS
+
+            elif hasattr(response, 'text'):
+                self.response_data = response.json()
+                logger.error(
+                    "Error in ANB point collection API, %s",
+                    response.text
+                )
+                self.response_data = response.json()
+                return {
+                    "error": response.text,
+                    "partner_response": self.response_data
+                }, self.ANB_CONNECTION_ERROR
+
+            else:
+                msg = "Unable to get response from B2C point collection API"
+                logger.error(msg)
+                return {"errors": msg}, self.ANB_CONNECTION_ERROR
+
+        except Exception as e:
+            logger.error(
+                "Exception in ANB point collection API: %s",
+                e, exc_info=True
+            )
+            return None, self.ANB_CONNECTION_ERROR
+
+        finally:
+            self.create_youpay_to_payment_gateways_data(
+                transaction_obj=self.transaction_obj,
+                transaction_id=self.transaction_id,
+                request_data=json.dumps(self.request_data),
+                response_data=json.dumps(self.response_data),
+                request_method=REQUEST_METHOD_POST,
+                request_type=PAYMENT_REQUEST_COLLECT_POINTS,
+            )
+
+    @staticmethod
+    def handle_anb_collection(transaction_obj):
+        """
+        Update ANB point collection details after successful verification.
+        """
+        if transaction_obj.point_collection_enabled:
+            if (transaction_obj.point_program != PAYMENT_METHOD_ANB or
+                    not transaction_obj.points_collected_mobile_number):
+                transaction_obj.points_collected_mobile_number = (
+                    transaction_obj.points_redeemed_mobile_number)
+                transaction_obj.point_program = PAYMENT_METHOD_ANB
+                transaction_obj.save()
