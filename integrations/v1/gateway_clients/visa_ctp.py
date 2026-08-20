@@ -22,7 +22,8 @@ from integrations.constants import (VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE,
                                     PAYMENT_REQUEST_VISA_CREDENTIALS,
                                     VISA_BILLING_TYPE_NONE,
                                     VISACTP_SUPPORTED_ARABIC_COUNTRIES,
-                                    VISACTP_DEFAULT_ARABIC_LOCALE)
+                                    VISACTP_DEFAULT_ARABIC_LOCALE,
+                                    VISA_CTP_PRIVATE_KEY_PATH)
 from integrations.v1.gateway_clients.checkoutpg import CheckoutpgManager
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer)
@@ -359,8 +360,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
                 )
                 return None, self.VISACTP_CARD_DETAILS_FAILED
 
-            decrypted_data = self.decrypt_visa_payload(
-                visa_response.text, visa_config)
+            decrypted_data = self.decrypt_visa_payload(visa_response.text)
 
             if not decrypted_data:
                 return None, self.VISACTP_CARD_DETAILS_FAILED
@@ -397,7 +397,7 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             logger.error(f"Exception in process_visa_payment: {str(e)}")
             return None, self.VISACTP_CONNECTION_ERROR
 
-    def decrypt_visa_payload(self, jwe_string, visa_config):
+    def decrypt_visa_payload(self, jwe_string):
         """
         Decrypts Visa Payment Credentials response.
         Supports both:
@@ -405,14 +405,8 @@ class VisaManager(YouPayResponse, PaymentHandlers):
           2. JWE -> Signed JWT -> JSON
         """
         try:
-            private_key_pem = visa_config.validation_json.get(
-                "encryption_private_key"
-            )
-            if not private_key_pem:
-                logger.error(
-                    "[Visa CTP] encryption_private_key not configured."
-                )
-                return None
+            with open(VISA_CTP_PRIVATE_KEY_PATH, "r") as pem_file:
+                private_key_pem = pem_file.read()
 
             key = jwk.JWK.from_pem(private_key_pem.encode("utf-8"))
 

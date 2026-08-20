@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
-from payments.models import Announcement
+from payments.models import Announcement, YouPayTransactionData
 
 
 class AnnouncementForm(forms.ModelForm):
@@ -33,3 +33,12 @@ class AnnouncementForm(forms.ModelForm):
                                   ' the chosen gateway-platform-payment '
                                   'option combination')
         return self.cleaned_data
+
+
+class YouPayTransactionDataAdminForm(forms.ModelForm):
+    class Meta:
+        model = YouPayTransactionData
+        fields = "__all__"
+        labels = {
+            "points_collected_cic_number": "Points Collected CIC/CIF Number"
+        }

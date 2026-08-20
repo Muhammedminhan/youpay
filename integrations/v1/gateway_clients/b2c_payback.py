@@ -37,7 +37,7 @@ from integrations.v1.serializers.b2c_payback_payment_request import (
 )
 from payments.constants import (PAYMENT_STATUS_DECLINED_RETRY,
                                 PAYMENT_STATUS_PAID, PAYMENT_STATUS_FAILED,
-                                PAYMENT_METHOD_ADCB)
+                                PAYMENT_METHOD_ADCB, PAYMENT_METHOD_ANB)
 from payments.serializers.youpay_payments import (
     YouPayTransactionDataSerializer
 )
@@ -386,8 +386,12 @@ class B2CPaybackManager(PaymentHandlers, PaymentRequestView):
                 data['points_collected_mobile_number'] = (
                     points_collected_mobile_number)
             if points_collected_cic_number:
-                data['points_collected_cic_number'] = (
-                    points_collected_cic_number)
+                if point_program == PAYMENT_METHOD_ANB:
+                    data['points_collected_cif_number'] = (
+                        points_collected_cic_number)
+                else:
+                    data['points_collected_cic_number'] = (
+                        points_collected_cic_number)
 
             return data
         except Exception as e:
