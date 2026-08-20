@@ -1,0 +1,72 @@
+name: Security review
+
+# Calls the org-level security review from devops-organization-actions.
+#
+# `secrets: inherit` gives the reusable workflow the org secret
+# DEVOPS_ACTION_DEPLOYMENT_KEY, which it uses to check out the engine — the same
+# way this repo calls every other org reusable workflow (see
+# youpay-build-and-deploy.yml and friends).
+#
+# MODE is chosen by event:
+#   * pull_request      -> pr    — scans only the commits under review
+#                                  (--git-range origin/<base>..HEAD), fast.
+#   * schedule/dispatch -> audit — scans the complete git history for secrets
+#                                  (fetch-depth: 0). This is the slow path, so
+#                                  it runs weekly and on demand, never per PR.
+#
+# The gate is currently OFF: .secreview.yml pins `gate.fail_on: NEVER`, so pr
+# runs report findings into the PR summary but can never fail a build. This is
+# deliberate — gating before a baseline exists would fail the first pull request
+# on years of pre-existing findings and the job would get switched off. To turn
+# gating on: let one audit run finish, `secreview baseline` against this repo,
+# commit .secreview-baseline.json, then raise gate.fail_on in .secreview.yml.
+# From then on only NEW findings introduced by a PR can block it.
+
+on:
+  pull_request:
+  schedule:
+    # Weekly full audit. Scheduled and manual runs scan complete git history for
+    # secrets; pull-request runs only scan the commits under review, so a clean
+    # PR result says nothing about what is already in history.
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      agents:
+        description: "Run the Bedrock agent layer (LLM triage + contextual review). Costs Bedrock tokens."
+        type: boolean
+        default: false
+      fetch_depth:
+        description: "Checkout depth. 0 = full history (a real secret audit). Set 1 for a FAST agents smoke — gitleaks then only scans the tip, so it is NOT a valid secret audit."
+        type: number
+        default: 0
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  security-review:
+    uses: YouGotaGift/devops-organization-actions/.github/workflows/security-review.yml@main
+    with:
+      APPLICATION_NAME: youpay
+      # pr on a pull_request (bounded, gated-when-baselined); audit on schedule
+      # and manual dispatch (full history). audit always exits 0; pr only ever
+      # blocks once a baseline is committed and gate.fail_on is raised.
+      MODE: ${{ github.event_name == 'pull_request' && 'pr' || 'audit' }}
+      # Agents run ONLY on a manual trigger with the box ticked. Scheduled and
+      # pull-request runs always pass false, so no automatic run ever spends
+      # Bedrock tokens. On any event other than workflow_dispatch the left side
+      # is false and the expression short-circuits.
+      #
+      # NOTE: the OIDC role below must trust this repository before agents can
+      # run here. If secreview-bedrock's trust policy does not yet name
+      # YouGotaGift/youpay, ticking the box will fail at the assume-role
+      # step — normal pr/schedule runs are unaffected because they pass false.
+      AGENTS: ${{ github.event_name == 'workflow_dispatch' && inputs.agents }}
+      # Shallow checkout ONLY on a manual dispatch that sets fetch_depth; every
+      # other event keeps full history (0) so the scheduled audit's secret scan
+      # stays complete. A shallow smoke skips history — not a real secret audit.
+      FETCH_DEPTH: ${{ github.event_name == 'workflow_dispatch' && inputs.fetch_depth || 0 }}
+      BEDROCK_REGION: us-east-1
+      AWS_ROLE_ARN: arn:aws:iam::685617232486:role/secreview-bedrock
+    secrets: inherit

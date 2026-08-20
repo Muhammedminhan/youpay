@@ -1,0 +1,33 @@
+# secreview policy for youpay.
+#
+# gate.fail_on: NEVER — the security review runs on every pull request and
+# reports its findings into the PR summary, but it can NEVER fail a build. This
+# is intentional for onboarding: this repository has not been baselined yet, so
+# in pr mode every pre-existing finding would count as "new" and the very first
+# pull request would go red on years of history. A red gate on day one gets the
+# job disabled, which is worse than no gate at all.
+#
+# How to turn gating on, once the team trusts the signal:
+#   1. Let one audit run finish (weekly schedule, or trigger the workflow
+#      manually via the Actions tab).
+#   2. Run the engine locally against this repo and record what exists today:
+#         secreview baseline --path .
+#      Commit the resulting .secreview-baseline.json.
+#   3. Raise fail_on below to HIGH (or CRITICAL to start narrower).
+# From then on only NEW findings a pull request introduces — anything not in the
+# baseline — can block it. Everything already in the tree stays reported, never
+# blocking.
+gate:
+  fail_on: NEVER
+  # Only findings absent from .secreview-baseline.json count once gating is on.
+  new_findings_only: true
+
+# Suppressions require a reason, an approver, and an expiry date (permanent
+# suppressions are not allowed — an entry without expires is rejected). Add them
+# here only after a finding has been reviewed and consciously accepted, e.g.:
+#
+# suppressions:
+#   - fingerprint: "<from the SARIF / PR summary>"
+#     reason: "false positive — request is gated by X two frames up"
+#     approved_by: "your-github-handle"
+#     expires: 2026-12-31
