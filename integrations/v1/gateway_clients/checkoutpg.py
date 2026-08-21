@@ -435,8 +435,10 @@ class CheckoutpgManager(PaymentRequestView, PaymentHandlers):
                     masked_payment_data = copy.deepcopy(payment_data)
                     if masked_payment_data.get("number"):
                         card_number = masked_payment_data["number"]
-                        masked_payment_data["number"] = ("*" * max(len(
-                            card_number) - 4, 0)) + card_number[-4:]
+                        masked_payment_data["number"] = (
+                            card_number[:6] + "*" * (len(card_number) - 10)
+                            + card_number[-4:]
+                        )
 
                     logger.info(
                         "YouPay sending payment data is %s",
