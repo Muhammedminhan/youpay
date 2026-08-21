@@ -27,6 +27,9 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
     is_mada = serializers.SerializerMethodField()
     client_code = serializers.SerializerMethodField()
     customer_uid = serializers.SerializerMethodField()
+    number = serializers.SerializerMethodField()
+    expiry_month = serializers.SerializerMethodField()
+    expiry_year = serializers.SerializerMethodField()
 
     def get_currency(self, data):
         return data.get('transaction_data').get("currency")
@@ -136,6 +139,15 @@ class CheckoutPaymentRequestSerializer(serializers.Serializer):
         """
         is_mada = data.get('request_data').get("is_mada", False)
         return is_mada
+
+    def get_number(self, data):
+        return data.get("request_data").get("number")
+
+    def get_expiry_month(self, data):
+        return data.get("request_data").get("expiry_month")
+
+    def get_expiry_year(self, data):
+        return data.get("request_data").get("expiry_year")
 
 
 class ApplepayPaymentDataSerializer(serializers.ModelSerializer):

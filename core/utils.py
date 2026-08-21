@@ -24,7 +24,8 @@ from core.constants import (COMMON_ENCRYPTION_KEY, FERNET_KEY,
                             PAYMENT_GATEWAY_CHECKOUTPG,
                             PAYMENT_GATEWAY_AMAZONPG)
 from core.messages import (IS_REDIRECT, REDIRECT_URL, TRANSACTION_MSG,
-                           IS_SUCCESS)
+                           IS_SUCCESS, CHECKOUT_APPROVED_RESPONSE,
+                           ORDER_PLACED_ANOTHER_TAB_MESSAGE)
 from core.models import (AppConfig, Currency, PaymentMethodConfig,
                          PaymentConfiguration)
 from integrations.constants import (CHECKOUTPG_HUB_CODE,
@@ -424,6 +425,9 @@ def process_checkoutpg_response_verification(**kwargs):
             redirect_url = get_redirect_url(youpay_transaction.failure_url,
                                             transaction_id)
             response_summary = response_data.get("response_summary")
+            if response_summary == CHECKOUT_APPROVED_RESPONSE:
+                response_summary = ORDER_PLACED_ANOTHER_TAB_MESSAGE
+
             response_data = {
                 IS_REDIRECT: True,
                 REDIRECT_URL: redirect_url,

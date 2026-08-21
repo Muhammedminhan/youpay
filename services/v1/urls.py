@@ -47,6 +47,7 @@ from .api_clients.qitaf_service import (
     QitafGenerateOTPAPIView, QitafRedeemPointsAPIView,
     QitafCollectPointsAPIView, UpdateQitafPhoneNumber, QitafVerify)
 from .api_clients.tabbypg import CreateSession, TabbyPGVerification
+from .api_clients.visa_ctp import VisaCTPCreateSession, VisaCTPPayment
 from .views.client_registration import (APIClientRegistrationViewSet,
                                         APIClientRegistrationView)
 from .api_clients.tpay import TPayInitializeAPIView, TPayVerifyAPIView
@@ -192,4 +193,9 @@ urlpatterns = [
     path('tpay/initialize/', TPayInitializeAPIView.as_view(),
          name='TPayInitialize'),
     path('tpay/verify/', TPayVerifyAPIView.as_view(), name='TPayVerify'),
+
+    # VisaCTP Endpoints
+    path('visa-ctp/session/', VisaCTPCreateSession.as_view(),
+         name='VisaCTPCreateSession'),
+    path('visa-ctp/payment/', VisaCTPPayment.as_view(), name='VisaCTPPayment'),
 ]

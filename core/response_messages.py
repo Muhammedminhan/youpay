@@ -20,6 +20,7 @@ class YouPayResponse(object):
     11XXX - for b2c
     12xxx - for happy credits
     19xxx - for tpay
+    22xxx - for Visa Click to Pay
     """
 
     """Youpay related begins"""
@@ -237,6 +238,12 @@ class YouPayResponse(object):
     HASSAD_PAYMENT_FAILED = 12709
     HASSAD_TRY_AFTER_SOMETIME = 13020
     """Hassad related ends """
+
+    """Visa Click to Pay related begins"""
+    VISACTP_CONNECTION_ERROR = 22001
+    VISACTP_SESSION_FAILED = 22002
+    VISACTP_CARD_DETAILS_FAILED = 22003
+    """Visa Click to Pay related ends"""
 
     MESSAGE = {}
 
@@ -457,6 +464,10 @@ class YouPayResponse(object):
             self.HASSAD_PAYMENT_FAILED: "HASSAD Payment Failed",
             self.HASSAD_TRY_AFTER_SOMETIME: ("Please try again after 2 "
                 "minutes. -(يرجى المحاولة مرة أخرى بعد دقيقتين.)"),
+
+            self.VISACTP_CONNECTION_ERROR: "Visa gateway connection error",
+            self.VISACTP_SESSION_FAILED: "Failed to create Visa payment session",
+            self.VISACTP_CARD_DETAILS_FAILED: "Failed to fetch payment details",
         })
 
     def get_400_message(self, message):
