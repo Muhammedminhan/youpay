@@ -9,8 +9,11 @@ from rest_framework.views import APIView
 from core.messages import (IS_SUCCESS, COMMON_ERROR_MESSAGE_EN,
                            COMMON_ERROR_MESSAGE_EN_CODE)
 from core.response_messages import YouPayResponse
+from core.utils import decrypt_string
+from integrations.common import update_brand_details
 from integrations.v1.gateway_clients.anb_service import AnbServiceManager
 from integrations.v1.serializers.anb_serializer import AnbRedemptionSerializer
+from payments.constants import PAYMENT_METHOD_ANB
 from services.v1.serializers.payment_request import AnbOTPSerializer
 from services.v1.views.common import YouPayTransactionCRUD
 
@@ -242,6 +245,77 @@ class AnbVerify(APIView, YouPayTransactionCRUD):
             errors['message'] = COMMON_ERROR_MESSAGE_EN
             errors['code'] = code
         return data
+
+
+class UpdateANBPhoneNumber(APIView, YouPayTransactionCRUD):
+    response_obj = YouPayResponse()
+
+    def post(self, request):
+        try:
+            transaction_id = request.data.get('transaction_id')
+            anb_phone_number = request.data.get('anb_phone_number')
+            anb_cif_number = request.data.get('anb_cif_number')
+
+            transaction_obj = self.get_youpay_transaction_data(
+                decrypt_string(transaction_id)
+            )
+
+            if not transaction_obj:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.TRANSACTION_NOT_FOUND
+                )
+                return Response(data, status=status.HTTP_404_NOT_FOUND)
+
+            is_updated, brand_details = update_brand_details(
+                transaction_obj)
+            if not is_updated:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.ANB_PHONE_NUMBER_SAVE_FAILED)
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+            if anb_phone_number:
+                transaction_obj.points_collected_mobile_number = anb_phone_number
+                transaction_obj.points_collected_cic_number = None
+            elif anb_cif_number:
+                transaction_obj.points_collected_cic_number = anb_cif_number
+                transaction_obj.points_collected_mobile_number = None
+            else:
+                data = self.response_obj.get_error_dict(
+                    error_code=self.response_obj.ANB_VALIDATION_FAILED
+                )
+                return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+            update_data = {
+                'transaction_id': transaction_obj.transaction_id,
+                'point_program': PAYMENT_METHOD_ANB,
+                'point_collection_enabled': True,
+                'brand_details': brand_details,
+                'points_collected_mobile_number': anb_phone_number,
+                'points_collected_cic_number': anb_cif_number,
+            }
+
+            result = self.update_youpay_transaction_data(update_data)
+
+            if result:
+                data = self.response_obj.get_success_dict(
+                    code=self.response_obj.ANB_PHONE_NUMBER_SAVED,
+                    success_dict={}
+                )
+                return Response(data, status=status.HTTP_200_OK)
+
+            logger.error(
+                f"Couldn't update ANB phone/CIF for "
+                f"{transaction_obj.transaction_id}"
+            )
+            data = self.response_obj.get_error_dict(
+                error_code=self.response_obj.ANB_PHONE_NUMBER_SAVE_FAILED
+            )
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            data = self.response_obj.get_400_message(message=str(e))
+            return Response(data.get('errors'),
+                            status=status.HTTP_400_BAD_REQUEST)
 
 
 def anb_response_formatter(data, code):

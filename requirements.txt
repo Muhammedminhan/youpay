@@ -63,3 +63,4 @@ cryptography==38.0.1
 gunicorn==19.9.0
 eventlet==0.30.2
 django-modeltranslation==0.17.3
+jwcrypto==1.4.2

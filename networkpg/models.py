@@ -49,6 +49,10 @@ class NetworkTransaction(CustomerProfile):
     card_issuer_country = models.CharField(max_length=50, null=True, blank=True)
     card_type = models.CharField(max_length=50, null=True, blank=True)
     is_gcc_card = models.BooleanField(default=False)
+    auth_response_message = models.CharField(
+        max_length=500, null=True, blank=True,
+        help_text=_("Auth response message from Network International")
+    )
 
     class Meta:
         verbose_name = _("Network Transaction")

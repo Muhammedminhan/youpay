@@ -14,6 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class NetworkPGClient:
+    """
+    This class provides methods to interact with the 
+    Network International payment gateway.
+    """
     def __init__(self):
         self.api_key = NETWORK_API_KEY
         self.outlet_id = NETWORK_OUTLET_ID

@@ -22,7 +22,8 @@ from integrations.common import update_offer_details
 from integrations.constants import (NEQATY_CLIENT_CODE, QITAF_CLIENT_CODE,
                                     MOKAFAA_CLIENT_CODE,
                                     B2C_REVERSE_REDEMPTION_API,
-                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION)
+                                    PAYMENT_REQUEST_B2C_REVERSE_REDEMPTION,
+                                    HASSAD_CLIENT_CODE, ANB_CLIENT_CODE)
 from integrations.v1.gateway_clients.utils import calculate_balance
 from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 ALLOW_CANCEL_STATUS_LIST,
@@ -40,9 +41,11 @@ from payments.constants import (PAYMENT_METHOD_CONFIG_MAPPING,
                                 PAYMENT_METHOD_ANB_AND_CARD,
                                 PAYMENT_STATUS_REVERSED,
                                 REFUND_STATUS_COMPLETED, REFUND_TYPE_POINTS,
-                                PAYMENT_STATUS_REFUNDED)
+                                PAYMENT_STATUS_REFUNDED, PAYMENT_METHOD_HASSAD,
+                                PAYMENT_METHOD_HASSAD_AND_CARD)
 from payments.models import YouPayTransactionData
-from services.models import PaymentRequestData
+from networkpg.v1.views.payment import NetworkPaymentsApi
+from services.models import PaymentRequestData, PaymentFlow
 from services.utils import get_payment_redirect_url
 from services.v1.auth.client_registration_permission import (
     APIClientRegistrationPermission)
@@ -161,15 +164,20 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
 
                         redemption_partner = data_formatted.get(
                             'redemption_partner')
-
-                        if redemption_partner:
-                            redirect_url = PAYMENT_REDIRECT_URL + "{}/{}/{}".format(
-                                language, redemption_partner,
-                                encrypted_transaction_id
-                            )
+                        if client.payment_flow == PaymentFlow.DIRECT_GATEWAY:
+                            networkpg = NetworkPaymentsApi()
+                            response = networkpg.initiate_payment(
+                                    encrypted_transaction_id)
+                            redirect_url = response.data.get('payment_url', '')
                         else:
-                            redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
-                                language, encrypted_transaction_id)
+                            if redemption_partner:
+                                redirect_url = PAYMENT_REDIRECT_URL + "{}/{}/{}".format(
+                                    language, redemption_partner,
+                                    encrypted_transaction_id
+                                )
+                            else:
+                                redirect_url = PAYMENT_REDIRECT_URL + "{}/{}".format(
+                                    language, encrypted_transaction_id)
 
                         response_data = {
                             "status": status.HTTP_201_CREATED,
@@ -355,12 +363,13 @@ class PaymentRequestView(YouPayTransactionCRUD, APIView, ClientValidator,
         amount = transaction_obj.amount
         if payment_method in [PAYMENT_METHOD_CITI_REWARDS,
                               PAYMENT_METHOD_QITAF, PAYMENT_METHOD_MOKAFAA,
-                              PAYMENT_METHOD_ANB]:
+                              PAYMENT_METHOD_ANB, PAYMENT_METHOD_HASSAD]:
             amount = transaction_obj.base_amount
         elif payment_method in [PAYMENT_METHOD_NEQATY_AND_CARD,
                                 PAYMENT_METHOD_NEQATY,
                                 PAYMENT_METHOD_MOKAFAA_AND_CARD,
-                                PAYMENT_METHOD_ANB_AND_CARD]:
+                                PAYMENT_METHOD_ANB_AND_CARD,
+                                PAYMENT_METHOD_HASSAD_AND_CARD]:
             amount = transaction_obj.brand_calculations.get(
                 'sum_net_amount', None)
 
@@ -770,6 +779,54 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             message = "Pont Collect requested for {}".format(
                 PAYMENT_METHOD_MOKAFAA)
 
+        elif program_name == PAYMENT_METHOD_HASSAD:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.hassad_service import (
+                HassadServiceManager
+            )
+
+            hassad_obj = HassadServiceManager()
+            response, code = hassad_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                earned_points = response.get("partner_response").get(
+                    "earned_points")
+                calculated_item_details = response.get(
+                    "partner_response", {}).get(
+                    "calculated_item_details")
+                is_success = True
+
+            message = "Point Collect requested for {}".format(
+                PAYMENT_METHOD_HASSAD)
+
+        elif program_name == PAYMENT_METHOD_ANB:
+            collect_enabled = transaction_obj.point_collection_enabled
+            mobile_number = transaction_obj.points_collected_mobile_number
+
+            from integrations.v1.gateway_clients.anb_service import (
+                AnbServiceManager)
+            anb_obj = AnbServiceManager()
+
+            response, code = anb_obj.collect_points(transaction_obj)
+            partner_response = response
+            partner_response_code = code
+
+            if code == self.SUCCESS:
+                earn_reference = response.get("partner_response").get(
+                    "earn_reference")
+                earned_points = response.get("partner_response").get(
+                    "earned_points")
+                is_success = True
+
+            message = "Point Collect requested for {}".format(
+                PAYMENT_METHOD_ANB)
+
         else:
             message = "Unknown redemption partner {}".format(
                 transaction_obj.point_program)
@@ -865,6 +922,10 @@ class EarnRedemptionPartnerPoints(YouPayTransactionCRUD, APIView,
             client_code = NEQATY_CLIENT_CODE
         elif program_name == PAYMENT_METHOD_MOKAFAA:
             client_code = MOKAFAA_CLIENT_CODE
+        elif program_name == PAYMENT_METHOD_HASSAD:
+            client_code = HASSAD_CLIENT_CODE
+        elif program_name == PAYMENT_METHOD_ANB:
+            client_code = ANB_CLIENT_CODE
         else:
             client_code = QITAF_CLIENT_CODE
         return client_code

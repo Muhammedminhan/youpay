@@ -15,14 +15,17 @@ from core.response_messages import YouPayResponse
 from core.utils import (decrypt_string, get_gateway_additional_fee,
                         get_configuration_data, encrypt_browser_value,
                         decrypt_browser_value, get_display_platform,
-                        get_display_program)
+                        get_display_program, get_payment_gateway_config)
 from gateways.tpay.constants import COUNTRY_CODE_UAE
 from integrations.constants import (ADCB_CLIENT_CODE, CHECKOUTPG_HUB_CODE,
                                     QITAF_CLIENT_CODE,
                                     NEQATY_CLIENT_CODE, MOKAFAA_CLIENT_CODE,
                                     ANB_CLIENT_CODE,
                                     ADDITIONAL_PROCESSING_FEE,
-                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE)
+                                    PAYPAL_HUB_CODE, B2CPAYBACK_HUB_CODE,
+                                    HASSAD_CLIENT_CODE,
+                                    B2CPAYBACK_KSA_HUB_CODE,
+                                    VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
 from integrations.models import PaymentGateway
 from integrations.v1.gateway_clients.citi_service import CitiRewardsManager
 from integrations.v1.gateway_clients.tabbypg import TabbyPGManager
@@ -35,7 +38,7 @@ from payments.constants import (
     PAYMENT_OPTION_CHECKOUT_SAVED_CARD,
     PAYMENT_OPTION_ADCB, PAYMENT_OPTION_NEQATY, PAYMENT_OPTION_MOKAFA,
     EXPIRED_STATUS_LIST, PAYMENT_OPTION_ANB, PAYMENT_METHOD_PAYPAL,
-    PAYMENT_METHOD_TPAY_ETISALAT, PAYMENT_OPTION_TPAY
+    PAYMENT_METHOD_TPAY_ETISALAT, PAYMENT_OPTION_TPAY, PAYMENT_OPTION_HASSAD
 )
 from payments.models import YouPayTransactionData
 from services.constants import (TOKEN_TYPE_PAYPAL, TOKEN_TYPE_APPLEPAY,
@@ -219,6 +222,7 @@ class ConfigViewSet(ViewSet):
                 None,
                 "paypal_config": self.get_paypal_config(payment_options,
                                                         transaction),
+                "visa_ctp_config": self.get_visa_ctp_config(payment_options),
                 **self.get_payment_fee_breakdowns(transaction),
                 **self.get_cart_fee_breakdowns(transaction),
                 "cart_currency": transaction.cart_currency if transaction else
@@ -435,11 +439,16 @@ class ConfigViewSet(ViewSet):
         neqaty_enabled = payment_option.get(PAYMENT_OPTION_NEQATY, False)
         mokafa_enabled = payment_option.get(PAYMENT_OPTION_MOKAFA, False)
         anb_enabled = payment_option.get(PAYMENT_OPTION_ANB, False)
+        hassad_enabled = payment_option.get(PAYMENT_OPTION_HASSAD, False)
         config_dict = {}
         if True in [adcb_enabled, qitaf_enabled, neqaty_enabled,
-                    mokafa_enabled, anb_enabled]:
-            b2c_config = get_configuration_data(B2CPAYBACK_HUB_CODE,
-                                                transaction)
+                    mokafa_enabled, anb_enabled, hassad_enabled]:
+            if anb_enabled or hassad_enabled:
+                b2c_config = get_configuration_data(
+                    B2CPAYBACK_KSA_HUB_CODE, transaction)
+            else:
+                b2c_config = get_configuration_data(
+                    B2CPAYBACK_HUB_CODE, transaction)
             config_list = (b2c_config.response_data.get("results") if
                            b2c_config else {})
             if adcb_enabled:
@@ -491,6 +500,17 @@ class ConfigViewSet(ViewSet):
                                                       ANB_CLIENT_CODE)
                 anb_config.update(**this__config_data)
                 config_dict['anb_config'] = anb_config
+
+            if hassad_enabled:
+                this_config_data = payment_config_data.get(
+                    PAYMENT_OPTION_HASSAD, {}
+                )
+                hassad_config = self.get_each_b2c_config(
+                    config_list,
+                    HASSAD_CLIENT_CODE
+                )
+                hassad_config.update(**this_config_data)
+                config_dict["hassad_config"] = hassad_config
         return config_dict
 
     @staticmethod
@@ -568,6 +588,26 @@ class ConfigViewSet(ViewSet):
             "max_limit": method_config.get("max_limit", 700),
             "is_active": payment_config.active,
         }
+
+    def get_visa_ctp_config(self, payment_options):
+        """
+        Helper method to fetch and structure Visa Click to Pay parameters
+        """
+        if not payment_options or not payment_options.get('visa_ctp'):
+            return None
+
+        try:
+            visa_config = get_payment_gateway_config(
+                VISACTP_CACHE_KEY, VISACTP_CLIENT_CODE)
+            if not visa_config:
+                return None
+
+            return {
+                "merchant_id": visa_config.merchant_id
+            }
+        except Exception as e:
+            logger.error(f"Failed to generate visa_ctp_config block: {str(e)}")
+            return None
 
 
 class ClientStaticFilesAPI(APIView):
