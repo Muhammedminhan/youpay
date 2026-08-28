@@ -214,12 +214,14 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             headers = self.get_header(REQUEST_METHOD_POST, VISACTP_SESSION_API,
                         payload_string, visa_config)
 
+            logger.info("visa session temp logg url=%s, data=%s, headers=%s",url,payload_string,headers)
             response = requests.post(
                 url,
                 data=payload_string,
                 headers=headers,
                 timeout=EXTERNAL_API_REQUEST_TIMEOUT
             )
+            logger.info("visa session call temp log %s=",response.text)
 
             capture_context = response.text if response else None
             safe_response_logging_string = json.dumps({
@@ -324,9 +326,12 @@ class VisaManager(YouPayResponse, PaymentHandlers):
             headers = self.get_header(REQUEST_METHOD_GET,
                 resource_path, None, visa_config,
                 credentials_override=credentials_override)
-
+            logger.info("visa ctp request --- headers=%s url=%s",headers,visa_url)
             visa_response = requests.get(visa_url, headers=headers,
                                 timeout=EXTERNAL_API_REQUEST_TIMEOUT)
+            logger.info("visa temp logger %s",visa_response.text)
+            logger.info("visa temp logger 2 %s",visa_response.content)
+
             logger.info(
                 "[Visa CTP] Payment credentials response received. "
                 "Reference=%s, Status=%s", visa_reference_id,
