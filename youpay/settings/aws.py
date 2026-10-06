@@ -22,11 +22,17 @@ if STORAGE_AWS:
     }
     AWS_LOCATION = config('AWS_LOCATION', 'static')
     STATIC_URL = 'https://%s/%s/' % (AWS_CLOUDFRONT_DOMAIN, AWS_LOCATION)
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+    }
     COMPRESS_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     COMPRESS_URL = STATIC_URL
     MEDIAFILES_LOCATION = 'media'
-    DEFAULT_FILE_STORAGE = 'core.storages.backends.aws_s3.MediaStorage'
+    STORAGES["default"] = {
+        "BACKEND": "core.storages.backends.aws_s3.MediaStorage",
+    }
     MEDIA_URL = "https://%s/%s/" % (
         AWS_CLOUDFRONT_DOMAIN, MEDIAFILES_LOCATION)
     COMPRESS_ENABLED = True

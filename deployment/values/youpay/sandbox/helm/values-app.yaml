@@ -34,7 +34,7 @@ deployment:
       image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
       command: '["sh", "-c", "source /vault/secrets/application.env ; sh /ygag/deployment/app/app-entrypoint.sh"]'
       env:
-        - name: 'DJANGO_SETTINGS_MODUL'
+        - name: 'DJANGO_SETTINGS_MODULE'
           value: 'DJANGO_SETTINGS_MODULE'
       port: 8000
       memory:

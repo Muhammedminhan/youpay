@@ -11,7 +11,7 @@ from services.v1.views.common import get_api_key_from_payment_gateway
 
 class SignatureAuthentication(authentication.BaseAuthentication):
     SIGNATURE_RE = re.compile('signature="(.+?)"')
-    SIGNATURE_HEADERS_RE = re.compile('headers="([\(\)\sa-z0-9-]+?)"')
+    SIGNATURE_HEADERS_RE = re.compile(r'headers="([()\sa-z0-9-]+?)"')
 
     API_KEY_HEADER = 'X-Api-Key'
     ALGORITHM = 'hmac-sha256'

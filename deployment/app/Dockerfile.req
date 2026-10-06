@@ -13,6 +13,6 @@ ADD ./deployment/app/packages/apk/req /ygag/packages/apk/req
 
 RUN apk update && \
     apk add --no-cache --no-network --virtual .build-deps /ygag/packages/apk/req/* && \
-    pip3.9 install --extra-index-url=$YGAG_PIP_PRIVATE_REPO_URL --no-cache-dir -r requirements.txt && \
+    pip3 install --extra-index-url=$YGAG_PIP_PRIVATE_REPO_URL --no-cache-dir -r requirements.txt && \
     apk del .build-deps && \
     rm -rf /ygag/packages/apk

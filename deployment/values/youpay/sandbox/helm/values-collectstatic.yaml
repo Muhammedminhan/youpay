@@ -12,7 +12,7 @@ job:
     - name: 'collectstatic'
       imagePullPolicy: 'Always'
       image: '459037613883.dkr.ecr.ap-south-1.amazonaws.com/production/ygag/youpay/backend-app:[BUILD_TAG]'
-      command: '["sh", "-c", "source /vault/secrets/application.env ; python3.9 manage.py collectstatic --no-input >> /ygag/logs/app.out.collectstatic.log 2>&1"]'
+      command: '["sh", "-c", "source /vault/secrets/application.env ; python3 manage.py collectstatic --no-input >> /ygag/logs/app.out.collectstatic.log 2>&1"]'
       memory:
         requests: 1000Mi
         limits: 1500Mi

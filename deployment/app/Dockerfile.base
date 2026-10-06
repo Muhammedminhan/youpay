@@ -1,4 +1,4 @@
-FROM python:3.9.13-alpine3.16
+FROM python:3.12-alpine3.20
 
 RUN adduser -h /ygag -D ygag
 
@@ -15,5 +15,5 @@ ADD ./deployment/app/packages/apk/base /ygag/packages/apk/base
 # Install dependencies
 RUN apk update && \
     apk add --no-cache --no-network /ygag/packages/apk/base/* && \
-    pip3.9 install --no-cache-dir --upgrade pip==22.0.4 && \
+    pip3 install --no-cache-dir --upgrade pip && \
     rm -rf /ygag/packages/apk

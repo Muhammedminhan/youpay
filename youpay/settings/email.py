@@ -138,3 +138,15 @@ elif environment == 'qa':  # Test or QA
     )
 
     PAYPAL_DASHBOARD_LINK = "https://www.sandbox.paypal.com/"
+
+else:  # development / local
+    SERVER_EMAIL = 'dev@localhost'
+    EMAIL_SUBJECT_PREFIX = '[Youpay+Dev ] '
+    ADMINS = []
+    EMAIL_BACKEND_DEV = (('Dev', 'dev@localhost'),)
+    EMAIL_CUSTOMER_CARE = (('Dev', 'dev@localhost'),)
+    EMAIL_ALERTS_FROM = 'Youpay Dev <dev@localhost>'
+    PAYMENT_RECEIPT_RECEIVERS = (('Dev', 'dev@localhost'),)
+    DISPUTE_EMAIL_HELP = 'dev@localhost'
+    EMAIL_HELP = (('Dev', 'dev@localhost'),)
+    PAYPAL_DASHBOARD_LINK = "https://www.sandbox.paypal.com/"

@@ -1,4 +1,4 @@
-from django.conf.urls import include
+from django.urls import include
 from django.urls import path
 
 from .v1.views.webhook_listener import WebhookListener
